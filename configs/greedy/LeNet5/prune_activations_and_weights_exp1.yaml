@@ -1,0 +1,25 @@
+# === Name === #
+name: LeNet5
+
+# === Architecture === #
+arch: LeNet5
+bias: True
+
+# ===== Dataset ===== #
+data_dir: ../data/
+dataset: MNIST
+
+# ===== Network training config ===== #
+num_epochs: 20
+batch_size: 256 
+freeze_weights: True
+seed: 1
+log_interval: 100
+submask_size: 1
+metric: "loss"
+pruning_strategy: "activations_and_weights"
+how_to_prune: "layer"
+
+# ===== Hardware setup ===== #
+num_workers: 4
+gpu: 0

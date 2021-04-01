@@ -1,0 +1,26 @@
+# === Name === #
+name: TwoLayerFC
+
+# === Architecture === #
+arch: TwoLayerFC
+hidden_size: 500
+bias: True
+
+# ===== Dataset ===== #
+data_dir: ../data/
+dataset: MNIST
+
+# ===== Network training config ===== #
+num_epochs: 1000
+batch_size: 128
+freeze_weights: True
+seed: 1
+log_interval: 2
+submask_size: 1
+metric: "loss"
+pruning_strategy: "weights"
+how_to_prune: "random_with_replacement"
+
+# ===== Hardware setup ===== #
+num_workers: 4
+gpu: 1
