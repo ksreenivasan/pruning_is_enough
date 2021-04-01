@@ -88,7 +88,13 @@ class SupermaskConv(nn.Conv2d):
         # initialize the scores
         self.scores = nn.Parameter(torch.Tensor(self.weight.size()))
         self.bias_scores = nn.Parameter(torch.Tensor(self.bias.size()))
-        nn.init.kaiming_uniform_(self.scores, a=math.sqrt(5))
+        global args
+        if args.algo in ('hc'):
+            nn.init.uniform_(self.scores, a=0.0, b=1.0)
+            nn.init.uniform_(self.bias_scores, a=0.0, b=1.0)
+        else:
+            nn.init.kaiming_uniform_(self.scores, a=math.sqrt(5))
+            nn.init.kaiming_uniform_(self.bias_scores, a=math.sqrt(5))
 
         # NOTE: initialize the weights like this.
         nn.init.kaiming_normal_(self.weight, mode="fan_in", nonlinearity="relu")
@@ -121,7 +127,13 @@ class SupermaskLinear(nn.Linear):
         # initialize the scores
         self.scores = nn.Parameter(torch.Tensor(self.weight.size()))
         self.bias_scores = nn.Parameter(torch.Tensor(self.bias.size()))
-        nn.init.kaiming_uniform_(self.scores, a=math.sqrt(5))
+        global args
+        if args.algo in ('hc'):
+            nn.init.uniform_(self.scores, a=0.0, b=1.0)
+            nn.init.uniform_(self.bias_scores, a=0.0, b=1.0)
+        else:
+            nn.init.kaiming_uniform_(self.scores, a=math.sqrt(5))
+            nn.init.kaiming_uniform_(self.bias_scores, a=math.sqrt(5))
 
         # NOTE: initialize the weights like this.
         nn.init.kaiming_normal_(self.weight, mode="fan_in", nonlinearity="relu")
@@ -134,7 +146,7 @@ class SupermaskLinear(nn.Linear):
         if args.algo in ('hc'):
             # don't need a mask here. the scores are directly multiplied with weights
             self.scores.data = torch.clamp(self.scores.data, 0.0, 1.0)
-            self.bias_scores.data = torch.clamp(self.scores.data, 0.0, 1.0)
+            self.bias_scores.data = torch.clamp(self.bias_scores.data, 0.0, 1.0)
             subnet = self.scores
             bias_subnet = self.bias_scores
         else:
@@ -214,7 +226,7 @@ def test(model, device, criterion, test_loader):
 
 
 def get_layer_sparsity(layer):
-    mask = GetSubnet.apply(layer.scores.abs(), 0)
+    mask = GetSubnet.apply(layer.scores.abs(), layer.bias_scores.abs(), 0)
     sparsity = 100.0 * mask.sum().item() / mask.flatten().numel()
     return sparsity
 
@@ -311,10 +323,13 @@ def main():
         scheduler.step()
         epoch_list.append(epoch)
         test_acc_list.append(test_acc)
-        model_sparsity = get_model_sparsity(model)
+        if args.algo == 'hc':
+            model_sparsity = 0
+        else:
+            model_sparsity = get_model_sparsity(model)
         model_sparsity_list.append(model_sparsity)
         print("Test Acc: {:.2f}%\n".format(test_acc))
-        print("Model Sparsity: {:.2f}%\n\n".format(model_sparsity))
+        # print("Model Sparsity: {:.2f}%\n\n".format(model_sparsity))
         print("---------------------------------------------------------")
 
     results_df = pd.DataFrame({'epoch': epoch_list, 'test_acc': test_acc_list, 'model_sparsity': model_sparsity_list})
