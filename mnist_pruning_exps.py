@@ -14,14 +14,14 @@ from torchvision import datasets, transforms
 from torch.optim.lr_scheduler import CosineAnnealingLR
 import torch.autograd as autograd
 
-args = None
+glob_args = None
 
 class GetSubnet(autograd.Function):
     @staticmethod
     def forward(ctx, scores, bias_scores, k):
-        if args.algo == 'pt_hack':
+        if glob_args.algo == 'pt_hack':
             # Get the supermask by normalizing scores and "sampling" by probability
-            if args.normalize_scores:
+            if glob_args.normalize_scores:
                 # min-max normalization so that scores are in [0, 1]
                 min_score = scores.min().item()
                 max_score = scores.max().item()
@@ -41,7 +41,7 @@ class GetSubnet(autograd.Function):
             out = torch.bernoulli(scores)
             bias_out = torch.bernoulli(bias_scores)
 
-        elif args.algo == 'ep':
+        elif glob_args.algo == 'ep':
             # Get the supermask by sorting the scores and using the top k%
             out = scores.clone()
             _, idx = scores.flatten().sort()
@@ -62,7 +62,7 @@ class GetSubnet(autograd.Function):
             bias_flat_out[idx[:j]] = 0
             bias_flat_out[idx[j:]] = 1
 
-        elif args.algo == 'pt':
+        elif glob_args.algo == 'pt':
             scores = torch.clamp(MULTIPLIER*scores, 0, 1)
             bias_scores = torch.clamp(MULTIPLIER*bias_scores, 0, 1)
             out = torch.bernoulli(scores)
@@ -88,8 +88,7 @@ class SupermaskConv(nn.Conv2d):
         # initialize the scores
         self.scores = nn.Parameter(torch.Tensor(self.weight.size()))
         self.bias_scores = nn.Parameter(torch.Tensor(self.bias.size()))
-        global args
-        if args.algo in ('hc'):
+        if glob_args.algo in ('hc'):
             nn.init.uniform_(self.scores, a=0.0, b=1.0)
             nn.init.uniform_(self.bias_scores, a=0.0, b=1.0)
         else:
@@ -104,7 +103,7 @@ class SupermaskConv(nn.Conv2d):
         self.bias.requires_grad = False
 
     def forward(self, x):
-        if args.algo in ('hc'):
+        if glob_args.algo in ('hc'):
             # don't need a mask here. the scores are directly multiplied with weights
             self.scores.data = torch.clamp(self.scores.data, 0.0, 1.0)
             self.bias_scores.data = torch.clamp(self.bias_scores.data, 0.0, 1.0)
@@ -127,8 +126,7 @@ class SupermaskLinear(nn.Linear):
         # initialize the scores
         self.scores = nn.Parameter(torch.Tensor(self.weight.size()))
         self.bias_scores = nn.Parameter(torch.Tensor(self.bias.size()))
-        global args
-        if args.algo in ('hc'):
+        if glob_args.algo in ('hc'):
             nn.init.uniform_(self.scores, a=0.0, b=1.0)
             nn.init.uniform_(self.bias_scores, a=0.0, b=1.0)
         else:
@@ -143,7 +141,7 @@ class SupermaskLinear(nn.Linear):
         self.bias.requires_grad = False
 
     def forward(self, x):
-        if args.algo in ('hc'):
+        if glob_args.algo in ('hc'):
             # don't need a mask here. the scores are directly multiplied with weights
             self.scores.data = torch.clamp(self.scores.data, 0.0, 1.0)
             self.bias_scores.data = torch.clamp(self.bias_scores.data, 0.0, 1.0)
@@ -197,7 +195,7 @@ def train(model, device, train_loader, optimizer, criterion, epoch):
         loss = criterion(output, target)
         loss.backward()
         optimizer.step()
-        if batch_idx % args.log_interval == 0:
+        if batch_idx % glob_args.log_interval == 0:
             print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
                 epoch, batch_idx * len(data), len(train_loader.dataset),
                 100. * batch_idx / len(train_loader), loss.item()))
@@ -242,7 +240,7 @@ def get_model_sparsity(model):
     return avg_sparsity
 
 def main():
-    global args
+    global glob_args
     # Training settings
     parser = argparse.ArgumentParser(description='PyTorch MNIST Example')
     parser.add_argument('--batch-size', type=int, default=64, metavar='N',
@@ -285,45 +283,45 @@ def main():
     test_acc_list = []
     model_sparsity_list = []
 
-    args = parser.parse_args()
-    use_cuda = not args.no_cuda and torch.cuda.is_available()
+    glob_args = parser.parse_args()
+    use_cuda = not glob_args.no_cuda and torch.cuda.is_available()
 
-    torch.manual_seed(args.seed)
+    torch.manual_seed(glob_args.seed)
 
     device = torch.device("cuda:2" if use_cuda else "cpu")
 
     kwargs = {'num_workers': 1, 'pin_memory': True} if use_cuda else {}
     train_loader = torch.utils.data.DataLoader(
-        datasets.MNIST(os.path.join(args.data, 'mnist'), train=True, download=True,
+        datasets.MNIST(os.path.join(glob_args.data, 'mnist'), train=True, download=True,
                        transform=transforms.Compose([
                            transforms.ToTensor(),
                            transforms.Normalize((0.1307,), (0.3081,))
                        ])),
-        batch_size=args.batch_size, shuffle=True, **kwargs)
+        batch_size=glob_args.batch_size, shuffle=True, **kwargs)
     test_loader = torch.utils.data.DataLoader(
-        datasets.MNIST(os.path.join(args.data, 'mnist'), train=False, transform=transforms.Compose([
+        datasets.MNIST(os.path.join(glob_args.data, 'mnist'), train=False, transform=transforms.Compose([
                            transforms.ToTensor(),
                            transforms.Normalize((0.1307,), (0.3081,))
                        ])),
-        batch_size=args.test_batch_size, shuffle=True, **kwargs)
+        batch_size=glob_args.test_batch_size, shuffle=True, **kwargs)
 
     model = Net().to(device)
     # NOTE: only pass the parameters where p.requires_grad == True to the optimizer! Important!
     optimizer = optim.SGD(
         [p for p in model.parameters() if p.requires_grad],
-        lr=args.lr,
-        momentum=args.momentum,
-        weight_decay=args.wd,
+        lr=glob_args.lr,
+        momentum=glob_args.momentum,
+        weight_decay=glob_args.wd,
     )
     criterion = nn.CrossEntropyLoss().to(device)
-    scheduler = CosineAnnealingLR(optimizer, T_max=args.epochs)
-    for epoch in range(1, args.epochs + 1):
+    scheduler = CosineAnnealingLR(optimizer, T_max=glob_args.epochs)
+    for epoch in range(1, glob_args.epochs + 1):
         train(model, device, train_loader, optimizer, criterion, epoch)
         test_acc = test(model, device, criterion, test_loader)
         scheduler.step()
         epoch_list.append(epoch)
         test_acc_list.append(test_acc)
-        if args.algo == 'hc':
+        if glob_args.algo == 'hc':
             model_sparsity = 0
         else:
             model_sparsity = get_model_sparsity(model)
@@ -333,9 +331,9 @@ def main():
         print("---------------------------------------------------------")
 
     results_df = pd.DataFrame({'epoch': epoch_list, 'test_acc': test_acc_list, 'model_sparsity': model_sparsity_list})
-    results_df.to_csv(args.results_filename, index=False)
+    results_df.to_csv(glob_args.results_filename, index=False)
 
-    if args.save_model:
+    if glob_args.save_model:
         torch.save(model.state_dict(), "mnist_cnn.pt")
 
     print("Experiment donezo")
