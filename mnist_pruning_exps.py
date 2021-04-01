@@ -19,39 +19,40 @@ args = None
 class GetSubnet(autograd.Function):
     @staticmethod
     def forward(ctx, scores, k):
-        # Get the supermask by normalizing scores and "sampling" by probability
-        if args.normalize_scores:
-            # min-max normalization so that scores are in [0, 1]
-            min_score = scores.min().item()
-            max_score = scores.max().item()
-            scores = (scores - min_score)/(max_score - min_score)
+        if args.algo == 'pt_hack':
+            # Get the supermask by normalizing scores and "sampling" by probability
+            if args.normalize_scores:
+                # min-max normalization so that scores are in [0, 1]
+                min_score = scores.min().item()
+                max_score = scores.max().item()
+                scores = (scores - min_score)/(max_score - min_score)
 
-        out = scores.clone()
-        _, idx = scores.flatten().sort()
-        # j = int((1 - k) * scores.numel())
-
-        # flat_out and out access the same memory.
-        flat_out = out.flatten()
-
-        ## j = # of elements < p_threshold
-        # j = int(torch.sum(scores.lt(args.p_threshold)))
-        # j = int((1-0.5) * scores.numel()) # top k computation for comparison
-
-        # flat_out[idx[:j]] = 0
-        # flat_out[idx[j:]] = 1
-
-        ## sample using scores as probability
-        ## by default the probabilities are too small. artificially
-        ## pushing them towards 1 helps!
-        HACK_FLAG = True
-        MULTIPLIER = 10
-        if HACK_FLAG:
+            ## sample using scores as probability
+            ## by default the probabilities are too small. artificially
+            ## pushing them towards 1 helps!
+            MULTIPLIER = 10
             scores = torch.clamp(MULTIPLIER*scores, 0, 1)
-        else:
-            scores = torch.clamp(scores, 0, 1)
+            out = torch.bernoulli(scores)
         
-        out = torch.bernoulli(scores)
-        # print("Sparsity: {}".format(1-1.0*j/scores.numel()))
+        elif args.algo == 'ep':
+            # Get the supermask by sorting the scores and using the top k%
+            out = scores.clone()
+            _, idx = scores.flatten().sort()
+            j = int((1 - k) * scores.numel())
+            # flat_out and out access the same memory.
+            flat_out = out.flatten()
+            flat_out[idx[:j]] = 0
+            flat_out[idx[j:]] = 1
+
+        elif args.algo == 'pt':
+            scores = torch.clamp(MULTIPLIER*scores, 0, 1)
+            out = torch.bernoulli(scores)
+
+        else:
+            print("INVALID PRUNING ALGO")
+            print("EXITING")
+            exit()
+
 
         return out
 
@@ -76,7 +77,13 @@ class SupermaskConv(nn.Conv2d):
         self.weight.requires_grad = False
 
     def forward(self, x):
-        subnet = GetSubnet.apply(self.scores.abs(), args.sparsity)
+        if args.algo in ('hc'):
+            # don't need a mask here. the scores are directly multiplied with weights
+            self.scores.data = torch.clamp(self.scores.data, 0.0, 1.0)
+            subnet = self.scores
+        else:
+            subnet = GetSubnet.apply(self.scores.abs(), args.sparsity)
+        
         w = self.weight * subnet
         x = F.conv2d(
             x, w, self.bias, self.stride, self.padding, self.dilation, self.groups
@@ -222,6 +229,10 @@ def main():
                         help='csv results filename')
     parser.add_argument('--lmbda', type=float, default=0.001,
                         help='regularizer coefficient lambda')
+    # ep: edge-popup, pt_hack: KS hacky probability pruning, pt_reg: probability pruning with regularization
+    # hc: hypercube pruning
+    parser.add_argument('--algo', type=str, default='ep',
+                         help='pruning algo to use |ep|pt_hack|pt_reg|hc|')
 
     epoch_list = []
     test_acc_list = []
