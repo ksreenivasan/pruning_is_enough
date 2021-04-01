@@ -18,7 +18,7 @@ args = None
 
 class GetSubnet(autograd.Function):
     @staticmethod
-    def forward(ctx, scores, k):
+    def forward(ctx, scores, bias_scores, k):
         if args.algo == 'pt_hack':
             # Get the supermask by normalizing scores and "sampling" by probability
             if args.normalize_scores:
@@ -27,13 +27,20 @@ class GetSubnet(autograd.Function):
                 max_score = scores.max().item()
                 scores = (scores - min_score)/(max_score - min_score)
 
+                # repeat for bias
+                min_score = bias_scores.min().item()
+                max_score = bias_scores.max().item()
+                bias_scores = (bias_scores - min_score)/(max_score - min_score)
+
             ## sample using scores as probability
             ## by default the probabilities are too small. artificially
             ## pushing them towards 1 helps!
             MULTIPLIER = 10
             scores = torch.clamp(MULTIPLIER*scores, 0, 1)
+            bias_scores = torch.clamp(MULTIPLIER*bias_scores, 0, 1)
             out = torch.bernoulli(scores)
-        
+            bias_out = torch.bernoulli(bias_scores)
+
         elif args.algo == 'ep':
             # Get the supermask by sorting the scores and using the top k%
             out = scores.clone()
@@ -44,22 +51,34 @@ class GetSubnet(autograd.Function):
             flat_out[idx[:j]] = 0
             flat_out[idx[j:]] = 1
 
+            # repeat for bias
+            # Get the supermask by sorting the scores and using the top k%
+            bias_out = bias_scores.clone()
+            _, idx = bias_scores.flatten().sort()
+            j = int((1 - k) * bias_scores.numel())
+
+            # flat_out and out access the same memory.
+            bias_flat_out = bias_out.flatten()
+            bias_flat_out[idx[:j]] = 0
+            bias_flat_out[idx[j:]] = 1
+
         elif args.algo == 'pt':
             scores = torch.clamp(MULTIPLIER*scores, 0, 1)
+            bias_scores = torch.clamp(MULTIPLIER*bias_scores, 0, 1)
             out = torch.bernoulli(scores)
+            bias_out = torch.bernoulli(bias_scores)
 
         else:
             print("INVALID PRUNING ALGO")
             print("EXITING")
             exit()
 
-
-        return out
+        return out, bias_out
 
     @staticmethod
-    def backward(ctx, g):
+    def backward(ctx, g_1, g_2):
         # send the gradient g straight-through on the backward pass.
-        return g, None
+        return g_1, g_2, None
 
 
 class SupermaskConv(nn.Conv2d):
@@ -68,6 +87,7 @@ class SupermaskConv(nn.Conv2d):
 
         # initialize the scores
         self.scores = nn.Parameter(torch.Tensor(self.weight.size()))
+        self.bias_scores = nn.Parameter(torch.Tensor(self.bias.size()))
         nn.init.kaiming_uniform_(self.scores, a=math.sqrt(5))
 
         # NOTE: initialize the weights like this.
@@ -75,6 +95,7 @@ class SupermaskConv(nn.Conv2d):
 
         # NOTE: turn the gradient on the weights off
         self.weight.requires_grad = False
+        self.bias.requires_grad = False
 
     def forward(self, x):
         if args.algo in ('hc'):
@@ -82,11 +103,12 @@ class SupermaskConv(nn.Conv2d):
             self.scores.data = torch.clamp(self.scores.data, 0.0, 1.0)
             subnet = self.scores
         else:
-            subnet = GetSubnet.apply(self.scores.abs(), args.sparsity)
-        
+            subnet, bias_subnet = GetSubnet.apply(self.scores.abs(), self.bias_scores.abs(), sparsity)
+
         w = self.weight * subnet
+        b = self.bias * bias_subnet
         x = F.conv2d(
-            x, w, self.bias, self.stride, self.padding, self.dilation, self.groups
+            x, w, b, self.stride, self.padding, self.dilation, self.groups
         )
         return x
 
@@ -96,6 +118,7 @@ class SupermaskLinear(nn.Linear):
 
         # initialize the scores
         self.scores = nn.Parameter(torch.Tensor(self.weight.size()))
+        self.bias_scores = nn.Parameter(torch.Tensor(self.bias.size()))
         nn.init.kaiming_uniform_(self.scores, a=math.sqrt(5))
 
         # NOTE: initialize the weights like this.
@@ -103,12 +126,21 @@ class SupermaskLinear(nn.Linear):
 
         # NOTE: turn the gradient on the weights off
         self.weight.requires_grad = False
+        self.bias.requires_grad = False
 
     def forward(self, x):
-        subnet = GetSubnet.apply(self.scores.abs(), args.sparsity)
+        if args.algo in ('hc'):
+            # don't need a mask here. the scores are directly multiplied with weights
+            self.scores.data = torch.clamp(self.scores.data, 0.0, 1.0)
+            self.bias_scores.data = torch.clamp(self.scores.data, 0.0, 1.0)
+            subnet = self.scores
+        else:
+            subnet, bias_subnet = GetSubnet.apply(self.scores.abs(), self.bias_scores.abs(), sparsity)
+
         w = self.weight * subnet
-        return F.linear(x, w, self.bias)
-        return x
+        b = self.bias * bias_subnet
+        return F.linear(x, w, b)
+
 
 # NOTE: not used here but we use NON-AFFINE Normalization!
 # So there is no learned parameters for your nomralization layer.
@@ -119,12 +151,12 @@ class NonAffineBatchNorm(nn.BatchNorm2d):
 class Net(nn.Module):
     def __init__(self):
         super(Net, self).__init__()
-        self.conv1 = SupermaskConv(1, 32, 3, 1, bias=False)
-        self.conv2 = SupermaskConv(32, 64, 3, 1, bias=False)
+        self.conv1 = SupermaskConv(1, 32, 3, 1, bias=True)
+        self.conv2 = SupermaskConv(32, 64, 3, 1, bias=True)
         self.dropout1 = nn.Dropout2d(0.25)
         self.dropout2 = nn.Dropout2d(0.5)
-        self.fc1 = SupermaskLinear(9216, 128, bias=False)
-        self.fc2 = SupermaskLinear(128, 10, bias=False)
+        self.fc1 = SupermaskLinear(9216, 128, bias=True)
+        self.fc2 = SupermaskLinear(128, 10, bias=True)
 
     def forward(self, x):
         x = self.conv1(x)
@@ -287,7 +319,7 @@ def main():
 
     if args.save_model:
         torch.save(model.state_dict(), "mnist_cnn.pt")
-    
+
     print("Experiment donezo")
 
 if __name__ == '__main__':
