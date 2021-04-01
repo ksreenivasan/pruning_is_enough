@@ -101,7 +101,9 @@ class SupermaskConv(nn.Conv2d):
         if args.algo in ('hc'):
             # don't need a mask here. the scores are directly multiplied with weights
             self.scores.data = torch.clamp(self.scores.data, 0.0, 1.0)
+            self.bias_scores.data = torch.clamp(self.bias_scores.data, 0.0, 1.0)
             subnet = self.scores
+            bias_subnet = self.bias_scores
         else:
             subnet, bias_subnet = GetSubnet.apply(self.scores.abs(), self.bias_scores.abs(), sparsity)
 
@@ -134,6 +136,7 @@ class SupermaskLinear(nn.Linear):
             self.scores.data = torch.clamp(self.scores.data, 0.0, 1.0)
             self.bias_scores.data = torch.clamp(self.scores.data, 0.0, 1.0)
             subnet = self.scores
+            bias_subnet = self.bias_scores
         else:
             subnet, bias_subnet = GetSubnet.apply(self.scores.abs(), self.bias_scores.abs(), sparsity)
 
