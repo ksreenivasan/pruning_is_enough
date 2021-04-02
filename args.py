@@ -139,6 +139,59 @@ def parse_arguments():
         metavar="MI",
         help="Maximum number of iterations to run simulated annealing for before terminating. It's recommended to set this to a value that at is at least as big as the number of parameters in the network (default: 100000)"
     )
+    
+    parser.add_argument(
+        "--algo",
+        type=str,
+        default='ep',
+        help="pruning algo to use |ep|pt_hack|pt_reg|hc|"
+    )
+
+    parser.add_argument(
+        "--optimizer",
+        type=str,
+        default='sgd',
+        help="optimizer option to use |sgd|adam|"
+    )
+
+    parser.add_argument(
+        "--train",
+        type=int,
+        default=1,
+        help="train a new model"
+    )
+
+    parser.add_argument(
+        "--round",
+        type=str,
+        default='naive',
+        help='rounding technique to use |naive|prob|pb|'
+        # naive: threshold(0.5), prob: probabilistic rounding, pb: pseudo-boolean paper's choice (RoundDown)
+    ) 
+
+    parser.add_argument(
+        "--num_test",
+        type=int,
+        default=1,
+        help='number of different models testing in prob rounding'
+    ) 
+
+    parser.add_argument(
+        "--results-filename",
+        type=str,
+        default='results_acc_mnist.csv',
+        help='csv results filename'
+    ) 
+
+    parser.add_argument(
+        "--save-model",
+        action='store_true',
+        default=False,
+        help='For Saving the current Model'
+    ) 
+    
+
+
 
     # Architecture and training
     parser.add_argument(
@@ -173,6 +226,59 @@ def parse_arguments():
         default=False,
         help="Boolean flag to indicate whether weights should be frozen. Used when sparsifying (default: False)"
     )
+
+    parser.add_argument(
+        "--conv-type", type=str, default=None, help="What kind of sparsity to use"
+    )
+
+    parser.add_argument("--mode", default="fan_in", help="Weight initialization mode")
+    parser.add_argument(
+        "--nonlinearity", default="relu", help="Nonlinearity used by initialization"
+    )
+    parser.add_argument("--bn-type", default=None, help="BatchNorm type")
+    parser.add_argument(
+        "--init", default="kaiming_normal", help="Weight initialization modifications"
+    )
+    parser.add_argument(
+        "--no-bn-decay", action="store_true", default=False, help="No batchnorm decay"
+    )
+    parser.add_argument(
+        "--scale-fan", action="store_true", default=False, help="scale fan"
+    )
+    parser.add_argument(
+        "--first-layer-dense", action="store_true", help="First layer dense or sparse"
+    )
+    parser.add_argument(
+        "--last-layer-dense", action="store_true", help="Last layer dense or sparse"
+    )
+    parser.add_argument(
+        "--label-smoothing",
+        type=float,
+        help="Label smoothing to use, default 0.0",
+        default=None,
+    )
+    parser.add_argument(
+        "--first-layer-type", type=str, default=None, help="Conv type of first layer"
+    )
+    parser.add_argument(
+        "--trainer", type=str, default="default", help="cs, ss, or standard training"
+    )
+    parser.add_argument(
+        "--score-init-constant",
+        type=float,
+        default=None,
+        help="Sample Baseline Subnet Init",
+    )
+
+    parser.add_argument(
+        "--prune-rate",
+        default=0.0,
+        help="Amount of pruning to do during sparse training",
+        type=float,
+    )
+
+
+
     parser.add_argument(
         "--dataset",
         type=str,
@@ -229,16 +335,16 @@ def parse_arguments():
     parser.add_argument(
         "--seed",
         type=int,
-        default=None,
+        default=0,
         metavar="S",
         help="Random seed (default: None)"
     )
-#    parser.add_argument(
-#        "--no-cuda",
-#        action="store_true",
-#        default=False,
-#        help="Disables CUDA training"
-#    )
+    parser.add_argument(
+        "--no-cuda",
+        action="store_true",
+        default=False,
+        help="Disables CUDA training"
+    )
     parser.add_argument(
         "--gpu",
         type=int,
