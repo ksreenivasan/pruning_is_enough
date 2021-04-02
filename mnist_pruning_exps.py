@@ -299,26 +299,27 @@ def round_down(model, params):
 
 def plot_histogram_scores(model, epoch=0):
     # TODO: make this generalizable
+    plt.rcParams.update({'font.size': 5})
     fig, axs = plt.subplots(2, 2)
     scores = model.conv1.scores.flatten().cpu().detach().numpy()
     axs[0, 0].hist(scores, facecolor='#2ab0ff', edgecolor='#169acf',
                    density=False, linewidth=0.5, bins=20)
-    axs[0, 0].set_title('Conv1 Weights Distribution')
+    axs[0, 0].set_title('Conv1 Scores Distribution')
 
     scores = model.conv2.scores.flatten().cpu().detach().numpy()
     axs[0, 1].hist(scores, facecolor='#2ab0ff', edgecolor='#169acf',
                    density=False, linewidth=0.5, bins=20)
-    axs[0, 1].set_title('Conv2 Weights Distribution')
+    axs[0, 1].set_title('Conv2 Scores Distribution')
 
     scores = model.fc1.scores.flatten().cpu().detach().numpy()
     axs[1, 0].hist(scores, facecolor='#2ab0ff', edgecolor='#169acf',
                    density=False, linewidth=0.5, bins=20)
-    axs[1, 0].set_title('FC1 Weights Distribution')
+    axs[1, 0].set_title('FC1 Scores Distribution')
 
     scores = model.fc2.scores.flatten().cpu().detach().numpy()
     axs[1, 1].hist(scores, facecolor='#2ab0ff', edgecolor='#169acf',
                    density=False, linewidth=0.5, bins=20)
-    axs[1, 1].set_title('FC2 Weights Distribution')
+    axs[1, 1].set_title('FC2 Scores Distribution')
 
     filename = 'plots/weights_histogram_epoch_{}.pdf'.format(epoch)
     plt.savefig(filename, format='pdf', bbox_inches='tight', pad_inches=0.05)
