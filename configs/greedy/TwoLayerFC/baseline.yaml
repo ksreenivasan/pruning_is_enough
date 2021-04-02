@@ -1,0 +1,28 @@
+# === Name === #
+name: TwoLayerFC
+
+# === Architecture === #
+arch: BaselineTwoLayerFC
+hidden_size: 500
+bias: True
+
+# ===== Dataset ===== #
+data_dir: ../data/
+dataset: MNIST
+
+# ===== Network training config ===== #
+num_epochs: 50
+batch_size: 128
+freeze_weights: False
+seed: 1
+log_interval: 100
+lr: 0.1
+momentum: 0.9
+wd: 0.0005
+nesterov: True
+milestones: [10, 20, 40]
+gamma: 0.1
+
+# ===== Hardware setup ===== #
+num_workers: 4
+gpu: 0

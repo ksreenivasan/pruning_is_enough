@@ -116,3 +116,16 @@ class VarianceMeter(Meter):
         return ("{name} (var {avg" + self.fmt + "})").format(
             name=self.name, avg=self.avg
         )
+        
+
+def log_batch(batch_idx, num_batches, batch_top1_acc, batch_top5_acc, batch_loss, sparsity):
+    print("Training batch {:>8}/{:<8} ({:>3.0f}%) [Top 1 acc: {:>3.0f}%, Top 5 acc: {:>3.0f}%, Loss: {:>9.6f}, Sparsity: {:>3.0f}%]".format(
+        batch_idx,
+        num_batches,
+        100. * batch_idx / num_batches,
+        batch_top1_acc,
+        batch_top5_acc,
+        batch_loss,
+        sparsity * 100.
+        )
+    )

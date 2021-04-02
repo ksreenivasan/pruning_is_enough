@@ -136,3 +136,62 @@ class SubnetL1RegLoss(nn.Module):
                 l1_accum += (p*temperature).sigmoid().sum()
 
         return l1_accum
+        
+        
+#### Functions used for greedy pruning ####
+def get_sparsity(model):
+    if "Baseline" in model.__class__.__name__:
+        return 0
+    else:
+        total_num_params = 0
+        total_num_kept = 0
+        for name, param in model.named_parameters():
+            if "mask" in name:
+                total_num_params += torch.numel(param)
+                total_num_kept += torch.sum(param)
+
+        return 1 - (total_num_kept / total_num_params)      # The sparsity of a network is the ratio of weights that have been removed (pruned) to all the weights in the network
+
+
+def flip(model):
+    params_dict = {}
+    idx_dict = {}
+    idx_start = 0   # Starting index for a particular flattened binary mask in the network. 
+
+    for name, param in model.named_parameters():
+        if "mask" in name:
+            flat_param = param.flatten()
+            params_dict[name] = flat_param
+            idx_dict[name] = idx_start
+            idx_start += len(flat_param)
+
+    param_names = list(params_dict.keys())
+
+    rand_idx = random.sample(range(idx_start), k=round(0.1 * idx_start))
+
+    for i in range(len(rand_idx)): 
+        param_idx = rand_idx[i]
+        for name in reversed(param_names):
+            if idx_dict[name] <= param_idx:
+                params_dict[name][param_idx - idx_dict[name]] = 1 - params_dict[name][param_idx - idx_dict[name]]
+                break
+
+
+def step(x):
+    return 2 * (x > 0).float() - 1
+
+
+class Step(nn.Module):
+    def __init__(self):
+        super(Step, self).__init__()
+
+    def forward(self, x):
+        return step(x)
+
+
+def zero_one_loss(output, target):
+    maxk = 1
+    _, pred = output.topk(maxk, 1, True, True)
+    pred = pred.t()
+    zero_one_loss_instance = ~pred.eq(target.view(1, -1).expand_as(pred))
+    return torch.mean(zero_one_loss_instance.to(torch.float32))
