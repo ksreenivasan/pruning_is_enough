@@ -18,6 +18,7 @@ from torch.optim.lr_scheduler import CosineAnnealingLR
 import torch.autograd as autograd
 
 import pdb
+import time
 plt.style.use('seaborn-whitegrid')
 
 glob_args = None
@@ -274,27 +275,56 @@ def compute_loss(model, device, train_loader, criterion):
         break
     return loss
 
-'''
-def round_down(model, params):
-    scores = torch.clone(params).detach()
-    flat_sc = scores.flatten()
-    b_sc = torch.gt(scores, torch.zeros_like(scores)) * torch.lt(scores, torch.ones_like(scores)).int()
-    flat_b_sc = b_sc.flatten()
-    while sum(flat_b_sc) > 0:
-        for idx in range(len(flat_b_sc)):
-            if flat_b_sc[idx] == 1:
-                cp_flat_sc_1 = torch.clone(flat_sc)
-                cp_flat_sc_1[idx] = 1
-                cp_flat_sc_0 = torch.clone(flat_sc)
-                cp_flat_sc_0[idx] = 0
+def round_down(cp_model, params, device, train_loader, criterion):
 
-                pdb.set_trace()
-                delta = loss_1 - loss_0
-                exit()
-        
-        exit()
-    return b_sc
-'''
+    scores = params.data
+    scores2 = torch.ones_like(scores) * -1      # initialize a dummy tensor
+    sc2 = scores2.flatten()
+
+    # check indices I that has score value of neither 0 nor 1 
+    sc = scores.flatten()
+    flag_sc = torch.gt(sc, torch.zeros_like(sc)) * torch.lt(sc, torch.ones_like(sc)).int()
+
+    # for i \in [n]/I, copy params values to dummy tensor   
+    sc2[flag_sc == 0] = sc[flag_sc == 0]
+
+    start_time = time.time()    
+    # for i in I:
+        # computes loss_1 & loss_0
+        # depending on the difference, fill in a dummy tensor
+    #temp = torch.clone(params.data.flatten())
+    for idx in range(len(flag_sc)):
+
+        if (idx+1) % 100 == 0:
+            end_time = time.time()
+            print(idx, end_time - start_time)
+
+        if flag_sc[idx] == 1:
+            
+            #temp = torch.clone(params.data.flatten()[idx])
+            #print(params.data[0][0][0][0])
+            params.data.flatten()[idx] = 1
+            #print(params.data[0][0][0][0])
+            torch.manual_seed(idx)
+            loss1 = compute_loss(cp_model, device, train_loader, criterion)
+
+            params.data.flatten()[idx] = 0
+            #print(params.data[0][0][0][0])
+            torch.manual_seed(idx)
+            loss0 = compute_loss(cp_model, device, train_loader, criterion)
+
+            #print(loss1, loss0)
+
+            if loss1 > loss0:   sc2[idx] = 0
+            else:   sc2[idx] = 1
+
+            params.data.flatten()[idx] = temp[idx]
+            #print(params.data[0][0][0][0])
+            #print(sum(scores2.flatten()))  
+    
+    #print(scores2.flatten())
+
+    return scores2
 
 
 def plot_histogram_scores(model, epoch=0):
@@ -392,13 +422,6 @@ def main():
                            transforms.Normalize((0.1307,), (0.3081,))
                        ])),
         batch_size=glob_args.batch_size, shuffle=True, **kwargs)
-    train_loader_no_shuff = torch.utils.data.DataLoader(
-        datasets.MNIST(os.path.join(glob_args.data, 'mnist'), train=True, download=True,
-                       transform=transforms.Compose([
-                           transforms.ToTensor(),
-                           transforms.Normalize((0.1307,), (0.3081,))
-                       ])),
-        batch_size=glob_args.batch_size, shuffle=False, **kwargs)
     test_loader = torch.utils.data.DataLoader(
         datasets.MNIST(os.path.join(glob_args.data, 'mnist'), train=False, transform=transforms.Compose([
                            transforms.ToTensor(),
@@ -449,54 +472,8 @@ def main():
                     elif glob_args.round == 'prob':
                         params.data = torch.bernoulli(params)   
                     elif glob_args.round == 'pb':
-                        scores = params.data
-                        # initialize a dummy tensor
-                        scores2 = torch.ones_like(scores) * -1
-                        sc2 = scores2.flatten()
-                
-                        # check indices I that has score value of neither 0 nor 1 
-                        sc = scores.flatten()
-                        flag_sc = torch.gt(sc, torch.zeros_like(sc)) * torch.lt(sc, torch.ones_like(sc)).int()
-                        # for i \in [n]/I, copy params values to dummy tensor   
-                        sc2[flag_sc==0] = sc[flag_sc==0]
-                
-                        # for i in I:
-                            # computes loss_1 & loss_0
-                            # depending on the difference, fill in a dummy tensor
-                        for idx in range(len(flag_sc)):
-                            if flag_sc[idx] == 1:
-                                
-                                temp = torch.clone(params.data.flatten()[idx])
-                                #print(params.data[0][0][0][0])
-                                params.data.flatten()[idx] = 1
-                                #print(params.data[0][0][0][0])
-                                torch.manual_seed(idx)
-                                loss1 = compute_loss(cp_model, device, train_loader, criterion)
-
-                                params.data.flatten()[idx] = 0
-                                #print(params.data[0][0][0][0])
-                                torch.manual_seed(idx)
-                                loss0 = compute_loss(cp_model, device, train_loader, criterion)
-
-                                print(loss1, loss0)
-
-                                if loss1 > loss0:   sc2[idx] = 0
-                                else:   sc2[idx] = 1
-
-                                params.data.flatten()[idx] = temp
-                                #print(params.data[0][0][0][0])
-                                print(sum(scores2.flatten()))
-
-                                #pdb.set_trace()
-                        
-                        
-                        #pdb.set_trace()
-                        print(scores2.flatten())
-
-                        params.data = scores2   
-
-                        #params.data = round_down(cp_model, params) 
-                        #exit()
+                        params.data = round_down(cp_model, params, device, train_loader, criterion)
+                        print(name, ' ended')
                     else:
                         print("INVALID ROUNDING")
                         print("EXITING")
