@@ -178,7 +178,8 @@ def flip(model):
 
 
 def step(x):
-    return 2 * (x > 0).float() - 1
+#    return 2 * (x >= 0).float() - 1
+    return (x >= 0).float()
 
 
 class Step(nn.Module):

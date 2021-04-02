@@ -12,16 +12,11 @@ from utils.logging import log_batch
 from torch.cuda.amp import autocast
 
 
-def compute_batch_loss(model, device, data, target, criterion, topk, args=None):
+def compute_batch_loss(model, device, data, target, criterion, topk):
     with torch.no_grad():
         data, target = data.to(device), target.to(device)
         output = model(data)
-        if args.loss == "cross-entropy-loss":
-            batch_loss = criterion(output, target).item()
-        elif args.loss == "zero-one-loss":
-            batch_loss = zero_one_loss(output, target).item()
-        else:
-            raise NotImplementedError("Unsupported Loss type ...")
+        batch_loss = criterion(output, target).item()
 
     batch_acc = accuracy(output, target, topk=topk)
 
@@ -59,10 +54,10 @@ def prune_weights(model, device, train_loader, criterion, args, topk=(1, 5)):
             for name in reversed(param_names):
                 if idx_dict[name] <= param_idx:
                     params_dict[name][param_idx - idx_dict[name]] = 1
-                    batch_loss_keep, batch_acc_keep = compute_batch_loss(model, device, data, target, criterion, topk, args=args)
+                    batch_loss_keep, batch_acc_keep = compute_batch_loss(model, device, data, target, criterion, topk)
 
                     params_dict[name][param_idx - idx_dict[name]] = 0
-                    batch_loss_prune, batch_acc_prune = compute_batch_loss(model, device, data, target, criterion, topk, args=args)
+                    batch_loss_prune, batch_acc_prune = compute_batch_loss(model, device, data, target, criterion, topk)
                     
                     if args.metric == "loss":
                         batch_metric_keep = batch_loss_keep
@@ -129,10 +124,10 @@ def prune_weights(model, device, train_loader, criterion, args, topk=(1, 5)):
                             submask = torch.round(torch.rand(end_idx - start_idx))
 
                         flat_param[start_idx:end_idx] = submask
-                        batch_loss_keep, batch_acc_keep = compute_batch_loss(model, device, data, target, criterion, topk, args=args)
+                        batch_loss_keep, batch_acc_keep = compute_batch_loss(model, device, data, target, criterion, topk)
 
                         flat_param[start_idx:end_idx] = 1 - submask
-                        batch_loss_prune, batch_acc_prune = compute_batch_loss(model, device, data, target, criterion, topk, args=args)
+                        batch_loss_prune, batch_acc_prune = compute_batch_loss(model, device, data, target, criterion, topk)
 
                         if args.metric == "loss":
                             batch_metric_keep = batch_loss_keep
@@ -196,12 +191,12 @@ def prune_activations(model, device, train_loader, criterion, args, topk=(1, 5))
                 layer.mask_weight[i, :] = 1
                 if hasattr(layer, "mask_bias"):
                     layer.mask_bias[i] = 1
-                batch_loss_keep, batch_acc_keep = compute_batch_loss(model, device, data, target, criterion, topk, args=args)
+                batch_loss_keep, batch_acc_keep = compute_batch_loss(model, device, data, target, criterion, topk)
 
                 layer.mask_weight[i, :] = 0
                 if hasattr(layer, "mask_bias"):
                     layer.mask_bias[i] = 0
-                batch_loss_prune, batch_acc_prune = compute_batch_loss(model, device, data, target, criterion, topk, args=args)
+                batch_loss_prune, batch_acc_prune = compute_batch_loss(model, device, data, target, criterion, topk)
 
                 if args.metric == "loss":
                     batch_metric_keep = batch_loss_keep
@@ -295,10 +290,10 @@ def simulated_annealing(model, device, train_loader, criterion, args, topk=(1, 5
         
         for name in reversed(param_names):
             if idx_dict[name] <= param_idx:
-                batch_loss_curr, batch_acc_curr = compute_batch_loss(model, device, data, target, criterion, topk, args=args)
+                batch_loss_curr, batch_acc_curr = compute_batch_loss(model, device, data, target, criterion, topk)
 
                 params_dict[name][param_idx - idx_dict[name]] = 1 - params_dict[name][param_idx - idx_dict[name]]
-                batch_loss_new, batch_acc_new = compute_batch_loss(model, device, data, target, criterion, topk, args=args)
+                batch_loss_new, batch_acc_new = compute_batch_loss(model, device, data, target, criterion, topk)
                 
                 if args.metric == "loss":
                     batch_metric_curr = batch_loss_curr

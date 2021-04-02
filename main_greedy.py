@@ -20,7 +20,7 @@ import torch.autograd as autograd
 
 from utils import data
 from utils.train_test import prune_weights, prune_activations, inference, train, simulated_annealing
-from utils.net_utils import get_sparsity, flip
+from utils.net_utils import get_sparsity, flip, zero_one_loss
 import models.greedy as models
 
 from args import args
@@ -36,7 +36,13 @@ def main():
     device = get_device(args)
     data = get_dataset(args)
     model = get_model(args, data, device)
-    criterion = nn.CrossEntropyLoss().to(device)
+   
+    if args.loss == "cross-entropy-loss":
+        criterion = nn.CrossEntropyLoss().to(device)
+    elif args.loss == "zero-one-loss":
+        criterion = zero_one_loss()
+    else:
+        raise NotImplementedError("Unsupported loss type ...")
    
     config = pathlib.Path(args.config).stem
     base_dir = pathlib.Path(f"./results/greedy/{args.name}/{config}")
@@ -278,7 +284,7 @@ def main():
     )
 
 
-    if args.save_plot_data:   # TODO: get this working!
+    if args.save_plot_data:
         pd.DataFrame(plot_data).to_csv(base_dir / "plot_data.csv", index=False)
 
 #        with open(base_dir / "plot_data.csv", 'w') as csvfile:
