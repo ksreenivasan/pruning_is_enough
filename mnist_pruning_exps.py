@@ -530,6 +530,8 @@ def main():
 
     results_df = pd.DataFrame({'epoch': epoch_list, 'test_acc': test_acc_list, 'model_sparsity': model_sparsity_list})
     results_df.to_csv(glob_args.results_filename, index=False)
+    # gotta plot the final histogram as well
+    plot_histogram_scores(model, epoch)
 
     if glob_args.save_model:
         torch.save(model.state_dict(), "mnist_cnn_{}_{}.pt".format(glob_args.algo, glob_args.epochs))
