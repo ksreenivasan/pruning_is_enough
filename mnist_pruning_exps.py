@@ -5,6 +5,9 @@ import os
 import math
 import numpy as np
 import pandas as pd
+import matplotlib as plt
+from matplotlib import colors as mcolors
+from pylab import *
 
 import torch
 import torch.nn as nn
@@ -15,7 +18,7 @@ from torch.optim.lr_scheduler import CosineAnnealingLR
 import torch.autograd as autograd
 
 import pdb
-
+plt.style.use('seaborn-whitegrid')
 
 glob_args = None
 
@@ -295,38 +298,31 @@ def round_down(model, params):
 
 
 def plot_histogram_scores(model, epoch=0):
-    x_vals = np.linspace(-50, 50, 30)
-    y_vals = np.linspace(-50, 50, 30)
-    Z = np.zeros([30, 30])
-    X, Y = np.meshgrid(x_vals, y_vals)
-    for i in range(30):
-        for j in range(30):
-            # print i, j
-            x = torch.tensor([X[i][j], Y[i][j]], dtype=torch.float32)
-            Z[i][j] = model.forward(x)
+    # TODO: make this generalizable
+    plt.rcParams.update({'font.size': 5})
+    fig, axs = plt.subplots(2, 2)
+    scores = model.conv1.scores.flatten().cpu().detach().numpy()
+    axs[0, 0].hist(scores, facecolor='#2ab0ff', edgecolor='#169acf',
+                   density=False, linewidth=0.5, bins=20)
+    axs[0, 0].set_title('Conv1 Scores Distribution')
 
-    predictions = {'x_0': [], 'x_1': [], 'y': []}
-    for i in range(30):
-        for j in range(30):
-            predictions['x_0'].append(X[i][j])
-            predictions['x_1'].append(Y[i][j])
-            predictions['y'].append(Z[i][j])
-    prediction_df = pd.DataFrame(predictions)
+    scores = model.conv2.scores.flatten().cpu().detach().numpy()
+    axs[0, 1].hist(scores, facecolor='#2ab0ff', edgecolor='#169acf',
+                   density=False, linewidth=0.5, bins=20)
+    axs[0, 1].set_title('Conv2 Scores Distribution')
 
-    training_data = {'x_0': [], 'x_1': [], 'y': []}
-    for (data_inp, label) in data:
-        training_data['x_0'].append(data_inp[0].item())
-        training_data['x_1'].append(data_inp[1].item())
-        training_data['y'].append(1.0*label.item())
-    training_data = pd.DataFrame(training_data)
+    scores = model.fc1.scores.flatten().cpu().detach().numpy()
+    axs[1, 0].hist(scores, facecolor='#2ab0ff', edgecolor='#169acf',
+                   density=False, linewidth=0.5, bins=20)
+    axs[1, 0].set_title('FC1 Scores Distribution')
 
-    ax = prediction_df[prediction_df['y'] >= 0].plot.scatter(x='x_0', y='x_1', color='red', label='y=+1')
-    prediction_df[prediction_df['y'] < 0].plot.scatter(x='x_0', y='x_1', color='blue', label='y=-1', ax=ax)
-    # overlay training data
-    training_data[training_data['y'] >= 0].plot.scatter(x='x_0', y='x_1', color='orange', label='training_data', ax=ax, marker='*', s=250)
-    training_data[training_data['y'] < 0].plot.scatter(x='x_0', y='x_1', color='purple', label='training_data', ax=ax, marker='*', s=250)
-    plt.savefig(filename, format='png', bbox_inches='tight', pad_inches=0.05)
+    scores = model.fc2.scores.flatten().cpu().detach().numpy()
+    axs[1, 1].hist(scores, facecolor='#2ab0ff', edgecolor='#169acf',
+                   density=False, linewidth=0.5, bins=20)
+    axs[1, 1].set_title('FC2 Scores Distribution')
 
+    filename = 'plots/weights_histogram_epoch_{}.pdf'.format(epoch)
+    plt.savefig(filename, format='pdf', bbox_inches='tight', pad_inches=0.05)
 
 
 def main():
@@ -527,13 +523,15 @@ def main():
             model_sparsity = get_model_sparsity(model)
         model_sparsity_list.append(model_sparsity)
         print("Test Acc: {:.2f}%\n".format(test_acc))
-        if epoch%5 == 0:
-            plot_histogram_scores(model)
+        if epoch%10 == 1:
+            plot_histogram_scores(model, epoch)
         # print("Model Sparsity: {:.2f}%\n\n".format(model_sparsity))
         print("---------------------------------------------------------")
 
     results_df = pd.DataFrame({'epoch': epoch_list, 'test_acc': test_acc_list, 'model_sparsity': model_sparsity_list})
     results_df.to_csv(glob_args.results_filename, index=False)
+    # gotta plot the final histogram as well
+    plot_histogram_scores(model, epoch)
 
     if glob_args.save_model:
         torch.save(model.state_dict(), "mnist_cnn_{}_{}.pt".format(glob_args.algo, glob_args.epochs))
