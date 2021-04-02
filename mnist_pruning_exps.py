@@ -14,6 +14,9 @@ from torchvision import datasets, transforms
 from torch.optim.lr_scheduler import CosineAnnealingLR
 import torch.autograd as autograd
 
+import pdb
+
+
 glob_args = None
 
 class GetSubnet(autograd.Function):
@@ -239,6 +242,57 @@ def get_model_sparsity(model):
 	avg_sparsity = (s1 + s2 + s3 + s4)/4
 	return avg_sparsity
 
+def get_model_sparsity_hc(model):
+	sparsity = []
+	for name, params in model.named_parameters():
+		if ".score" in name:
+			num_middle = torch.gt(params, torch.ones_like(params)*0.01) * torch.lt(params, torch.ones_like(params)*0.99).int() # 0.25 / 0.75
+			curr_sparsity = 100*torch.sum(num_middle).item()/num_middle.numel()
+			sparsity.append(curr_sparsity)
+			print(name, '{}/{} ({:.2f} %)'.format(torch.sum(num_middle).item(), num_middle.numel(), curr_sparsity))
+
+	return sparsity
+
+
+def compute_loss(model, device, train_loader, criterion):
+	model.eval()
+
+	'''
+	for name, params in model.named_parameters():
+		if ".score" in name:
+			print(params[0][0][0][0])
+			break
+	'''
+
+	for batch_idx, (data, target) in enumerate(train_loader):
+		data, target = data.to(device), target.to(device)
+		output = model(data)
+		loss = criterion(output, target).detach().item()
+		break
+	return loss
+
+'''
+def round_down(model, params):
+	scores = torch.clone(params).detach()
+	flat_sc = scores.flatten()
+	b_sc = torch.gt(scores, torch.zeros_like(scores)) * torch.lt(scores, torch.ones_like(scores)).int()
+	flat_b_sc = b_sc.flatten()
+	while sum(flat_b_sc) > 0:
+		for idx in range(len(flat_b_sc)):
+			if flat_b_sc[idx] == 1:
+				cp_flat_sc_1 = torch.clone(flat_sc)
+				cp_flat_sc_1[idx] = 1
+				cp_flat_sc_0 = torch.clone(flat_sc)
+				cp_flat_sc_0[idx] = 0
+
+				pdb.set_trace()
+				delta = loss_1 - loss_0
+				exit()
+		
+		exit()
+	return b_sc
+'''
+
 def main():
 	global glob_args
 	# Training settings
@@ -280,6 +334,12 @@ def main():
 						 help='pruning algo to use |ep|pt_hack|pt_reg|hc|')
 	parser.add_argument('--optimizer', type=str, default='sgd',
 						 help='optimizer option to use |sgd|adam|')
+	parser.add_argument('--train', type=int, default=1,
+						help='train a new model (default: 1)')
+	parser.add_argument('--round', type=str, default='naive',
+						 help='rounding technique to use |naive|prob|pb|') # naive: threshold(0.5), prob: probabilistic rounding, pb: pseudo-boolean paper's choice (RoundDown)
+	parser.add_argument('--num_test', type=int, default=1,
+						help='number of different models testing in prob rounding')
 
 	epoch_list = []
 	test_acc_list = []
@@ -300,6 +360,13 @@ def main():
 						   transforms.Normalize((0.1307,), (0.3081,))
 					   ])),
 		batch_size=glob_args.batch_size, shuffle=True, **kwargs)
+	train_loader_no_shuff = torch.utils.data.DataLoader(
+		datasets.MNIST(os.path.join(glob_args.data, 'mnist'), train=True, download=True,
+					   transform=transforms.Compose([
+						   transforms.ToTensor(),
+						   transforms.Normalize((0.1307,), (0.3081,))
+					   ])),
+		batch_size=glob_args.batch_size, shuffle=False, **kwargs)
 	test_loader = torch.utils.data.DataLoader(
 		datasets.MNIST(os.path.join(glob_args.data, 'mnist'), train=False, transform=transforms.Compose([
 						   transforms.ToTensor(),
@@ -329,6 +396,89 @@ def main():
 
 	criterion = nn.CrossEntropyLoss().to(device)
 	scheduler = CosineAnnealingLR(optimizer, T_max=glob_args.epochs)
+
+
+	if not glob_args.train:	
+		model.load_state_dict(torch.load('saved_mnist_cnn_{}_{}.pt'.format(glob_args.algo, glob_args.epochs)))
+		#get_model_sparsity_hc(model)
+		test(model, device, criterion, test_loader)		
+	
+		cp_model = Net().to(device)
+		acc_list = []
+		for itr in range(glob_args.num_test):
+			
+			cp_model.load_state_dict(torch.load('saved_mnist_cnn_{}_{}.pt'.format(glob_args.algo, glob_args.epochs)))
+			print('Testing rounding technique of {}'.format(glob_args.round))
+
+			for name, params in cp_model.named_parameters():
+				if ".score" in name:
+					if glob_args.round == 'naive':
+						params.data = torch.gt(params, torch.ones_like(params)*0.5).int()	
+					elif glob_args.round == 'prob':
+						params.data = torch.bernoulli(params)	
+					elif glob_args.round == 'pb':
+						scores = params.data
+						# initialize a dummy tensor
+						scores2 = torch.ones_like(scores) * -1
+						sc2 = scores2.flatten()
+				
+						# check indices I that has score value of neither 0 nor 1 
+						sc = scores.flatten()
+						flag_sc = torch.gt(sc, torch.zeros_like(sc)) * torch.lt(sc, torch.ones_like(sc)).int()
+						# for i \in [n]/I, copy params values to dummy tensor	
+						sc2[flag_sc==0] = sc[flag_sc==0]
+				
+						# for i in I:
+							# computes loss_1 & loss_0
+							# depending on the difference, fill in a dummy tensor
+						for idx in range(len(flag_sc)):
+							if flag_sc[idx] == 1:
+								
+								temp = torch.clone(params.data.flatten()[idx])
+								#print(params.data[0][0][0][0])
+								params.data.flatten()[idx] = 1
+								#print(params.data[0][0][0][0])
+								torch.manual_seed(idx)
+								loss1 = compute_loss(cp_model, device, train_loader, criterion)
+
+								params.data.flatten()[idx] = 0
+								#print(params.data[0][0][0][0])
+								torch.manual_seed(idx)
+								loss0 = compute_loss(cp_model, device, train_loader, criterion)
+
+								print(loss1, loss0)
+
+								if loss1 > loss0:	sc2[idx] = 0
+								else:	sc2[idx] = 1
+
+								params.data.flatten()[idx] = temp
+								#print(params.data[0][0][0][0])
+								print(sum(scores2.flatten()))
+
+								#pdb.set_trace()
+						
+						
+						#pdb.set_trace()
+						print(scores2.flatten())
+
+						params.data = scores2	
+
+						#params.data = round_down(cp_model, params)	
+						#exit()
+					else:
+						print("INVALID ROUNDING")
+						print("EXITING")
+						exit()
+
+			acc = test(cp_model, device, criterion, test_loader)		
+			acc_list = np.append(acc_list, np.array([acc]))
+
+		print('mean: {}, std: {}'.format(np.mean(acc_list), np.std(acc_list)))
+
+		print('Test ended')
+		exit()
+
+
 	for epoch in range(1, glob_args.epochs + 1):
 		train(model, device, train_loader, optimizer, criterion, epoch)
 		test_acc = test(model, device, criterion, test_loader)
@@ -336,7 +486,7 @@ def main():
 		epoch_list.append(epoch)
 		test_acc_list.append(test_acc)
 		if glob_args.algo == 'hc':
-			model_sparsity = 0
+			model_sparsity = get_model_sparsity_hc(model)
 		else:
 			model_sparsity = get_model_sparsity(model)
 		model_sparsity_list.append(model_sparsity)
