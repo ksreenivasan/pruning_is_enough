@@ -1,4 +1,4 @@
-from args import args
+from args import args as parser_args
 import math
 
 import torch
@@ -27,11 +27,11 @@ class Builder(object):
                 kernel_size=3,
                 stride=stride,
                 padding=1,
-                bias=False,
+                bias=parser_args.bias,
             )
         elif kernel_size == 1:
             conv = conv_layer(
-                in_planes, out_planes, kernel_size=1, stride=stride, bias=False
+                in_planes, out_planes, kernel_size=1, stride=stride, bias=parser_args.bias
             )
         elif kernel_size == 5:
             conv = conv_layer(
@@ -40,7 +40,7 @@ class Builder(object):
                 kernel_size=5,
                 stride=stride,
                 padding=2,
-                bias=False,
+                bias=parser_args.bias,
             )
         elif kernel_size == 7:
             conv = conv_layer(
@@ -49,7 +49,7 @@ class Builder(object):
                 kernel_size=7,
                 stride=stride,
                 padding=3,
-                bias=False,
+                bias=parser_args.bias,
             )
         else:
             return None

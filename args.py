@@ -217,13 +217,13 @@ def parse_arguments():
     parser.add_argument(
         "--bias",
         action="store_true",
-        default=None,
+        default=True,
         help="Boolean flag to indicate the inclusion of bias terms in the neural network (default: None)"
     )
     parser.add_argument(
         "--freeze-weights",
         action="store_true",
-        default=False,
+        default=True,
         help="Boolean flag to indicate whether weights should be frozen. Used when sparsifying (default: False)"
     )
 
