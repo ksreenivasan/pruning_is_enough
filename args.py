@@ -9,6 +9,11 @@ def parse_arguments():
 
     # Config/Hyperparameters
     parser.add_argument(
+        "--data",
+        default="data/datasets/",
+        help="path to dataset base directory"
+    )
+    parser.add_argument(
         "--name",
         default=None,
         type=str,
@@ -16,7 +21,7 @@ def parse_arguments():
     )
     parser.add_argument(
         "--config",
-        default=None,
+        default='configs/hypercube/conv4/conv4_kn_unsigned.yml',
         help="Config file to use"
     )
     parser.add_argument(
