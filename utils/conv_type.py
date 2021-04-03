@@ -89,7 +89,8 @@ class SubnetConv(nn.Conv2d):
             nn.init.uniform_(self.bias_scores, a=0.0, b=1.0)
         else:
             nn.init.kaiming_uniform_(self.scores, a=math.sqrt(5))
-            nn.init.kaiming_uniform_(self.bias_scores, a=math.sqrt(5))
+            # can't do kaiming here. picking U[-1, 1] for no real reason
+            nn.init.uniform_(self.bias_scores, a=-1.0, b=1.0)
 
         # just in case
         if parser_args.freeze_weights:

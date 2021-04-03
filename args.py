@@ -213,9 +213,9 @@ def parse_arguments():
 #        help="The ratio of weights to remove in each fully connected layer. A sparsity of 0 means no weights are pruned, and a sparsity of 1 means all weights are pruned (default: 0.5)"
 #    )
     parser.add_argument(
-        "--no-bias",
-        action="store_false",
-        default=True,
+        "--bias",
+        action="store_true",
+        default=False,
         help="Boolean flag to indicate activations without bias"
     )
     parser.add_argument(

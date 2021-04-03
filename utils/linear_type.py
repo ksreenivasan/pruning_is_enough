@@ -88,7 +88,8 @@ class SubnetLinear(nn.Linear):
             nn.init.uniform_(self.bias_scores, a=0.0, b=1.0)
         else:
             nn.init.kaiming_uniform_(self.scores, a=math.sqrt(5))
-            nn.init.kaiming_uniform_(self.bias_scores, a=math.sqrt(5))
+            # can't do kaiming here. picking U[-1, 1] for no real reason.
+            nn.init.uniform_(self.bias_scores, a=-1.0, b=1.0)
 
         # NOTE: initialize the weights like this.
         nn.init.kaiming_normal_(self.weight, mode="fan_in", nonlinearity="relu")
