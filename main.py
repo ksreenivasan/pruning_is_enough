@@ -1,3 +1,4 @@
+from args import args as parser_args
 import pdb
 import numpy as np
 import os
@@ -24,8 +25,6 @@ from utils.net_utils import (
 )
 from utils.schedulers import get_policy
 
-
-from args import args as parser_args
 import importlib
 
 import data

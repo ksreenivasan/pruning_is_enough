@@ -30,4 +30,4 @@ python main.py --config configs/hypercube/conv4/conv4_kn_unsigned.yml \
               --multigpu 1,2 \
               --name conv4-kn-unsigned \
               --prune-rate 0.5 \
-              --bias False\
+              --no-bias\

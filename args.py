@@ -213,10 +213,10 @@ def parse_arguments():
 #        help="The ratio of weights to remove in each fully connected layer. A sparsity of 0 means no weights are pruned, and a sparsity of 1 means all weights are pruned (default: 0.5)"
 #    )
     parser.add_argument(
-        "--bias",
-        action="store_true",
+        "--no-bias",
+        action="store_false",
         default=True,
-        help="Boolean flag to indicate the inclusion of bias terms in the neural network (default: None)"
+        help="Boolean flag to indicate activations without bias"
     )
     parser.add_argument(
         "--freeze-weights",
@@ -255,7 +255,7 @@ def parse_arguments():
         "--scale-fan",
         action="store_true",
         default=False,
-        Help="scale fan"
+        help="scale fan"
     )
     parser.add_argument(
         "--first-layer-dense",
@@ -411,12 +411,6 @@ def parse_arguments():
         "--random-subnet",
         action="store_true",
         help="Whether or not to use a random subnet when fine tuning for lottery experiments",
-    )
-    parser.add_argument(
-        "--shift",
-        type=float,
-        default=0.0,
-        help="shift portion"
     )
     parser.add_argument(
         "-e",
