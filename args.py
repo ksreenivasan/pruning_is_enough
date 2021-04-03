@@ -1,5 +1,4 @@
 import argparse
-import models.greedy as models
 import sys
 import yaml
 
@@ -196,7 +195,8 @@ def parse_arguments():
         "--arch",
         type=str,
         default="TwoLayerFC",
-        help="Model architecture: " + " | ".join(models.__dict__["__all__"]) + " | (default: TwoLayerFC)"
+        # KS: gotta find a better way to do this. causing circular import issues
+        # help="Model architecture: " + " | ".join(models.__dict__["__all__"]) + " | (default: TwoLayerFC)"
     )
     parser.add_argument(
         "--hidden-size",
