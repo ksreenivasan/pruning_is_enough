@@ -49,6 +49,7 @@ def train(train_loader, model, criterion, optimizer, epoch, args, writer):
         losses.update(loss.item(), images.size(0))
         top1.update(acc1.item(), images.size(0))
         top5.update(acc5.item(), images.size(0))
+        top10.update(acc10.item(), images.size(0))
 
         # compute gradient and do SGD step
         optimizer.zero_grad()
@@ -100,7 +101,7 @@ def validate(val_loader, model, criterion, args, writer, epoch):
             losses.update(loss.item(), images.size(0))
             top1.update(acc1.item(), images.size(0))
             top5.update(acc5.item(), images.size(0))
-            top10.update(acc5.item(), images.size(0))
+            top10.update(acc10.item(), images.size(0))
 
             # measure elapsed time
             batch_time.update(time.time() - end)
