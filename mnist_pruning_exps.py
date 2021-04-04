@@ -453,7 +453,7 @@ def main():
                          help='pruning algo to use |ep|pt_hack|pt_reg|hc|')
     parser.add_argument('--optimizer', type=str, default='sgd',
                          help='optimizer option to use |sgd|adam|')
-    parser.add_argument('--evaluate-only', type='store_true', default=False,
+    parser.add_argument('--evaluate-only', action='store_true', default=False,
                         help='just use rounding techniques to evaluate a saved model')
     parser.add_argument('--round', type=str, default='naive',
                          help='rounding technique to use |naive|prob|pb|') # naive: threshold(0.5), prob: probabilistic rounding, pb: pseudo-boolean paper's choice (RoundDown)
@@ -528,16 +528,15 @@ def main():
                     model_sparsity = get_model_sparsity_hc(model)
                 else:
                     model_sparsity = get_model_sparsity(model)
+
+                if epoch%10 == 1:
+                    plot_histogram_scores(model, epoch)
             else:
-                model_sparsity_list.append(sum([p.numel() for p in model.parameters()]))
+                model_sparsity = (sum([p.numel() for p in model.parameters()]))
 
             model_sparsity_list.append(model_sparsity)
             print("Test Acc: {:.2f}%\n".format(test_acc))
-            if epoch%10 == 1:
-                plot_histogram_scores(model, epoch)
-            # print("Model Sparsity: {:.2f}%\n\n".format(model_sparsity))
             print("---------------------------------------------------------")
-
             results_df = pd.DataFrame({'epoch': epoch_list, 'test_acc': test_acc_list, 'model_sparsity': model_sparsity_list})
             results_df.to_csv(glob_args.results_filename, index=False)
 
@@ -552,7 +551,7 @@ def main():
                 model_filename = "mnist_trained_model_{}.pt".format(glob_args.epochs)
             torch.save(model.state_dict(), model_filename)
 
-    if globa_args.algo in ('hc'):
+    if glob_args.algo in ('hc'):
         # irrespective of evaluate_only, add an evaluate_only step
         model.load_state_dict(torch.load('mnist_pruned_model_{}_{}.pt'.format(glob_args.algo, glob_args.epochs)))
         round_acc_list = round_and_evaluate(model)
