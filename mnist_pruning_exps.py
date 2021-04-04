@@ -555,7 +555,7 @@ def main():
     if globa_args.algo in ('hc'):
         # irrespective of evaluate_only, add an evaluate_only step
         model.load_state_dict(torch.load('mnist_pruned_model_{}_{}.pt'.format(glob_args.algo, glob_args.epochs)))
-        round_acc_list = round_and_evaluate(model):
+        round_acc_list = round_and_evaluate(model)
 
         print("Test Acc: {:.2f}%\n".format(test_acc))
 
