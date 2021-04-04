@@ -455,6 +455,15 @@ def parse_arguments():
         type=int,
         help="Number of warmup iterations"
     )
+    parser.add_argument(
+        "-p",
+        "--print-freq",
+        default=10,
+        type=int,
+        metavar="N",
+        help="print frequency (default: 10)",
+    )
+
     args = parser.parse_args()
     get_config(args)
 
