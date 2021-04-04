@@ -528,18 +528,22 @@ def main():
                     model_sparsity = get_model_sparsity_hc(model)
                 else:
                     model_sparsity = get_model_sparsity(model)
-                model_sparsity_list.append(model_sparsity)
-                print("Test Acc: {:.2f}%\n".format(test_acc))
-                if epoch%10 == 1:
-                    plot_histogram_scores(model, epoch)
-                # print("Model Sparsity: {:.2f}%\n\n".format(model_sparsity))
-                print("---------------------------------------------------------")
+            else:
+                model_sparsity_list.append(sum([p.numel() for p in model.parameters()]))
+
+            model_sparsity_list.append(model_sparsity)
+            print("Test Acc: {:.2f}%\n".format(test_acc))
+            if epoch%10 == 1:
+                plot_histogram_scores(model, epoch)
+            # print("Model Sparsity: {:.2f}%\n\n".format(model_sparsity))
+            print("---------------------------------------------------------")
 
             results_df = pd.DataFrame({'epoch': epoch_list, 'test_acc': test_acc_list, 'model_sparsity': model_sparsity_list})
             results_df.to_csv(glob_args.results_filename, index=False)
-            if glob_args.mode != "training":
-                # gotta plot the final histogram as well
-                plot_histogram_scores(model, epoch)
+
+        if glob_args.mode != "training":
+            # gotta plot the final histogram as well
+            plot_histogram_scores(model, epoch)
 
         if glob_args.save_model:
             if glob_args.mode != 'training':
