@@ -193,6 +193,32 @@ class Net(nn.Module):
         return output
 
 
+class NetNormal(nn.Module):
+    # network for training
+    def __init__(self):
+        super(NetNormal, self).__init__()
+        self.conv1 = nn.Conv2d(1, 32, 3, 1, bias=True)
+        self.conv2 = nn.Conv2d(32, 64, 3, 1, bias=True)
+        self.dropout1 = nn.Dropout2d(0.25)
+        self.dropout2 = nn.Dropout2d(0.5)
+        self.fc1 = nn.Linear(9216, 128, bias=True)
+        self.fc2 = nn.Linear(128, 10, bias=True)
+
+    def forward(self, x):
+        x = self.conv1(x)
+        x = F.relu(x)
+        x = self.conv2(x)
+        x = F.max_pool2d(x, 2)
+        x = self.dropout1(x)
+        x = torch.flatten(x, 1)
+        x = self.fc1(x)
+        x = F.relu(x)
+        x = self.dropout2(x)
+        x = self.fc2(x)
+        output = F.log_softmax(x, dim=1)
+        return output
+
+
 def train(model, device, train_loader, optimizer, criterion, epoch):
     model.train()
     for batch_idx, (data, target) in enumerate(train_loader):
@@ -433,6 +459,8 @@ def main():
                          help='rounding technique to use |naive|prob|pb|') # naive: threshold(0.5), prob: probabilistic rounding, pb: pseudo-boolean paper's choice (RoundDown)
     parser.add_argument('--num-test', type=int, default=1,
                         help='number of different models testing in prob rounding')
+    parser.add_argument('--mode', type=str, default="pruning",
+                        help='can be used for either pruning | training.')
 
     epoch_list = []
     test_acc_list = []
@@ -460,7 +488,12 @@ def main():
                        ])),
         batch_size=glob_args.test_batch_size, shuffle=True, **kwargs)
 
-    model = Net().to(device)
+    if glob_args.mode == "pruning":
+        model = Net().to(device)
+    elif glob_args.mode == "training":
+        model = NetNormal().to(device)
+    else:
+        raise NotImplementedError("Non-supported mode ...")
     # NOTE: only pass the parameters where p.requires_grad == True to the optimizer! Important!
     if glob_args.optimizer == 'sgd':
         optimizer = optim.SGD(
@@ -473,7 +506,7 @@ def main():
     elif glob_args.optimizer == 'adam':
         optimizer = torch.optim.Adam([p for p in model.parameters() if p.requires_grad],
                      lr=glob_args.lr,
-                     weight_decay=0,
+                     weight_decay=glob_args.wd,
                      amsgrad=False)
     else:
         print("INVALID OPTIMIZER")
@@ -490,29 +523,37 @@ def main():
             scheduler.step()
             epoch_list.append(epoch)
             test_acc_list.append(test_acc)
-            if glob_args.algo == 'hc':
-                model_sparsity = get_model_sparsity_hc(model)
-            else:
-                model_sparsity = get_model_sparsity(model)
-            model_sparsity_list.append(model_sparsity)
-            print("Test Acc: {:.2f}%\n".format(test_acc))
-            if epoch%10 == 1:
-                plot_histogram_scores(model, epoch)
-            # print("Model Sparsity: {:.2f}%\n\n".format(model_sparsity))
-            print("---------------------------------------------------------")
+            if glob_args.mode != "training":
+                if glob_args.algo == 'hc':
+                    model_sparsity = get_model_sparsity_hc(model)
+                else:
+                    model_sparsity = get_model_sparsity(model)
+                model_sparsity_list.append(model_sparsity)
+                print("Test Acc: {:.2f}%\n".format(test_acc))
+                if epoch%10 == 1:
+                    plot_histogram_scores(model, epoch)
+                # print("Model Sparsity: {:.2f}%\n\n".format(model_sparsity))
+                print("---------------------------------------------------------")
 
-        results_df = pd.DataFrame({'epoch': epoch_list, 'test_acc': test_acc_list, 'model_sparsity': model_sparsity_list})
-        results_df.to_csv(glob_args.results_filename, index=False)
-        # gotta plot the final histogram as well
-        plot_histogram_scores(model, epoch)
+            results_df = pd.DataFrame({'epoch': epoch_list, 'test_acc': test_acc_list, 'model_sparsity': model_sparsity_list})
+            results_df.to_csv(glob_args.results_filename, index=False)
+            if glob_args.mode != "training":
+                # gotta plot the final histogram as well
+                plot_histogram_scores(model, epoch)
 
         if glob_args.save_model:
-            torch.save(model.state_dict(), "mnist_pruned_model_{}_{}.pt".format(glob_args.algo, glob_args.epochs))
+            if glob_args.mode != 'training':
+                model_filename = "mnist_pruned_model_{}_{}.pt".format(glob_args.algo, glob_args.epochs)
+            else:
+                model_filename = "mnist_trained_model_{}.pt".format(glob_args.epochs)
+            torch.save(model.state_dict(), model_filename)
 
     if globa_args.algo in ('hc'):
         # irrespective of evaluate_only, add an evaluate_only step
         model.load_state_dict(torch.load('mnist_pruned_model_{}_{}.pt'.format(glob_args.algo, glob_args.epochs)))
         round_acc_list = round_and_evaluate(model):
+
+        print("Test Acc: {:.2f}%\n".format(test_acc))
 
     print("Experiment donezo")
 
