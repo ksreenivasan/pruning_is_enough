@@ -533,6 +533,8 @@ def main():
             else:
                 model_sparsity = get_model_sparsity(model)
             model_sparsity_list.append(model_sparsity)
+        else:
+            model_sparsity_list.append(sum([p.numel() for p in model.parameters()]))
         print("Test Acc: {:.2f}%\n".format(test_acc))
 
         if epoch%10 == 1:
