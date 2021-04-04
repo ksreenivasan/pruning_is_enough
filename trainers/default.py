@@ -71,8 +71,9 @@ def validate(val_loader, model, criterion, args, writer, epoch):
     losses = AverageMeter("Loss", ":.3f", write_val=False)
     top1 = AverageMeter("Acc@1", ":6.2f", write_val=False)
     top5 = AverageMeter("Acc@5", ":6.2f", write_val=False)
+    top10 = AverageMeter("Acc@10", ":6.2f", write_val=False)
     progress = ProgressMeter(
-        len(val_loader), [batch_time, losses, top1, top5], prefix="Test: "
+        len(val_loader), [batch_time, losses, top1, top5, top10], prefix="Test: "
     )
 
     # switch to evaluate mode
@@ -94,10 +95,11 @@ def validate(val_loader, model, criterion, args, writer, epoch):
             loss = criterion(output, target)
 
             # measure accuracy and record loss
-            acc1, acc5 = accuracy(output, target, topk=(1, 5))
+            acc1, acc5, acc10 = accuracy(output, target, topk=(1, 5, 10))
             losses.update(loss.item(), images.size(0))
             top1.update(acc1.item(), images.size(0))
             top5.update(acc5.item(), images.size(0))
+            top10.update(acc5.item(), images.size(0))
 
             # measure elapsed time
             batch_time.update(time.time() - end)
@@ -111,7 +113,7 @@ def validate(val_loader, model, criterion, args, writer, epoch):
         if writer is not None:
             progress.write_to_tensorboard(writer, prefix="test", global_step=epoch)
 
-    return top1.avg, top5.avg
+    return top1.avg, top5.avg, top10.avg
 
 def modifier(args, epoch, model):
     return

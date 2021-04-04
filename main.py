@@ -72,18 +72,20 @@ def main_worker():
         # optionally resume from a checkpoint
         best_acc1 = 0.0
         best_acc5 = 0.0
+        best_acc10 = 0.0
         best_train_acc1 = 0.0
         best_train_acc5 = 0.0
+        best_train_acc10 = 0.0
 
         if parser_args.resume:
             best_acc1 = resume(parser_args, model, optimizer)
 
         if parser_args.evaluate:
-            acc1, acc5 = validate(
+            acc1, acc5, acc10 = validate(
                 data.val_loader, model, criterion, parser_args,
                 writer=None, epoch=parser_args.start_epoch)
 
-            print('acc1: {}, acc5: {}'.format(acc1, acc5))
+            print('acc1: {}, acc5: {}, acc10: {}'.format(acc1, acc5. acc10))
             # store values
             err[i] = 100 - acc1
             print('err1: ', 100-acc1)
@@ -104,12 +106,12 @@ def main_worker():
                         print("EXITING")
                         exit()
 
-            acc1, acc5 = validate(
+            acc1, acc5, acc10 = validate(
                 data.val_loader, model, criterion,
                 parser_args, writer=None, epoch=parser_args.start_epoch
             )
 
-            print('acc1: {}, acc5: {}'.format(acc1, acc5))
+            print('acc1: {}, acc5: {}, acc10: {}'.format(acc1, acc5, acc10))
             # store values
             err[i] = 100 - acc1
             print('err1: ', 100-acc1)
@@ -151,8 +153,10 @@ def main_worker():
             "state_dict": model.state_dict(),
             "best_acc1": best_acc1,
             "best_acc5": best_acc5,
+            "best_acc10": best_acc10,
             "best_train_acc1": best_train_acc1,
             "best_train_acc5": best_train_acc5,
+            "best_train_acc10": best_train_acc10,
             "optimizer": optimizer.state_dict(),
             "curr_acc1": acc1 if acc1 else "Not evaluated",
         },
@@ -170,7 +174,7 @@ def main_worker():
 
         # train for one epoch
         start_train = time.time()
-        train_acc1, train_acc5 = train(
+        train_acc1, train_acc5, acc10 = train(
             data.train_loader, model, criterion, optimizer, epoch, parser_args, writer=writer
         )
         train_time.update((time.time() - start_train) / 60)
@@ -184,15 +188,17 @@ def main_worker():
 
         # evaluate on validation set
         start_validation = time.time()
-        acc1, acc5 = validate(data.val_loader, model, criterion, parser_args, writer, epoch)
+        acc1, acc5, acc10 = validate(data.val_loader, model, criterion, parser_args, writer, epoch)
         validation_time.update((time.time() - start_validation) / 60)
 
         # remember best acc@1 and save checkpoint
         is_best = acc1 > best_acc1
         best_acc1 = max(acc1, best_acc1)
         best_acc5 = max(acc5, best_acc5)
+        best_acc10 = max(acc10, best_acc10)
         best_train_acc1 = max(train_acc1, best_train_acc1)
         best_train_acc5 = max(train_acc5, best_train_acc5)
+        best_train_acc10 = max(train_acc10, best_train_acc10)
 
         save = ((epoch % parser_args.save_every) == 0) and parser_args.save_every > 0
         if is_best or save or epoch == parser_args.epochs - 1:
@@ -206,11 +212,14 @@ def main_worker():
                     "state_dict": model.state_dict(),
                     "best_acc1": best_acc1,
                     "best_acc5": best_acc5,
+                    "best_acc10": best_acc10,
                     "best_train_acc1": best_train_acc1,
                     "best_train_acc5": best_train_acc5,
+                    "best_train_acc10": best_train_acc10,
                     "optimizer": optimizer.state_dict(),
                     "curr_acc1": acc1,
                     "curr_acc5": acc5,
+                    "curr_acc10": acc10,
                 },
                 is_best,
                 filename=ckpt_base_dir / f"epoch_{epoch}.state",
@@ -251,11 +260,14 @@ def main_worker():
     write_result_to_csv(
         best_acc1=best_acc1,
         best_acc5=best_acc5,
+        best_acc10=best_acc10,
         best_train_acc1=best_train_acc1,
         best_train_acc5=best_train_acc5,
+        best_train_acc10=best_train_acc10,
         prune_rate=parser_args.prune_rate,
         curr_acc1=acc1,
         curr_acc5=acc5,
+        curr_acc10=acc10,
         base_config=parser_args.config,
         name=parser_args.name,
     )
@@ -460,10 +472,13 @@ def write_result_to_csv(**kwargs):
             "Prune Rate, "
             "Current Val Top 1, "
             "Current Val Top 5, "
+            "Current Val Top 10, "
             "Best Val Top 1, "
             "Best Val Top 5, "
+            "Best Val Top 10, "
             "Best Train Top 1, "
-            "Best Train Top 5\n"
+            "Best Train Top 5"
+            "Best Train Top 10\n"
         )
 
     now = time.strftime("%m-%d-%y_%H:%M:%S")
@@ -477,10 +492,13 @@ def write_result_to_csv(**kwargs):
                 "{prune_rate}, "
                 "{curr_acc1:.02f}, "
                 "{curr_acc5:.02f}, "
+                "{curr_acc10:.02f}, "
                 "{best_acc1:.02f}, "
                 "{best_acc5:.02f}, "
+                "{best_acc10:.02f}, "
                 "{best_train_acc1:.02f}, "
                 "{best_train_acc5:.02f}\n"
+                "{best_train_acc10:.02f}\n"
             ).format(now=now, **kwargs)
         )
 

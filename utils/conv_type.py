@@ -82,7 +82,11 @@ class SubnetConv(nn.Conv2d):
         super().__init__(*args, **kwargs)
 
         self.scores = nn.Parameter(torch.Tensor(self.weight.size()))
-        self.bias_scores = nn.Parameter(torch.Tensor(self.bias.size()))
+        if parser_args.bias:
+            self.bias_scores = nn.Parameter(torch.Tensor(self.bias.size()))
+        else:
+            # dummy variable just so other things don't break
+            self.bias_scores = nn.Parameter(torch.Tensor(1))
 
         if parser_args.algo in ('hc'):
             nn.init.uniform_(self.scores, a=0.0, b=1.0)
@@ -96,7 +100,8 @@ class SubnetConv(nn.Conv2d):
         if parser_args.freeze_weights:
             # NOTE: turn the gradient on the weights off
             self.weight.requires_grad = False
-            self.bias.requires_grad = False
+            if parser_args.bias:
+                self.bias.requires_grad = False
 
     def set_prune_rate(self, prune_rate):
         self.prune_rate = prune_rate
@@ -116,7 +121,10 @@ class SubnetConv(nn.Conv2d):
             subnet, bias_subnet = GetSubnet.apply(self.scores.abs(), self.bias_scores.abs(), self.prune_rate)
 
         w = self.weight * subnet
-        b = self.bias * bias_subnet
+        if parser_args.bias:
+            b = self.bias * bias_subnet
+        else:
+            b = self.bias
         x = F.conv2d(
             x, w, b, self.stride, self.padding, self.dilation, self.groups
         )

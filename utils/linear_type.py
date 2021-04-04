@@ -82,7 +82,12 @@ class SubnetLinear(nn.Linear):
 
         # initialize the scores
         self.scores = nn.Parameter(torch.Tensor(self.weight.size()))
-        self.bias_scores = nn.Parameter(torch.Tensor(self.bias.size()))
+        if parser_args.bias:
+            self.bias_scores = nn.Parameter(torch.Tensor(self.bias.size()))
+        else:
+            # dummy variable just so other things don't break
+            self.bias_scores = nn.Parameter(torch.Tensor(1))
+
         if parser_args.algo in ('hc'):
             nn.init.uniform_(self.scores, a=0.0, b=1.0)
             nn.init.uniform_(self.bias_scores, a=0.0, b=1.0)
@@ -96,7 +101,8 @@ class SubnetLinear(nn.Linear):
 
         # NOTE: turn the gradient on the weights off
         self.weight.requires_grad = False
-        self.bias.requires_grad = False
+        if parser_args.bias:
+            self.bias.requires_grad = False
 
     def forward(self, x):
         if parser_args.algo in ('hc'):
@@ -109,5 +115,8 @@ class SubnetLinear(nn.Linear):
             subnet, bias_subnet = GetSubnet.apply(self.scores.abs(), self.bias_scores.abs(), sparsity)
 
         w = self.weight * subnet
-        b = self.bias * bias_subnet
+        if parser_args.bias:
+            b = self.bias * bias_subnet
+        else:
+            b = self.bias
         return F.linear(x, w, b)
