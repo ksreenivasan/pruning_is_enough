@@ -1,3 +1,6 @@
+# Edge-popup version
+algo: 'ep'
+
 # Architecture
 arch: Conv4
 
@@ -27,6 +30,4 @@ scale_fan: True
 
 # ===== Hardware setup ===== #
 workers: 4
-
-
 
