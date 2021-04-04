@@ -1,5 +1,4 @@
 import argparse
-import models.greedy as models
 import sys
 import yaml
 
@@ -7,8 +6,18 @@ from configs import parser as _parser
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description="Pruning random networks")
-    
+
     # Config/Hyperparameters
+    parser.add_argument(
+        "--data",
+        default="data/datasets/",
+        help="path to dataset base directory"
+    )
+    parser.add_argument(
+        "--log-dir",
+        default=None,
+        help="Where to save the runs. If None use ./runs"   
+        )
     parser.add_argument(
         "--name",
         default=None,
@@ -17,7 +26,7 @@ def parse_arguments():
     )
     parser.add_argument(
         "--config",
-        default=None,
+        default='configs/hypercube/conv4/conv4_kn_unsigned.yml',
         help="Config file to use"
     )
     parser.add_argument(
@@ -191,14 +200,13 @@ def parse_arguments():
     ) 
     
 
-
-
     # Architecture and training
     parser.add_argument(
         "--arch",
         type=str,
         default="TwoLayerFC",
-        help="Model architecture: " + " | ".join(models.__dict__["__all__"]) + " | (default: TwoLayerFC)"
+        # KS: gotta find a better way to do this. causing circular import issues
+        # help="Model architecture: " + " | ".join(models.__dict__["__all__"]) + " | (default: TwoLayerFC)"
     )
     parser.add_argument(
         "--hidden-size",
@@ -217,13 +225,13 @@ def parse_arguments():
     parser.add_argument(
         "--bias",
         action="store_true",
-        default=None,
-        help="Boolean flag to indicate the inclusion of bias terms in the neural network (default: None)"
+        default=False,
+        help="Boolean flag to indicate whether to use bias"
     )
     parser.add_argument(
         "--freeze-weights",
         action="store_true",
-        default=False,
+        default=True,
         help="Boolean flag to indicate whether weights should be frozen. Used when sparsifying (default: False)"
     )
 
@@ -231,25 +239,43 @@ def parse_arguments():
         "--conv-type", type=str, default=None, help="What kind of sparsity to use"
     )
 
-    parser.add_argument("--mode", default="fan_in", help="Weight initialization mode")
+    parser.add_argument("--mode",
+        default="fan_in",
+        help="Weight initialization mode")
     parser.add_argument(
-        "--nonlinearity", default="relu", help="Nonlinearity used by initialization"
+        "--nonlinearity",
+        default="relu",
+        help="Nonlinearity used by initialization"
     )
-    parser.add_argument("--bn-type", default=None, help="BatchNorm type")
+    parser.add_argument("--bn-type",
+        default=None,
+        help="BatchNorm type")
     parser.add_argument(
-        "--init", default="kaiming_normal", help="Weight initialization modifications"
+        "--init",
+        default="kaiming_normal",
+        help="Weight initialization modifications"
     )
     parser.add_argument(
-        "--no-bn-decay", action="store_true", default=False, help="No batchnorm decay"
+        "--no-bn-decay",
+        action="store_true",
+        default=False,
+        help="No batchnorm decay"
     )
     parser.add_argument(
-        "--scale-fan", action="store_true", default=False, help="scale fan"
+        "--scale-fan",
+        action="store_true",
+        default=False,
+        help="scale fan"
     )
     parser.add_argument(
-        "--first-layer-dense", action="store_true", help="First layer dense or sparse"
+        "--first-layer-dense",
+        action="store_true",
+        help="First layer dense or sparse"
     )
     parser.add_argument(
-        "--last-layer-dense", action="store_true", help="Last layer dense or sparse"
+        "--last-layer-dense",
+        action="store_true",
+        help="Last layer dense or sparse"
     )
     parser.add_argument(
         "--label-smoothing",
@@ -258,7 +284,10 @@ def parse_arguments():
         default=None,
     )
     parser.add_argument(
-        "--first-layer-type", type=str, default=None, help="Conv type of first layer"
+        "--first-layer-type",
+        type=str,
+        default=None,
+        help="Conv type of first layer"
     )
     parser.add_argument(
         "--trainer", type=str, default="default", help="cs, ss, or standard training"
@@ -277,8 +306,6 @@ def parse_arguments():
         type=float,
     )
 
-
-
     parser.add_argument(
         "--dataset",
         type=str,
@@ -292,7 +319,7 @@ def parse_arguments():
         help="which loss to use for pruning: cross-entropy-loss or zero-one-loss"
     )
     
-    # Save/Load
+#    # Save/Load
 #    parser.add_argument(
 #        "--save-dir",
 #        type=str,
@@ -359,6 +386,83 @@ def parse_arguments():
         metavar="W",
         help="Number of workers"
     )
+    parser.add_argument(    
+        "--shift",
+        type=float,
+        default=0.0,
+        help="shift portion"
+    )   
+    parser.add_argument(    
+        "--num-trial",
+        type=int,
+        default=1,
+        help="number of trials for testing sharpness"
+    )
+    parser.add_argument(    
+        "--multigpu",   
+        default=None,   
+        type=lambda x: [int(a) for a in x.split(",")],  
+        help="Which GPUs to use for multigpu training", 
+    )
+    parser.add_argument(
+        "--pretrained",
+        dest="pretrained",
+        default=None,
+        type=str,
+        help="use pre-trained model",
+    )
+    parser.add_argument(
+        "--save_every",
+        default=-1,
+        type=int,
+        help="Save every ___ epochs"
+    )
+    parser.add_argument(
+        "--random-subnet",
+        action="store_true",
+        help="Whether or not to use a random subnet when fine tuning for lottery experiments",
+    )
+    parser.add_argument(
+        "-e",
+        "--evaluate",
+        dest="evaluate",
+        action="store_true",
+        help="evaluate model on validation set",
+    )
+    parser.add_argument(
+        "--resume",
+        default=None,
+        type=str,
+        metavar="PATH",
+        help="path to latest checkpoint (default: none)",
+        )
+    parser.add_argument(
+        "--width-mult",
+        default=1.0,
+        help="How much to vary the width of the network.",
+        type=float,
+    )
+    parser.add_argument(
+        "--start-epoch",
+        default=None,
+        type=int,
+        metavar="N",
+        help="manual epoch number (useful on restarts)",
+    )
+    parser.add_argument(
+        "--warmup_length",
+        default=0,
+        type=int,
+        help="Number of warmup iterations"
+    )
+    parser.add_argument(
+        "-p",
+        "--print-freq",
+        default=10,
+        type=int,
+        metavar="N",
+        help="print frequency (default: 10)",
+    )
 
     args = parser.parse_args()
     get_config(args)
@@ -388,3 +492,4 @@ def run_args():
 
 
 run_args()
+

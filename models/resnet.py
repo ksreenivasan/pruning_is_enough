@@ -1,7 +1,7 @@
 import torch.nn as nn
 
-from utils.builder import get_builder
 from args import args
+from utils.builder import get_builder
 
 # BasicBlock {{{
 class BasicBlock(nn.Module):

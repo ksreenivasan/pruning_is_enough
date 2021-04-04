@@ -76,11 +76,11 @@ class GetSubnet(autograd.Function):
         return g_1, g_2, None
 
 
-# Not learning weights, finding subnet
-class SubnetConv(nn.Conv2d):
+class SubnetLinear(nn.Linear):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
+        # initialize the scores
         self.scores = nn.Parameter(torch.Tensor(self.weight.size()))
         if parser_args.bias:
             self.bias_scores = nn.Parameter(torch.Tensor(self.bias.size()))
@@ -93,22 +93,16 @@ class SubnetConv(nn.Conv2d):
             nn.init.uniform_(self.bias_scores, a=0.0, b=1.0)
         else:
             nn.init.kaiming_uniform_(self.scores, a=math.sqrt(5))
-            # can't do kaiming here. picking U[-1, 1] for no real reason
+            # can't do kaiming here. picking U[-1, 1] for no real reason.
             nn.init.uniform_(self.bias_scores, a=-1.0, b=1.0)
 
-        # just in case
-        if parser_args.freeze_weights:
-            # NOTE: turn the gradient on the weights off
-            self.weight.requires_grad = False
-            if parser_args.bias:
-                self.bias.requires_grad = False
+        # NOTE: initialize the weights like this.
+        nn.init.kaiming_normal_(self.weight, mode="fan_in", nonlinearity="relu")
 
-    def set_prune_rate(self, prune_rate):
-        self.prune_rate = prune_rate
-
-    @property
-    def clamped_scores(self):
-        return self.scores.abs()
+        # NOTE: turn the gradient on the weights off
+        self.weight.requires_grad = False
+        if parser_args.bias:
+            self.bias.requires_grad = False
 
     def forward(self, x):
         if parser_args.algo in ('hc'):
@@ -118,117 +112,11 @@ class SubnetConv(nn.Conv2d):
             subnet = self.scores
             bias_subnet = self.bias_scores
         else:
-            subnet, bias_subnet = GetSubnet.apply(self.scores.abs(), self.bias_scores.abs(), self.prune_rate)
+            subnet, bias_subnet = GetSubnet.apply(self.scores.abs(), self.bias_scores.abs(), sparsity)
 
         w = self.weight * subnet
         if parser_args.bias:
             b = self.bias * bias_subnet
         else:
             b = self.bias
-        x = F.conv2d(
-            x, w, b, self.stride, self.padding, self.dilation, self.groups
-        )
-
-        return x
-
-
-"""
-Sample Based Sparsification
-"""
-
-
-class StraightThroughBinomialSample(autograd.Function):
-    @staticmethod
-    def forward(ctx, scores):
-        output = (torch.rand_like(scores) < scores).float()
-        return output
-
-    @staticmethod
-    def backward(ctx, grad_outputs):
-        return grad_outputs, None
-
-
-class BinomialSample(autograd.Function):
-    @staticmethod
-    def forward(ctx, scores):
-        output = (torch.rand_like(scores) < scores).float()
-        ctx.save_for_backward(output)
-
-        return output
-
-    @staticmethod
-    def backward(ctx, grad_outputs):
-        subnet, = ctx.saved_variables
-
-        grad_inputs = grad_outputs.clone()
-        grad_inputs[subnet == 0.0] = 0.0
-
-        return grad_inputs, None
-
-
-# Not learning weights, finding subnet
-class SampleSubnetConv(nn.Conv2d):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-        self.scores = nn.Parameter(torch.Tensor(self.weight.size()))
-        if parser_args.score_init_constant is not None:
-            self.scores.data = (
-                torch.ones_like(self.scores) * parser_args.score_init_constant
-            )
-        else:
-            nn.init.kaiming_uniform_(self.scores, a=math.sqrt(5))
-
-    @property
-    def clamped_scores(self):
-        return torch.sigmoid(self.scores)
-
-    def forward(self, x):
-        subnet = StraightThroughBinomialSample.apply(self.clamped_scores)
-        w = self.weight * subnet
-        x = F.conv2d(
-            x, w, self.bias, self.stride, self.padding, self.dilation, self.groups
-        )
-
-        return x
-
-
-"""
-Fixed subnets 
-"""
-
-
-class FixedSubnetConv(nn.Conv2d):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-        self.scores = nn.Parameter(torch.Tensor(self.weight.size()))
-        nn.init.kaiming_uniform_(self.scores, a=math.sqrt(5))
-
-    def set_prune_rate(self, prune_rate):
-        self.prune_rate = prune_rate
-        print("prune_rate_{}".format(self.prune_rate))
-
-    def set_subnet(self):
-        output = self.clamped_scores().clone()
-        _, idx = self.clamped_scores().flatten().abs().sort()
-        p = int(self.prune_rate * self.clamped_scores().numel())
-        flat_oup = output.flatten()
-        flat_oup[idx[:p]] = 0
-        flat_oup[idx[p:]] = 1
-        self.scores = torch.nn.Parameter(output)
-        self.scores.requires_grad = False
-
-    def clamped_scores(self):
-        return self.scores.abs()
-
-    def get_subnet(self):
-        return self.weight * self.scores
-
-    def forward(self, x):
-        w = self.get_subnet()
-        x = F.conv2d(
-            x, w, self.bias, self.stride, self.padding, self.dilation, self.groups
-        )
-        return x
-
+        return F.linear(x, w, b)

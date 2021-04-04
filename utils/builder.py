@@ -1,4 +1,4 @@
-from args import args
+from args import args as parser_args
 import math
 
 import torch
@@ -27,11 +27,11 @@ class Builder(object):
                 kernel_size=3,
                 stride=stride,
                 padding=1,
-                bias=False,
+                bias=parser_args.bias,
             )
         elif kernel_size == 1:
             conv = conv_layer(
-                in_planes, out_planes, kernel_size=1, stride=stride, bias=False
+                in_planes, out_planes, kernel_size=1, stride=stride, bias=parser_args.bias
             )
         elif kernel_size == 5:
             conv = conv_layer(
@@ -40,7 +40,7 @@ class Builder(object):
                 kernel_size=5,
                 stride=stride,
                 padding=2,
-                bias=False,
+                bias=parser_args.bias,
             )
         elif kernel_size == 7:
             conv = conv_layer(
@@ -49,7 +49,7 @@ class Builder(object):
                 kernel_size=7,
                 stride=stride,
                 padding=3,
-                bias=False,
+                bias=parser_args.bias,
             )
         else:
             return None
@@ -88,70 +88,70 @@ class Builder(object):
             raise ValueError(f"{args.nonlinearity} is not an initialization option!")
 
     def _init_conv(self, conv):
-        if args.init == "signed_constant":
+        if parser_args.init == "signed_constant":
 
-            fan = nn.init._calculate_correct_fan(conv.weight, args.mode)
-            if args.scale_fan:
-                fan = fan * (1 - args.prune_rate)
-            gain = nn.init.calculate_gain(args.nonlinearity)
+            fan = nn.init._calculate_correct_fan(conv.weight, parser_args.mode)
+            if parser_args.scale_fan:
+                fan = fan * (1 - parser_args.prune_rate)
+            gain = nn.init.calculate_gain(parser_args.nonlinearity)
             std = gain / math.sqrt(fan)
             conv.weight.data = conv.weight.data.sign() * std
 
-        elif args.init == "unsigned_constant":
+        elif parser_args.init == "unsigned_constant":
 
-            fan = nn.init._calculate_correct_fan(conv.weight, args.mode)
-            if args.scale_fan:
-                fan = fan * (1 - args.prune_rate)
+            fan = nn.init._calculate_correct_fan(conv.weight, parser_args.mode)
+            if parser_args.scale_fan:
+                fan = fan * (1 - parser_args.prune_rate)
 
-            gain = nn.init.calculate_gain(args.nonlinearity)
+            gain = nn.init.calculate_gain(parser_args.nonlinearity)
             std = gain / math.sqrt(fan)
             conv.weight.data = torch.ones_like(conv.weight.data) * std
 
-        elif args.init == "kaiming_normal":
+        elif parser_args.init == "kaiming_normal":
 
-            if args.scale_fan:
-                fan = nn.init._calculate_correct_fan(conv.weight, args.mode)
-                fan = fan * (1 - args.prune_rate)
-                gain = nn.init.calculate_gain(args.nonlinearity)
+            if parser_args.scale_fan:
+                fan = nn.init._calculate_correct_fan(conv.weight, parser_args.mode)
+                fan = fan * (1 - parser_args.prune_rate)
+                gain = nn.init.calculate_gain(parser_args.nonlinearity)
                 std = gain / math.sqrt(fan)
                 with torch.no_grad():
                     conv.weight.data.normal_(0, std)
             else:
                 nn.init.kaiming_normal_(
-                    conv.weight, mode=args.mode, nonlinearity=args.nonlinearity
+                    conv.weight, mode=parser_args.mode, nonlinearity=parser_args.nonlinearity
                 )
 
-        elif args.init == "kaiming_uniform":
+        elif parser_args.init == "kaiming_uniform":
             nn.init.kaiming_uniform_(
-                conv.weight, mode=args.mode, nonlinearity=args.nonlinearity
+                conv.weight, mode=parser_args.mode, nonlinearity=parser_args.nonlinearity
             )
-        elif args.init == "xavier_normal":
+        elif parser_args.init == "xavier_normal":
             nn.init.xavier_normal_(conv.weight)
-        elif args.init == "xavier_constant":
+        elif parser_args.init == "xavier_constant":
 
             fan_in, fan_out = nn.init._calculate_fan_in_and_fan_out(conv.weight)
             std = math.sqrt(2.0 / float(fan_in + fan_out))
             conv.weight.data = conv.weight.data.sign() * std
 
-        elif args.init == "standard":
+        elif parser_args.init == "standard":
 
             nn.init.kaiming_uniform_(conv.weight, a=math.sqrt(5))
 
         else:
-            raise ValueError(f"{args.init} is not an initialization option!")
+            raise ValueError(f"{parser_args.init} is not an initialization option!")
 
 
 def get_builder():
 
-    print("==> Conv Type: {}".format(args.conv_type))
-    print("==> BN Type: {}".format(args.bn_type))
+    print("==> Conv Type: {}".format(parser_args.conv_type))
+    print("==> BN Type: {}".format(parser_args.bn_type))
 
-    conv_layer = getattr(utils.conv_type, args.conv_type)
-    bn_layer = getattr(utils.bn_type, args.bn_type)
+    conv_layer = getattr(utils.conv_type, parser_args.conv_type)
+    bn_layer = getattr(utils.bn_type, parser_args.bn_type)
 
-    if args.first_layer_type is not None:
-        first_layer = getattr(utils.conv_type, args.first_layer_type)
-        print(f"==> First Layer Type: {args.first_layer_type}")
+    if parser_args.first_layer_type is not None:
+        first_layer = getattr(utils.conv_type, parser_args.first_layer_type)
+        print(f"==> First Layer Type: {parser_args.first_layer_type}")
     else:
         first_layer = None
 
