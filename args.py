@@ -14,6 +14,11 @@ def parse_arguments():
         help="path to dataset base directory"
     )
     parser.add_argument(
+        "--log-dir",
+        default=None,
+        help="Where to save the runs. If None use ./runs"   
+        )
+    parser.add_argument(
         "--name",
         default=None,
         type=str,
@@ -424,7 +429,32 @@ def parse_arguments():
         action="store_true",
         help="evaluate model on validation set",
     )
-
+    parser.add_argument(
+        "--resume",
+        default=None,
+        type=str,
+        metavar="PATH",
+        help="path to latest checkpoint (default: none)",
+        )
+    parser.add_argument(
+        "--width-mult",
+        default=1.0,
+        help="How much to vary the width of the network.",
+        type=float,
+    )
+    parser.add_argument(
+        "--start-epoch",
+        default=None,
+        type=int,
+        metavar="N",
+        help="manual epoch number (useful on restarts)",
+    )
+    parser.add_argument(
+        "--warmup_length",
+        default=0,
+        type=int,
+        help="Number of warmup iterations"
+    )
     args = parser.parse_args()
     get_config(args)
 
@@ -453,3 +483,4 @@ def run_args():
 
 
 run_args()
+

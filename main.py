@@ -80,8 +80,8 @@ def main_worker():
 
         if parser_args.evaluate:
             acc1, acc5 = validate(
-                data.val_loader, model, criterion, parser_args, writer=None, epoch=parser_args.start_epoch
-            )
+                data.val_loader, model, criterion, parser_args,
+                writer=None, epoch=parser_args.start_epoch)
 
             print('acc1: {}, acc5: {}'.format(acc1, acc5))
             # store values
@@ -105,7 +105,8 @@ def main_worker():
                         exit()
 
             acc1, acc5 = validate(
-                data.val_loader, model, criterion, parser_args, writer=None, epoch=parser_args.start_epoch
+                data.val_loader, model, criterion,
+                parser_args, writer=None, epoch=parser_args.start_epoch
             )
 
             print('acc1: {}, acc5: {}'.format(acc1, acc5))
@@ -114,7 +115,6 @@ def main_worker():
             print('err1: ', 100-acc1)
 
             return
-
 
     '''
     if parser_args.evaluate:
