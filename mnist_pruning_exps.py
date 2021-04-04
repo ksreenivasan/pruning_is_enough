@@ -355,6 +355,37 @@ def plot_histogram_scores(model, epoch=0):
     plt.savefig(filename, format='pdf', bbox_inches='tight', pad_inches=0.05)
 
 
+def round_and_evaluate(model):
+    test(model, device, criterion, test_loader)
+    cp_model = Net().to(device)
+    acc_list = []
+    for itr in range(glob_args.num_test):
+        cp_model.load_state_dict(torch.load('mnist_pruned_model_{}_{}.pt'.format(glob_args.algo, glob_args.epochs)))
+        print('Testing rounding technique of {}'.format(glob_args.round))
+        for name, params in cp_model.named_parameters():
+            if ".score" in name:
+                if glob_args.round == 'naive':
+                    params.data = torch.gt(params, torch.ones_like(params)*0.5).int()
+                elif glob_args.round == 'prob':
+                    params.data = torch.bernoulli(params)
+                elif glob_args.round == 'pb':
+                    params.data = round_down(cp_model, params, device, train_loader, criterion)
+                    print(name, ' ended')
+                else:
+                    print("INVALID ROUNDING")
+                    print("EXITING")
+                    exit()
+
+        acc = test(cp_model, device, criterion, test_loader)
+        acc_list = np.append(acc_list, np.array([acc]))
+
+    print("Rounding results: ")
+    print('Mean Acc: {}, Std Dev: {}'.format(np.mean(acc_list), np.std(acc_list)))
+
+    return acc_list
+
+
+
 def main():
     global glob_args
     # Training settings
@@ -377,7 +408,7 @@ def main():
                         help='random seed (default: 1)')
     parser.add_argument('--log-interval', type=int, default=10, metavar='N',
                         help='how many batches to wait before logging training status')
-    parser.add_argument('--save-model', action='store_true', default=False,
+    parser.add_argument('--save-model', action='store_true', default=True,
                         help='For Saving the current Model')
     parser.add_argument('--data', type=str, default='../data', help='Location to store data')
     parser.add_argument('--sparsity', type=float, default=0.5,
@@ -396,11 +427,11 @@ def main():
                          help='pruning algo to use |ep|pt_hack|pt_reg|hc|')
     parser.add_argument('--optimizer', type=str, default='sgd',
                          help='optimizer option to use |sgd|adam|')
-    parser.add_argument('--train', type=int, default=1,
-                        help='train a new model (default: 1)')
+    parser.add_argument('--evaluate-only', type='store_true', default=False,
+                        help='just use rounding techniques to evaluate a saved model')
     parser.add_argument('--round', type=str, default='naive',
                          help='rounding technique to use |naive|prob|pb|') # naive: threshold(0.5), prob: probabilistic rounding, pb: pseudo-boolean paper's choice (RoundDown)
-    parser.add_argument('--num_test', type=int, default=1,
+    parser.add_argument('--num-test', type=int, default=1,
                         help='number of different models testing in prob rounding')
 
     epoch_list = []
@@ -452,66 +483,36 @@ def main():
     criterion = nn.CrossEntropyLoss().to(device)
     scheduler = CosineAnnealingLR(optimizer, T_max=glob_args.epochs)
 
+    if not glob_args.evaluate_only:
+        for epoch in range(1, glob_args.epochs + 1):
+            train(model, device, train_loader, optimizer, criterion, epoch)
+            test_acc = test(model, device, criterion, test_loader)
+            scheduler.step()
+            epoch_list.append(epoch)
+            test_acc_list.append(test_acc)
+            if glob_args.algo == 'hc':
+                model_sparsity = get_model_sparsity_hc(model)
+            else:
+                model_sparsity = get_model_sparsity(model)
+            model_sparsity_list.append(model_sparsity)
+            print("Test Acc: {:.2f}%\n".format(test_acc))
+            if epoch%10 == 1:
+                plot_histogram_scores(model, epoch)
+            # print("Model Sparsity: {:.2f}%\n\n".format(model_sparsity))
+            print("---------------------------------------------------------")
 
-    if not glob_args.train: 
-        model.load_state_dict(torch.load('saved_mnist_cnn_{}_{}.pt'.format(glob_args.algo, glob_args.epochs)))
-        #get_model_sparsity_hc(model)
-        test(model, device, criterion, test_loader)     
-    
-        cp_model = Net().to(device)
-        acc_list = []
-        for itr in range(glob_args.num_test):
-            
-            cp_model.load_state_dict(torch.load('saved_mnist_cnn_{}_{}.pt'.format(glob_args.algo, glob_args.epochs)))
-            print('Testing rounding technique of {}'.format(glob_args.round))
+        results_df = pd.DataFrame({'epoch': epoch_list, 'test_acc': test_acc_list, 'model_sparsity': model_sparsity_list})
+        results_df.to_csv(glob_args.results_filename, index=False)
+        # gotta plot the final histogram as well
+        plot_histogram_scores(model, epoch)
 
-            for name, params in cp_model.named_parameters():
-                if ".score" in name:
-                    if glob_args.round == 'naive':
-                        params.data = torch.gt(params, torch.ones_like(params)*0.5).int()   
-                    elif glob_args.round == 'prob':
-                        params.data = torch.bernoulli(params)   
-                    elif glob_args.round == 'pb':
-                        params.data = round_down(cp_model, params, device, train_loader, criterion)
-                        print(name, ' ended')
-                    else:
-                        print("INVALID ROUNDING")
-                        print("EXITING")
-                        exit()
+        if glob_args.save_model:
+            torch.save(model.state_dict(), "mnist_pruned_model_{}_{}.pt".format(glob_args.algo, glob_args.epochs))
 
-            acc = test(cp_model, device, criterion, test_loader)        
-            acc_list = np.append(acc_list, np.array([acc]))
-
-        print('mean: {}, std: {}'.format(np.mean(acc_list), np.std(acc_list)))
-
-        print('Test ended')
-        exit()
-
-
-    for epoch in range(1, glob_args.epochs + 1):
-        train(model, device, train_loader, optimizer, criterion, epoch)
-        test_acc = test(model, device, criterion, test_loader)
-        scheduler.step()
-        epoch_list.append(epoch)
-        test_acc_list.append(test_acc)
-        if glob_args.algo == 'hc':
-            model_sparsity = get_model_sparsity_hc(model)
-        else:
-            model_sparsity = get_model_sparsity(model)
-        model_sparsity_list.append(model_sparsity)
-        print("Test Acc: {:.2f}%\n".format(test_acc))
-        if epoch%10 == 1:
-            plot_histogram_scores(model, epoch)
-        # print("Model Sparsity: {:.2f}%\n\n".format(model_sparsity))
-        print("---------------------------------------------------------")
-
-    results_df = pd.DataFrame({'epoch': epoch_list, 'test_acc': test_acc_list, 'model_sparsity': model_sparsity_list})
-    results_df.to_csv(glob_args.results_filename, index=False)
-    # gotta plot the final histogram as well
-    plot_histogram_scores(model, epoch)
-
-    if glob_args.save_model:
-        torch.save(model.state_dict(), "mnist_cnn_{}_{}.pt".format(glob_args.algo, glob_args.epochs))
+    if globa_args.algo in ('hc'):
+        # irrespective of evaluate_only, add an evaluate_only step
+        model.load_state_dict(torch.load('mnist_pruned_model_{}_{}.pt'.format(glob_args.algo, glob_args.epochs)))
+        round_acc_list = round_and_evaluate(model):
 
     print("Experiment donezo")
 
