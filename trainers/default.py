@@ -15,6 +15,7 @@ def train(train_loader, model, criterion, optimizer, epoch, args, writer):
     losses = AverageMeter("Loss", ":.3f")
     top1 = AverageMeter("Acc@1", ":6.2f")
     top5 = AverageMeter("Acc@5", ":6.2f")
+    top10 = AverageMeter("Acc@10", ":6.2f")
     progress = ProgressMeter(
         len(train_loader),
         [batch_time, data_time, losses, top1, top5],
@@ -44,7 +45,7 @@ def train(train_loader, model, criterion, optimizer, epoch, args, writer):
         loss = criterion(output, target)
 
         # measure accuracy and record loss
-        acc1, acc5 = accuracy(output, target, topk=(1, 5))
+        acc1, acc5, acc10 = accuracy(output, target, topk=(1, 5, 10))
         losses.update(loss.item(), images.size(0))
         top1.update(acc1.item(), images.size(0))
         top5.update(acc5.item(), images.size(0))
@@ -63,7 +64,7 @@ def train(train_loader, model, criterion, optimizer, epoch, args, writer):
             progress.display(i)
             progress.write_to_tensorboard(writer, prefix="train", global_step=t)
 
-    return top1.avg, top5.avg
+    return top1.avg, top5.avg, top10.avg
 
 
 def validate(val_loader, model, criterion, args, writer, epoch):

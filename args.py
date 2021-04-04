@@ -226,7 +226,7 @@ def parse_arguments():
         "--bias",
         action="store_true",
         default=False,
-        help="Boolean flag to indicate activations without bias"
+        help="Boolean flag to indicate whether to use bias"
     )
     parser.add_argument(
         "--freeze-weights",

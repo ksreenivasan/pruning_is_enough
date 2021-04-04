@@ -174,7 +174,7 @@ def main_worker():
 
         # train for one epoch
         start_train = time.time()
-        train_acc1, train_acc5, acc10 = train(
+        train_acc1, train_acc5, train_acc10 = train(
             data.train_loader, model, criterion, optimizer, epoch, parser_args, writer=writer
         )
         train_time.update((time.time() - start_train) / 60)
