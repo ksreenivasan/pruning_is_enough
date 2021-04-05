@@ -90,22 +90,19 @@ def main_worker():
             err[i] = 100 - acc1
             print('err1: ', 100-acc1)
 
-            rnd = 'naive'
-            for name, params in model.named_parameters():
-                if ".score" in name:
-                    if rnd == 'naive':
-                        params.data = torch.gt(params.detach(), torch.ones_like(params.data)*0.5).int().float()
-                        #pdb.set_trace()
-                    elif rnd == 'prob':
-                        params.data = torch.bernoulli(params).float()   
-                    #elif rnd == 'pb':
-                    #    params.data = round_down(cp_model, params, device, train_loader, criterion)
-                    #    print(name, ' ended')
-                    else:
-                        print("INVALID ROUNDING")
-                        print("EXITING")
-                        exit()
-
+            # TODO: @KS: Move this to function like mnist
+            '''
+            if parser_args.algo in ('hc'):
+                for name, params in model.named_parameters():
+                    if ".score" in name:
+                        if parser_args.round == 'naive':
+                            params.data = torch.gt(params.detach(), torch.ones_like(params.data)*0.5).int().float()
+                        elif parser_args.round == 'prob':
+                            params.data = torch.bernoulli(params).float()
+                        else:
+                            print("INVALID ROUNDING")
+                            print("EXITING")
+            '''
             acc1, acc5, acc10 = validate(
                 data.val_loader, model, criterion,
                 parser_args, writer=None, epoch=parser_args.start_epoch
