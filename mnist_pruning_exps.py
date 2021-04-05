@@ -121,6 +121,10 @@ class SupermaskConv(nn.Conv2d):
             self.bias_scores.data = torch.clamp(self.bias_scores.data, 0.0, 1.0)
             subnet = self.scores
             bias_subnet = self.bias_scores
+        elif glob_args.algo in ('pt', 'pt_hacky'):
+            self.scores.data = self.scores.abs()
+            self.bias_scores.data = self.bias_scores.abs()
+            subnet, bias_subnet = GetSubnet.apply(self.scores, self.bias_scores, glob_args.sparsity)
         else:
             subnet, bias_subnet = GetSubnet.apply(self.scores.abs(), self.bias_scores.abs(), glob_args.sparsity)
 
@@ -167,6 +171,10 @@ class SupermaskLinear(nn.Linear):
             self.bias_scores.data = torch.clamp(self.bias_scores.data, 0.0, 1.0)
             subnet = self.scores
             bias_subnet = self.bias_scores
+        elif glob_args.algo in ('pt', 'pt_hacky'):
+            self.scores.data = self.scores.abs()
+            self.bias_scores.data = self.bias_scores.abs()
+            subnet, bias_subnet = GetSubnet.apply(self.scores, self.bias_scores, glob_args.sparsity)
         else:
             subnet, bias_subnet = GetSubnet.apply(self.scores.abs(), self.bias_scores.abs(), glob_args.sparsity)
 
@@ -277,15 +285,15 @@ def get_layer_sparsity(layer):
     weight_sparsity = 100.0 * weight_mask.sum().item() / weight_mask.flatten().numel()
     bias_sparsity = 100.0 * bias_mask.sum().item() / bias_mask.flatten().numel()
     # TODO: handle bias sparsity also
-    return weight_sparsity #, bias_sparsity
+    return weight_sparsity, bias_sparsity
 
 def get_model_sparsity(model):
     # compute mean sparsity of each layer
     # TODO: find a nicer way to do this (skip dropout)
-    s1 = get_layer_sparsity(model.conv1)
-    s2 = get_layer_sparsity(model.conv2)
-    s3 = get_layer_sparsity(model.fc1)
-    s4 = get_layer_sparsity(model.fc2)
+    s1, bs1 = get_layer_sparsity(model.conv1)
+    s2, bs2 = get_layer_sparsity(model.conv2)
+    s3, bs3 = get_layer_sparsity(model.fc1)
+    s4, bs4 = get_layer_sparsity(model.fc2)
 
     avg_sparsity = (s1 + s2 + s3 + s4)/4
     return avg_sparsity
