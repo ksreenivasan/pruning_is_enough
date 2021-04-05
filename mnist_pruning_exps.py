@@ -122,7 +122,7 @@ class SupermaskConv(nn.Conv2d):
             subnet = self.scores
             bias_subnet = self.bias_scores
         else:
-            subnet, bias_subnet = GetSubnet.apply(self.scores.abs(), self.bias_scores.abs(), sparsity)
+            subnet, bias_subnet = GetSubnet.apply(self.scores.abs(), self.bias_scores.abs(), glob_args.sparsity)
 
         w = self.weight * subnet
         if glob_args.bias:
@@ -168,7 +168,7 @@ class SupermaskLinear(nn.Linear):
             subnet = self.scores
             bias_subnet = self.bias_scores
         else:
-            subnet, bias_subnet = GetSubnet.apply(self.scores.abs(), self.bias_scores.abs(), sparsity)
+            subnet, bias_subnet = GetSubnet.apply(self.scores.abs(), self.bias_scores.abs(), glob_args.sparsity)
 
         w = self.weight * subnet
         if glob_args.bias:
