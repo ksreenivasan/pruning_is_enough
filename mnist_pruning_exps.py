@@ -426,10 +426,10 @@ def plot_histogram_scores(model, epoch=0):
 
 def round_and_evaluate(model, device, criterion, train_loader, test_loader):
     test(model, device, criterion, test_loader)
-    #model = Net().to(device)
     acc_list = []
     score_sparsity_list = []
     for itr in range(glob_args.num_test):
+        #torch.cuda.manual_seed(itr)
         #model.load_state_dict(torch.load('mnist_pruned_model_{}_{}.pt'.format(glob_args.algo, glob_args.epochs)))
         print('Testing rounding technique of {}'.format(glob_args.round))
         for name, params in model.named_parameters():
@@ -438,7 +438,8 @@ def round_and_evaluate(model, device, criterion, train_loader, test_loader):
                     #params.data = torch.gt(params, torch.ones_like(params)*0.5).int()
                     params.data = torch.gt(params.detach(), torch.ones_like(params.data)*0.5).int().float()
                 elif glob_args.round == 'prob':
-                    params.data = torch.bernoulli(params)
+                    #print(torch.bernoulli(params.detach()[0]))
+                    params.data = torch.bernoulli(params.data)
                 elif glob_args.round == 'pb':
                     params.data = round_down(model, params, device, train_loader, criterion)
                     print(name, ' ended')
@@ -515,7 +516,8 @@ def main():
                         help='can be used for either pruning | training.')
     parser.add_argument('--bias', action='store_true', default=False,
                         help='can be used for either pruning | training.')
-
+    parser.add_argument('--pretrained', type=str, default=None,
+                         help='path of pretrained model')
     epoch_list = []
     test_acc_list = []
     model_sparsity_list = []
@@ -548,6 +550,10 @@ def main():
         model = NetNormal().to(device)
     else:
         raise NotImplementedError("Non-supported mode ...")
+
+    if glob_args.pretrained is not None:
+        model.load_state_dict(torch.load(glob_args.pretrained))
+
     # NOTE: only pass the parameters where p.requires_grad == True to the optimizer! Important!
     if glob_args.optimizer == 'sgd':
         optimizer = optim.SGD(
