@@ -280,7 +280,7 @@ def test(model, device, criterion, test_loader):
 
 
 def get_layer_sparsity(layer):
-    weight_mask, bias_mask = GetSubnet.apply(layer.scores.abs(), layer.bias_scores.abs(), 0)
+    weight_mask, bias_mask = GetSubnet.apply(layer.scores.abs(), layer.bias_scores.abs(), glob_args.sparsity)
     weight_sparsity = 100.0 * weight_mask.sum().item() / weight_mask.flatten().numel()
     bias_sparsity = 100.0 * bias_mask.sum().item() / bias_mask.flatten().numel()
     # TODO: handle bias sparsity also
