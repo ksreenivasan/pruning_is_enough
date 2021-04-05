@@ -187,12 +187,12 @@ class NonAffineBatchNorm(nn.BatchNorm2d):
 class Net(nn.Module):
     def __init__(self):
         super(Net, self).__init__()
-        self.conv1 = SupermaskConv(1, 32, 3, 1, bias=True)
-        self.conv2 = SupermaskConv(32, 64, 3, 1, bias=True)
+        self.conv1 = SupermaskConv(1, 32, 3, 1, bias=glob_args.bias)
+        self.conv2 = SupermaskConv(32, 64, 3, 1, bias=glob_args.bias)
         self.dropout1 = nn.Dropout2d(0.25)
         self.dropout2 = nn.Dropout2d(0.5)
-        self.fc1 = SupermaskLinear(9216, 128, bias=True)
-        self.fc2 = SupermaskLinear(128, 10, bias=True)
+        self.fc1 = SupermaskLinear(9216, 128, bias=glob_args.bias)
+        self.fc2 = SupermaskLinear(128, 10, bias=glob_args.bias)
 
     def forward(self, x):
         x = self.conv1(x)
@@ -213,12 +213,12 @@ class NetNormal(nn.Module):
     # network for training
     def __init__(self):
         super(NetNormal, self).__init__()
-        self.conv1 = nn.Conv2d(1, 32, 3, 1, bias=True)
-        self.conv2 = nn.Conv2d(32, 64, 3, 1, bias=True)
+        self.conv1 = nn.Conv2d(1, 32, 3, 1, bias=glob_args.bias)
+        self.conv2 = nn.Conv2d(32, 64, 3, 1, bias=glob_args.bias)
         self.dropout1 = nn.Dropout2d(0.25)
         self.dropout2 = nn.Dropout2d(0.5)
-        self.fc1 = nn.Linear(9216, 128, bias=True)
-        self.fc2 = nn.Linear(128, 10, bias=True)
+        self.fc1 = nn.Linear(9216, 128, bias=glob_args.bias)
+        self.fc2 = nn.Linear(128, 10, bias=glob_args.bias)
 
     def forward(self, x):
         x = self.conv1(x)
