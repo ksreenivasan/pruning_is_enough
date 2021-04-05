@@ -164,10 +164,10 @@ def parse_arguments():
     )
 
     parser.add_argument(
-        "--train",
-        type=int,
-        default=1,
-        help="train a new model"
+        '--evaluate-only',
+        action='store_true',
+        default=False,
+        help='just use rounding techniques to evaluate a saved model'
     )
 
     parser.add_argument(

@@ -94,20 +94,25 @@ class SupermaskConv(nn.Conv2d):
 
         # initialize the scores
         self.scores = nn.Parameter(torch.Tensor(self.weight.size()))
-        self.bias_scores = nn.Parameter(torch.Tensor(self.bias.size()))
+        if glob_args.bias:
+            self.bias_scores = nn.Parameter(torch.Tensor(self.bias.size()))
+        else:
+            # dummy variable just so other things don't break
+            self.bias_scores = nn.Parameter(torch.Tensor(1))
         if glob_args.algo in ('hc'):
             nn.init.uniform_(self.scores, a=0.0, b=1.0)
             nn.init.uniform_(self.bias_scores, a=0.0, b=1.0)
         else:
             nn.init.kaiming_uniform_(self.scores, a=math.sqrt(5))
-            nn.init.kaiming_uniform_(self.bias_scores, a=math.sqrt(5))
+            nn.init.uniform_(self.bias_scores, a=-1.0, b=1.0)
 
         # NOTE: initialize the weights like this.
         nn.init.kaiming_normal_(self.weight, mode="fan_in", nonlinearity="relu")
 
         # NOTE: turn the gradient on the weights off
         self.weight.requires_grad = False
-        self.bias.requires_grad = False
+        if glob_args.bias:
+            self.bias.requires_grad = False
 
     def forward(self, x):
         if glob_args.algo in ('hc'):
@@ -120,7 +125,10 @@ class SupermaskConv(nn.Conv2d):
             subnet, bias_subnet = GetSubnet.apply(self.scores.abs(), self.bias_scores.abs(), sparsity)
 
         w = self.weight * subnet
-        b = self.bias * bias_subnet
+        if glob_args.bias:
+            b = self.bias * bias_subnet
+        else:
+            b = self.bias
         x = F.conv2d(
             x, w, b, self.stride, self.padding, self.dilation, self.groups
         )
@@ -132,20 +140,25 @@ class SupermaskLinear(nn.Linear):
 
         # initialize the scores
         self.scores = nn.Parameter(torch.Tensor(self.weight.size()))
-        self.bias_scores = nn.Parameter(torch.Tensor(self.bias.size()))
+        if glob_args.bias:
+            self.bias_scores = nn.Parameter(torch.Tensor(self.bias.size()))
+        else:
+            # dummy variable just so other things don't break
+            self.bias_scores = nn.Parameter(torch.Tensor(1))
         if glob_args.algo in ('hc'):
             nn.init.uniform_(self.scores, a=0.0, b=1.0)
             nn.init.uniform_(self.bias_scores, a=0.0, b=1.0)
         else:
             nn.init.kaiming_uniform_(self.scores, a=math.sqrt(5))
-            nn.init.kaiming_uniform_(self.bias_scores, a=math.sqrt(5))
+            nn.init.uniform_(self.bias_scores, a=-1.0, b=1.0)
 
         # NOTE: initialize the weights like this.
         nn.init.kaiming_normal_(self.weight, mode="fan_in", nonlinearity="relu")
 
         # NOTE: turn the gradient on the weights off
         self.weight.requires_grad = False
-        self.bias.requires_grad = False
+        if glob_args.bias:
+            self.bias.requires_grad = False
 
     def forward(self, x):
         if glob_args.algo in ('hc'):
@@ -158,7 +171,10 @@ class SupermaskLinear(nn.Linear):
             subnet, bias_subnet = GetSubnet.apply(self.scores.abs(), self.bias_scores.abs(), sparsity)
 
         w = self.weight * subnet
-        b = self.bias * bias_subnet
+        if glob_args.bias:
+            b = self.bias * bias_subnet
+        else:
+            b = self.bias
         return F.linear(x, w, b)
 
 
@@ -441,7 +457,7 @@ def main():
                         help='how sparse is each layer')
     parser.add_argument('--p-threshold', type=float, default=0.05,
                         help='probability threshold for pruning')
-    parser.add_argument('--normalize-scores', action='store_true', default=True,
+    parser.add_argument('--normalize-scores', action='store_true', default=False,
                         help='to normalize or not to normalize')
     parser.add_argument('--results-filename', type=str, default='results_acc_mnist.csv',
                         help='csv results filename')
@@ -460,6 +476,8 @@ def main():
     parser.add_argument('--num-test', type=int, default=1,
                         help='number of different models testing in prob rounding')
     parser.add_argument('--mode', type=str, default="pruning",
+                        help='can be used for either pruning | training.')
+    parser.add_argument('--bias', action='store_true', default=False,
                         help='can be used for either pruning | training.')
 
     epoch_list = []
