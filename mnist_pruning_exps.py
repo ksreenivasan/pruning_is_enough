@@ -99,9 +99,13 @@ class SupermaskConv(nn.Conv2d):
         else:
             # dummy variable just so other things don't break
             self.bias_scores = nn.Parameter(torch.Tensor(1))
-        if glob_args.algo in ('hc'):
-            nn.init.uniform_(self.scores, a=0.0, b=1.0)
-            nn.init.uniform_(self.bias_scores, a=0.0, b=1.0)
+        if glob_args.algo in ['hc', 'hc_iter']:
+            if glob_args.scores_init == 'bern':
+                self.scores.data = torch.bernoulli(0.5 * torch.ones_like(self.scores.data))
+                self.bias_scores.data = torch.bernoulli(0.5 * torch.ones_like(self.bias_scores.data))
+            elif glob_args.scores_init == 'unif':
+                nn.init.uniform_(self.scores, a=0.0, b=1.0)
+                nn.init.uniform_(self.bias_scores, a=0.0, b=1.0)
         else:
             nn.init.kaiming_uniform_(self.scores, a=math.sqrt(5))
             nn.init.uniform_(self.bias_scores, a=-1.0, b=1.0)
@@ -115,7 +119,7 @@ class SupermaskConv(nn.Conv2d):
             self.bias.requires_grad = False
 
     def forward(self, x):
-        if glob_args.algo in ('hc'):
+        if glob_args.algo in ['hc', 'hc_iter']:
             # don't need a mask here. the scores are directly multiplied with weights
             self.scores.data = torch.clamp(self.scores.data, 0.0, 1.0)
             self.bias_scores.data = torch.clamp(self.bias_scores.data, 0.0, 1.0)
@@ -138,16 +142,19 @@ class SupermaskLinear(nn.Linear):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        # initialize the scores
         self.scores = nn.Parameter(torch.Tensor(self.weight.size()))
         if glob_args.bias:
             self.bias_scores = nn.Parameter(torch.Tensor(self.bias.size()))
         else:
             # dummy variable just so other things don't break
             self.bias_scores = nn.Parameter(torch.Tensor(1))
-        if glob_args.algo in ('hc'):
-            nn.init.uniform_(self.scores, a=0.0, b=1.0)
-            nn.init.uniform_(self.bias_scores, a=0.0, b=1.0)
+        if glob_args.algo in ['hc', 'hc_iter']:
+            if glob_args.scores_init == 'bern':
+                self.scores.data = torch.bernoulli(0.5 * torch.ones_like(self.scores.data))
+                self.bias_scores.data = torch.bernoulli(0.5 * torch.ones_like(self.bias_scores.data))
+            elif glob_args.scores_init == 'unif':
+                nn.init.uniform_(self.scores, a=0.0, b=1.0)
+                nn.init.uniform_(self.bias_scores, a=0.0, b=1.0)
         else:
             nn.init.kaiming_uniform_(self.scores, a=math.sqrt(5))
             nn.init.uniform_(self.bias_scores, a=-1.0, b=1.0)
@@ -161,7 +168,7 @@ class SupermaskLinear(nn.Linear):
             self.bias.requires_grad = False
 
     def forward(self, x):
-        if glob_args.algo in ('hc'):
+        if glob_args.algo in ['hc', 'hc_iter']:
             # don't need a mask here. the scores are directly multiplied with weights
             self.scores.data = torch.clamp(self.scores.data, 0.0, 1.0)
             self.bias_scores.data = torch.clamp(self.bias_scores.data, 0.0, 1.0)
@@ -295,12 +302,29 @@ def get_model_sparsity_hc(model):
     sparsity = []
     for name, params in model.named_parameters():
         if ".score" in name:
-            num_middle = torch.gt(params, torch.ones_like(params)*0.01) * torch.lt(params, torch.ones_like(params)*0.99).int() # 0.25 / 0.75
+            num_middle = torch.gt(params, torch.ones_like(params)*0.00) * torch.lt(params, torch.ones_like(params)*1.00).int() # 0.25 / 0.75
             curr_sparsity = 100*torch.sum(num_middle).item()/num_middle.numel()
             sparsity.append(curr_sparsity)
             print(name, '{}/{} ({:.2f} %)'.format(torch.sum(num_middle).item(), num_middle.numel(), curr_sparsity))
 
     return sparsity
+
+def get_score_sparsity_hc(model):
+    sparsity = []
+    numer = 0
+    denom = 0
+    for name, scores in model.named_parameters():
+        if ".score" in name:
+            num_ones = torch.sum(scores.detach().flatten())
+            numer += num_ones.item()
+            denom += scores.numel()
+            curr_sparsity = 100 * num_ones.item()/scores.numel()
+            sparsity.append(curr_sparsity)
+            print(name, '{}/{} ({:.2f} %)'.format((int)(num_ones.item()), scores.numel(), curr_sparsity))
+    print('overall sparsity: {}/{} ({:.2f} %)'.format((int)(numer), denom, 100*numer/denom))
+
+    return 100*numer/denom
+
 
 
 def compute_loss(model, device, train_loader, criterion):
@@ -320,7 +344,7 @@ def compute_loss(model, device, train_loader, criterion):
         break
     return loss
 
-def round_down(cp_model, params, device, train_loader, criterion):
+def round_down(model, params, device, train_loader, criterion):
 
     scores = params.data
     scores2 = torch.ones_like(scores) * -1      # initialize a dummy tensor
@@ -351,12 +375,12 @@ def round_down(cp_model, params, device, train_loader, criterion):
             params.data.flatten()[idx] = 1
             #print(params.data[0][0][0][0])
             torch.manual_seed(idx)
-            loss1 = compute_loss(cp_model, device, train_loader, criterion)
+            loss1 = compute_loss(model, device, train_loader, criterion)
 
             params.data.flatten()[idx] = 0
             #print(params.data[0][0][0][0])
             torch.manual_seed(idx)
-            loss0 = compute_loss(cp_model, device, train_loader, criterion)
+            loss0 = compute_loss(model, device, train_loader, criterion)
 
             #print(loss1, loss0)
 
@@ -400,32 +424,39 @@ def plot_histogram_scores(model, epoch=0):
     plt.savefig(filename, format='pdf', bbox_inches='tight', pad_inches=0.05)
 
 
-def round_and_evaluate(model):
+def round_and_evaluate(model, device, criterion, train_loader, test_loader):
     test(model, device, criterion, test_loader)
-    cp_model = Net().to(device)
+    #model = Net().to(device)
     acc_list = []
+    score_sparsity_list = []
     for itr in range(glob_args.num_test):
-        cp_model.load_state_dict(torch.load('mnist_pruned_model_{}_{}.pt'.format(glob_args.algo, glob_args.epochs)))
+        #model.load_state_dict(torch.load('mnist_pruned_model_{}_{}.pt'.format(glob_args.algo, glob_args.epochs)))
         print('Testing rounding technique of {}'.format(glob_args.round))
-        for name, params in cp_model.named_parameters():
+        for name, params in model.named_parameters():
             if ".score" in name:
                 if glob_args.round == 'naive':
-                    params.data = torch.gt(params, torch.ones_like(params)*0.5).int()
+                    #params.data = torch.gt(params, torch.ones_like(params)*0.5).int()
+                    params.data = torch.gt(params.detach(), torch.ones_like(params.data)*0.5).int().float()
                 elif glob_args.round == 'prob':
                     params.data = torch.bernoulli(params)
                 elif glob_args.round == 'pb':
-                    params.data = round_down(cp_model, params, device, train_loader, criterion)
+                    params.data = round_down(model, params, device, train_loader, criterion)
                     print(name, ' ended')
                 else:
                     print("INVALID ROUNDING")
                     print("EXITING")
                     exit()
 
-        acc = test(cp_model, device, criterion, test_loader)
+        acc = test(model, device, criterion, test_loader)
         acc_list = np.append(acc_list, np.array([acc]))
+        score_sparsity = get_score_sparsity_hc(model)
+        score_sparsity_list = np.append(score_sparsity_list, np.array([score_sparsity]))
 
     print("Rounding results: ")
     print('Mean Acc: {}, Std Dev: {}'.format(np.mean(acc_list), np.std(acc_list)))
+    print('Mean Sparsity: {}, Std Dev: {}'.format(np.mean(score_sparsity_list), np.std(score_sparsity_list)))
+    #torch.save(model.state_dict(), "mnist_pruned_model_{}_{}_{}_{}.pt".format(glob_args.algo, glob_args.epochs, glob_args.scores_init, glob_args.round))
+    #pdb.set_trace()
 
     return acc_list
 
@@ -469,13 +500,15 @@ def main():
     # ep: edge-popup, pt_hack: KS hacky probability pruning, pt_reg: probability pruning with regularization
     # hc: hypercube pruning
     parser.add_argument('--algo', type=str, default='ep',
-                         help='pruning algo to use |ep|pt_hack|pt_reg|hc|')
+                         help='pruning algo to use |ep|pt_hack|pt_reg|hc|hc_iter|')
     parser.add_argument('--optimizer', type=str, default='sgd',
                          help='optimizer option to use |sgd|adam|')
     parser.add_argument('--evaluate-only', action='store_true', default=False,
                         help='just use rounding techniques to evaluate a saved model')
     parser.add_argument('--round', type=str, default='naive',
                          help='rounding technique to use |naive|prob|pb|') # naive: threshold(0.5), prob: probabilistic rounding, pb: pseudo-boolean paper's choice (RoundDown)
+    parser.add_argument('--scores-init', type=str, default='unif', 
+                        help='rounding technique to use |unif|bern|') # unif: unif(0,1), bern: bern(0.5)
     parser.add_argument('--num-test', type=int, default=1,
                         help='number of different models testing in prob rounding')
     parser.add_argument('--mode', type=str, default="pruning",
@@ -492,7 +525,7 @@ def main():
 
     torch.manual_seed(glob_args.seed)
 
-    device = torch.device("cuda:2" if use_cuda else "cpu")
+    device = torch.device("cuda:1" if use_cuda else "cpu")
 
     kwargs = {'num_workers': 1, 'pin_memory': True} if use_cuda else {}
     train_loader = torch.utils.data.DataLoader(
@@ -540,18 +573,23 @@ def main():
     if not glob_args.evaluate_only:
         for epoch in range(1, glob_args.epochs + 1):
             train(model, device, train_loader, optimizer, criterion, epoch)
+            #if epoch % 50 == 0 and glob_args.algo in ['hc_iter']: # 50
+            if epoch >= 50 and glob_args.algo in ['hc_iter']: # 50
+                #pdb.set_trace()
+                round_and_evaluate(model, device, criterion, train_loader, test_loader)
+
             test_acc = test(model, device, criterion, test_loader)
             scheduler.step()
             epoch_list.append(epoch)
             test_acc_list.append(test_acc)
             if glob_args.mode != "training":
-                if glob_args.algo == 'hc':
+                if glob_args.algo in ['hc', 'hc_iter']:
                     model_sparsity = get_model_sparsity_hc(model)
                 else:
                     model_sparsity = get_model_sparsity(model)
 
-                if epoch%10 == 1:
-                    plot_histogram_scores(model, epoch)
+                #if epoch%10 == 1:
+                #    plot_histogram_scores(model, epoch)
             else:
                 model_sparsity = (sum([p.numel() for p in model.parameters()]))
 
@@ -567,17 +605,19 @@ def main():
 
         if glob_args.save_model:
             if glob_args.mode != 'training':
-                model_filename = "mnist_pruned_model_{}_{}.pt".format(glob_args.algo, glob_args.epochs)
+                if glob_args.algo in ['hc', 'hc_iter']:
+                    model_filename = "mnist_pruned_model_{}_{}_{}.pt".format(glob_args.algo, glob_args.epochs, glob_args.scores_init)
+                else:
+                    model_filename = "mnist_pruned_model_{}_{}.pt".format(glob_args.algo, glob_args.epochs)
             else:
                 model_filename = "mnist_trained_model_{}.pt".format(glob_args.epochs)
             torch.save(model.state_dict(), model_filename)
 
-    if glob_args.algo in ('hc'):
+    if glob_args.algo in ['hc', 'hc_iter']:
         # irrespective of evaluate_only, add an evaluate_only step
-        model.load_state_dict(torch.load('mnist_pruned_model_{}_{}.pt'.format(glob_args.algo, glob_args.epochs)))
-        round_acc_list = round_and_evaluate(model)
-
-        print("Test Acc: {:.2f}%\n".format(test_acc))
+        model.load_state_dict(torch.load('mnist_pruned_model_{}_{}_{}.pt'.format(glob_args.algo, glob_args.epochs, glob_args.scores_init)))
+        round_and_evaluate(model, device, criterion, train_loader, test_loader)
+        #print("Test Acc: {:.2f}%\n".format(round_acc_list))
 
     print("Experiment donezo")
 
