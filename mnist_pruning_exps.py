@@ -23,6 +23,7 @@ plt.style.use('seaborn-whitegrid')
 
 glob_args = None
 
+
 class GetSubnet(autograd.Function):
     @staticmethod
     def forward(ctx, scores, bias_scores, k):
@@ -39,9 +40,9 @@ class GetSubnet(autograd.Function):
                 max_score = bias_scores.max().item()
                 bias_scores = (bias_scores - min_score)/(max_score - min_score)
 
-            ## sample using scores as probability
-            ## by default the probabilities are too small. artificially
-            ## pushing them towards 1 helps!
+            # sample using scores as probability
+            # by default the probabilities are too small. artificially
+            # pushing them towards 1 helps!
             MULTIPLIER = 10
             scores = torch.clamp(MULTIPLIER*scores, 0, 1)
             bias_scores = torch.clamp(MULTIPLIER*bias_scores, 0, 1)
@@ -70,6 +71,10 @@ class GetSubnet(autograd.Function):
             bias_flat_out[idx[j:]] = 1
 
         elif glob_args.algo == 'pt':
+            # sample using scores as probability
+            # by default the probabilities are too small. artificially
+            # pushing them towards 1 helps!
+            MULTIPLIER = 10
             scores = torch.clamp(MULTIPLIER*scores, 0, 1)
             bias_scores = torch.clamp(MULTIPLIER*bias_scores, 0, 1)
             out = torch.bernoulli(scores)
