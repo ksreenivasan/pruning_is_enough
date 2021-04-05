@@ -273,9 +273,11 @@ def test(model, device, criterion, test_loader):
 
 
 def get_layer_sparsity(layer):
-    mask = GetSubnet.apply(layer.scores.abs(), layer.bias_scores.abs(), 0)
-    sparsity = 100.0 * mask.sum().item() / mask.flatten().numel()
-    return sparsity
+    weight_mask, bias_mask = GetSubnet.apply(layer.scores.abs(), layer.bias_scores.abs(), 0)
+    weight_sparsity = 100.0 * weight_mask.sum().item() / weight_mask.flatten().numel()
+    bias_sparsity = 100.0 * bias_mask.sum().item() / bias_mask.flatten().numel()
+    # TODO: handle bias sparsity also
+    return weight_sparsity #, bias_sparsity
 
 def get_model_sparsity(model):
     # compute mean sparsity of each layer
@@ -289,6 +291,7 @@ def get_model_sparsity(model):
     return avg_sparsity
 
 def get_model_sparsity_hc(model):
+    # handle bias
     sparsity = []
     for name, params in model.named_parameters():
         if ".score" in name:
