@@ -1,0 +1,28 @@
+# === Name === #
+name: Net
+
+# === Architecture === #
+arch: Net
+bias: False
+
+# ===== Dataset ===== #
+data_dir: ../data/
+dataset: MNIST
+
+# ===== Network training config ===== #
+num_epochs: 10
+batch_size: 128
+freeze_weights: True
+seed: 1
+log_interval: 200
+submask_size: 1
+metric: "loss"
+pruning_strategy: "weights"
+how_to_prune: "layer"
+save_plot_data: True
+start_from_nothing: False
+loss: "cross-entropy-loss"
+
+# ===== Hardware setup ===== #
+num_workers: 8
+gpu: 0
