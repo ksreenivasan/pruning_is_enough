@@ -255,6 +255,19 @@ def train(model, device, train_loader, optimizer, criterion, epoch):
         optimizer.zero_grad()
         output = model(data)
         loss = criterion(output, target)
+        if glob_args.regularization:
+            # add regularizer term p(1-p)
+            R_p = 0
+            for i, layer in enumerate(model.children()):
+                # ignore dropout
+                if i not in (2, 3):
+                    p = layer.scores
+                    p = torch.clamp(p, 0, 1)
+                    # TODO: Hacky fix. Figure out why it is becoming nan in the first place!
+                    # p = torch.nan_to_num(p, nan=0.0)
+                    R_p += torch.sum(torch.pow(p, 1) * torch.pow(1-p, 1))
+            # print("LOSS (before): {}".format(loss))
+            loss += glob_args.lmbda * R_p
         loss.backward()
         optimizer.step()
         if batch_idx % glob_args.log_interval == 0:
@@ -478,7 +491,9 @@ def main():
     parser.add_argument('--results-filename', type=str, default='results_acc_mnist.csv',
                         help='csv results filename')
     parser.add_argument('--lmbda', type=float, default=0.001,
-                        help='regularizer coefficient lambda')
+                        help='regularization coefficient lambda')
+    parser.add_argument('--regularization', action='store_true', default=False,
+                        help='to regularize or not to regularize. that is the question : p(1-p)')
     # ep: edge-popup, pt_hack: KS hacky probability pruning, pt_reg: probability pruning with regularization
     # hc: hypercube pruning
     parser.add_argument('--algo', type=str, default='ep',
@@ -488,7 +503,8 @@ def main():
     parser.add_argument('--evaluate-only', action='store_true', default=False,
                         help='just use rounding techniques to evaluate a saved model')
     parser.add_argument('--round', type=str, default='naive',
-                         help='rounding technique to use |naive|prob|pb|') # naive: threshold(0.5), prob: probabilistic rounding, pb: pseudo-boolean paper's choice (RoundDown)
+                         help='rounding technique to use |naive|prob|pb|')
+    # naive: threshold(0.5), prob: probabilistic rounding, pb: pseudo-boolean paper's choice (RoundDown)
     parser.add_argument('--num-test', type=int, default=1,
                         help='number of different models testing in prob rounding')
     parser.add_argument('--mode', type=str, default="pruning",
