@@ -25,7 +25,7 @@ class MNIST:
             ),
             batch_size=args.batch_size,
             shuffle=True,
-            pin_memory=True
+            **kwargs
         )
         
         self.test_loader = torch.utils.data.DataLoader(
@@ -41,7 +41,7 @@ class MNIST:
             ),
             batch_size=args.batch_size,
             shuffle=True,
-            pin_memory=True
+            **kwargs
         )
 
 class CIFAR10:

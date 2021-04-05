@@ -26,7 +26,12 @@ class MaskLinear(nn.Linear):
 
     def forward(self, x):
         w = self.weight * self.mask_weight
-        b = self.bias * self.mask_bias
+
+        if self.bias == None:
+            b = None
+        else:
+            b = self.bias * self.mask_bias
+
         return F.linear(x, w, b)
 
 
@@ -47,5 +52,10 @@ class MaskConv(nn.Conv2d):
 
     def forward(self, x):
         w = self.weight * self.mask_weight
-        b = self.bias * self.mask_bias
+
+        if self.bias == None:
+            b = None
+        else:
+            b = self.bias * self.mask_bias
+
         return F.conv2d(x, w, b, self.stride, self.padding, self.dilation, self.groups)

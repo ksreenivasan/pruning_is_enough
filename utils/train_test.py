@@ -4,6 +4,7 @@ import math
 import random
 
 import torch
+import torch.nn as nn
 
 from utils.net_utils import get_sparsity, zero_one_loss
 from utils.logging import log_batch
@@ -109,7 +110,10 @@ def prune_weights(model, device, train_loader, criterion, args, topk=(1, 5)):
                 flat_param = param.flatten()
                 module = getattr(model, name.split('.')[0])
                 for i in range(math.ceil(len(flat_param) / args.submask_size)):
-                    can_prune = not module.pruned_activation[math.floor(i / module.in_channels)]
+                    if isinstance(module, nn.Linear):
+                        can_prune = not module.pruned_activation[math.floor(i / module.in_channels)]
+#                    else:
+#                        # handle case where layer is convlutional
                     if (args.pruning_strategy == "activations_and_weights" and can_prune) or args.pruning_strategy != "activations_and_weights":      # TODO: this if statement only works for linear layers...
                         try:
                             data, target = it.next()

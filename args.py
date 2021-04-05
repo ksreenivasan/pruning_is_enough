@@ -82,7 +82,7 @@ def parse_arguments():
         default=None,
         nargs="+",
         metavar="R",
-        help="List of epoch indices (starting from and including 0) where flipping occurs. At each milestone, 10% of the mask parameters are randomly chosen and they are flipped. Restarting is accomplished at the beginning of an epoch. Applies only when pruning weights (default: [2, 4, 6, 8])"
+        help="List of epoch indices (starting from and including 0) where flipping occurs. At each milestone, 10% of the mask parameters are randomly chosen and they are flipped. Restarting is accomplished at the beginning of an epoch. Applies only when pruning weights (default: None)"
     )
     parser.add_argument(
         "--lr",
