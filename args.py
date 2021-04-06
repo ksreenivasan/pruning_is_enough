@@ -176,29 +176,22 @@ def parse_arguments():
         default='naive',
         help='rounding technique to use |naive|prob|pb|'
         # naive: threshold(0.5), prob: probabilistic rounding, pb: pseudo-boolean paper's choice (RoundDown)
-    ) 
-
+    )
+   
     parser.add_argument(
         "--num_test",
         type=int,
         default=1,
         help='number of different models testing in prob rounding'
-    ) 
-
-    parser.add_argument(
-        "--results-filename",
-        type=str,
-        default='results_acc_mnist.csv',
-        help='csv results filename'
-    ) 
+    )
 
     parser.add_argument(
         "--save-model",
         action='store_true',
         default=False,
         help='For Saving the current Model'
-    ) 
-    
+    )
+
 
     # Architecture and training
     parser.add_argument(
