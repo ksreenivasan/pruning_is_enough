@@ -431,7 +431,7 @@ def round_and_evaluate(model):
     cp_model = Net().to(device)
     acc_list = []
     for itr in range(glob_args.num_test):
-        cp_model.load_state_dict(torch.load('mnist_pruned_model_{}_{}.pt'.format(glob_args.algo, glob_args.epochs)))
+        cp_model.load_state_dict(torch.load('model_checkpoints/mnist_pruned_model_{}_{}.pt'.format(glob_args.algo, glob_args.epochs)))
         print('Testing rounding technique of {}'.format(glob_args.round))
         for name, params in cp_model.named_parameters():
             if ".score" in name:
@@ -488,7 +488,7 @@ def main():
                         help='probability threshold for pruning')
     parser.add_argument('--normalize-scores', action='store_true', default=False,
                         help='to normalize or not to normalize')
-    parser.add_argument('--results-filename', type=str, default='results_acc_mnist.csv',
+    parser.add_argument('--results-filename', type=str, default='results/results_acc_mnist.csv',
                         help='csv results filename')
     parser.add_argument('--lmbda', type=float, default=0.001,
                         help='regularization coefficient lambda')
@@ -596,14 +596,14 @@ def main():
 
         if glob_args.save_model:
             if glob_args.mode != 'training':
-                model_filename = "mnist_pruned_model_{}_{}.pt".format(glob_args.algo, glob_args.epochs)
+                model_filename = "model_checkpoints/mnist_pruned_model_{}_{}.pt".format(glob_args.algo, glob_args.epochs)
             else:
-                model_filename = "mnist_trained_model_{}.pt".format(glob_args.epochs)
+                model_filename = "model_checkpoints/mnist_trained_model_{}.pt".format(glob_args.epochs)
             torch.save(model.state_dict(), model_filename)
 
     if glob_args.algo in ('hc'):
         # irrespective of evaluate_only, add an evaluate_only step
-        model.load_state_dict(torch.load('mnist_pruned_model_{}_{}.pt'.format(glob_args.algo, glob_args.epochs)))
+        model.load_state_dict(torch.load('model_checkpoints/mnist_pruned_model_{}_{}.pt'.format(glob_args.algo, glob_args.epochs)))
         round_acc_list = round_and_evaluate(model)
 
         print("Test Acc: {:.2f}%\n".format(test_acc))

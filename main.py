@@ -5,6 +5,7 @@ import os
 import pathlib
 import random
 import time
+import pandas as pd
 from torch.utils.tensorboard import SummaryWriter
 import torch
 import torch.nn as nn
@@ -142,6 +143,10 @@ def main_worker():
     parser_args.start_epoch = parser_args.start_epoch or 0
     acc1 = None
 
+    epoch_list = []
+    test_acc_list = []
+    model_sparsity_list = []
+
     # Save the initial state
     save_checkpoint(
         {
@@ -187,6 +192,12 @@ def main_worker():
         start_validation = time.time()
         acc1, acc5, acc10 = validate(data.val_loader, model, criterion, parser_args, writer, epoch)
         validation_time.update((time.time() - start_validation) / 60)
+
+        # update all results lists
+        epoch_list.append(epoch)
+        test_acc_list.append(acc1)
+        # TODO: define sparsity for cifar10 networks
+        model_sparsity_list.append(-1)
 
         # remember best acc@1 and save checkpoint
         is_best = acc1 > best_acc1
@@ -268,6 +279,16 @@ def main_worker():
         base_config=parser_args.config,
         name=parser_args.name,
     )
+
+    # TODO: plot histograms here too
+    results_df = pd.DataFrame({'epoch': epoch_list, 'test_acc': test_acc_list, 'model_sparsity': model_sparsity_list})
+    if glob_args.results_filename:
+        results_filename = glob_args.results_filename
+    else:
+        # TODO: move this to utils
+        train_mode_str = 'weight_training' if glob_args.weight_training else 'pruning'
+        results_filename = "results/results_acc_{}_{}_{}.csv".format(train_mode_str, glob_args.dataset, glob_args.algo)
+    results_df.to_csv(results_filename, index=False)
 
 
 def get_trainer(parser_args):

@@ -238,10 +238,11 @@ def parse_arguments():
     parser.add_argument(
         "--conv-type", type=str, default=None, help="What kind of sparsity to use"
     )
-
-    parser.add_argument("--mode",
+    parser.add_argument(
+        "--mode",
         default="fan_in",
-        help="Weight initialization mode")
+        help="Weight initialization mode"
+    )
     parser.add_argument(
         "--nonlinearity",
         default="relu",
@@ -462,6 +463,18 @@ def parse_arguments():
         type=int,
         metavar="N",
         help="print frequency (default: 10)",
+    )
+    parser.add_argument(
+        '--results-filename',
+        type=str,
+        default=None,
+        help='csv results filename'
+    )
+    parser.add_argument(
+        '--weight-training',
+        action='store_true',
+        default=False,
+        help='flag that decides if we are doing pruning or weight training'
     )
 
     args = parser.parse_args()
