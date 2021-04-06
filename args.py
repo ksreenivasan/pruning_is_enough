@@ -208,13 +208,6 @@ def parse_arguments():
         metavar="H",
         help="Number of nodes in the FC layers of the network"
     )
-#    parser.add_argument(
-#        "--sparsity",
-#        type=float,
-#        default=0.5,
-#        metavar="S",
-#        help="The ratio of weights to remove in each fully connected layer. A sparsity of 0 means no weights are pruned, and a sparsity of 1 means all weights are pruned (default: 0.5)"
-#    )
     parser.add_argument(
         "--bias",
         action="store_true",
@@ -234,7 +227,8 @@ def parse_arguments():
         default=None,
         help="What kind of sparsity to use"
     )
-    parser.add_argument("--mode",
+    parser.add_argument(
+        "--mode",
         default="fan_in",
         help="Weight initialization mode"
     )
@@ -243,9 +237,11 @@ def parse_arguments():
         default="relu",
         help="Nonlinearity used by initialization"
     )
-    parser.add_argument("--bn-type",
+    parser.add_argument(
+        "--bn-type",
         default=None,
-        help="BatchNorm type")
+        help="BatchNorm type"
+    )
     parser.add_argument(
         "--init",
         default="kaiming_normal",

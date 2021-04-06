@@ -3,7 +3,6 @@ algo: 'ep'
 
 # Architecture
 arch: Conv4
-mode: pruning
 
 # ===== Dataset ===== #
 #data: /mnt
