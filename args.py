@@ -91,6 +91,14 @@ def parse_arguments():
         metavar="LR",
         help="Learning rate (default: 0.001)"
     )
+
+    parser.add_argument(
+        "--lr-policy",
+        type=str,
+        default="cosine_lr",
+        help="Learning rate scheduler"
+    )
+
     parser.add_argument(
         "--momentum",
         type=float,
