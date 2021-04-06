@@ -148,7 +148,7 @@ def parse_arguments():
         metavar="MI",
         help="Maximum number of iterations to run simulated annealing for before terminating. It's recommended to set this to a value that at is at least as big as the number of parameters in the network (default: 100000)"
     )
-    
+
     parser.add_argument(
         "--algo",
         type=str,
@@ -177,7 +177,7 @@ def parse_arguments():
         help='rounding technique to use |naive|prob|pb|'
         # naive: threshold(0.5), prob: probabilistic rounding, pb: pseudo-boolean paper's choice (RoundDown)
     )
-   
+
     parser.add_argument(
         "--num_test",
         type=int,
