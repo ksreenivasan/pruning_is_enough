@@ -363,23 +363,24 @@ def get_model(parser_args):
     print("=> Creating model '{}'".format(parser_args.arch))
     model = models.__dict__[parser_args.arch]() #model = models.__dict__[parser_args.arch](shift=parser_args.shift)
 
-    # applying sparsity to the network
-    if (
-        parser_args.conv_type != "DenseConv"
-        and parser_args.conv_type != "SampleSubnetConv"
-        and parser_args.conv_type != "ContinuousSparseConv"
-    ):
-        if parser_args.prune_rate < 0:
-            raise ValueError("Need to set a positive prune rate")
+    if parser_args.mode == "pruning":
+        # applying sparsity to the network
+        if (
+            parser_args.conv_type != "DenseConv"
+            and parser_args.conv_type != "SampleSubnetConv"
+            and parser_args.conv_type != "ContinuousSparseConv"
+        ):
+            if parser_args.prune_rate < 0:
+                raise ValueError("Need to set a positive prune rate")
 
-        set_model_prune_rate(model, prune_rate=parser_args.prune_rate)
-        print(
-            f"=> Rough estimate model params {sum(int(p.numel() * (1-parser_args.prune_rate)) for n, p in model.named_parameters() if not n.endswith('scores'))}"
-        )
+            set_model_prune_rate(model, prune_rate=parser_args.prune_rate)
+            print(
+                f"=> Rough estimate model params {sum(int(p.numel() * (1-parser_args.prune_rate)) for n, p in model.named_parameters() if not n.endswith('scores'))}"
+            )
 
-    # freezing the weights if we are only doing subnet training
-    if parser_args.freeze_weights:
-        freeze_model_weights(model)
+        # freezing the weights if we are only doing subnet training
+        if parser_args.freeze_weights:
+            freeze_model_weights(model)
 
     return model
 
@@ -411,7 +412,8 @@ def get_optimizer(parser_args, model):
         )
     elif parser_args.optimizer == "adam":
         optimizer = torch.optim.Adam(
-            filter(lambda p: p.requires_grad, model.parameters()), lr=parser_args.lr
+            filter(lambda p: p.requires_grad, model.parameters()), lr=parser_args.lr,
+            weight_decay=parser_args.weight_decay
         )
 
     return optimizer
