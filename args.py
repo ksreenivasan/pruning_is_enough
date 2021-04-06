@@ -236,10 +236,12 @@ def parse_arguments():
     )
 
     parser.add_argument(
-        "--conv-type", type=str, default=None, help="What kind of sparsity to use"
+        "--conv-type",
+        type=str,
+        default=None,
+        help="What kind of sparsity to use"
     )
-    parser.add_argument(
-        "--mode",
+    parser.add_argument("--mode",
         default="fan_in",
         help="Weight initialization mode"
     )
