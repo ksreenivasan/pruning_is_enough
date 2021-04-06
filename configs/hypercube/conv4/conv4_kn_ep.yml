@@ -5,9 +5,8 @@ algo: 'ep'
 arch: Conv4
 
 # ===== Dataset ===== #
-#data: /mnt
-set: CIFAR10
-name: conv4_kn_unsigned
+dataset: CIFAR10
+name: conv4_kn_ep
 
 # ===== Learning Rate Policy ======== #
 optimizer: sgd

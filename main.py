@@ -282,12 +282,12 @@ def main_worker():
 
     # TODO: plot histograms here too
     results_df = pd.DataFrame({'epoch': epoch_list, 'test_acc': test_acc_list, 'model_sparsity': model_sparsity_list})
-    if glob_args.results_filename:
-        results_filename = glob_args.results_filename
+    if parser_args.results_filename:
+        results_filename = parser_args.results_filename
     else:
         # TODO: move this to utils
-        train_mode_str = 'weight_training' if glob_args.weight_training else 'pruning'
-        results_filename = "results/results_acc_{}_{}_{}.csv".format(train_mode_str, glob_args.dataset, glob_args.algo)
+        train_mode_str = 'weight_training' if parser_args.weight_training else 'pruning'
+        results_filename = "results/results_acc_{}_{}_{}.csv".format(train_mode_str, parser_args.dataset, parser_args.algo)
     results_df.to_csv(results_filename, index=False)
 
 
@@ -371,8 +371,8 @@ def pretrained(parser_args, model):
 
 
 def get_dataset(parser_args):
-    print(f"=> Getting {parser_args.set} dataset")
-    dataset = getattr(data, parser_args.set)(parser_args)
+    print(f"=> Getting {parser_args.dataset} dataset")
+    dataset = getattr(data, parser_args.dataset)(parser_args)
 
     return dataset
 
