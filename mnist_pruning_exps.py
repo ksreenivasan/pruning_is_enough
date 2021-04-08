@@ -19,6 +19,7 @@ import torch.autograd as autograd
 
 import pdb
 import time
+import copy
 plt.style.use('seaborn-whitegrid')
 
 glob_args = None
@@ -428,8 +429,7 @@ def round_and_evaluate(model, device, criterion, train_loader, test_loader):
     test(model, device, criterion, test_loader)
     acc_list = []
     score_sparsity_list = []
-    for itr in range(glob_args.num_test):
-        #torch.cuda.manual_seed(itr)
+    for itr in range(1):
         #model.load_state_dict(torch.load('mnist_pruned_model_{}_{}.pt'.format(glob_args.algo, glob_args.epochs)))
         print('Testing rounding technique of {}'.format(glob_args.round))
         for name, params in model.named_parameters():
@@ -437,9 +437,15 @@ def round_and_evaluate(model, device, criterion, train_loader, test_loader):
                 if glob_args.round == 'naive':
                     #params.data = torch.gt(params, torch.ones_like(params)*0.5).int()
                     params.data = torch.gt(params.detach(), torch.ones_like(params.data)*0.5).int().float()
+                elif glob_args.round == 'noisy':
+                    params.data = torch.gt(params.detach(), torch.ones_like(params.data)*0.5).int().float()
+                    pdb.set_trace()
+                    params.data += torch.bernoulli(torch.ones_like(params.detach().data)*0.01)
+                    params.data = torch.fmod(params.detach().data, 2).int()
                 elif glob_args.round == 'prob':
                     #print(torch.bernoulli(params.detach()[0]))
-                    params.data = torch.bernoulli(params.data)
+                    #pdb.set_trace()
+                    params.data = torch.bernoulli(params.detach().data)
                 elif glob_args.round == 'pb':
                     params.data = round_down(model, params, device, train_loader, criterion)
                     print(name, ' ended')
@@ -527,7 +533,7 @@ def main():
 
     torch.manual_seed(glob_args.seed)
 
-    device = torch.device("cuda:1" if use_cuda else "cpu")
+    device = torch.device("cuda:2" if use_cuda else "cpu")
 
     kwargs = {'num_workers': 1, 'pin_memory': True} if use_cuda else {}
     train_loader = torch.utils.data.DataLoader(
@@ -580,9 +586,10 @@ def main():
         for epoch in range(1, glob_args.epochs + 1):
             train(model, device, train_loader, optimizer, criterion, epoch)
             #if epoch % 50 == 0 and glob_args.algo in ['hc_iter']: # 50
-            if epoch >= 50 and glob_args.algo in ['hc_iter']: # 50
+            #if epoch % 1 == 0:
+            #if epoch >= 20 and epoch % 5 == 0 and glob_args.algo in ['hc_iter']: # 50
                 #pdb.set_trace()
-                round_and_evaluate(model, device, criterion, train_loader, test_loader)
+            #    round_and_evaluate(model, device, criterion, train_loader, test_loader)
 
             test_acc = test(model, device, criterion, test_loader)
             scheduler.step()
@@ -622,7 +629,11 @@ def main():
     if glob_args.algo in ['hc', 'hc_iter']:
         # irrespective of evaluate_only, add an evaluate_only step
         model.load_state_dict(torch.load('mnist_pruned_model_{}_{}_{}.pt'.format(glob_args.algo, glob_args.epochs, glob_args.scores_init)))
-        round_and_evaluate(model, device, criterion, train_loader, test_loader)
+        orig_model = copy.deepcopy(model)
+        print('I am here')
+        for itr in range(glob_args.num_test):
+            model = copy.deepcopy(orig_model)
+            round_and_evaluate(model, device, criterion, train_loader, test_loader)
         #print("Test Acc: {:.2f}%\n".format(round_acc_list))
 
     print("Experiment donezo")
