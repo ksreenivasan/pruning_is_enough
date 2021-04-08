@@ -11,7 +11,7 @@ name: conv4_standard_training
 # ===== Learning Rate Policy ======== #
 optimizer: adam
 lr: 0.001
-lr_policy: None
+lr_policy: constant_lr
 
 # ===== Network training config ===== #
 epochs: 100
