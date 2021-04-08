@@ -26,7 +26,7 @@ def parse_arguments():
     )
     parser.add_argument(
         "--config",
-        default='configs/hypercube/conv4/conv4_kn_unsigned.yml',
+        default='configs/hypercube/conv4/conv4_kn_ep.yml',
         help="Config file to use"
     )
     parser.add_argument(
