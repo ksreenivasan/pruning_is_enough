@@ -279,6 +279,29 @@ def main_worker():
         results_filename = "results/results_acc_{}_{}_{}.csv".format(train_mode_str, parser_args.dataset, parser_args.algo)
     results_df.to_csv(results_filename, index=False)
 
+    # check the performance of trained model
+    if parser_args.algo in ['hc']: 
+        if parser_args.round in ['prob']:
+            trial_num = 10
+        else:
+            trial_num = 1
+
+        for trial in range(trial_num):
+            cp_model = copy.deepcopy(model)
+            hc_round(cp_model, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio)
+           # hc_round(model, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio)
+            get_score_sparsity_hc(cp_model)
+
+            acc1, acc5, acc10 = validate(
+                data.val_loader, cp_model, criterion,
+                parser_args, writer=None, epoch=parser_args.start_epoch
+            )
+            print('acc1: {}, acc5: {}, acc10: {}'.format(acc1, acc5, acc10))
+
+
+
+
+
 
 
 def get_trainer(parser_args):
