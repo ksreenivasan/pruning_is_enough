@@ -3,11 +3,9 @@ algo: 'hc'
 
 # Architecture
 arch: Conv4
-mode: pruning
 
 # ===== Dataset ===== #
-data: /mnt
-set: CIFAR10
+dataset: CIFAR10
 name: conv4_kn_unsigned
 
 # ===== Learning Rate Policy ======== #
@@ -16,7 +14,7 @@ lr: 0.01
 lr_policy: cosine_lr
 
 # ===== Network training config ===== #
-epochs: 5
+epochs: 150
 weight_decay: 0.0 #0.0001
 momentum: 0.9
 batch_size: 128
