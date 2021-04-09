@@ -208,6 +208,20 @@ def parse_arguments():
     )
 
     parser.add_argument(
+        "--hc-warmup",
+        default=9999,
+        type=int,
+        help="warmup epochs for hypercube"
+    )
+
+    parser.add_argument(
+        "--hc-period",
+        default=1,
+        type=int,
+        help="rounding period for hypercube"
+    )
+
+    parser.add_argument(
         "--num_test",
         type=int,
         default=1,

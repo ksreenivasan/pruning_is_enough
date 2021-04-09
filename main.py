@@ -171,12 +171,11 @@ def main_worker():
         )
         train_time.update((time.time() - start_train) / 60)
 
-        '''
-        for name, params in model.named_parameters():
-            if "0.weight" in name:
-                print(params[0])
-        '''
-        #pdb.set_trace()
+
+        # apply round for every T epochs (after E warm-up epoch)
+        if epoch >= parser_args.hc-warmup and epoch % parser_args.hc-period == 0:
+            hc_round(model, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio)
+
 
         # evaluate on validation set
         start_validation = time.time()
