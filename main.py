@@ -89,9 +89,6 @@ def main_worker():
                 writer=None, epoch=parser_args.start_epoch)
 
             print('acc1: {}, acc5: {}, acc10: {}'.format(acc1, acc5, acc10))
-            # store values
-            #err[i] = 100 - acc1
-            #print('err1: ', 100-acc1)
 
             if parser_args.algo in ('hc'):  
                 hc_round(model, parser_args.round, noise=parser_args.noise)
@@ -102,22 +99,9 @@ def main_worker():
             )
 
             print('acc1: {}, acc5: {}, acc10: {}'.format(acc1, acc5, acc10))
-            # store values
-            #err[i] = 100 - acc1
-            #print('err1: ', 100-acc1)
 
             return
 
-    '''
-    if parser_args.evaluate:
-        # get statistics of error 
-        mean = torch.mean(err)
-        std = torch.std(err)
-        result = np.array([parser_args.shift, mean, std])
-        np.save('stat_{}_{}'.format(parser_args.shift, parser_args.num_trial), result)
-
-        return
-    '''
 
     # Set up directories
     run_base_dir, ckpt_base_dir, log_base_dir = get_directories(parser_args)
