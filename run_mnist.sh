@@ -1,5 +1,7 @@
-python mnist_pruning_exps.py --mode training \
---lr 0.001 \
---wd 0.0001 \
+python mnist_pruning_exps.py --mode pruning \
+--algo pt \
+--lr 0.01 \
+--regularization \
+--lmbda 1e-5 \
 --optimizer adam \
-#--epochs 5
+--epochs 50
