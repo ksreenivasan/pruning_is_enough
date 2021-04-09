@@ -136,7 +136,42 @@ class SubnetL1RegLoss(nn.Module):
                 l1_accum += (p*temperature).sigmoid().sum()
 
         return l1_accum
+
+
         
+#### Functions used for hypercube (HC) ####
+def hc_round(model, round, noise=False):
+
+    for name, params in model.named_parameters():
+        if ".score" in name:
+            if parser_args.round == 'naive':
+                params.data = torch.gt(params.detach(), torch.ones_like(params.data)*0.5).int().float()
+            elif parser_args.round == 'prob':
+                params.data = torch.bernoulli(params).float()
+            else:
+                print("INVALID ROUNDING")
+                print("EXITING")    
+
+
+def get_score_sparsity_hc(model):                                                                                                                                                                               
+    sparsity = []     
+    numer = 0     
+    denom = 0     
+    for name, scores in model.named_parameters():     
+        if ".score" in name:     
+            num_ones = torch.sum(scores.detach().flatten())     
+            numer += num_ones.item()     
+            denom += scores.numel()     
+            curr_sparsity = 100 * num_ones.item()/scores.numel()                                                                                                                                                
+            sparsity.append(curr_sparsity)     
+            print(name, '{}/{} ({:.2f} %)'.format((int)(num_ones.item()), scores.numel(), curr_sparsity))        
+    print('overall sparsity: {}/{} ({:.2f} %)'.format((int)(numer), denom, 100*numer/denom))        
+     
+    return 100*numer/denom     
+
+
+
+
         
 #### Functions used for greedy pruning ####
 def get_sparsity(model):

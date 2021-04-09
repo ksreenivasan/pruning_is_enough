@@ -23,6 +23,8 @@ from utils.net_utils import (
     save_checkpoint,
     get_lr,
     LabelSmoothing,
+    hc_round,
+    get_score_sparsity_hc
 )
 from utils.schedulers import get_policy
 
@@ -87,18 +89,18 @@ def main_worker():
             acc1, acc5, acc10 = validate(
                 data.val_loader, model, criterion, parser_args,
                 writer=None, epoch=parser_args.start_epoch)
-
             print('acc1: {}, acc5: {}, acc10: {}'.format(acc1, acc5, acc10))
 
             if parser_args.algo in ('hc'):  
                 hc_round(model, parser_args.round, noise=parser_args.noise)
+                get_score_sparsity_hc(model)
 
             acc1, acc5, acc10 = validate(
                 data.val_loader, model, criterion,
                 parser_args, writer=None, epoch=parser_args.start_epoch
             )
-
             print('acc1: {}, acc5: {}, acc10: {}'.format(acc1, acc5, acc10))
+            score_sparsity(model, )
 
             return
 
@@ -265,20 +267,6 @@ def main_worker():
         train_mode_str = 'weight_training' if parser_args.weight_training else 'pruning'
         results_filename = "results/results_acc_{}_{}_{}.csv".format(train_mode_str, parser_args.dataset, parser_args.algo)
     results_df.to_csv(results_filename, index=False)
-
-
-
-def hc_round(model, round, noise=False):
-
-    for name, params in model.named_parameters():
-        if ".score" in name:
-            if parser_args.round == 'naive':
-                params.data = torch.gt(params.detach(), torch.ones_like(params.data)*0.5).int().float()
-            elif parser_args.round == 'prob':
-                params.data = torch.bernoulli(params).float()
-            else:
-                print("INVALID ROUNDING")
-                print("EXITING")    
 
 
 
