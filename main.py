@@ -51,8 +51,9 @@ def main_worker():
     if parser_args.gpu is not None:
         print("Use GPU: {} for training".format(parser_args.gpu))
 
-    err = torch.zeros(parser_args.num_trial)
-    for i in range(parser_args.num_trial):
+    #err = torch.zeros(parser_args.num_trial)
+    #for i in range(parser_args.num_trial):
+    for i in range(1):
         # create model and optimizer
         model = get_model(parser_args)
         model = set_gpu(parser_args, model)
@@ -82,28 +83,19 @@ def main_worker():
             best_acc1 = resume(parser_args, model, optimizer)
 
         if parser_args.evaluate:
+
             acc1, acc5, acc10 = validate(
                 data.val_loader, model, criterion, parser_args,
                 writer=None, epoch=parser_args.start_epoch)
 
             print('acc1: {}, acc5: {}, acc10: {}'.format(acc1, acc5, acc10))
             # store values
-            err[i] = 100 - acc1
-            print('err1: ', 100-acc1)
+            #err[i] = 100 - acc1
+            #print('err1: ', 100-acc1)
 
-            # TODO: @KS: Move this to function like mnist
-            '''
-            if parser_args.algo in ('hc'):
-                for name, params in model.named_parameters():
-                    if ".score" in name:
-                        if parser_args.round == 'naive':
-                            params.data = torch.gt(params.detach(), torch.ones_like(params.data)*0.5).int().float()
-                        elif parser_args.round == 'prob':
-                            params.data = torch.bernoulli(params).float()
-                        else:
-                            print("INVALID ROUNDING")
-                            print("EXITING")
-            '''
+            if parser_args.algo in ('hc'):  
+                hc_round(model, parser_args.round, noise=parser_args.noise)
+
             acc1, acc5, acc10 = validate(
                 data.val_loader, model, criterion,
                 parser_args, writer=None, epoch=parser_args.start_epoch
@@ -111,8 +103,8 @@ def main_worker():
 
             print('acc1: {}, acc5: {}, acc10: {}'.format(acc1, acc5, acc10))
             # store values
-            err[i] = 100 - acc1
-            print('err1: ', 100-acc1)
+            #err[i] = 100 - acc1
+            #print('err1: ', 100-acc1)
 
             return
 
@@ -289,6 +281,22 @@ def main_worker():
         train_mode_str = 'weight_training' if parser_args.weight_training else 'pruning'
         results_filename = "results/results_acc_{}_{}_{}.csv".format(train_mode_str, parser_args.dataset, parser_args.algo)
     results_df.to_csv(results_filename, index=False)
+
+
+
+def hc_round(model, round, noise=False):
+
+    for name, params in model.named_parameters():
+        if ".score" in name:
+            if parser_args.round == 'naive':
+                params.data = torch.gt(params.detach(), torch.ones_like(params.data)*0.5).int().float()
+            elif parser_args.round == 'prob':
+                params.data = torch.bernoulli(params).float()
+            else:
+                print("INVALID ROUNDING")
+                print("EXITING")    
+
+
 
 
 def get_trainer(parser_args):

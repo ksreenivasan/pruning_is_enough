@@ -187,6 +187,13 @@ def parse_arguments():
     )
 
     parser.add_argument(
+        "--noise",
+        type=int,
+        default=0,
+        help='whether add noise to the rounded p_i'
+    )
+
+    parser.add_argument(
         "--num_test",
         type=int,
         default=1,
