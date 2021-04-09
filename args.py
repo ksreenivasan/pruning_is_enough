@@ -95,7 +95,7 @@ def parse_arguments():
     parser.add_argument(
         "--lr-policy",
         type=str,
-        default="cosine_lr",
+        default=None,  #"cosine_lr",
         help="Learning rate scheduler"
     )
 

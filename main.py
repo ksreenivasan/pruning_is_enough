@@ -285,9 +285,10 @@ def main_worker():
             trial_num = 10
         else:
             trial_num = 1
-
+        
         for trial in range(trial_num):
             cp_model = copy.deepcopy(model)
+            print('Apply rounding for the final model:')
             hc_round(cp_model, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio)
            # hc_round(model, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio)
             get_score_sparsity_hc(cp_model)
