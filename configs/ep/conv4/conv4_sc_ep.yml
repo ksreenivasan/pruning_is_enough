@@ -6,7 +6,7 @@ arch: Conv4
 
 # ===== Dataset ===== #
 dataset: CIFAR10
-name: conv4_kn_ep
+name: conv4_ep_sc
 
 # ===== Learning Rate Policy ======== #
 optimizer: sgd
@@ -14,7 +14,7 @@ lr: 0.1
 lr_policy: cosine_lr
 
 # ===== Network training config ===== #
-epochs: 150
+epochs: 100
 weight_decay: 0.0001
 momentum: 0.9
 batch_size: 128
@@ -23,10 +23,9 @@ batch_size: 128
 conv_type: SubnetConv
 bn_type: NonAffineBatchNorm
 freeze_weights: True
-prune_rate: -1
-init: kaiming_normal
+prune_rate: 0.5
+init: signed_constant
 scale_fan: True
 
 # ===== Hardware setup ===== #
 workers: 4
-
