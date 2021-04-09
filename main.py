@@ -173,9 +173,9 @@ def main_worker():
 
 
         # apply round for every T epochs (after E warm-up epoch)
-        if epoch >= parser_args.hc-warmup and epoch % parser_args.hc-period == 0:
+        if epoch >= parser_args.hc_warmup and epoch % parser_args.hc_period == 0:
+            print('Apply rounding: {}'.format(parser_args.round))
             hc_round(model, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio)
-
 
         # evaluate on validation set
         start_validation = time.time()
