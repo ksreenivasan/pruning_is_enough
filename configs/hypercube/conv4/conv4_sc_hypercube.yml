@@ -1,0 +1,31 @@
+# Hypercube optimization
+algo: 'hc'
+
+# Architecture
+arch: Conv4
+
+# ===== Dataset ===== #
+dataset: CIFAR10
+name: conv4_sc_unsigned
+
+# ===== Learning Rate Policy ======== #
+optimizer: adam
+lr: 0.01
+lr_policy: cosine_lr
+
+# ===== Network training config ===== #
+epochs: 150
+weight_decay: 0.0 #0.0001
+momentum: 0.9
+batch_size: 128
+
+# ===== Sparsity =========== #
+conv_type: SubnetConv
+bn_type: NonAffineBatchNorm
+freeze_weights: True
+prune_rate: -1
+init: signed_constant
+scale_fan: False #True
+
+# ===== Hardware setup ===== #
+workers: 4
