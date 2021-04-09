@@ -100,7 +100,6 @@ def main_worker():
                 parser_args, writer=None, epoch=parser_args.start_epoch
             )
             print('acc1: {}, acc5: {}, acc10: {}'.format(acc1, acc5, acc10))
-            score_sparsity(model, )
 
             return
 
@@ -267,7 +266,6 @@ def main_worker():
         train_mode_str = 'weight_training' if parser_args.weight_training else 'pruning'
         results_filename = "results/results_acc_{}_{}_{}.csv".format(train_mode_str, parser_args.dataset, parser_args.algo)
     results_df.to_csv(results_filename, index=False)
-
 
 
 
