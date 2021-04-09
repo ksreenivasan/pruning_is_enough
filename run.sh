@@ -15,17 +15,6 @@
 #               --evaluate 1
 #BLOCK
 
-
-# # CIFAR-10, test (HC)
- python main.py --config configs/hypercube/conv4/conv4_kn_hypercube.yml \
-                --multigpu 1,2 \
-                --name conv4-kn-unsigned-hypercube-adam-0.01--scale-fan_False \
-                --prune-rate 0.0 \
-#                --pretrained 'models/pretrained/conv4-kn-unsigned-hypercube-adam-0.01--scale-fan_False.pth' \
-#                --evaluate 1
-#                --bias \
-
-
 ## CIFAR-10, train (EP)
 ## Note: EP seems to do worse in the beginning with bias
 #python main.py --config configs/hypercube/conv4/conv4_kn_ep.yml \
@@ -33,3 +22,19 @@
 #              --name conv4-kn-ep \
 #              --prune-rate 0.5 \
 #              --bias \
+
+
+# # CIFAR-10, train (HC)
+# python main.py --config configs/hypercube/conv4/conv4_kn_hypercube.yml \
+#                --multigpu 1,2 \
+#                --name conv4-kn-hypercube \
+#                --prune-rate 0.0 \
+
+# # CIFAR-10, test (HC)
+ python main.py --config configs/hypercube/conv4/conv4_kn_hypercube.yml \
+                --multigpu 1,2 \
+                --name conv4-kn-hypercube \
+                --prune-rate 0.0 \
+                --pretrained 'models/pretrained/conv4-kn-hypercube-149.state' \
+                --evaluate
+

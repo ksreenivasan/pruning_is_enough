@@ -86,7 +86,7 @@ def main_worker():
                 data.val_loader, model, criterion, parser_args,
                 writer=None, epoch=parser_args.start_epoch)
 
-            print('acc1: {}, acc5: {}, acc10: {}'.format(acc1, acc5. acc10))
+            print('acc1: {}, acc5: {}, acc10: {}'.format(acc1, acc5, acc10))
             # store values
             err[i] = 100 - acc1
             print('err1: ', 100-acc1)
