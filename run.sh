@@ -28,8 +28,8 @@
 
 ## CIFAR-10, train (EP)
 ## Note: EP seems to do worse in the beginning with bias
-python main.py --config configs/hypercube/conv4/conv4_kn_ep.yml \
-              --multigpu 1,2 \
-              --name conv4-kn-ep \
-              --prune-rate 0.5 \
+#python main.py --config configs/hypercube/conv4/conv4_kn_ep.yml \
+#              --multigpu 1,2 \
+#              --name conv4-kn-ep \
+#              --prune-rate 0.5 \
 #              --bias \
