@@ -33,6 +33,7 @@ import importlib
 import data
 import models
 
+import copy
 
 def main():
     print(parser_args)
@@ -91,15 +92,23 @@ def main_worker():
                 writer=None, epoch=parser_args.start_epoch)
             print('acc1: {}, acc5: {}, acc10: {}'.format(acc1, acc5, acc10))
 
-            if parser_args.algo in ('hc'):  
-                hc_round(model, parser_args.round, noise=parser_args.noise)
-                get_score_sparsity_hc(model)
+            if parser_args.algo in ['hc']: 
+                if parser_args.round in ['prob']:
+                    trial_num = 10
+                else:
+                    trial_num = 1
 
-            acc1, acc5, acc10 = validate(
-                data.val_loader, model, criterion,
-                parser_args, writer=None, epoch=parser_args.start_epoch
-            )
-            print('acc1: {}, acc5: {}, acc10: {}'.format(acc1, acc5, acc10))
+                for trial in range(trial_num):
+                    cp_model = copy.deepcopy(model)
+                    hc_round(cp_model, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio)
+                   # hc_round(model, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio)
+                    get_score_sparsity_hc(cp_model)
+
+                    acc1, acc5, acc10 = validate(
+                        data.val_loader, cp_model, criterion,
+                        parser_args, writer=None, epoch=parser_args.start_epoch
+                    )
+                    print('acc1: {}, acc5: {}, acc10: {}'.format(acc1, acc5, acc10))
 
             return
 

@@ -36,5 +36,9 @@
                 --name conv4-kn-hypercube \
                 --prune-rate 0.0 \
                 --pretrained 'models/pretrained/conv4-kn-hypercube-149.state' \
-                --evaluate
+                --evaluate \
+                --round prob \
+
+                #--noise \
+                #--noise-ratio 0.01 \
 

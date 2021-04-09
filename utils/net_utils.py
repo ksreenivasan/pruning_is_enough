@@ -140,17 +140,22 @@ class SubnetL1RegLoss(nn.Module):
 
         
 #### Functions used for hypercube (HC) ####
-def hc_round(model, round_scheme, noise=False):
+def hc_round(model, round_scheme, noise=False, ratio=0.0):
 
     for name, params in model.named_parameters():
         if ".score" in name:
             if round_scheme == 'naive':
-                params.data = torch.gt(params.detach(), torch.ones_like(params.data)*0.5).int().float()
+                params.data = torch.gt(params.data, torch.ones_like(params.data)*0.5).int().float()
+                #params.data = torch.gt(params.detach(), torch.ones_like(params.data)*0.5).int().float()
             elif round_scheme == 'prob':
-                params.data = torch.bernoulli(params).float()
+                params.data = torch.bernoulli(params.data).float()
             else:
                 print("INVALID ROUNDING")
-                print("EXITING")    
+                print("EXITING")  
+
+            if noise:
+                delta = torch.bernoulli(torch.ones_like(params.data)*ratio)
+                params.data = (params.data + delta) % 2
 
 
 def get_score_sparsity_hc(model):                                                                                                                                                                               

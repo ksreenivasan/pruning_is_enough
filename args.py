@@ -187,10 +187,17 @@ def parse_arguments():
     )
 
     parser.add_argument(
-        "--noise",
-        type=int,
-        default=0,
-        help='whether add noise to the rounded p_i'
+        '--noise',
+        action='store_true',
+        default=False,
+        help='flag that decides if we add noise to the rounded p_i'
+    )
+
+    parser.add_argument(
+        "--noise-ratio",
+        type=float,
+        default=0.0,
+        help="portion of score flipping"
     )
 
     parser.add_argument(
