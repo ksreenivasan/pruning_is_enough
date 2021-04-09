@@ -201,6 +201,13 @@ def parse_arguments():
     )
 
     parser.add_argument(
+        "--score-init",
+        type=str,
+        default="unif",
+        help="initial score for hypercube |unif|bern|"
+    )
+
+    parser.add_argument(
         "--num_test",
         type=int,
         default=1,

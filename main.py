@@ -153,6 +153,10 @@ def main_worker():
         save=False,
     )
 
+    # sanity check for 50% sparsity initialization
+    if parser_args.score_init == 'bern':
+        get_score_sparsity_hc(model)
+
     # Start training
     for epoch in range(parser_args.start_epoch, parser_args.epochs):
         lr_policy(epoch, iteration=None)

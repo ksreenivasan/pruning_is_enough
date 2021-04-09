@@ -88,9 +88,13 @@ class SubnetConv(nn.Conv2d):
             # dummy variable just so other things don't break
             self.bias_scores = nn.Parameter(torch.Tensor(1))
 
-        if parser_args.algo in ('hc'):
-            nn.init.uniform_(self.scores, a=0.0, b=1.0)
-            nn.init.uniform_(self.bias_scores, a=0.0, b=1.0)
+        if parser_args.algo in ['hc']:
+            if parser_args.score_init in ['unif']:
+                nn.init.uniform_(self.scores, a=0.0, b=1.0)
+                nn.init.uniform_(self.bias_scores, a=0.0, b=1.0)
+            elif parser_args.score_init in ['bern']:
+                self.scores.data = torch.bernoulli(0.5 * torch.ones_like(self.scores.data))                                                                                                                     
+                self.bias_scores.data = torch.bernoulli(0.5 * torch.ones_like(self.bias_scores.data))    
         else:
             nn.init.kaiming_uniform_(self.scores, a=math.sqrt(5))
             # can't do kaiming here. picking U[-1, 1] for no real reason
