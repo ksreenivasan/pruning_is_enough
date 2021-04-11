@@ -149,6 +149,7 @@ def hc_round(model, round_scheme, noise=False, ratio=0.0):
                 params.data = torch.gt(params.data, torch.ones_like(params.data)*0.5).int().float()
                 #params.data = torch.gt(params.detach(), torch.ones_like(params.data)*0.5).int().float()
             elif round_scheme == 'prob':
+                params.data = torch.clamp(params.data, 0.0, 1.0)
                 params.data = torch.bernoulli(params.data).float()
             else:
                 print("INVALID ROUNDING")

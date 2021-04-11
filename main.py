@@ -282,7 +282,7 @@ def main_worker():
     # check the performance of trained model
     if parser_args.algo in ['hc']: 
         if parser_args.round in ['prob']:
-            trial_num = 10
+            trial_num = 1
         else:
             trial_num = 1
         
