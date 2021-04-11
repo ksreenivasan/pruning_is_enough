@@ -34,6 +34,8 @@ import data
 import models
 
 import copy
+from torch._utils import _flatten_dense_tensors, _unflatten_dense_tensors
+
 
 def main():
     print(parser_args)
@@ -86,6 +88,9 @@ def main_worker():
             best_acc1 = resume(parser_args, model, optimizer)
 
         if parser_args.evaluate:
+
+            visualize_mask(model, criterion, data.train_loader)
+            pdb.set_trace()
 
             acc1, acc5, acc10 = validate(
                 data.val_loader, model, criterion, parser_args,
@@ -301,8 +306,47 @@ def main_worker():
 
 
 
+def visualize_mask(model, criterion, data_loader):
+
+    flat_tensor = []
+    # concatenate the masks
+    for name, params in model.named_parameters():
+        if ".score" in name:
+            flat_tensor.append(params.data)
+    mask_init = _flatten_dense_tensors(flat_tensor) # a: flat_tensor, b = mask_init,
+
+    # select random direction to go
+    sparsity1 = 0.1
+    d1 = torch.bernoulli(torch.ones_like(mask_init) * sparsity1) # d1
+    resol = 100
+
+    for data, label in data_loader:
+        break
+
+    cp_model = copy.deepcopy(model)
+    for i in range(resol):
+        p = i/resol # probability of sampling d1
+        sampling_vct = torch.bernoulli(torch.ones_like(mask_init) * p) # [0, 1]^n  0 : I'll sample mask_init, 1: I'll sample d1
+        new_mask = mask_init * (1-sampling_vct) + d1 * sampling_vct   # w+v
+
+        # put merged masks back to the model
+        new_mask_unflat = _unflatten_dense_tensors(new_mask, flat_tensor)
+        idx = 0
+        for name, params in cp_model.named_parameters():
+            if ".score" in name:
+                params.data = new_mask_unflat[idx]
+                idx += 1
+
+        # compute loss for the mask 
+        loss = criterion(cp_model(data), label)
+        print(i, loss)
 
 
+
+def vectorize_score(score_train):
+    #return torch.cat([grad_value.view(-1) for grad_value in grad_train])
+    # better implementation?
+    return _flatten_dense_tensors(score_train)
 
 
 def get_trainer(parser_args):
