@@ -89,8 +89,6 @@ def main_worker():
 
         if parser_args.evaluate:
 
-            visualize_mask(model, criterion, data.train_loader)
-            pdb.set_trace()
 
             acc1, acc5, acc10 = validate(
                 data.val_loader, model, criterion, parser_args,
@@ -114,6 +112,9 @@ def main_worker():
                         parser_args, writer=None, epoch=parser_args.start_epoch
                     )
                     print('acc1: {}, acc5: {}, acc10: {}'.format(acc1, acc5, acc10))
+
+            visualize_mask(cp_model, criterion, data, validate)
+            pdb.set_trace()
 
             return
 
@@ -306,7 +307,7 @@ def main_worker():
 
 
 
-def visualize_mask(model, criterion, data_loader):
+def visualize_mask(model, criterion, data, validate):
 
     flat_tensor = []
     # concatenate the masks
@@ -317,17 +318,25 @@ def visualize_mask(model, criterion, data_loader):
 
     # select random direction to go
     sparsity1 = 0.1
+    sparsity2 = 0.1
     d1 = torch.bernoulli(torch.ones_like(mask_init) * sparsity1) # d1
-    resol = 100
+    d2 = torch.bernoulli(torch.ones_like(mask_init) * sparsity2) # d2
 
-    for data, label in data_loader:
+
+    new_d1 = (d1 + mask_init) % 2
+    new_d2 = (d2 + mask_init) % 2
+
+    resol = 1000 #1000
+
+    for data_, label_ in data.train_loader:
+        data_, label_ = data_.cuda(), label_.cuda()
         break
 
     cp_model = copy.deepcopy(model)
     for i in range(resol):
-        p = i/resol # probability of sampling d1
+        p = i/resol # probability of sampling new_d1
         sampling_vct = torch.bernoulli(torch.ones_like(mask_init) * p) # [0, 1]^n  0 : I'll sample mask_init, 1: I'll sample d1
-        new_mask = mask_init * (1-sampling_vct) + d1 * sampling_vct   # w+v
+        new_mask = mask_init * (1-sampling_vct) + new_d1 * sampling_vct   # w+v
 
         # put merged masks back to the model
         new_mask_unflat = _unflatten_dense_tensors(new_mask, flat_tensor)
@@ -338,9 +347,13 @@ def visualize_mask(model, criterion, data_loader):
                 idx += 1
 
         # compute loss for the mask 
-        loss = criterion(cp_model(data), label)
+        loss = criterion(cp_model(data_), label_)
         print(i, loss)
 
+        acc1, acc5, acc10 = validate(
+            data.val_loader, cp_model, criterion, parser_args,
+            writer=None, epoch=parser_args.start_epoch)
+        print('acc1: {}, acc5: {}, acc10: {}'.format(acc1, acc5, acc10))
 
 
 def vectorize_score(score_train):
