@@ -320,7 +320,10 @@ def visualize_mask(model, criterion, data, validate):
     sparsity1 = 0.1
     sparsity2 = 0.1
     d1 = torch.bernoulli(torch.ones_like(mask_init) * sparsity1) # d1
+    print(torch.sum(d1))
     d2 = torch.bernoulli(torch.ones_like(mask_init) * sparsity2) # d2
+    print(torch.sum(d2))
+    print(torch.sum(d1*d2))
 
 
     new_d1 = (d1 + mask_init) % 2
@@ -333,7 +336,14 @@ def visualize_mask(model, criterion, data, validate):
         break
 
     cp_model = copy.deepcopy(model)
+    dist_list, train_loss_list, test_acc_list = [], [], []
     for i in range(resol):
+        # 1D Case
+        #p = i/resol # probability of sampling new_d1
+        #sampling_vct = torch.bernoulli(torch.ones_like(mask_init) * p) # [0, 1]^n  0 : I'll sample mask_init, 1: I'll sample d1
+        #new_mask = mask_init * (1-sampling_vct) + new_d1 * sampling_vct   # w+v
+
+        # 2D Case
         p = i/resol # probability of sampling new_d1
         sampling_vct = torch.bernoulli(torch.ones_like(mask_init) * p) # [0, 1]^n  0 : I'll sample mask_init, 1: I'll sample d1
         new_mask = mask_init * (1-sampling_vct) + new_d1 * sampling_vct   # w+v
@@ -350,11 +360,26 @@ def visualize_mask(model, criterion, data, validate):
         loss = criterion(cp_model(data_), label_)
         print(i, loss)
 
+        dist_list.append(p * sparsity1)
+        train_loss_list.append(loss.data.item())
+
+        '''
         acc1, acc5, acc10 = validate(
             data.val_loader, cp_model, criterion, parser_args,
             writer=None, epoch=parser_args.start_epoch)
         print('acc1: {}, acc5: {}, acc10: {}'.format(acc1, acc5, acc10))
+        test_acc_list.append(acc1)
+        '''
+    results_df = pd.DataFrame({'dist': dist_list, 'batch_train_loss': train_loss_list})
+    #results_df = pd.DataFrame({'dist': dist_list, 'batch_train_loss': train_loss_list, 'test_acc': test_acc_list})
+    #if parser_args.results_filename:
+    #    results_filename = parser_args.results_filename
+    #else:
 
+    # TODO: move this to utils
+    train_mode_str = 'weight_training' if parser_args.weight_training else 'pruning'
+    results_filename = "results/results_visualize_sharpness_sparsity_{}_{}_{}_{}.csv".format(sparsity1, train_mode_str, parser_args.dataset, parser_args.algo)
+    results_df.to_csv(results_filename, index=False)
 
 def vectorize_score(score_train):
     #return torch.cat([grad_value.view(-1) for grad_value in grad_train])
