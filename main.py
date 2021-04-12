@@ -114,7 +114,6 @@ def main_worker():
                     print('acc1: {}, acc5: {}, acc10: {}'.format(acc1, acc5, acc10))
 
             visualize_mask(cp_model, criterion, data, validate)
-            pdb.set_trace()
 
             return
 
@@ -317,8 +316,12 @@ def visualize_mask(model, criterion, data, validate):
     mask_init = _flatten_dense_tensors(flat_tensor) # a: flat_tensor, b = mask_init,
 
     # select random direction to go
-    sparsity1 = 0.1
+    sparsity1 = 0.3
     sparsity2 = 0.1
+    num_d = 1 # 100
+    num_v = 100 # 100
+    resol = 100 #1000
+
     d1 = torch.bernoulli(torch.ones_like(mask_init) * sparsity1) # d1
     print(torch.sum(d1))
     d2 = torch.bernoulli(torch.ones_like(mask_init) * sparsity2) # d2
@@ -329,7 +332,6 @@ def visualize_mask(model, criterion, data, validate):
     new_d1 = (d1 + mask_init) % 2
     new_d2 = (d2 + mask_init) % 2
 
-    resol = 1000 #1000
 
     for data_, label_ in data.train_loader:
         data_, label_ = data_.cuda(), label_.cuda()
@@ -339,52 +341,39 @@ def visualize_mask(model, criterion, data, validate):
     dist_list, train_loss_list, test_acc_list = [], [], []
     for i in range(resol):
         # 1D Case
-        #p = i/resol # probability of sampling new_d1
-        #sampling_vct = torch.bernoulli(torch.ones_like(mask_init) * p) # [0, 1]^n  0 : I'll sample mask_init, 1: I'll sample d1
-        #new_mask = mask_init * (1-sampling_vct) + new_d1 * sampling_vct   # w+v
-
-        # 2D Case
         p = i/resol # probability of sampling new_d1
-        sampling_vct = torch.bernoulli(torch.ones_like(mask_init) * p) # [0, 1]^n  0 : I'll sample mask_init, 1: I'll sample d1
-        new_mask = mask_init * (1-sampling_vct) + new_d1 * sampling_vct   # w+v
 
-        # put merged masks back to the model
-        new_mask_unflat = _unflatten_dense_tensors(new_mask, flat_tensor)
-        idx = 0
-        for name, params in cp_model.named_parameters():
-            if ".score" in name:
-                params.data = new_mask_unflat[idx]
-                idx += 1
+        loss_avg = 0
+        for v_idx in range(num_v):
+        
+            sampling_vct = torch.bernoulli(torch.ones_like(mask_init) * p) # [0, 1]^n  0 : I'll sample mask_init, 1: I'll sample d1
+            new_mask = mask_init * (1-sampling_vct) + new_d1 * sampling_vct   # w+v
 
-        # compute loss for the mask 
-        loss = criterion(cp_model(data_), label_)
-        print(i, loss)
+            # put merged masks back to the model
+            new_mask_unflat = _unflatten_dense_tensors(new_mask, flat_tensor)
+            idx = 0
+            for name, params in cp_model.named_parameters():
+                if ".score" in name:
+                    params.data = new_mask_unflat[idx]
+                    idx += 1
 
-        dist_list.append(p * sparsity1)
-        train_loss_list.append(loss.data.item())
+            # compute loss for the mask 
+            loss = criterion(cp_model(data_), label_)
+            print(i, v_idx, loss.data.item())
+            loss_avg += loss.data.item()
 
-        '''
-        acc1, acc5, acc10 = validate(
-            data.val_loader, cp_model, criterion, parser_args,
-            writer=None, epoch=parser_args.start_epoch)
-        print('acc1: {}, acc5: {}, acc10: {}'.format(acc1, acc5, acc10))
-        test_acc_list.append(acc1)
-        '''
+        dist_list.append(round(p * sparsity1, 4))
+        train_loss_list.append(loss_avg/num_v)
+
+
     results_df = pd.DataFrame({'dist': dist_list, 'batch_train_loss': train_loss_list})
-    #results_df = pd.DataFrame({'dist': dist_list, 'batch_train_loss': train_loss_list, 'test_acc': test_acc_list})
-    #if parser_args.results_filename:
-    #    results_filename = parser_args.results_filename
-    #else:
 
     # TODO: move this to utils
     train_mode_str = 'weight_training' if parser_args.weight_training else 'pruning'
-    results_filename = "results/results_visualize_sharpness_sparsity_{}_{}_{}_{}.csv".format(sparsity1, train_mode_str, parser_args.dataset, parser_args.algo)
+    results_filename = "results/results_visualize_sharpness_sparsity1_{}_d1_{}_v_{}_{}_{}_{}.csv".format(sparsity1, num_d, num_v, train_mode_str, parser_args.dataset, parser_args.algo)
     results_df.to_csv(results_filename, index=False)
 
-def vectorize_score(score_train):
-    #return torch.cat([grad_value.view(-1) for grad_value in grad_train])
-    # better implementation?
-    return _flatten_dense_tensors(score_train)
+
 
 
 def get_trainer(parser_args):
