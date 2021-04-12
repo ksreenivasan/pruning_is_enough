@@ -23,7 +23,7 @@ batch_size: 128
 conv_type: SubnetConv
 bn_type: NonAffineBatchNorm
 freeze_weights: True
-prune_rate: -1
+prune_rate: 0.5
 init: kaiming_normal
 scale_fan: True
 
