@@ -316,61 +316,70 @@ def visualize_mask(model, criterion, data, validate):
     mask_init = _flatten_dense_tensors(flat_tensor) # a: flat_tensor, b = mask_init,
 
     # select random direction to go
-    sparsity1 = 0.3
-    sparsity2 = 0.1
-    num_d = 1 # 100
-    num_v = 100 # 100
+    sparsity1 = 0.2
+    #sparsity2 = 0.1
+    num_d = 100 # 100
+    num_v = 10 # 100
     resol = 100 #1000
 
-    d1 = torch.bernoulli(torch.ones_like(mask_init) * sparsity1) # d1
-    print(torch.sum(d1))
-    d2 = torch.bernoulli(torch.ones_like(mask_init) * sparsity2) # d2
-    print(torch.sum(d2))
-    print(torch.sum(d1*d2))
-
-
-    new_d1 = (d1 + mask_init) % 2
-    new_d2 = (d2 + mask_init) % 2
-
-
+    # batch data to test
     for data_, label_ in data.train_loader:
         data_, label_ = data_.cuda(), label_.cuda()
         break
 
+    # setting for saving results
     cp_model = copy.deepcopy(model)
-    dist_list, train_loss_list, test_acc_list = [], [], []
-    for i in range(resol):
-        # 1D Case
-        p = i/resol # probability of sampling new_d1
-
-        loss_avg = 0
-        for v_idx in range(num_v):
-        
-            sampling_vct = torch.bernoulli(torch.ones_like(mask_init) * p) # [0, 1]^n  0 : I'll sample mask_init, 1: I'll sample d1
-            new_mask = mask_init * (1-sampling_vct) + new_d1 * sampling_vct   # w+v
-
-            # put merged masks back to the model
-            new_mask_unflat = _unflatten_dense_tensors(new_mask, flat_tensor)
-            idx = 0
-            for name, params in cp_model.named_parameters():
-                if ".score" in name:
-                    params.data = new_mask_unflat[idx]
-                    idx += 1
-
-            # compute loss for the mask 
-            loss = criterion(cp_model(data_), label_)
-            print(i, v_idx, loss.data.item())
-            loss_avg += loss.data.item()
-
-        dist_list.append(round(p * sparsity1, 4))
-        train_loss_list.append(loss_avg/num_v)
-
-
-    results_df = pd.DataFrame({'dist': dist_list, 'batch_train_loss': train_loss_list})
-
-    # TODO: move this to utils
+    dist_list = []
     train_mode_str = 'weight_training' if parser_args.weight_training else 'pruning'
     results_filename = "results/results_visualize_sharpness_sparsity1_{}_d1_{}_v_{}_{}_{}_{}.csv".format(sparsity1, num_d, num_v, train_mode_str, parser_args.dataset, parser_args.algo)
+
+    #init_time = time.time()
+    for d1_idx in range(num_d):
+        train_loss_list = []
+
+        d1 = torch.bernoulli(torch.ones_like(mask_init) * sparsity1) # d1
+        print('sum of d1: ', torch.sum(d1))
+        #d2 = torch.bernoulli(torch.ones_like(mask_init) * sparsity2) # d2
+        #print(torch.sum(d2))
+        #print(torch.sum(d1*d2))
+
+        new_d1 = (d1 + mask_init) % 2
+        #new_d2 = (d2 + mask_init) % 2
+
+        for i in range(resol):
+            # 1D Case
+            p = i/resol # probability of sampling new_d1
+            loss_avg = 0
+            for v_idx in range(num_v):
+            
+                sampling_vct = torch.bernoulli(torch.ones_like(mask_init) * p) # [0, 1]^n  0 : I'll sample mask_init, 1: I'll sample d1
+                new_mask = mask_init * (1-sampling_vct) + new_d1 * sampling_vct   # w+v
+
+                # put merged masks back to the model
+                new_mask_unflat = _unflatten_dense_tensors(new_mask, flat_tensor)
+                idx = 0
+                for name, params in cp_model.named_parameters():
+                    if ".score" in name:
+                        params.data = new_mask_unflat[idx]
+                        idx += 1
+
+                # compute loss for the mask 
+                loss = criterion(cp_model(data_), label_)
+                print(i, v_idx, loss.data.item())
+                loss_avg += loss.data.item()
+        
+            if d1_idx == 0:
+                dist_list.append(round(p * sparsity1, 4))
+            train_loss_list.append(loss_avg/num_v)
+
+        if d1_idx == 0:
+            results_df = pd.DataFrame({'dist': dist_list, 'batch_train_loss': train_loss_list})
+        else:
+            results_df['batch_train_loss{}'.format(d1_idx+1)] = train_loss_list
+
+        #fin_time = time.time()
+        #print('1st d1 lap-time: ', fin_time - init_time)
+        #pdb.set_trace()
     results_df.to_csv(results_filename, index=False)
 
 
