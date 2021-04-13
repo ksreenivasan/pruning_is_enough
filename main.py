@@ -113,7 +113,8 @@ def main_worker():
                     )
                     print('acc1: {}, acc5: {}, acc10: {}'.format(acc1, acc5, acc10))
 
-            visualize_mask(cp_model, criterion, data, validate)
+            #visualize_mask(cp_model, criterion, data, validate)
+            visualize_mask_2D(cp_model, criterion, data, validate)
 
             return
 
@@ -395,9 +396,9 @@ def visualize_mask_2D(model, criterion, data, validate):
 
     # select random direction to go
     sparsity = 0.2
-    num_d = 1 # 100
-    num_v = 1 # 100
-    resol = 10 #1000
+    num_d = 10 # 100
+    num_v = 10 # 100
+    resol = 20 #1000
 
     # batch data to test
     for data_, label_ in data.train_loader:
@@ -407,14 +408,14 @@ def visualize_mask_2D(model, criterion, data, validate):
     # setting for saving results
     cp_model = copy.deepcopy(model)
     train_mode_str = 'weight_training' if parser_args.weight_training else 'pruning'
-    results_filename = "results/results_2D_visualize_sharpness_sparsity_{}_d_{}_v_{}_{}_{}_{}.csv".format(sparsity, num_d, num_v, train_mode_str, parser_args.dataset, parser_args.algo)
+    results_filename = "results/results_2D_visualize_sharpness_sparsity_{}_d_{}_v_{}_{}_{}_{}".format(sparsity, num_d, num_v, train_mode_str, parser_args.dataset, parser_args.algo)
 
     #init_time = time.time()
     for d1_idx in range(num_d):
 
-        d1 = torch.bernoulli(torch.ones_like(mask_init) * sparsity1) # d1
+        d1 = torch.bernoulli(torch.ones_like(mask_init) * sparsity) # d1
         print('sum of d1: ', torch.sum(d1))
-        d2 = torch.bernoulli(torch.ones_like(mask_init) * sparsity2) # d2
+        d2 = torch.bernoulli(torch.ones_like(mask_init) * sparsity) # d2
         print('sum of d2: ', torch.sum(d2))
         print('sum of d1*d2: ', torch.sum(d1*d2))
 
@@ -445,12 +446,14 @@ def visualize_mask_2D(model, criterion, data, validate):
 
                     # compute loss for the mask 
                     loss = criterion(cp_model(data_), label_)
-                    print(i1, i2, v_idx, loss.data.item())
+                    #print(i1, i2, v_idx, loss.data.item())
                     loss_avg += loss.data.item()
-                loss_arr(i1, i2) = round(loss_avg/num_v, 4)
+                loss_arr[i1, i2] = loss_avg/num_v
 
-        print(loss_arr)
-
+        #print(loss_arr)
+        np.save(results_filename + "_{}.npy".format(d1_idx), loss_arr)
+        saved_loss = np.load(results_filename + "_{}.npy".format(d1_idx))
+        print('saved_loss for d1_idx {}'.format(d1_idx), saved_loss)
     #     if d1_idx == 0:
     #         results_df = pd.DataFrame({'dist': dist_list, 'batch_train_loss': train_loss_list})
     #     else:
