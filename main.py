@@ -378,8 +378,10 @@ def visualize_mask(model, criterion, data, validate, model2=None):
 
     # init_time = time.time()
     for d1_idx in range(num_d):
-        train_loss_list = []
-        test_acc_list = []
+        train_loss_mean_list = []
+        train_loss_std_list = []
+        test_acc_mean_list = []
+        test_acc_std_list = []
         if model2 is None:
             sparsity1 = 0.2
             d1 = torch.bernoulli(torch.ones_like(mask_init) * sparsity1) # d1
@@ -398,8 +400,10 @@ def visualize_mask(model, criterion, data, validate, model2=None):
                 else:
                     dist_list.append(round(p * normalized_hamming_dist, 4))
 
-            loss_avg = 0
-            acc_avg = 0
+            #loss_avg = 0
+            #acc_avg = 0
+            loss_arr, acc_arr = np.zeros(num_v), np.zeros(num_v)
+
             for v_idx in range(num_v):
             
                 sampling_vct = torch.bernoulli(torch.ones_like(mask_init) * p) # [0, 1]^n  0 : I'll sample mask_init, 1: I'll sample d1
@@ -424,18 +428,23 @@ def visualize_mask(model, criterion, data, validate, model2=None):
                     writer=None, epoch=parser_args.start_epoch)
 
                 print(i, v_idx, loss.data.item(), acc1)
-                loss_avg += loss.data.item()
-                acc_avg += acc1
+                loss_arr[v_idx] = loss.data.item()
+                acc_arr[v_idx] = acc1
+                #loss_avg += loss.data.item()
+                #acc_avg += acc1
         
-            train_loss_list.append(loss_avg/num_v)
-            test_acc_list.append(acc_avg/num_v)
+            train_loss_mean_list.append(np.mean(loss_arr))
+            train_loss_std_list.append(np.std(loss_arr))
+            test_acc_mean_list.append(np.mean(acc_arr))
+            test_acc_std_list.append(np.std(acc_arr))
 
 
         if d1_idx == 0:
-            results_df = pd.DataFrame({'dist': dist_list, 'batch_train_loss': train_loss_list, 'test_acc': test_acc_list})
+            results_df = pd.DataFrame({'dist': dist_list, 'train_loss_mean': train_loss_mean_list, 'train_loss_std': train_loss_std_list, 'test_acc_mean': test_acc_mean_list, 'test_acc_std': test_acc_std_list})
         else:
-            results_df['batch_train_loss{}'.format(d1_idx+1)] = train_loss_list
-            print("TODO: add test_acc. Also, save only mean and variance in the data frame")
+            print("not implemented")
+            exit()
+            #results_df['batch_train_loss{}'.format(d1_idx+1)] = train_loss_list
 
         #fin_time = time.time()
         #print('1st d1 lap-time: ', fin_time - init_time)
