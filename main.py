@@ -392,6 +392,8 @@ def connect_mask(model, criterion, data, validate, model2=None): # connect two m
     for d1_idx in range(num_d):
         train_loss_mean_list = []
         train_loss_std_list = []
+        train_acc_mean_list = []
+        train_acc_std_list = []
         test_acc_mean_list = []
         test_acc_std_list = []
         if model2 is None:
@@ -414,7 +416,7 @@ def connect_mask(model, criterion, data, validate, model2=None): # connect two m
 
             #loss_avg = 0
             #acc_avg = 0
-            loss_arr, acc_arr = np.zeros(num_v), np.zeros(num_v)
+            loss_arr, train_acc_arr, acc_arr = np.zeros(num_v), np.zeros(num_v), np.zeros(num_v)
 
             for v_idx in range(num_v):
             
@@ -439,23 +441,30 @@ def connect_mask(model, criterion, data, validate, model2=None): # connect two m
                     data.val_loader, cp_model, criterion, parser_args,
                     writer=None, epoch=parser_args.start_epoch)
 
+                train_acc1, train_acc5, train_acc10 = validate(
+                    data.train_loader, cp_model, criterion, parser_args,
+                    writer=None, epoch=parser_args.start_epoch)
+
                 print(i, v_idx, loss.data.item(), acc1)
                 loss_arr[v_idx] = loss.data.item()
                 acc_arr[v_idx] = acc1
-                #loss_avg += loss.data.item()
-                #acc_avg += acc1
+                train_acc_arr[v_idx] = train_acc1
+
         
             train_loss_mean_list.append(np.mean(loss_arr))
             train_loss_std_list.append(np.std(loss_arr))
+            train_acc_mean_list.append(np.mean(train_acc_arr))
+            train_acc_std_list.append(np.std(train_acc_arr))            
             test_acc_mean_list.append(np.mean(acc_arr))
             test_acc_std_list.append(np.std(acc_arr))
 
 
         if d1_idx == 0:
-            results_df = pd.DataFrame({'dist': dist_list, 'train_loss_mean': train_loss_mean_list, 'train_loss_std': train_loss_std_list, 'test_acc_mean': test_acc_mean_list, 'test_acc_std': test_acc_std_list})
+            results_df = pd.DataFrame({'dist': dist_list, 'train_loss_mean': train_loss_mean_list, 'train_loss_std': train_loss_std_list, 
+                'train_acc_mean': train_acc_mean_list, 'train_acc_std': train_acc_std_list, 
+                'test_acc_mean': test_acc_mean_list, 'test_acc_std': test_acc_std_list})
         else:
-            print("not implemented")
-            exit()
+            raise NotImplementedError
             #results_df['batch_train_loss{}'.format(d1_idx+1)] = train_loss_list
 
         #fin_time = time.time()
@@ -464,7 +473,7 @@ def connect_mask(model, criterion, data, validate, model2=None): # connect two m
     if model2 is None:
         results_filename = "results/results_visualize_sharpness_sparsity1_{}_d1_{}_v_{}_{}_{}_{}.csv".format(sparsity1, num_d, num_v, train_mode_str, parser_args.dataset, parser_args.algo)
     else:
-        results_filename = "results/results_visualize_connectivity_d_{}_v_{}_{}_{}_{}.csv".format(num_d, num_v, train_mode_str, parser_args.dataset, parser_args.algo)
+        results_filename = "results/results_visualize_connectivity_d_{}_v_{}_{}_{}_{}_{}.csv".format(num_d, num_v, train_mode_str, parser_args.dataset, parser_args.algo, parser_args.interpolate)
 
     results_df.to_csv(results_filename, index=False)
 
