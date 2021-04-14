@@ -102,14 +102,14 @@ def main_worker():
             print('Performance of model2')
             print('acc1: {}, acc5: {}, acc10: {}'.format(acc1, acc5, acc10))
 
-            if parser_args.algo in ['hc']: 
-                if parser_args.round in ['prob']:
-                    trial_num = 10
-                else:
-                    trial_num = 1
+            if parser_args.round in ['prob']:
+                trial_num = 10
+            else:
+                trial_num = 1
 
-                for trial in range(trial_num):
-                    cp_model = copy.deepcopy(model)
+            for trial in range(trial_num):
+                cp_model = copy.deepcopy(model)
+                if parser_args.algo in ['hc']: 
                     hc_round(cp_model, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio)
                     get_score_sparsity_hc(cp_model)
 
@@ -120,8 +120,9 @@ def main_worker():
                     print('Performance of model after pruning')
                     print('acc1: {}, acc5: {}, acc10: {}'.format(acc1, acc5, acc10))
 
-                if parser_args.pretrained2:
-                    cp_model2 = copy.deepcopy(model2)
+            if parser_args.pretrained2:
+                cp_model2 = copy.deepcopy(model2)
+                if parser_args.algo in ['hc']: 
                     hc_round(cp_model2, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio)
                     get_score_sparsity_hc(cp_model2)
 
@@ -131,12 +132,14 @@ def main_worker():
                     )
                     print('Performance of model2 after pruning')
                     print('acc1: {}, acc5: {}, acc10: {}'.format(acc1, acc5, acc10))
-                else:
-                    cp_model2 = None
+            else:
+                cp_model2 = None
 
             if parser_args.weight_training:
+                print('We are connecting weights')
                 connect_weight(cp_model, criterion, data, validate, cp_model2)
             elif parser_args.algo in ['hc', 'ep']:
+                print('We are connecting masks')
                 connect_mask(cp_model, criterion, data, validate, cp_model2)
             # visualize_mask_2D(cp_model, criterion, data, validate)
 
@@ -483,7 +486,7 @@ def connect_weight(model, criterion, data, validate, model2=None): # connect two
     weight_fin = _flatten_dense_tensors(flat_weight2) 
 
     num_d = 1 # 100
-    num_v = 1 # 100
+    num_v = 5 # 100
     resol = 100 #1000
 
     # batch data to test
@@ -508,6 +511,8 @@ def connect_weight(model, criterion, data, validate, model2=None): # connect two
     for d1_idx in range(num_d):
         train_loss_mean_list = []
         train_loss_std_list = []
+        train_acc_mean_list = []
+        train_acc_std_list = []
         test_acc_mean_list = []
         test_acc_std_list = []
         if model2 is None:
@@ -525,12 +530,14 @@ def connect_weight(model, criterion, data, validate, model2=None): # connect two
 
             #loss_avg = 0
             #acc_avg = 0
-            loss_arr, acc_arr = np.zeros(num_v), np.zeros(num_v)
+            loss_arr, train_acc_arr, acc_arr = np.zeros(num_v), np.zeros(num_v), np.zeros(num_v)
 
             for v_idx in range(num_v):
-            
-                sampling_vct = torch.bernoulli(torch.ones_like(weight_init) * p) # [0, 1]^n  0 : I'll sample weight_init, 1: I'll sample weight_dest
-                new_weight = weight_init * (1-sampling_vct) + weight_dest * sampling_vct   # w+v
+                if parser_args.interpolate == 'prob':
+                    sampling_vct = torch.bernoulli(torch.ones_like(weight_init) * p) # [0, 1]^n  0 : I'll sample weight_init, 1: I'll sample weight_dest
+                    new_weight = weight_init * (1-sampling_vct) + weight_dest * sampling_vct   # w+v
+                elif parser_args.interpolate == 'linear':
+                    new_weight = weight_init * (1-p) + weight_dest * p
             
                 # put merged masks back to the model
                 new_weight_unflat = _unflatten_dense_tensors(new_weight, flat_weight)
@@ -546,20 +553,27 @@ def connect_weight(model, criterion, data, validate, model2=None): # connect two
                     data.val_loader, cp_model, criterion, parser_args,
                     writer=None, epoch=parser_args.start_epoch)
 
-                print(i, v_idx, loss.data.item(), acc1)
+                train_acc1, train_acc5, train_acc10 = validate(
+                    data.train_loader, cp_model, criterion, parser_args,
+                    writer=None, epoch=parser_args.start_epoch)
+
+                print(i, v_idx, loss.data.item(), acc1, train_acc1)
                 loss_arr[v_idx] = loss.data.item()
                 acc_arr[v_idx] = acc1
-                #loss_avg += loss.data.item()
-                #acc_avg += acc1
+                train_acc_arr[v_idx] = train_acc1
         
             train_loss_mean_list.append(np.mean(loss_arr))
             train_loss_std_list.append(np.std(loss_arr))
+            train_acc_mean_list.append(np.mean(train_acc_arr))
+            train_acc_std_list.append(np.std(train_acc_arr))
             test_acc_mean_list.append(np.mean(acc_arr))
             test_acc_std_list.append(np.std(acc_arr))
 
 
         if d1_idx == 0:
-            results_df = pd.DataFrame({'dist': dist_list, 'train_loss_mean': train_loss_mean_list, 'train_loss_std': train_loss_std_list, 'test_acc_mean': test_acc_mean_list, 'test_acc_std': test_acc_std_list})
+            results_df = pd.DataFrame({'dist': dist_list, 'train_loss_mean': train_loss_mean_list, 'train_loss_std': train_loss_std_list, 
+                'train_acc_mean': train_acc_mean_list, 'train_acc_std': train_acc_std_list, 
+                'test_acc_mean': test_acc_mean_list, 'test_acc_std': test_acc_std_list})
         else:
             raise NotImplementedError
             #results_df['batch_train_loss{}'.format(d1_idx+1)] = train_loss_list
@@ -567,9 +581,9 @@ def connect_weight(model, criterion, data, validate, model2=None): # connect two
         #fin_time = time.time()
         #print('1st d1 lap-time: ', fin_time - init_time)
     if model2 is None:
-        results_filename = "results/results_visualize_sharpness_sparsity1_{}_d1_{}_v_{}_{}_{}_{}.csv".format(sparsity1, num_d, num_v, train_mode_str, parser_args.dataset, parser_args.algo)
+        results_filename = "results/results_visualize_sharpness_sparsity1_{}_d1_{}_v_{}_{}_{}_{}_{}.csv".format(sparsity1, num_d, num_v, train_mode_str, parser_args.dataset, parser_args.algo, parser_args.interpolate)
     else:
-        results_filename = "results/results_visualize_connectivity_d_{}_v_{}_{}_{}_{}.csv".format(num_d, num_v, train_mode_str, parser_args.dataset, parser_args.algo)
+        results_filename = "results/results_visualize_connectivity_d_{}_v_{}_{}_{}_{}_{}.csv".format(num_d, num_v, train_mode_str, parser_args.dataset, parser_args.algo, parser_args.interpolate)
 
     results_df.to_csv(results_filename, index=False)
 

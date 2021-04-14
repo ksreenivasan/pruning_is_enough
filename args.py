@@ -206,6 +206,12 @@ def parse_arguments():
         default="unif",
         help="initial score for hypercube |unif|bern|"
     )
+    parser.add_argument(
+        "--interpolate",
+        type=str,
+        default="prob",
+        help="way of interpolating masks/weights |prob|linear|"
+    )
 
     parser.add_argument(
         "--hc-warmup",
