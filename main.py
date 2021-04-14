@@ -41,10 +41,7 @@ def main():
     print(parser_args)
 
     if parser_args.seed is not None:
-        random.seed(parser_args.seed)
-        torch.manual_seed(parser_args.seed)
-        torch.cuda.manual_seed(parser_args.seed)
-        torch.cuda.manual_seed_all(parser_args.seed)
+        set_seed(parser_args.seed)
 
     # Simply call main_worker function
     main_worker()
@@ -602,13 +599,26 @@ def get_dataset(parser_args):
 
     return dataset
 
+def set_seed(seed_num):
+    random.seed(seed_num)
+    torch.manual_seed(seed_num)
+    torch.cuda.manual_seed(seed_num)
+    torch.cuda.manual_seed_all(seed_num)
+
 
 def get_model(parser_args):
     if parser_args.first_layer_dense:
         parser_args.first_layer_type = "DenseConv"
 
     print("=> Creating model '{}'".format(parser_args.arch))
+    if parser_args.fixed_init:
+        set_seed(42)
     model = models.__dict__[parser_args.arch]() #model = models.__dict__[parser_args.arch](shift=parser_args.shift)
+    if parser_args.fixed_init:    
+        set_seed(parser_args.seed)
+    for name, params in model.named_parameters():
+        if ".weight" in name:
+            print(torch.sum(params.data))
 
     if parser_args.mode == "pruning":
         # applying sparsity to the network

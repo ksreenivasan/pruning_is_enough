@@ -402,6 +402,13 @@ def parse_arguments():
         help="Random seed (default: None)"
     )
     parser.add_argument(
+        "--fixed_init",
+        action="store_true",
+        default=False,
+        help="fixed weight initialization"
+    )
+
+    parser.add_argument(
         "--no-cuda",
         action="store_true",
         default=False,
