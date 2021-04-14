@@ -402,7 +402,7 @@ def parse_arguments():
         help="Random seed (default: None)"
     )
     parser.add_argument(
-        "--fixed_init",
+        "--fixed-init",
         action="store_true",
         default=False,
         help="fixed weight initialization"

@@ -354,7 +354,6 @@ def visualize_mask(model, criterion, data, validate, model2=None):
 
 
     # select random direction to go
-    sparsity1 = 0.2
     num_d = 1 # 100
     num_v = 1 # 100
     resol = 100 #1000
@@ -376,24 +375,25 @@ def visualize_mask(model, criterion, data, validate, model2=None):
     cp_model = copy.deepcopy(model)
     dist_list = []
     train_mode_str = 'weight_training' if parser_args.weight_training else 'pruning'
-    results_filename = "results/results_visualize_sharpness_sparsity1_{}_d1_{}_v_{}_{}_{}_{}.csv".format(sparsity1, num_d, num_v, train_mode_str, parser_args.dataset, parser_args.algo)
 
     # init_time = time.time()
     for d1_idx in range(num_d):
         train_loss_list = []
 
         if model2 is None:
+            sparsity1 = 0.2
             d1 = torch.bernoulli(torch.ones_like(mask_init) * sparsity1) # d1
             # print('sum of d1: ', torch.sum(d1))
             new_d1 = (d1 + mask_init) % 2
         else:
             new_d1 = mask_fin
-        print('dist btw mask_init and new_d1: ', torch.sum(torch.abs(mask_init - new_d1))/len(mask_init) )
+        normalized_hamming_dist = (torch.sum(torch.abs(mask_init - new_d1))/len(mask_init)).data.item()
+        print('dist btw mask_init and new_d1: ', normalized_hamming_dist)
 
         for i in range(resol+1):
             p = i/resol # probability of sampling new_d1
-            if i != resol:
-                continue
+            #if i != resol:
+            #    continue
             loss_avg = 0
             for v_idx in range(num_v):
             
@@ -402,15 +402,15 @@ def visualize_mask(model, criterion, data, validate, model2=None):
             
                 #pdb.set_trace()
 
-                print(torch.sum(torch.abs(new_mask - new_d1)))
+                #print(torch.sum(torch.abs(new_mask - new_d1)))
                 # put merged masks back to the model
                 new_mask_unflat = _unflatten_dense_tensors(new_mask, flat_tensor)
                 idx = 0
                 for name, params in cp_model.named_parameters():
                     if ".score" in name:
                         params.data = new_mask_unflat[idx]
-                        print(name, params.data.shape)
-                        print(torch.sum(torch.abs(params.data - flat_tensor2[idx])))
+                        #print(name, params.data.shape)
+                        #print(torch.sum(torch.abs(params.data - flat_tensor2[idx])))
                         idx += 1
 
                 # compute loss for the mask 
@@ -419,7 +419,10 @@ def visualize_mask(model, criterion, data, validate, model2=None):
                 loss_avg += loss.data.item()
         
             if d1_idx == 0:
-                dist_list.append(round(p * sparsity1, 4))
+                if model2 is None:
+                    dist_list.append(round(p * sparsity1, 4))
+                else:
+                    dist_list.append(round(p * normalized_hamming_dist, 4))
             train_loss_list.append(loss_avg/num_v)
 
         if d1_idx == 0:
@@ -430,6 +433,11 @@ def visualize_mask(model, criterion, data, validate, model2=None):
         #fin_time = time.time()
         #print('1st d1 lap-time: ', fin_time - init_time)
         #pdb.set_trace()
+    if model2 is None:
+        results_filename = "results/results_visualize_sharpness_sparsity1_{}_d1_{}_v_{}_{}_{}_{}.csv".format(sparsity1, num_d, num_v, train_mode_str, parser_args.dataset, parser_args.algo)
+    else:
+        results_filename = "results/results_visualize_connectivity_d_{}_v_{}_{}_{}_{}.csv".format(num_d, num_v, train_mode_str, parser_args.dataset, parser_args.algo)
+
     results_df.to_csv(results_filename, index=False)
 
 
