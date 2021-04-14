@@ -447,6 +447,13 @@ def parse_arguments():
         help="use pre-trained model",
     )
     parser.add_argument(
+        "--pretrained2",
+        dest="pretrained2",
+        default=None,
+        type=str,
+        help="use pre-trained model 2",
+    )
+    parser.add_argument(
         "--save_every",
         default=-1,
         type=int,
