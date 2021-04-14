@@ -26,7 +26,7 @@ def parse_arguments():
     )
     parser.add_argument(
         "--config",
-        default='configs/hypercube/conv4/conv4_kn_unsigned.yml',
+        default='configs/hypercube/conv4/conv4_kn_ep.yml',
         help="Config file to use"
     )
     parser.add_argument(
@@ -91,6 +91,14 @@ def parse_arguments():
         metavar="LR",
         help="Learning rate (default: 0.001)"
     )
+
+    parser.add_argument(
+        "--lr-policy",
+        type=str,
+        default=None,  #"cosine_lr",
+        help="Learning rate scheduler"
+    )
+
     parser.add_argument(
         "--momentum",
         type=float,
@@ -148,7 +156,7 @@ def parse_arguments():
         metavar="MI",
         help="Maximum number of iterations to run simulated annealing for before terminating. It's recommended to set this to a value that at is at least as big as the number of parameters in the network (default: 100000)"
     )
-    
+
     parser.add_argument(
         "--algo",
         type=str,
@@ -176,29 +184,57 @@ def parse_arguments():
         default='naive',
         help='rounding technique to use |naive|prob|pb|'
         # naive: threshold(0.5), prob: probabilistic rounding, pb: pseudo-boolean paper's choice (RoundDown)
-    ) 
+    )
+
+    parser.add_argument(
+        '--noise',
+        action='store_true',
+        default=False,
+        help='flag that decides if we add noise to the rounded p_i'
+    )
+
+    parser.add_argument(
+        "--noise-ratio",
+        type=float,
+        default=0.0,
+        help="portion of score flipping"
+    )
+
+    parser.add_argument(
+        "--score-init",
+        type=str,
+        default="unif",
+        help="initial score for hypercube |unif|bern|"
+    )
+
+    parser.add_argument(
+        "--hc-warmup",
+        default=9999,
+        type=int,
+        help="warmup epochs for hypercube"
+    )
+
+    parser.add_argument(
+        "--hc-period",
+        default=1,
+        type=int,
+        help="rounding period for hypercube"
+    )
 
     parser.add_argument(
         "--num_test",
         type=int,
         default=1,
         help='number of different models testing in prob rounding'
-    ) 
-
-    parser.add_argument(
-        "--results-filename",
-        type=str,
-        default='results_acc_mnist.csv',
-        help='csv results filename'
-    ) 
+    )
 
     parser.add_argument(
         "--save-model",
         action='store_true',
         default=False,
         help='For Saving the current Model'
-    ) 
-    
+    )
+
 
     # Architecture and training
     parser.add_argument(
@@ -215,13 +251,6 @@ def parse_arguments():
         metavar="H",
         help="Number of nodes in the FC layers of the network"
     )
-#    parser.add_argument(
-#        "--sparsity",
-#        type=float,
-#        default=0.5,
-#        metavar="S",
-#        help="The ratio of weights to remove in each fully connected layer. A sparsity of 0 means no weights are pruned, and a sparsity of 1 means all weights are pruned (default: 0.5)"
-#    )
     parser.add_argument(
         "--bias",
         action="store_true",
@@ -236,20 +265,26 @@ def parse_arguments():
     )
 
     parser.add_argument(
-        "--conv-type", type=str, default=None, help="What kind of sparsity to use"
+        "--conv-type",
+        type=str,
+        default=None,
+        help="What kind of sparsity to use"
     )
-
-    parser.add_argument("--mode",
+    parser.add_argument(
+        "--mode",
         default="fan_in",
-        help="Weight initialization mode")
+        help="Weight initialization mode"
+    )
     parser.add_argument(
         "--nonlinearity",
         default="relu",
         help="Nonlinearity used by initialization"
     )
-    parser.add_argument("--bn-type",
+    parser.add_argument(
+        "--bn-type",
         default=None,
-        help="BatchNorm type")
+        help="BatchNorm type"
+    )
     parser.add_argument(
         "--init",
         default="kaiming_normal",
@@ -362,10 +397,17 @@ def parse_arguments():
     parser.add_argument(
         "--seed",
         type=int,
-        default=0,
+        default=None,
         metavar="S",
         help="Random seed (default: None)"
     )
+    parser.add_argument(
+        "--fixed-init",
+        action="store_true",
+        default=False,
+        help="fixed weight initialization"
+    )
+
     parser.add_argument(
         "--no-cuda",
         action="store_true",
@@ -410,6 +452,13 @@ def parse_arguments():
         default=None,
         type=str,
         help="use pre-trained model",
+    )
+    parser.add_argument(
+        "--pretrained2",
+        dest="pretrained2",
+        default=None,
+        type=str,
+        help="use pre-trained model 2",
     )
     parser.add_argument(
         "--save_every",
@@ -462,6 +511,18 @@ def parse_arguments():
         type=int,
         metavar="N",
         help="print frequency (default: 10)",
+    )
+    parser.add_argument(
+        '--results-filename',
+        type=str,
+        default=None,
+        help='csv results filename'
+    )
+    parser.add_argument(
+        '--weight-training',
+        action='store_true',
+        default=False,
+        help='flag that decides if we are doing pruning or weight training'
     )
 
     args = parser.parse_args()

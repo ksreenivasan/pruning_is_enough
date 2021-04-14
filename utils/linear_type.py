@@ -112,7 +112,7 @@ class SubnetLinear(nn.Linear):
             subnet = self.scores
             bias_subnet = self.bias_scores
         else:
-            subnet, bias_subnet = GetSubnet.apply(self.scores.abs(), self.bias_scores.abs(), sparsity)
+            subnet, bias_subnet = GetSubnet.apply(self.scores.abs(), self.bias_scores.abs(), parser_args.prune_rate)
 
         w = self.weight * subnet
         if parser_args.bias:

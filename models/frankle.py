@@ -66,6 +66,44 @@ class Conv4(nn.Module):
         return out.squeeze()
 
 
+class Conv4Normal(nn.Module):
+    def __init__(self):
+        super(Conv4Normal, self).__init__()
+        self.convs = nn.Sequential(
+            #builder.conv3x3(3, 64, first_layer=True),
+            nn.Conv2d(3, 64, 3, 1, padding=1, bias=False),
+            nn.ReLU(),
+            #builder.conv3x3(64, 64),
+            nn.Conv2d(64, 64, 3, 1, padding=1, bias=False),
+            nn.ReLU(),
+            nn.MaxPool2d((2, 2)),
+            #builder.conv3x3(64, 128),
+            nn.Conv2d(64, 128, 3, 1, padding=1, bias=False),
+            nn.ReLU(),
+            #builder.conv3x3(128, 128),
+            nn.Conv2d(128, 128, 3, 1, padding=1, bias=False),
+            nn.ReLU(),
+            nn.MaxPool2d((2, 2))
+        )
+
+        self.linear = nn.Sequential(
+            #builder.conv1x1(32 * 32 * 8, 256),
+            nn.Conv2d(32 * 32 * 8, 256, 1, 1, bias=False),
+            nn.ReLU(),
+            #builder.conv1x1(256, 256),
+            nn.Conv2d(256, 256, 1, 1, bias=False),
+            nn.ReLU(),
+            #builder.conv1x1(256, 10),
+            nn.Conv2d(256, 10, 1, 1, bias=False),
+        )
+
+    def forward(self, x):
+        out = self.convs(x)
+        out = out.view(out.size(0), 8192, 1, 1)
+        out = self.linear(out)
+        return out.squeeze()
+
+
 class Conv6(nn.Module):
     def __init__(self):
         super(Conv6, self).__init__()

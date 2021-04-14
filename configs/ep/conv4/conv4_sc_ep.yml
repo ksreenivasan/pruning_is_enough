@@ -5,9 +5,8 @@ algo: 'ep'
 arch: Conv4
 
 # ===== Dataset ===== #
-#data: /mnt
-set: CIFAR10
-name: conv4_kn_unsigned
+dataset: CIFAR10
+name: conv4_ep_sc
 
 # ===== Learning Rate Policy ======== #
 optimizer: sgd
@@ -24,10 +23,9 @@ batch_size: 128
 conv_type: SubnetConv
 bn_type: NonAffineBatchNorm
 freeze_weights: True
-prune_rate: -1
-init: kaiming_normal
+prune_rate: 0.5
+init: signed_constant
 scale_fan: True
 
 # ===== Hardware setup ===== #
 workers: 4
-

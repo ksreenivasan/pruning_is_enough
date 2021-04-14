@@ -6,7 +6,7 @@ arch: Conv4
 
 # ===== Dataset ===== #
 dataset: CIFAR10
-name: conv4_kn_unsigned
+name: conv4_sc_unsigned
 
 # ===== Learning Rate Policy ======== #
 optimizer: adam
@@ -24,7 +24,7 @@ conv_type: SubnetConv
 bn_type: NonAffineBatchNorm
 freeze_weights: True
 prune_rate: -1
-init: kaiming_normal
+init: signed_constant
 scale_fan: False #True
 
 # ===== Hardware setup ===== #

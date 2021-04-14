@@ -1,23 +1,25 @@
-# Hypercube optimization
-algo: 'hc'
+# Edge-popup version
+algo: 'training'
 
 # Architecture
-arch: Conv4
+arch: Conv4Normal
 
 # ===== Dataset ===== #
 dataset: CIFAR10
-name: conv4_kn_unsigned
+name: conv4_standard_training
 
 # ===== Learning Rate Policy ======== #
 optimizer: adam
-lr: 0.01
-lr_policy: cosine_lr
+lr: 0.001
+lr_policy: constant_lr
 
 # ===== Network training config ===== #
-epochs: 150
-weight_decay: 0.0 #0.0001
+epochs: 100
+weight_decay: 0.0001
 momentum: 0.9
 batch_size: 128
+
+weight_training: True
 
 # ===== Sparsity =========== #
 conv_type: SubnetConv
@@ -25,7 +27,8 @@ bn_type: NonAffineBatchNorm
 freeze_weights: True
 prune_rate: -1
 init: kaiming_normal
-scale_fan: False #True
+scale_fan: True
 
 # ===== Hardware setup ===== #
 workers: 4
+

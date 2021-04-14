@@ -23,6 +23,7 @@ plt.style.use('seaborn-whitegrid')
 
 glob_args = None
 
+
 class GetSubnet(autograd.Function):
     @staticmethod
     def forward(ctx, scores, bias_scores, k):
@@ -39,9 +40,9 @@ class GetSubnet(autograd.Function):
                 max_score = bias_scores.max().item()
                 bias_scores = (bias_scores - min_score)/(max_score - min_score)
 
-            ## sample using scores as probability
-            ## by default the probabilities are too small. artificially
-            ## pushing them towards 1 helps!
+            # sample using scores as probability
+            # by default the probabilities are too small. artificially
+            # pushing them towards 1 helps!
             MULTIPLIER = 10
             scores = torch.clamp(MULTIPLIER*scores, 0, 1)
             bias_scores = torch.clamp(MULTIPLIER*bias_scores, 0, 1)
@@ -70,6 +71,10 @@ class GetSubnet(autograd.Function):
             bias_flat_out[idx[j:]] = 1
 
         elif glob_args.algo == 'pt':
+            # sample using scores as probability
+            # by default the probabilities are too small. artificially
+            # pushing them towards 1 helps!
+            MULTIPLIER = 10
             scores = torch.clamp(MULTIPLIER*scores, 0, 1)
             bias_scores = torch.clamp(MULTIPLIER*bias_scores, 0, 1)
             out = torch.bernoulli(scores)
@@ -121,6 +126,10 @@ class SupermaskConv(nn.Conv2d):
             self.bias_scores.data = torch.clamp(self.bias_scores.data, 0.0, 1.0)
             subnet = self.scores
             bias_subnet = self.bias_scores
+        elif glob_args.algo in ('pt', 'pt_hacky'):
+            self.scores.data = self.scores.abs()
+            self.bias_scores.data = self.bias_scores.abs()
+            subnet, bias_subnet = GetSubnet.apply(self.scores, self.bias_scores, glob_args.sparsity)
         else:
             subnet, bias_subnet = GetSubnet.apply(self.scores.abs(), self.bias_scores.abs(), glob_args.sparsity)
 
@@ -167,6 +176,10 @@ class SupermaskLinear(nn.Linear):
             self.bias_scores.data = torch.clamp(self.bias_scores.data, 0.0, 1.0)
             subnet = self.scores
             bias_subnet = self.bias_scores
+        elif glob_args.algo in ('pt', 'pt_hacky'):
+            self.scores.data = self.scores.abs()
+            self.bias_scores.data = self.bias_scores.abs()
+            subnet, bias_subnet = GetSubnet.apply(self.scores, self.bias_scores, glob_args.sparsity)
         else:
             subnet, bias_subnet = GetSubnet.apply(self.scores.abs(), self.bias_scores.abs(), glob_args.sparsity)
 
@@ -242,6 +255,19 @@ def train(model, device, train_loader, optimizer, criterion, epoch):
         optimizer.zero_grad()
         output = model(data)
         loss = criterion(output, target)
+        if glob_args.regularization:
+            # add regularizer term p(1-p)
+            R_p = 0
+            for i, layer in enumerate(model.children()):
+                # ignore dropout
+                if i not in (2, 3):
+                    p = layer.scores
+                    p = torch.clamp(p, 0, 1)
+                    # TODO: Hacky fix. Figure out why it is becoming nan in the first place!
+                    # p = torch.nan_to_num(p, nan=0.0)
+                    R_p += torch.sum(torch.pow(p, 1) * torch.pow(1-p, 1))
+            # print("LOSS (before): {}".format(loss))
+            loss += glob_args.lmbda * R_p
         loss.backward()
         optimizer.step()
         if batch_idx % glob_args.log_interval == 0:
@@ -277,15 +303,15 @@ def get_layer_sparsity(layer):
     weight_sparsity = 100.0 * weight_mask.sum().item() / weight_mask.flatten().numel()
     bias_sparsity = 100.0 * bias_mask.sum().item() / bias_mask.flatten().numel()
     # TODO: handle bias sparsity also
-    return weight_sparsity #, bias_sparsity
+    return weight_sparsity, bias_sparsity
 
 def get_model_sparsity(model):
     # compute mean sparsity of each layer
     # TODO: find a nicer way to do this (skip dropout)
-    s1 = get_layer_sparsity(model.conv1)
-    s2 = get_layer_sparsity(model.conv2)
-    s3 = get_layer_sparsity(model.fc1)
-    s4 = get_layer_sparsity(model.fc2)
+    s1, bs1 = get_layer_sparsity(model.conv1)
+    s2, bs2 = get_layer_sparsity(model.conv2)
+    s3, bs3 = get_layer_sparsity(model.fc1)
+    s4, bs4 = get_layer_sparsity(model.fc2)
 
     avg_sparsity = (s1 + s2 + s3 + s4)/4
     return avg_sparsity
@@ -405,7 +431,7 @@ def round_and_evaluate(model):
     cp_model = Net().to(device)
     acc_list = []
     for itr in range(glob_args.num_test):
-        cp_model.load_state_dict(torch.load('mnist_pruned_model_{}_{}.pt'.format(glob_args.algo, glob_args.epochs)))
+        cp_model.load_state_dict(torch.load('model_checkpoints/mnist_pruned_model_{}_{}.pt'.format(glob_args.algo, glob_args.epochs)))
         print('Testing rounding technique of {}'.format(glob_args.round))
         for name, params in cp_model.named_parameters():
             if ".score" in name:
@@ -462,10 +488,12 @@ def main():
                         help='probability threshold for pruning')
     parser.add_argument('--normalize-scores', action='store_true', default=False,
                         help='to normalize or not to normalize')
-    parser.add_argument('--results-filename', type=str, default='results_acc_mnist.csv',
+    parser.add_argument('--results-filename', type=str, default='results/results_acc_mnist.csv',
                         help='csv results filename')
     parser.add_argument('--lmbda', type=float, default=0.001,
-                        help='regularizer coefficient lambda')
+                        help='regularization coefficient lambda')
+    parser.add_argument('--regularization', action='store_true', default=False,
+                        help='to regularize or not to regularize. that is the question : p(1-p)')
     # ep: edge-popup, pt_hack: KS hacky probability pruning, pt_reg: probability pruning with regularization
     # hc: hypercube pruning
     parser.add_argument('--algo', type=str, default='ep',
@@ -475,7 +503,8 @@ def main():
     parser.add_argument('--evaluate-only', action='store_true', default=False,
                         help='just use rounding techniques to evaluate a saved model')
     parser.add_argument('--round', type=str, default='naive',
-                         help='rounding technique to use |naive|prob|pb|') # naive: threshold(0.5), prob: probabilistic rounding, pb: pseudo-boolean paper's choice (RoundDown)
+                         help='rounding technique to use |naive|prob|pb|')
+    # naive: threshold(0.5), prob: probabilistic rounding, pb: pseudo-boolean paper's choice (RoundDown)
     parser.add_argument('--num-test', type=int, default=1,
                         help='number of different models testing in prob rounding')
     parser.add_argument('--mode', type=str, default="pruning",
@@ -567,14 +596,14 @@ def main():
 
         if glob_args.save_model:
             if glob_args.mode != 'training':
-                model_filename = "mnist_pruned_model_{}_{}.pt".format(glob_args.algo, glob_args.epochs)
+                model_filename = "model_checkpoints/mnist_pruned_model_{}_{}.pt".format(glob_args.algo, glob_args.epochs)
             else:
-                model_filename = "mnist_trained_model_{}.pt".format(glob_args.epochs)
+                model_filename = "model_checkpoints/mnist_trained_model_{}.pt".format(glob_args.epochs)
             torch.save(model.state_dict(), model_filename)
 
     if glob_args.algo in ('hc'):
         # irrespective of evaluate_only, add an evaluate_only step
-        model.load_state_dict(torch.load('mnist_pruned_model_{}_{}.pt'.format(glob_args.algo, glob_args.epochs)))
+        model.load_state_dict(torch.load('model_checkpoints/mnist_pruned_model_{}_{}.pt'.format(glob_args.algo, glob_args.epochs)))
         round_acc_list = round_and_evaluate(model)
 
         print("Test Acc: {:.2f}%\n".format(test_acc))
