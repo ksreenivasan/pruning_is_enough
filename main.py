@@ -355,7 +355,7 @@ def visualize_mask(model, criterion, data, validate, model2=None):
 
     # select random direction to go
     num_d = 1 # 100
-    num_v = 1 # 100
+    num_v = 5 # 100
     resol = 100 #1000
 
     # batch data to test
@@ -379,7 +379,7 @@ def visualize_mask(model, criterion, data, validate, model2=None):
     # init_time = time.time()
     for d1_idx in range(num_d):
         train_loss_list = []
-
+        test_acc_list = []
         if model2 is None:
             sparsity1 = 0.2
             d1 = torch.bernoulli(torch.ones_like(mask_init) * sparsity1) # d1
@@ -392,16 +392,20 @@ def visualize_mask(model, criterion, data, validate, model2=None):
 
         for i in range(resol+1):
             p = i/resol # probability of sampling new_d1
-            #if i != resol:
-            #    continue
+            if d1_idx == 0:
+                if model2 is None:
+                    dist_list.append(round(p * sparsity1, 4))
+                else:
+                    dist_list.append(round(p * normalized_hamming_dist, 4))
+
             loss_avg = 0
+            acc_avg = 0
             for v_idx in range(num_v):
             
                 sampling_vct = torch.bernoulli(torch.ones_like(mask_init) * p) # [0, 1]^n  0 : I'll sample mask_init, 1: I'll sample d1
                 new_mask = mask_init * (1-sampling_vct) + new_d1 * sampling_vct   # w+v
             
                 #pdb.set_trace()
-
                 #print(torch.sum(torch.abs(new_mask - new_d1)))
                 # put merged masks back to the model
                 new_mask_unflat = _unflatten_dense_tensors(new_mask, flat_tensor)
@@ -415,20 +419,23 @@ def visualize_mask(model, criterion, data, validate, model2=None):
 
                 # compute loss for the mask 
                 loss = criterion(cp_model(data_), label_)
-                print(i, v_idx, loss.data.item())
+                acc1, acc5, acc10 = validate(
+                    data.val_loader, cp_model, criterion, parser_args,
+                    writer=None, epoch=parser_args.start_epoch)
+
+                print(i, v_idx, loss.data.item(), acc1)
                 loss_avg += loss.data.item()
+                acc_avg += acc1
         
-            if d1_idx == 0:
-                if model2 is None:
-                    dist_list.append(round(p * sparsity1, 4))
-                else:
-                    dist_list.append(round(p * normalized_hamming_dist, 4))
             train_loss_list.append(loss_avg/num_v)
+            test_acc_list.append(acc_avg/num_v)
+
 
         if d1_idx == 0:
-            results_df = pd.DataFrame({'dist': dist_list, 'batch_train_loss': train_loss_list})
+            results_df = pd.DataFrame({'dist': dist_list, 'batch_train_loss': train_loss_list, 'test_acc': test_acc_list})
         else:
             results_df['batch_train_loss{}'.format(d1_idx+1)] = train_loss_list
+            print("TODO: add test_acc. Also, save only mean and variance in the data frame")
 
         #fin_time = time.time()
         #print('1st d1 lap-time: ', fin_time - init_time)
