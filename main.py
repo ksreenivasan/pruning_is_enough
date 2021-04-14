@@ -489,6 +489,9 @@ def connect_weight(model, criterion, data, validate, model2=None): # connect two
     num_v = 5 # 100
     resol = 100 #1000
 
+    if parser_args.interpolate == 'linear':
+        num_v = 1
+
     # batch data to test
     for data_, label_ in data.train_loader:
         data_, label_ = data_.cuda(), label_.cuda()
