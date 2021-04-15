@@ -41,7 +41,7 @@ BLOCK
 
 # # CIFAR-10, test (HC), mode connectivity
 #:<<BLOCK
- python main.py --config configs/hypercube/conv4/conv4_sc_hypercube.yml \
+python main.py --config configs/hypercube/conv4/conv4_sc_hypercube.yml \
                 --multigpu 0,3 \
                 --prune-rate 0.0 \
                 --pretrained 'models/pretrained/conv4-sc-no-lr-decay-hypercube-149.state' \
@@ -54,7 +54,7 @@ BLOCK
 
 # # CIFAR-10, test (HC), epoch-30 model (81.77%)
 :<<BLOCK
- python main.py --config configs/hypercube/conv4/conv4_sc_hypercube.yml \
+python main.py --config configs/hypercube/conv4/conv4_sc_hypercube.yml \
                 --multigpu 1,2 \
                 --prune-rate 0.0 \
                 --pretrained 'models/pretrained/conv4-sc-no-lr-decay-hypercube-30.pth' \
@@ -68,7 +68,7 @@ BLOCK
 
 # # CIFAR-10, test (HC), epoch-1 model
 :<<BLOCK
- python main.py --config configs/hypercube/conv4/conv4_sc_hypercube.yml \
+python main.py --config configs/hypercube/conv4/conv4_sc_hypercube.yml \
                 --multigpu 0,3 \
                 --prune-rate 0.0 \
                 --pretrained 'models/pretrained/conv4-sc-no-lr-decay-hypercube-0.pth' \

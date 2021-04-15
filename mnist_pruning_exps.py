@@ -145,6 +145,7 @@ class SupermaskConv(nn.Conv2d):
         )
         return x
 
+
 class SupermaskLinear(nn.Linear):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -198,6 +199,7 @@ class SupermaskLinear(nn.Linear):
 class NonAffineBatchNorm(nn.BatchNorm2d):
     def __init__(self, dim):
         super(NonAffineBatchNorm, self).__init__(dim, affine=False)
+
 
 class Net(nn.Module):
     def __init__(self):
@@ -338,6 +340,7 @@ def get_model_sparsity(model, threshold=None):
     avg_sparsity = (s1 + s2 + s3 + s4)/4
     return avg_sparsity
 
+
 # @deprecated
 def get_model_sparsity_hc(model):
     # handle bias
@@ -369,24 +372,25 @@ def compute_loss(model, device, train_loader, criterion):
         break
     return loss
 
+
 def round_down(cp_model, params, device, train_loader, criterion):
 
     scores = params.data
     scores2 = torch.ones_like(scores) * -1      # initialize a dummy tensor
     sc2 = scores2.flatten()
 
-    # check indices I that has score value of neither 0 nor 1 
+    # check indices I that has score value of neither 0 nor 1
     sc = scores.flatten()
     flag_sc = torch.gt(sc, torch.zeros_like(sc)) * torch.lt(sc, torch.ones_like(sc)).int()
 
-    # for i \in [n]/I, copy params values to dummy tensor   
+    # for i \in [n]/I, copy params values to dummy tensor
     sc2[flag_sc == 0] = sc[flag_sc == 0]
 
-    start_time = time.time()    
+    start_time = time.time()
     # for i in I:
-        # computes loss_1 & loss_0
-        # depending on the difference, fill in a dummy tensor
-    #temp = torch.clone(params.data.flatten())
+    # computes loss_1 & loss_0
+    # depending on the difference, fill in a dummy tensor
+    # temp = torch.clone(params.data.flatten())
     for idx in range(len(flag_sc)):
 
         if (idx+1) % 100 == 0:
@@ -394,29 +398,28 @@ def round_down(cp_model, params, device, train_loader, criterion):
             print(idx, end_time - start_time)
 
         if flag_sc[idx] == 1:
-            
-            #temp = torch.clone(params.data.flatten()[idx])
-            #print(params.data[0][0][0][0])
+            # temp = torch.clone(params.data.flatten()[idx])
+            # print(params.data[0][0][0][0])
             params.data.flatten()[idx] = 1
-            #print(params.data[0][0][0][0])
+            # print(params.data[0][0][0][0])
             set_seed(idx)
             loss1 = compute_loss(cp_model, device, train_loader, criterion)
 
             params.data.flatten()[idx] = 0
-            #print(params.data[0][0][0][0])
+            # print(params.data[0][0][0][0])
             set_seed(idx)
             loss0 = compute_loss(cp_model, device, train_loader, criterion)
 
-            #print(loss1, loss0)
+            # print(loss1, loss0)
 
             if loss1 > loss0:   sc2[idx] = 0
             else:   sc2[idx] = 1
 
             params.data.flatten()[idx] = temp[idx]
-            #print(params.data[0][0][0][0])
-            #print(sum(scores2.flatten()))  
-    
-    #print(scores2.flatten())
+            # print(params.data[0][0][0][0])
+            # print(sum(scores2.flatten()))
+
+    # print(scores2.flatten())
 
     return scores2
 
@@ -479,7 +482,6 @@ def round_and_evaluate(model):
     return acc_list
 
 
-
 def main():
     global parser_args
     # Training settings
@@ -520,13 +522,13 @@ def main():
     # ep: edge-popup, pt_hack: KS hacky probability pruning, pt_reg: probability pruning with regularization
     # hc: hypercube pruning
     parser.add_argument('--algo', type=str, default='ep',
-                         help='pruning algo to use |ep|pt_hack|pt_reg|hc|')
+                        help='pruning algo to use |ep|pt_hack|pt_reg|hc|')
     parser.add_argument('--optimizer', type=str, default='sgd',
-                         help='optimizer option to use |sgd|adam|')
+                        help='optimizer option to use |sgd|adam|')
     parser.add_argument('--evaluate-only', action='store_true', default=False,
                         help='just use rounding techniques to evaluate a saved model')
     parser.add_argument('--round', type=str, default='naive',
-                         help='rounding technique to use |naive|prob|pb|')
+                        help='rounding technique to use |naive|prob|pb|')
     # naive: threshold(0.5), prob: probabilistic rounding, pb: pseudo-boolean paper's choice (RoundDown)
     parser.add_argument('--num-test', type=int, default=1,
                         help='number of different models testing in prob rounding')
@@ -578,9 +580,10 @@ def main():
 
     elif parser_args.optimizer == 'adam':
         optimizer = torch.optim.Adam([p for p in model.parameters() if p.requires_grad],
-                     lr=parser_args.lr,
-                     weight_decay=parser_args.wd,
-                     amsgrad=False)
+                                     lr=parser_args.lr,
+                                     weight_decay=parser_args.wd,
+                                     amsgrad=False,
+                                     )
     else:
         print("INVALID OPTIMIZER")
         print("EXITING")
@@ -602,7 +605,7 @@ def main():
                 else:
                     model_sparsity = get_model_sparsity(model)
 
-                if epoch%10 == 1:
+                if epoch % 10 == 1:
                     plot_histogram_scores(model, epoch)
             else:
                 model_sparsity = (sum([p.numel() for p in model.parameters()]))
@@ -632,6 +635,7 @@ def main():
         print("Test Acc: {:.2f}%\n".format(test_acc))
 
     print("Experiment donezo")
+
 
 if __name__ == '__main__':
     main()
