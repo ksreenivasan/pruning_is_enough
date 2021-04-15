@@ -17,19 +17,21 @@ from torchvision import datasets, transforms
 from torch.optim.lr_scheduler import CosineAnnealingLR
 import torch.autograd as autograd
 
+from utils.utils import set_seed
+
 import pdb
 import time
 plt.style.use('seaborn-whitegrid')
 
-glob_args = None
+parser_args = None
 
 
 class GetSubnet(autograd.Function):
     @staticmethod
     def forward(ctx, scores, bias_scores, k):
-        if glob_args.algo == 'pt_hack':
+        if parser_args.algo == 'pt_hack':
             # Get the supermask by normalizing scores and "sampling" by probability
-            if glob_args.normalize_scores:
+            if parser_args.normalize_scores:
                 # min-max normalization so that scores are in [0, 1]
                 min_score = scores.min().item()
                 max_score = scores.max().item()
@@ -49,7 +51,7 @@ class GetSubnet(autograd.Function):
             out = torch.bernoulli(scores)
             bias_out = torch.bernoulli(bias_scores)
 
-        elif glob_args.algo == 'ep':
+        elif parser_args.algo == 'ep':
             # Get the supermask by sorting the scores and using the top k%
             out = scores.clone()
             _, idx = scores.flatten().sort()
@@ -70,7 +72,7 @@ class GetSubnet(autograd.Function):
             bias_flat_out[idx[:j]] = 0
             bias_flat_out[idx[j:]] = 1
 
-        elif glob_args.algo == 'pt':
+        elif parser_args.algo == 'pt':
             # sample using scores as probability
             # by default the probabilities are too small. artificially
             # pushing them towards 1 helps!
@@ -99,12 +101,12 @@ class SupermaskConv(nn.Conv2d):
 
         # initialize the scores
         self.scores = nn.Parameter(torch.Tensor(self.weight.size()))
-        if glob_args.bias:
+        if parser_args.bias:
             self.bias_scores = nn.Parameter(torch.Tensor(self.bias.size()))
         else:
             # dummy variable just so other things don't break
             self.bias_scores = nn.Parameter(torch.Tensor(1))
-        if glob_args.algo in ('hc'):
+        if parser_args.algo in ('hc'):
             nn.init.uniform_(self.scores, a=0.0, b=1.0)
             nn.init.uniform_(self.bias_scores, a=0.0, b=1.0)
         else:
@@ -116,25 +118,25 @@ class SupermaskConv(nn.Conv2d):
 
         # NOTE: turn the gradient on the weights off
         self.weight.requires_grad = False
-        if glob_args.bias:
+        if parser_args.bias:
             self.bias.requires_grad = False
 
     def forward(self, x):
-        if glob_args.algo in ('hc'):
+        if parser_args.algo in ('hc'):
             # don't need a mask here. the scores are directly multiplied with weights
             self.scores.data = torch.clamp(self.scores.data, 0.0, 1.0)
             self.bias_scores.data = torch.clamp(self.bias_scores.data, 0.0, 1.0)
             subnet = self.scores
             bias_subnet = self.bias_scores
-        elif glob_args.algo in ('pt', 'pt_hacky'):
+        elif parser_args.algo in ('pt', 'pt_hacky'):
             self.scores.data = self.scores.abs()
             self.bias_scores.data = self.bias_scores.abs()
-            subnet, bias_subnet = GetSubnet.apply(self.scores, self.bias_scores, glob_args.sparsity)
+            subnet, bias_subnet = GetSubnet.apply(self.scores, self.bias_scores, parser_args.sparsity)
         else:
-            subnet, bias_subnet = GetSubnet.apply(self.scores.abs(), self.bias_scores.abs(), glob_args.sparsity)
+            subnet, bias_subnet = GetSubnet.apply(self.scores.abs(), self.bias_scores.abs(), parser_args.sparsity)
 
         w = self.weight * subnet
-        if glob_args.bias:
+        if parser_args.bias:
             b = self.bias * bias_subnet
         else:
             b = self.bias
@@ -149,12 +151,12 @@ class SupermaskLinear(nn.Linear):
 
         # initialize the scores
         self.scores = nn.Parameter(torch.Tensor(self.weight.size()))
-        if glob_args.bias:
+        if parser_args.bias:
             self.bias_scores = nn.Parameter(torch.Tensor(self.bias.size()))
         else:
             # dummy variable just so other things don't break
             self.bias_scores = nn.Parameter(torch.Tensor(1))
-        if glob_args.algo in ('hc'):
+        if parser_args.algo in ('hc'):
             nn.init.uniform_(self.scores, a=0.0, b=1.0)
             nn.init.uniform_(self.bias_scores, a=0.0, b=1.0)
         else:
@@ -166,25 +168,25 @@ class SupermaskLinear(nn.Linear):
 
         # NOTE: turn the gradient on the weights off
         self.weight.requires_grad = False
-        if glob_args.bias:
+        if parser_args.bias:
             self.bias.requires_grad = False
 
     def forward(self, x):
-        if glob_args.algo in ('hc'):
+        if parser_args.algo in ('hc'):
             # don't need a mask here. the scores are directly multiplied with weights
             self.scores.data = torch.clamp(self.scores.data, 0.0, 1.0)
             self.bias_scores.data = torch.clamp(self.bias_scores.data, 0.0, 1.0)
             subnet = self.scores
             bias_subnet = self.bias_scores
-        elif glob_args.algo in ('pt', 'pt_hacky'):
+        elif parser_args.algo in ('pt', 'pt_hacky'):
             self.scores.data = self.scores.abs()
             self.bias_scores.data = self.bias_scores.abs()
-            subnet, bias_subnet = GetSubnet.apply(self.scores, self.bias_scores, glob_args.sparsity)
+            subnet, bias_subnet = GetSubnet.apply(self.scores, self.bias_scores, parser_args.sparsity)
         else:
-            subnet, bias_subnet = GetSubnet.apply(self.scores.abs(), self.bias_scores.abs(), glob_args.sparsity)
+            subnet, bias_subnet = GetSubnet.apply(self.scores.abs(), self.bias_scores.abs(), parser_args.sparsity)
 
         w = self.weight * subnet
-        if glob_args.bias:
+        if parser_args.bias:
             b = self.bias * bias_subnet
         else:
             b = self.bias
@@ -200,12 +202,12 @@ class NonAffineBatchNorm(nn.BatchNorm2d):
 class Net(nn.Module):
     def __init__(self):
         super(Net, self).__init__()
-        self.conv1 = SupermaskConv(1, 32, 3, 1, bias=glob_args.bias)
-        self.conv2 = SupermaskConv(32, 64, 3, 1, bias=glob_args.bias)
+        self.conv1 = SupermaskConv(1, 32, 3, 1, bias=parser_args.bias)
+        self.conv2 = SupermaskConv(32, 64, 3, 1, bias=parser_args.bias)
         self.dropout1 = nn.Dropout2d(0.25)
         self.dropout2 = nn.Dropout2d(0.5)
-        self.fc1 = SupermaskLinear(9216, 128, bias=glob_args.bias)
-        self.fc2 = SupermaskLinear(128, 10, bias=glob_args.bias)
+        self.fc1 = SupermaskLinear(9216, 128, bias=parser_args.bias)
+        self.fc2 = SupermaskLinear(128, 10, bias=parser_args.bias)
 
     def forward(self, x):
         x = self.conv1(x)
@@ -226,12 +228,12 @@ class NetNormal(nn.Module):
     # network for training
     def __init__(self):
         super(NetNormal, self).__init__()
-        self.conv1 = nn.Conv2d(1, 32, 3, 1, bias=glob_args.bias)
-        self.conv2 = nn.Conv2d(32, 64, 3, 1, bias=glob_args.bias)
+        self.conv1 = nn.Conv2d(1, 32, 3, 1, bias=parser_args.bias)
+        self.conv2 = nn.Conv2d(32, 64, 3, 1, bias=parser_args.bias)
         self.dropout1 = nn.Dropout2d(0.25)
         self.dropout2 = nn.Dropout2d(0.5)
-        self.fc1 = nn.Linear(9216, 128, bias=glob_args.bias)
-        self.fc2 = nn.Linear(128, 10, bias=glob_args.bias)
+        self.fc1 = nn.Linear(9216, 128, bias=parser_args.bias)
+        self.fc2 = nn.Linear(128, 10, bias=parser_args.bias)
 
     def forward(self, x):
         x = self.conv1(x)
@@ -255,7 +257,7 @@ def train(model, device, train_loader, optimizer, criterion, epoch):
         optimizer.zero_grad()
         output = model(data)
         loss = criterion(output, target)
-        if glob_args.regularization:
+        if parser_args.regularization:
             # add regularizer term p(1-p)
             R_p = 0
             for i, layer in enumerate(model.children()):
@@ -267,10 +269,10 @@ def train(model, device, train_loader, optimizer, criterion, epoch):
                     # p = torch.nan_to_num(p, nan=0.0)
                     R_p += torch.sum(torch.pow(p, 1) * torch.pow(1-p, 1))
             # print("LOSS (before): {}".format(loss))
-            loss += glob_args.lmbda * R_p
+            loss += parser_args.lmbda * R_p
         loss.backward()
         optimizer.step()
-        if batch_idx % glob_args.log_interval == 0:
+        if batch_idx % parser_args.log_interval == 0:
             print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
                 epoch, batch_idx * len(data), len(train_loader.dataset),
                 100. * batch_idx / len(train_loader), loss.item()))
@@ -298,24 +300,45 @@ def test(model, device, criterion, test_loader):
     return test_acc
 
 
-def get_layer_sparsity(layer):
-    weight_mask, bias_mask = GetSubnet.apply(layer.scores.abs(), layer.bias_scores.abs(), glob_args.sparsity)
-    weight_sparsity = 100.0 * weight_mask.sum().item() / weight_mask.flatten().numel()
-    bias_sparsity = 100.0 * bias_mask.sum().item() / bias_mask.flatten().numel()
+def get_layer_sparsity(layer, threshold=None):
+    # this parameter makes sense only for HC
+    if threshold > 0:
+        # num_elements \in [threshold, 1-threshold]
+        num_middle = torch.gt(layer.scores,
+            torch.ones_like(layer.scores)*threshold) *\
+             torch.lt(layer.scores, torch.ones_like(layer.scores)*(1-threshold)).int()
+        weight_sparsity = 100*torch.sum(num_middle).item()/num_middle.numel()
+
+        if parser_args.bias:
+            num_middle = torch.gt(layer.bias_scores,
+                torch.ones_like(layer.bias_scores)*threshold) *\
+                 torch.lt(layer.bias_scores, torch.ones_like(layer.bias_scores)*(1-threshold)).int()
+            bias_sparsity = 100*torch.sum(num_middle).item()/num_middle.numel()
+        else:
+            bias_sparsity = 0
+    else:
+        # traditional pruning where we just check non-zero values in mask
+        weight_mask, bias_mask = GetSubnet.apply(layer.scores.abs(), layer.bias_scores.abs(), parser_args.sparsity)
+        weight_sparsity = 100.0 * weight_mask.sum().item() / weight_mask.flatten().numel()
+        if parser_args.bias:
+            bias_sparsity = 100.0 * bias_mask.sum().item() / bias_mask.flatten().numel()
+        else:
+            bias_sparsity = 0
     # TODO: handle bias sparsity also
     return weight_sparsity, bias_sparsity
 
-def get_model_sparsity(model):
+def get_model_sparsity(model, threshold=None):
     # compute mean sparsity of each layer
     # TODO: find a nicer way to do this (skip dropout)
-    s1, bs1 = get_layer_sparsity(model.conv1)
-    s2, bs2 = get_layer_sparsity(model.conv2)
-    s3, bs3 = get_layer_sparsity(model.fc1)
-    s4, bs4 = get_layer_sparsity(model.fc2)
+    s1, bs1 = get_layer_sparsity(model.conv1, threshold)
+    s2, bs2 = get_layer_sparsity(model.conv2, threshold)
+    s3, bs3 = get_layer_sparsity(model.fc1, threshold)
+    s4, bs4 = get_layer_sparsity(model.fc2, threshold)
 
     avg_sparsity = (s1 + s2 + s3 + s4)/4
     return avg_sparsity
 
+# @deprecated
 def get_model_sparsity_hc(model):
     # handle bias
     sparsity = []
@@ -376,12 +399,12 @@ def round_down(cp_model, params, device, train_loader, criterion):
             #print(params.data[0][0][0][0])
             params.data.flatten()[idx] = 1
             #print(params.data[0][0][0][0])
-            torch.manual_seed(idx)
+            set_seed(idx)
             loss1 = compute_loss(cp_model, device, train_loader, criterion)
 
             params.data.flatten()[idx] = 0
             #print(params.data[0][0][0][0])
-            torch.manual_seed(idx)
+            set_seed(idx)
             loss0 = compute_loss(cp_model, device, train_loader, criterion)
 
             #print(loss1, loss0)
@@ -430,16 +453,16 @@ def round_and_evaluate(model):
     test(model, device, criterion, test_loader)
     cp_model = Net().to(device)
     acc_list = []
-    for itr in range(glob_args.num_test):
-        cp_model.load_state_dict(torch.load('model_checkpoints/mnist_pruned_model_{}_{}.pt'.format(glob_args.algo, glob_args.epochs)))
-        print('Testing rounding technique of {}'.format(glob_args.round))
+    for itr in range(parser_args.num_test):
+        cp_model.load_state_dict(torch.load('model_checkpoints/mnist_pruned_model_{}_{}.pt'.format(parser_args.algo, parser_args.epochs)))
+        print('Testing rounding technique of {}'.format(parser_args.round))
         for name, params in cp_model.named_parameters():
             if ".score" in name:
-                if glob_args.round == 'naive':
+                if parser_args.round == 'naive':
                     params.data = torch.gt(params, torch.ones_like(params)*0.5).int()
-                elif glob_args.round == 'prob':
+                elif parser_args.round == 'prob':
                     params.data = torch.bernoulli(params)
-                elif glob_args.round == 'pb':
+                elif parser_args.round == 'pb':
                     params.data = round_down(cp_model, params, device, train_loader, criterion)
                     print(name, ' ended')
                 else:
@@ -458,7 +481,7 @@ def round_and_evaluate(model):
 
 
 def main():
-    global glob_args
+    global parser_args
     # Training settings
     parser = argparse.ArgumentParser(description='PyTorch MNIST Example')
     parser.add_argument('--batch-size', type=int, default=64, metavar='N',
@@ -516,47 +539,47 @@ def main():
     test_acc_list = []
     model_sparsity_list = []
 
-    glob_args = parser.parse_args()
-    use_cuda = not glob_args.no_cuda and torch.cuda.is_available()
+    parser_args = parser.parse_args()
+    use_cuda = not parser_args.no_cuda and torch.cuda.is_available()
 
-    torch.manual_seed(glob_args.seed)
+    set_seed(parser_args.seed)
 
     device = torch.device("cuda:2" if use_cuda else "cpu")
 
     kwargs = {'num_workers': 1, 'pin_memory': True} if use_cuda else {}
     train_loader = torch.utils.data.DataLoader(
-        datasets.MNIST(os.path.join(glob_args.data, 'mnist'), train=True, download=True,
+        datasets.MNIST(os.path.join(parser_args.data, 'mnist'), train=True, download=True,
                        transform=transforms.Compose([
                            transforms.ToTensor(),
                            transforms.Normalize((0.1307,), (0.3081,))
                        ])),
-        batch_size=glob_args.batch_size, shuffle=True, **kwargs)
+        batch_size=parser_args.batch_size, shuffle=True, **kwargs)
     test_loader = torch.utils.data.DataLoader(
-        datasets.MNIST(os.path.join(glob_args.data, 'mnist'), train=False, transform=transforms.Compose([
+        datasets.MNIST(os.path.join(parser_args.data, 'mnist'), train=False, transform=transforms.Compose([
                            transforms.ToTensor(),
                            transforms.Normalize((0.1307,), (0.3081,))
                        ])),
-        batch_size=glob_args.test_batch_size, shuffle=True, **kwargs)
+        batch_size=parser_args.test_batch_size, shuffle=True, **kwargs)
 
-    if glob_args.mode == "pruning":
+    if parser_args.mode == "pruning":
         model = Net().to(device)
-    elif glob_args.mode == "training":
+    elif parser_args.mode == "training":
         model = NetNormal().to(device)
     else:
         raise NotImplementedError("Non-supported mode ...")
     # NOTE: only pass the parameters where p.requires_grad == True to the optimizer! Important!
-    if glob_args.optimizer == 'sgd':
+    if parser_args.optimizer == 'sgd':
         optimizer = optim.SGD(
             [p for p in model.parameters() if p.requires_grad],
-            lr=glob_args.lr,
-            momentum=glob_args.momentum,
-            weight_decay=glob_args.wd,
+            lr=parser_args.lr,
+            momentum=parser_args.momentum,
+            weight_decay=parser_args.wd,
         )
 
-    elif glob_args.optimizer == 'adam':
+    elif parser_args.optimizer == 'adam':
         optimizer = torch.optim.Adam([p for p in model.parameters() if p.requires_grad],
-                     lr=glob_args.lr,
-                     weight_decay=glob_args.wd,
+                     lr=parser_args.lr,
+                     weight_decay=parser_args.wd,
                      amsgrad=False)
     else:
         print("INVALID OPTIMIZER")
@@ -564,18 +587,18 @@ def main():
         exit()
 
     criterion = nn.CrossEntropyLoss().to(device)
-    scheduler = CosineAnnealingLR(optimizer, T_max=glob_args.epochs)
+    scheduler = CosineAnnealingLR(optimizer, T_max=parser_args.epochs)
 
-    if not glob_args.evaluate_only:
-        for epoch in range(1, glob_args.epochs + 1):
+    if not parser_args.evaluate_only:
+        for epoch in range(1, parser_args.epochs + 1):
             train(model, device, train_loader, optimizer, criterion, epoch)
             test_acc = test(model, device, criterion, test_loader)
             scheduler.step()
             epoch_list.append(epoch)
             test_acc_list.append(test_acc)
-            if glob_args.mode != "training":
-                if glob_args.algo == 'hc':
-                    model_sparsity = get_model_sparsity_hc(model)
+            if parser_args.mode != "training":
+                if parser_args.algo == 'hc':
+                    model_sparsity = get_model_sparsity(model, 0.01)
                 else:
                     model_sparsity = get_model_sparsity(model)
 
@@ -588,22 +611,22 @@ def main():
             print("Test Acc: {:.2f}%\n".format(test_acc))
             print("---------------------------------------------------------")
             results_df = pd.DataFrame({'epoch': epoch_list, 'test_acc': test_acc_list, 'model_sparsity': model_sparsity_list})
-            results_df.to_csv(glob_args.results_filename, index=False)
+            results_df.to_csv(parser_args.results_filename, index=False)
 
-        if glob_args.mode != "training":
+        if parser_args.mode != "training":
             # gotta plot the final histogram as well
             plot_histogram_scores(model, epoch)
 
-        if glob_args.save_model:
-            if glob_args.mode != 'training':
-                model_filename = "model_checkpoints/mnist_pruned_model_{}_{}.pt".format(glob_args.algo, glob_args.epochs)
+        if parser_args.save_model:
+            if parser_args.mode != 'training':
+                model_filename = "model_checkpoints/mnist_pruned_model_{}_{}.pt".format(parser_args.algo, parser_args.epochs)
             else:
-                model_filename = "model_checkpoints/mnist_trained_model_{}.pt".format(glob_args.epochs)
+                model_filename = "model_checkpoints/mnist_trained_model_{}.pt".format(parser_args.epochs)
             torch.save(model.state_dict(), model_filename)
 
-    if glob_args.algo in ('hc'):
+    if parser_args.algo in ('hc'):
         # irrespective of evaluate_only, add an evaluate_only step
-        model.load_state_dict(torch.load('model_checkpoints/mnist_pruned_model_{}_{}.pt'.format(glob_args.algo, glob_args.epochs)))
+        model.load_state_dict(torch.load('model_checkpoints/mnist_pruned_model_{}_{}.pt'.format(parser_args.algo, parser_args.epochs)))
         round_acc_list = round_and_evaluate(model)
 
         print("Test Acc: {:.2f}%\n".format(test_acc))
