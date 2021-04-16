@@ -214,6 +214,13 @@ def parse_arguments():
     )
 
     parser.add_argument(
+        '--plot-hc-convergence',
+        action='store_true',
+        default=False,
+        help='flag that decides if we plot convergence of hc'
+    )
+
+    parser.add_argument(
         "--hc-warmup",
         default=9999,
         type=int,
@@ -529,6 +536,20 @@ def parse_arguments():
         action='store_true',
         default=False,
         help='flag that decides if we are doing pruning or weight training'
+    )
+
+    parser.add_argument(
+        '--lmbda',
+        type=float,
+        default=0.001,
+        help='regularization coefficient lambda'
+    )
+
+    parser.add_argument(
+        '--regularization',
+        action='store_true',
+        default=False,
+        help='to regularize or not to regularize. that is the question : p(1-p)'
     )
 
     args = parser.parse_args()

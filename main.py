@@ -212,7 +212,12 @@ def main_worker():
 
         # evaluate on validation set
         start_validation = time.time()
-        acc1, acc5, acc10 = validate(data.val_loader, model, criterion, parser_args, writer, epoch)
+        if parser_args.plot_hc_convergence:
+            cp_model = copy.deepcopy(model)
+            hc_round(cp_model, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio)
+            acc1, acc5, acc10 = validate(data.val_loader, cp_model, criterion, parser_args, writer, epoch)
+        else:
+            acc1, acc5, acc10 = validate(data.val_loader, model, criterion, parser_args, writer, epoch)
         validation_time.update((time.time() - start_validation) / 60)
 
         # update all results lists
@@ -368,7 +373,7 @@ def connect_mask(model, criterion, data, validate, model2=None): # connect two m
 
     # select random direction to go
     num_d = 1 # 100
-    num_v = 5 # 100
+    num_v = 5 #5 # 100
     resol = 100 #1000
 
     # batch data to test
@@ -446,7 +451,7 @@ def connect_mask(model, criterion, data, validate, model2=None): # connect two m
                     data.train_loader, cp_model, criterion, parser_args,
                     writer=None, epoch=parser_args.start_epoch)
 
-                print(i, v_idx, loss.data.item(), acc1)
+                print(i, v_idx, loss.data.item(), acc1, train_acc1)
                 loss_arr[v_idx] = loss.data.item()
                 acc_arr[v_idx] = acc1
                 train_acc_arr[v_idx] = train_acc1

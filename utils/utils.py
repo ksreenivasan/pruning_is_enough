@@ -17,7 +17,7 @@ def set_seed(seed):
     torch.manual_seed(seed)
     torch.cuda.manual_seed(seed)
     torch.cuda.manual_seed_all(seed)
-    np.random.seed(seed_num)
+    np.random.seed(seed)
     os.environ['PYTHONHASHSEED'] = str(seed)
     # making sure GPU runs are deterministic even if they are slower
     torch.backends.cudnn.deterministic = True
