@@ -304,7 +304,7 @@ def test(model, device, criterion, test_loader):
 
 def get_layer_sparsity(layer, threshold=None):
     # this parameter makes sense only for HC
-    if threshold > 0:
+    if threshold:
         # num_elements \in [threshold, 1-threshold]
         num_middle = torch.gt(layer.scores,
             torch.ones_like(layer.scores)*threshold) *\
