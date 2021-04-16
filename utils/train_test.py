@@ -29,19 +29,23 @@ def prune_weights(model, device, train_loader, criterion, args, topk=(1, 5)):
     loss = 0
     acc = [0] * len(topk)
     
-    prev_masks = {name: copy.deepcopy(param) for name, param in model.named_parameters() if "mask" in name}
+    prev_masks = {name: copy.deepcopy(param) for name, param in model.named_parameters() if name == "mask_weight" or name == "mask_bias"}
     
     if "random" in args.how_to_prune:
         params_dict = {}
+        fixed_params_dict = {}
         idx_dict = {}
         idx_start = 0   # Starting index for a particular flattened binary mask in the network. 
 
         for name, param in model.named_parameters():
-            if "mask" in name:
+            if name == "mask_weight" or name == "mask_bias":
                 flat_param = param.flatten()
                 params_dict[name] = flat_param
                 idx_dict[name] = idx_start
                 idx_start += len(flat_param)
+            elif "fixed_mask" in name:
+                fixed_flat_param = param.flatten()
+                fixed_params_dict[name] = fixed_flat_param
 
         param_names = list(params_dict.keys())
 
@@ -53,7 +57,7 @@ def prune_weights(model, device, train_loader, criterion, args, topk=(1, 5)):
         for batch_idx, (data, target) in enumerate(train_loader):
             param_idx = rand_idx[batch_idx]
             for name in reversed(param_names):
-                if idx_dict[name] <= param_idx:
+                if idx_dict[name] <= param_idx and fixed_params_dict[name][param_idx - idx_dict[name]] == 1:
                     params_dict[name][param_idx - idx_dict[name]] = 1
                     batch_loss_keep, batch_acc_keep = compute_batch_loss(model, device, data, target, criterion, topk)
 
@@ -98,7 +102,7 @@ def prune_weights(model, device, train_loader, criterion, args, topk=(1, 5)):
             for child in model.children():
                 if hasattr(child, "mask_weight"):
                     activations_kept = len(child.pruned_activation) - sum(child.pruned_activation)
-                total_iter += (activations_kept * child.in_channels) 
+                total_iter += (activations_kept * child.in_features) 
         else:
             total_iter = math.ceil(net_size / args.submask_size)
         
@@ -106,15 +110,20 @@ def prune_weights(model, device, train_loader, criterion, args, topk=(1, 5)):
         submask = 1
         it = iter(train_loader)
         for name, param in named_params:
-            if "mask" in name:
+            if name == "mask_weight" or name == "mask_bias":
                 flat_param = param.flatten()
                 module = getattr(model, name.split('.')[0])
+                if name == "mask_weight":
+                    fixed_mask = module.fixed_mask_weight
+                else:
+                    fixed_mask = module.fixed_mask_bias
                 for i in range(math.ceil(len(flat_param) / args.submask_size)):
-                    if isinstance(module, nn.Linear):
-                        can_prune = not module.pruned_activation[math.floor(i / module.in_channels)]
+#                    if isinstance(module, nn.Linear):
+#                        can_prune = not module.pruned_activation[math.floor(i / module.in_features)]
 #                    else:
 #                        # handle case where layer is convlutional
-                    if (args.pruning_strategy == "activations_and_weights" and can_prune) or args.pruning_strategy != "activations_and_weights":      # TODO: this if statement only works for linear layers...
+#                    if (args.pruning_strategy == "activations_and_weights" and can_prune) or args.pruning_strategy != "activations_and_weights":      # TODO: this if statement only works for linear layers...
+                    if fixed_mask[i] == 1: 
                         try:
                             data, target = it.next()
                         except StopIteration:
@@ -164,7 +173,7 @@ def prune_weights(model, device, train_loader, criterion, args, topk=(1, 5)):
         print("Exiting ...")
         sys.exit()
 
-    curr_masks = {name: copy.deepcopy(param) for name, param in model.named_parameters() if "mask" in name}
+    curr_masks = {name: copy.deepcopy(param) for name, param in model.named_parameters() if name == "mask_weight" or name == "mask_bias"}
 
     hamming_dist = 0        # determine the hamming distance between previous and current masks
 
@@ -179,7 +188,7 @@ def prune_activations(model, device, train_loader, criterion, args, topk=(1, 5))
     loss = 0
     acc = [0] * len(topk) 
     net_size = sum([param.numel() for name, param in model.named_parameters() if "mask" not in name])
-    prev_masks = {name: copy.deepcopy(param) for name, param in model.named_parameters() if "mask" in name}
+    prev_masks = {name: copy.deepcopy(param) for name, param in model.named_parameters() if name == "mask_weight" or name == "mask_bias"}
     
     num_iter = 0
     it = iter(train_loader)
@@ -230,7 +239,7 @@ def prune_activations(model, device, train_loader, criterion, args, topk=(1, 5))
     avg_loss = loss / num_iter
     avg_acc = [x / num_iter for x in acc]
 
-    curr_masks = {name: copy.deepcopy(param) for name, param in model.named_parameters() if "mask" in name}
+    curr_masks = {name: copy.deepcopy(param) for name, param in model.named_parameters() if name == "mask_weight" or name == "mask_bias"}
 
     hamming_dist = 0        # determine the hamming distance between previous and current masks
 
@@ -254,7 +263,7 @@ def simulated_annealing(model, device, train_loader, criterion, args, topk=(1, 5
 
     flat_params = []
     for name, param in model.named_parameters():
-        if "mask" in name:
+        if name == "mask_weight" or name == "mask_bias":
             flat_params.append(param.flatten())
     
     num_mask_params = sum([x.numel() for x in flat_params])
@@ -267,7 +276,7 @@ def simulated_annealing(model, device, train_loader, criterion, args, topk=(1, 5
     idx_start = 0   # Starting index for a particular flattened binary mask in the network. 
 
     for name, param in model.named_parameters():
-        if "mask" in name:
+        if name == "mask_weight" or name == "mask_bias":
             flat_param = param.flatten()
             params_dict[name] = flat_param
             idx_dict[name] = idx_start

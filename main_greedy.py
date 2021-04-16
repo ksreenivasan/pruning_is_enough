@@ -21,9 +21,12 @@ import torch.autograd as autograd
 from utils import data
 from utils.train_test import prune_weights, prune_activations, inference, train, simulated_annealing
 from utils.net_utils import get_sparsity, flip, zero_one_loss
+from utils.conv_type import GetSubnet as GetSubnetConv
+from utils.linear_type import GetSubnet as GetSubnetLinear
 import models.greedy as models
 
 from args import args
+import main
 
 def main():
     print(args, "\n")
@@ -143,6 +146,19 @@ def main():
         save=False,
     )
 
+    if args.algo == "ep+greedy":
+       main.main_worker()
+       ep_model = copy.deepcopy(model)
+       main.pretrained(args.pretrained, ep_model)
+       for name, child in model.named_children():
+           if "Mask" in name:
+               if isinstance(param, nn.Linear):
+                   mask_weight, mask_bias = GetSubnetLinear(ep_model.scores.abs(), ep_model.bias_scores.abs(), args.prune_rate)
+                   child.set_fixed_mask(mask_weight, mask_bias)
+               elif isinstance(param, nn.Conv2d):
+                   mask_weight, mask_bias = GetSubnetConv(ep_model.scores.abs(), ep_model.bias_scores.abs(), args.prune_rate)
+                   child.set_fixed_mask(mask_weight, mask_bias)
+
     for epoch in range(start_epoch, args.num_epochs):
         print("\nEpoch:", epoch+1)
             
@@ -200,11 +216,13 @@ def main():
 
     if args.pruning_strategy == "activations_and_weights":
         num_children = len([i for i in model.children()])
-        for idx, child in enumerate(model.children()):
-            if idx < num_children - 1:      # if activations in the output layer are pruned, add the ability to reconnect them to the previous layer
-                for i in range(len(child.mask_weight)):
-                    if (child.mask_weight[i] == 0).all():
-                        child.pruned_activation[i] = True
+        for idx, (name, child) in enumerate(model.named_children()):
+            if "Mask" in name:
+                if idx < num_children - 1:      # if activations in the output layer are pruned, add the ability to reconnect them to the previous layer
+                    for i in range(len(child.mask_weight)):
+                        if (child.mask_weight[i] == 0).all():
+#                            child.pruned_activation[i] = True
+                            child.set_fixed_mask(child.mask_weight, child.mask_bias)
 
         if args.flips:
             next_flip_epoch = args.flips[0]
