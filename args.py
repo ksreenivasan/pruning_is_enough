@@ -161,7 +161,7 @@ def parse_arguments():
         "--algo",
         type=str,
         default='ep',
-        help="pruning algo to use |ep|pt_hack|pt_reg|hc|"
+        help="pruning algo to use |ep|pt_hack|pt_reg|hc|ep+greedy|greedy+ep|"
     )
 
     parser.add_argument(
@@ -211,6 +211,13 @@ def parse_arguments():
         type=str,
         default="prob",
         help="way of interpolating masks/weights |prob|linear|"
+    )
+
+    parser.add_argument(
+        '--plot-hc-convergence',
+        action='store_true',
+        default=False,
+        help='flag that decides if we plot convergence of hc'
     )
 
     parser.add_argument(

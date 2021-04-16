@@ -115,6 +115,7 @@ class SupermaskConv(nn.Conv2d):
 
         # NOTE: initialize the weights like this.
         nn.init.kaiming_normal_(self.weight, mode="fan_in", nonlinearity="relu")
+        # self.weight.data = 2*torch.bernoulli(0.5*torch.ones_like(self.weight)) - 1
 
         # NOTE: turn the gradient on the weights off
         self.weight.requires_grad = False
@@ -166,6 +167,7 @@ class SupermaskLinear(nn.Linear):
 
         # NOTE: initialize the weights like this.
         nn.init.kaiming_normal_(self.weight, mode="fan_in", nonlinearity="relu")
+        # self.weight.data = 2*torch.bernoulli(0.5*torch.ones_like(self.weight)) - 1
 
         # NOTE: turn the gradient on the weights off
         self.weight.requires_grad = False
@@ -452,7 +454,7 @@ def plot_histogram_scores(model, epoch=0):
     plt.savefig(filename, format='pdf', bbox_inches='tight', pad_inches=0.05)
 
 
-def round_and_evaluate(model):
+def round_and_evaluate(model, device, criterion, train_loader, test_loader):
     test(model, device, criterion, test_loader)
     # cp_model = Net().to(device)
     acc_list = []
@@ -632,7 +634,7 @@ def main():
     if parser_args.algo in ('hc'):
         # irrespective of evaluate_only, add an evaluate_only step
         model.load_state_dict(torch.load('model_checkpoints/mnist_pruned_model_{}_{}.pt'.format(parser_args.algo, parser_args.epochs)))
-        round_acc_list = round_and_evaluate(model)
+        round_acc_list = round_and_evaluate(model, device, criterion, train_loader, test_loader)
 
         print("Test Acc: {:.2f}%\n".format(test_acc))
 

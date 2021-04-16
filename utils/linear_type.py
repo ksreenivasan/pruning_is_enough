@@ -36,7 +36,7 @@ class GetSubnet(autograd.Function):
             out = torch.bernoulli(scores)
             bias_out = torch.bernoulli(bias_scores)
 
-        elif parser_args.algo == 'ep':
+        elif parser_args.algo == 'ep' or parser_args.algo == 'ep+greedy':
             # Get the supermask by sorting the scores and using the top k%
             out = scores.clone()
             _, idx = scores.flatten().sort()
