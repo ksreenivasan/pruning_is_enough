@@ -161,7 +161,7 @@ def parse_arguments():
         "--algo",
         type=str,
         default='ep',
-        help="pruning algo to use |ep|pt_hack|pt_reg|hc|"
+        help="pruning algo to use |ep|pt_hack|pt_reg|hc|ep+greedy|greedy+ep|"
     )
 
     parser.add_argument(

@@ -9,7 +9,7 @@ class TwoLayerFC(nn.Module):
     def __init__(self, input_size, num_classes, args):
         super(TwoLayerFC, self).__init__()
         self.fc1 = MaskLinear(input_size, args.hidden_size, bias=args.bias)
-        self.fc2 = MaskLinear(args.hidden_size, num_classes, bias=args.bias)     # NOTE: it may not be a good idea to prune this layer for activations...
+        self.fc2 = MaskLinear(args.hidden_size, num_classes, bias=args.bias)
 
         self.num_activations = len(self.fc1.weight) + len(self.fc2.weight)
     
@@ -34,7 +34,6 @@ class FourLayerFC(nn.Module):
 
         self.num_activations = len(self.fc1.weight) + len(self.fc2.weight) + \
                 len(self.fc3.weight) + len(self.fc4.weight)
-
 
     def forward(self, x):
         x = x.view(x.size()[0], -1)

@@ -28,11 +28,14 @@ def argv_to_vars(argv):
 def produce_override_string(args, override_args):
     lines = []
     for v in override_args:
-        v_arg = getattr(args, v)
-        if type(v_arg) in USABLE_TYPES:
-            lines.append(v + ": " + str(v_arg))
+        if v != "multigpu":
+            v_arg = getattr(args, v)
+            if type(v_arg) in USABLE_TYPES:
+                lines.append(v + ": " + str(v_arg))
+            else:
+                lines.append(v + ": " + f'"{str(v_arg)}"')
         else:
-            lines.append(v + ": " + f'"{str(v_arg)}"')
+            lines.append("multigpu: " + str(args.multigpu))
 
     return "\n# ===== Overrided ===== #\n" + "\n".join(lines)
 
