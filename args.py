@@ -214,6 +214,13 @@ def parse_arguments():
     )
 
     parser.add_argument(
+        '--plot-hc-convergence',
+        action='store_true',
+        default=False,
+        help='flag that decides if we plot convergence of hc'
+    )
+
+    parser.add_argument(
         "--hc-warmup",
         default=9999,
         type=int,
