@@ -454,10 +454,11 @@ def plot_histogram_scores(model, epoch=0):
 
 def round_and_evaluate(model):
     test(model, device, criterion, test_loader)
-    cp_model = Net().to(device)
+    # cp_model = Net().to(device)
     acc_list = []
     for itr in range(parser_args.num_test):
-        cp_model.load_state_dict(torch.load('model_checkpoints/mnist_pruned_model_{}_{}.pt'.format(parser_args.algo, parser_args.epochs)))
+        cp_model = copy.deepcopy(model)
+        # cp_model.load_state_dict(torch.load('model_checkpoints/mnist_pruned_model_{}_{}.pt'.format(parser_args.algo, parser_args.epochs)))
         print('Testing rounding technique of {}'.format(parser_args.round))
         for name, params in cp_model.named_parameters():
             if ".score" in name:
@@ -479,7 +480,7 @@ def round_and_evaluate(model):
     print("Rounding results: ")
     print('Mean Acc: {}, Std Dev: {}'.format(np.mean(acc_list), np.std(acc_list)))
 
-    return acc_list
+    return np.mean(acc_list)
 
 
 def main():
@@ -595,7 +596,8 @@ def main():
     if not parser_args.evaluate_only:
         for epoch in range(1, parser_args.epochs + 1):
             train(model, device, train_loader, optimizer, criterion, epoch)
-            test_acc = test(model, device, criterion, test_loader)
+            test_acc = round_and_evaluate(model)
+            # test_acc = test(model, device, criterion, test_loader)
             scheduler.step()
             epoch_list.append(epoch)
             test_acc_list.append(test_acc)
