@@ -454,7 +454,7 @@ def plot_histogram_scores(model, epoch=0):
     plt.savefig(filename, format='pdf', bbox_inches='tight', pad_inches=0.05)
 
 
-def round_and_evaluate(model):
+def round_and_evaluate(model, device, criterion, train_loader, test_loader):
     test(model, device, criterion, test_loader)
     cp_model = Net().to(device)
     acc_list = []
@@ -632,7 +632,7 @@ def main():
     if parser_args.algo in ('hc'):
         # irrespective of evaluate_only, add an evaluate_only step
         model.load_state_dict(torch.load('model_checkpoints/mnist_pruned_model_{}_{}.pt'.format(parser_args.algo, parser_args.epochs)))
-        round_acc_list = round_and_evaluate(model)
+        round_acc_list = round_and_evaluate(model, device, criterion, train_loader, test_loader)
 
         print("Test Acc: {:.2f}%\n".format(test_acc))
 
