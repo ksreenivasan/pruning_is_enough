@@ -27,6 +27,7 @@ from utils.net_utils import (
     get_score_sparsity_hc
 )
 from utils.schedulers import get_policy
+from utils.utils import set_seed
 
 import importlib
 
@@ -765,12 +766,6 @@ def get_dataset(parser_args):
     dataset = getattr(data, parser_args.dataset)(parser_args)
 
     return dataset
-
-def set_seed(seed_num):
-    random.seed(seed_num)
-    torch.manual_seed(seed_num)
-    torch.cuda.manual_seed(seed_num)
-    torch.cuda.manual_seed_all(seed_num)
 
 
 def get_model(parser_args):
