@@ -115,6 +115,7 @@ class SupermaskConv(nn.Conv2d):
 
         # NOTE: initialize the weights like this.
         nn.init.kaiming_normal_(self.weight, mode="fan_in", nonlinearity="relu")
+        # self.weight.data = 2*torch.bernoulli(0.5*torch.ones_like(self.weight)) - 1
 
         # NOTE: turn the gradient on the weights off
         self.weight.requires_grad = False
@@ -166,6 +167,7 @@ class SupermaskLinear(nn.Linear):
 
         # NOTE: initialize the weights like this.
         nn.init.kaiming_normal_(self.weight, mode="fan_in", nonlinearity="relu")
+        # self.weight.data = 2*torch.bernoulli(0.5*torch.ones_like(self.weight)) - 1
 
         # NOTE: turn the gradient on the weights off
         self.weight.requires_grad = False
@@ -304,7 +306,7 @@ def test(model, device, criterion, test_loader):
 
 def get_layer_sparsity(layer, threshold=None):
     # this parameter makes sense only for HC
-    if threshold > 0:
+    if threshold:
         # num_elements \in [threshold, 1-threshold]
         num_middle = torch.gt(layer.scores,
             torch.ones_like(layer.scores)*threshold) *\
