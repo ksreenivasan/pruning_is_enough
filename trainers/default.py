@@ -43,6 +43,18 @@ def train(train_loader, model, criterion, optimizer, epoch, args, writer):
         output = model(images)
 
         loss = criterion(output, target)
+        regularization_loss = 0
+        if args.regularization:
+            # add lambda * p(1-p)
+            for name, params in model.named_parameters():
+                if ".bias_score" in name:
+                    if args.bias:
+                        regularization_loss += torch.sum(torch.pow(params, 1) * torch.pow(1-params, 1))
+
+                elif ".score" in name:
+                    regularization_loss += torch.sum(torch.pow(params, 1) * torch.pow(1-params, 1))
+
+            loss += args.lmbda * R_p
 
         # measure accuracy and record loss
         acc1, acc5, acc10 = accuracy(output, target, topk=(1, 5, 10))
