@@ -27,7 +27,7 @@ from utils.net_utils import (
     get_score_sparsity_hc
 )
 from utils.schedulers import get_policy
-from utils.utils import set_seed
+from utils.utils import set_seed, plot_histogram_scores
 
 import importlib
 
@@ -203,6 +203,12 @@ def main_worker():
             data.train_loader, model, criterion, optimizer, epoch, parser_args, writer=writer
         )
         train_time.update((time.time() - start_train) / 60)
+
+
+        # save the histrogram of scores
+        if parase_args.mode == 'pruning':
+            if epoch % 10 == 1:
+                plot_histogram_scores(model, epoch)
 
 
         # apply round for every T epochs (after E warm-up epoch)
