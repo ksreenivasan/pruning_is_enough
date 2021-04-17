@@ -206,7 +206,7 @@ def main_worker():
 
 
         # save the histrogram of scores
-        if parase_args.mode == 'pruning':
+        if parser_args.mode == 'pruning':
             if epoch % 10 == 1:
                 plot_histogram_scores(model, epoch)
 
