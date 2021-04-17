@@ -205,12 +205,6 @@ def main_worker():
         train_time.update((time.time() - start_train) / 60)
 
 
-        # save the histrogram of scores
-        if parser_args.algo in ['hc', 'ep']:
-            if epoch % 5 == 1: # %10 %50
-                plot_histogram_scores(model, epoch)
-                print('Plotted the score histogram')
-
 
         # apply round for every T epochs (after E warm-up epoch)
         if epoch >= parser_args.hc_warmup and epoch % parser_args.hc_period == 0:
@@ -226,6 +220,12 @@ def main_worker():
         else:
             acc1, acc5, acc10 = validate(data.val_loader, model, criterion, parser_args, writer, epoch)
         validation_time.update((time.time() - start_validation) / 60)
+
+        # save the histrogram of scores
+        if not parser_args.weight_training:
+            if epoch % 5 == 1: # %10 %50
+                plot_histogram_scores(model, epoch)
+                print('Plotted the score histogram')
 
         # update all results lists
         epoch_list.append(epoch)
@@ -786,15 +786,15 @@ def get_model(parser_args):
 
     print("=> Creating model '{}'".format(parser_args.arch))
     if parser_args.fixed_init:
-        set_seed(42)
+        set_seed(parser_args.seed)
     model = models.__dict__[parser_args.arch]() #model = models.__dict__[parser_args.arch](shift=parser_args.shift)
     if parser_args.fixed_init:    
-        set_seed(parser_args.seed)
+        set_seed(parser_args.seed2)
     for name, params in model.named_parameters():
         if ".weight" in name:
             print(torch.sum(params.data))
 
-    if parser_args.mode == "pruning":
+    if not parser_args.weight_training:
         # applying sparsity to the network
         if (
             parser_args.conv_type != "DenseConv"

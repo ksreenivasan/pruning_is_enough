@@ -410,10 +410,19 @@ def parse_arguments():
     parser.add_argument(
         "--seed",
         type=int,
-        default=None,
+        default=42,
         metavar="S",
         help="Random seed (default: None)"
     )
+
+    parser.add_argument(
+        "--seed2",
+        type=int,
+        default=24,
+        metavar="S",
+        help="Random seed (default:42)"
+    )
+
     parser.add_argument(
         "--fixed-init",
         action="store_true",

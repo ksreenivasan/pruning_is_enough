@@ -1,4 +1,5 @@
 from functools import partial
+from args import args as parser_args
 import os
 import pdb
 import pathlib
@@ -34,12 +35,9 @@ def plot_histogram_scores(model, epoch=0):
     n_row, n_col = 3, 3
     fig, axs = plt.subplots(n_row, n_col)
 
-    #flat_tensor = []
     idx = 0
     for name, params in model.named_parameters():
         if ".score" in name:
-            #flat_tensor.append(params.data)
-            #print(name, params.data)
             scores = params.data.flatten().cpu().numpy()
             r, c = divmod(idx, n_row)
             axs[r, c].hist(scores, facecolor='#2ab0ff', edgecolor='#169acf',
@@ -47,5 +45,5 @@ def plot_histogram_scores(model, epoch=0):
             axs[r, c].set_title('{}'.format(name))                   
             idx += 1
 
-    filename = 'plots/weights_histogram_epoch_{}.pdf'.format(epoch)
+    filename = 'plots/weights_histogram_{}_epoch_{}.pdf'.format(parser_args.algo, epoch)
     plt.savefig(filename, format='pdf', bbox_inches='tight', pad_inches=0.05)
