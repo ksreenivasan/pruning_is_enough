@@ -9,7 +9,10 @@ import random
 
 import torch
 import torch.nn as nn
-
+import matplotlib as plt   
+from matplotlib import colors as mcolors
+from pylab import *
+plt.style.use('seaborn-whitegrid') 
 
 # set seed for experiment
 def set_seed(seed):
@@ -39,32 +42,10 @@ def plot_histogram_scores(model, epoch=0):
             #print(name, params.data)
             scores = params.data.flatten().cpu().numpy()
             r, c = divmod(idx, n_row)
-            axs[0, 0].hist(scores, facecolor='#2ab0ff', edgecolor='#169acf',
+            axs[r, c].hist(scores, facecolor='#2ab0ff', edgecolor='#169acf',
                    density=False, linewidth=0.5, bins=20)
-            axs[0, 0].set_title('{} Scores Distribution'.format(name))                   
+            axs[r, c].set_title('{}'.format(name))                   
             idx += 1
-
-    '''
-    scores = model.conv1.scores.flatten().cpu().detach().numpy()
-    axs[0, 0].hist(scores, facecolor='#2ab0ff', edgecolor='#169acf',
-                   density=False, linewidth=0.5, bins=20)
-    axs[0, 0].set_title('Conv1 Scores Distribution')
-
-    scores = model.conv2.scores.flatten().cpu().detach().numpy()
-    axs[0, 1].hist(scores, facecolor='#2ab0ff', edgecolor='#169acf',
-                   density=False, linewidth=0.5, bins=20)
-    axs[0, 1].set_title('Conv2 Scores Distribution')
-
-    scores = model.fc1.scores.flatten().cpu().detach().numpy()
-    axs[1, 0].hist(scores, facecolor='#2ab0ff', edgecolor='#169acf',
-                   density=False, linewidth=0.5, bins=20)
-    axs[1, 0].set_title('FC1 Scores Distribution')
-
-    scores = model.fc2.scores.flatten().cpu().detach().numpy()
-    axs[1, 1].hist(scores, facecolor='#2ab0ff', edgecolor='#169acf',
-                   density=False, linewidth=0.5, bins=20)
-    axs[1, 1].set_title('FC2 Scores Distribution')
-    '''
 
     filename = 'plots/weights_histogram_epoch_{}.pdf'.format(epoch)
     plt.savefig(filename, format='pdf', bbox_inches='tight', pad_inches=0.05)

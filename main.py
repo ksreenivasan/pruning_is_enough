@@ -206,9 +206,10 @@ def main_worker():
 
 
         # save the histrogram of scores
-        if parser_args.mode == 'pruning':
-            if epoch % 10 == 1:
+        if parser_args.algo in ['hc', 'ep']:
+            if epoch % 5 == 1: # %10 %50
                 plot_histogram_scores(model, epoch)
+                print('Plotted the score histogram')
 
 
         # apply round for every T epochs (after E warm-up epoch)

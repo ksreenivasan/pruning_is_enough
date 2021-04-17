@@ -31,7 +31,7 @@ scale_fan: False #True
 
 # ===== Rounding ===== #
 round: naive
-hc_warmup: 150 #30
+hc_warmup: 30 #30 # 150
 hc_period: 10 #10
 noise: True
 noise_ratio: 0.00
