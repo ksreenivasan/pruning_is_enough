@@ -88,7 +88,6 @@ def main_worker():
             best_acc1 = resume(parser_args, model, optimizer)
 
         if parser_args.evaluate:
-
             acc1, acc5, acc10 = validate(
                 data.val_loader, model, criterion, parser_args,
                 writer=None, epoch=parser_args.start_epoch)
@@ -108,7 +107,7 @@ def main_worker():
 
             for trial in range(trial_num):
                 cp_model = copy.deepcopy(model)
-                if parser_args.algo in ['hc']: 
+                if parser_args.algo in ['hc']:
                     hc_round(cp_model, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio)
                     # get_score_sparsity_hc(cp_model)
 
@@ -121,7 +120,7 @@ def main_worker():
 
             if parser_args.pretrained2:
                 cp_model2 = copy.deepcopy(model2)
-                if parser_args.algo in ['hc']: 
+                if parser_args.algo in ['hc']:
                     hc_round(cp_model2, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio)
                     # get_score_sparsity_hc(cp_model2)
 
@@ -185,8 +184,8 @@ def main_worker():
     )
 
     # sanity check for 50% sparsity initialization
-    if parser_args.score_init == 'bern':
-        # get_score_sparsity_hc(model)
+    ## if parser_args.score_init == 'bern':
+       ## get_score_sparsity_hc(model)
 
     # Start training
     for epoch in range(parser_args.start_epoch, parser_args.epochs):
@@ -332,19 +331,18 @@ def main_worker():
         if ".weight" in name:
             print(torch.sum(params.data))
 
-
     # check the performance of trained model
-    if parser_args.algo in ['hc']: 
+    if parser_args.algo in ['hc']:
         if parser_args.round in ['prob']:
             trial_num = 1
         else:
             trial_num = 1
-        
+
         for trial in range(trial_num):
             cp_model = copy.deepcopy(model)
             print('Apply rounding for the final model:')
             hc_round(cp_model, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio)
-           # hc_round(model, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio)
+            # hc_round(model, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio)
             # get_score_sparsity_hc(cp_model)
 
             acc1, acc5, acc10 = validate(
@@ -354,10 +352,8 @@ def main_worker():
             print('acc1: {}, acc5: {}, acc10: {}'.format(acc1, acc5, acc10))
 
 
-
-def connect_mask(model, criterion, data, validate, model2=None): # connect two masks trained by pruning
-
-
+# connect two masks trained by pruning
+def connect_mask(model, criterion, data, validate, model2=None):
     # concatenate the masks
     flat_tensor = []
     flat_weight = []
@@ -366,8 +362,8 @@ def connect_mask(model, criterion, data, validate, model2=None): # connect two m
             flat_weight.append(params.data)
         if ".score" in name:
             flat_tensor.append(params.data)
-            #print(name, params.data)
-    mask_init = _flatten_dense_tensors(flat_tensor) # a: flat_tensor, b = mask_init,
+            # print(name, params.data)
+    mask_init = _flatten_dense_tensors(flat_tensor)  # a: flat_tensor, b = mask_init,
 
     flat_tensor2 = []
     idx = 0
@@ -378,13 +374,12 @@ def connect_mask(model, criterion, data, validate, model2=None): # connect two m
         if ".score" in name:
             flat_tensor2.append(params.data)
             print(name, params.data.shape)
-    mask_fin = _flatten_dense_tensors(flat_tensor2) # a: flat_tensor2, b = mask_fin,
-
+    mask_fin = _flatten_dense_tensors(flat_tensor2)  # a: flat_tensor2, b = mask_fin,
 
     # select random direction to go
-    num_d = 1 # 100
-    num_v = 5 #5 # 100
-    resol = 100 #1000
+    num_d = 1  # 100
+    num_v = 5  # 5 # 100
+    resol = 100  # 1000
 
     # batch data to test
     for data_, label_ in data.train_loader:
@@ -423,35 +418,33 @@ def connect_mask(model, criterion, data, validate, model2=None): # connect two m
         print('dist btw mask_init and new_d1: ', normalized_hamming_dist)
 
         for i in range(resol+1):
-            p = i/resol # probability of sampling new_d1
+            p = i/resol  # probability of sampling new_d1
             if d1_idx == 0:
                 if model2 is None:
                     dist_list.append(round(p * sparsity1, 4))
                 else:
                     dist_list.append(round(p * normalized_hamming_dist, 4))
 
-            #loss_avg = 0
-            #acc_avg = 0
+            # loss_avg = 0
+            # acc_avg = 0
             loss_arr, train_acc_arr, acc_arr = np.zeros(num_v), np.zeros(num_v), np.zeros(num_v)
 
             for v_idx in range(num_v):
-            
-                sampling_vct = torch.bernoulli(torch.ones_like(mask_init) * p) # [0, 1]^n  0 : I'll sample mask_init, 1: I'll sample d1
+                sampling_vct = torch.bernoulli(torch.ones_like(mask_init) * p)  # [0, 1]^n  0 : I'll sample mask_init, 1: I'll sample d1
                 new_mask = mask_init * (1-sampling_vct) + new_d1 * sampling_vct   # w+v
-            
-                #pdb.set_trace()
-                #print(torch.sum(torch.abs(new_mask - new_d1)))
+
+                # pdb.set_trace()
+                # print(torch.sum(torch.abs(new_mask - new_d1)))
                 # put merged masks back to the model
                 new_mask_unflat = _unflatten_dense_tensors(new_mask, flat_tensor)
                 idx = 0
                 for name, params in cp_model.named_parameters():
                     if ".score" in name:
                         params.data = new_mask_unflat[idx]
-                        #print(name, params.data.shape)
-                        #print(torch.sum(torch.abs(params.data - flat_tensor2[idx])))
+                        # print(name, params.data.shape)
+                        # print(torch.sum(torch.abs(params.data - flat_tensor2[idx])))
                         idx += 1
-
-                # compute loss for the mask 
+                # compute loss for the mask
                 loss = criterion(cp_model(data_), label_)
                 acc1, acc5, acc10 = validate(
                     data.val_loader, cp_model, criterion, parser_args,
@@ -466,26 +459,24 @@ def connect_mask(model, criterion, data, validate, model2=None): # connect two m
                 acc_arr[v_idx] = acc1
                 train_acc_arr[v_idx] = train_acc1
 
-        
             train_loss_mean_list.append(np.mean(loss_arr))
             train_loss_std_list.append(np.std(loss_arr))
             train_acc_mean_list.append(np.mean(train_acc_arr))
-            train_acc_std_list.append(np.std(train_acc_arr))            
+            train_acc_std_list.append(np.std(train_acc_arr))
             test_acc_mean_list.append(np.mean(acc_arr))
             test_acc_std_list.append(np.std(acc_arr))
 
-
         if d1_idx == 0:
-            results_df = pd.DataFrame({'dist': dist_list, 'train_loss_mean': train_loss_mean_list, 'train_loss_std': train_loss_std_list, 
-                'train_acc_mean': train_acc_mean_list, 'train_acc_std': train_acc_std_list, 
+            results_df = pd.DataFrame({'dist': dist_list, 'train_loss_mean': train_loss_mean_list, 'train_loss_std': train_loss_std_list,
+                'train_acc_mean': train_acc_mean_list, 'train_acc_std': train_acc_std_list,
                 'test_acc_mean': test_acc_mean_list, 'test_acc_std': test_acc_std_list})
         else:
             raise NotImplementedError
-            #results_df['batch_train_loss{}'.format(d1_idx+1)] = train_loss_list
+            # results_df['batch_train_loss{}'.format(d1_idx+1)] = train_loss_list
 
-        #fin_time = time.time()
-        #print('1st d1 lap-time: ', fin_time - init_time)
-        #pdb.set_trace()
+        # fin_time = time.time()
+        # print('1st d1 lap-time: ', fin_time - init_time)
+        # pdb.set_trace()
     if model2 is None:
         results_filename = "results/results_visualize_sharpness_sparsity1_{}_d1_{}_v_{}_{}_{}_{}.csv".format(sparsity1, num_d, num_v, train_mode_str, parser_args.dataset, parser_args.algo)
     else:
@@ -494,25 +485,24 @@ def connect_mask(model, criterion, data, validate, model2=None): # connect two m
     results_df.to_csv(results_filename, index=False)
 
 
-
-def connect_weight(model, criterion, data, validate, model2=None): # connect two weights trained by "weight_training"
-
+# connect two weights trained by "weight_training"
+def connect_weight(model, criterion, data, validate, model2=None):
     # concatenate the weights
     flat_weight = []
     for name, params in model.named_parameters():
         if ".weight" in name:
             flat_weight.append(params.data)
-    weight_init = _flatten_dense_tensors(flat_weight) 
+    weight_init = _flatten_dense_tensors(flat_weight)
 
     flat_weight2 = []
     for name, params in model2.named_parameters():
         if ".weight" in name:
             flat_weight2.append(params.data)
-    weight_fin = _flatten_dense_tensors(flat_weight2) 
+    weight_fin = _flatten_dense_tensors(flat_weight2)
 
-    num_d = 1 # 100
-    num_v = 5 # 100
-    resol = 100 #1000
+    num_d = 1  # 100
+    num_v = 5  # 100
+    resol = 100  # 1000
 
     if parser_args.interpolate == 'linear':
         num_v = 1
@@ -549,24 +539,24 @@ def connect_weight(model, criterion, data, validate, model2=None): # connect two
             weight_dest = weight_fin
 
         for i in range(resol+1):
-            p = i/resol # probability of sampling dest
+            p = i/resol  # probability of sampling dest
             if d1_idx == 0:
                 if model2 is None:
                     dist_list.append(round(p * sparsity1, 4))
                 else:
                     dist_list.append(round(p, 4))
 
-            #loss_avg = 0
-            #acc_avg = 0
+            # loss_avg = 0
+            # acc_avg = 0
             loss_arr, train_acc_arr, acc_arr = np.zeros(num_v), np.zeros(num_v), np.zeros(num_v)
 
             for v_idx in range(num_v):
                 if parser_args.interpolate == 'prob':
-                    sampling_vct = torch.bernoulli(torch.ones_like(weight_init) * p) # [0, 1]^n  0 : I'll sample weight_init, 1: I'll sample weight_dest
-                    new_weight = weight_init * (1-sampling_vct) + weight_dest * sampling_vct   # w+v
+                    sampling_vct = torch.bernoulli(torch.ones_like(weight_init) * p)  # [0, 1]^n  0 : I'll sample weight_init, 1: I'll sample weight_dest
+                    new_weight = weight_init * (1-sampling_vct) + weight_dest * sampling_vct  # w+v
                 elif parser_args.interpolate == 'linear':
                     new_weight = weight_init * (1-p) + weight_dest * p
-            
+
                 # put merged masks back to the model
                 new_weight_unflat = _unflatten_dense_tensors(new_weight, flat_weight)
                 idx = 0
@@ -575,7 +565,7 @@ def connect_weight(model, criterion, data, validate, model2=None): # connect two
                         params.data = new_weight_unflat[idx]
                         idx += 1
 
-                # compute loss for the mask 
+                # compute loss for the mask
                 loss = criterion(cp_model(data_), label_)
                 acc1, acc5, acc10 = validate(
                     data.val_loader, cp_model, criterion, parser_args,
@@ -589,7 +579,7 @@ def connect_weight(model, criterion, data, validate, model2=None): # connect two
                 loss_arr[v_idx] = loss.data.item()
                 acc_arr[v_idx] = acc1
                 train_acc_arr[v_idx] = train_acc1
-        
+
             train_loss_mean_list.append(np.mean(loss_arr))
             train_loss_std_list.append(np.std(loss_arr))
             train_acc_mean_list.append(np.mean(train_acc_arr))
@@ -597,24 +587,22 @@ def connect_weight(model, criterion, data, validate, model2=None): # connect two
             test_acc_mean_list.append(np.mean(acc_arr))
             test_acc_std_list.append(np.std(acc_arr))
 
-
         if d1_idx == 0:
-            results_df = pd.DataFrame({'dist': dist_list, 'train_loss_mean': train_loss_mean_list, 'train_loss_std': train_loss_std_list, 
-                'train_acc_mean': train_acc_mean_list, 'train_acc_std': train_acc_std_list, 
+            results_df = pd.DataFrame({'dist': dist_list, 'train_loss_mean': train_loss_mean_list, 'train_loss_std': train_loss_std_list,
+                'train_acc_mean': train_acc_mean_list, 'train_acc_std': train_acc_std_list,
                 'test_acc_mean': test_acc_mean_list, 'test_acc_std': test_acc_std_list})
         else:
             raise NotImplementedError
-            #results_df['batch_train_loss{}'.format(d1_idx+1)] = train_loss_list
+            # results_df['batch_train_loss{}'.format(d1_idx+1)] = train_loss_list
 
-        #fin_time = time.time()
-        #print('1st d1 lap-time: ', fin_time - init_time)
+        # fin_time = time.time()
+        # print('1st d1 lap-time: ', fin_time - init_time)
     if model2 is None:
         results_filename = "results/results_visualize_sharpness_sparsity1_{}_d1_{}_v_{}_{}_{}_{}_{}.csv".format(sparsity1, num_d, num_v, train_mode_str, parser_args.dataset, parser_args.algo, parser_args.interpolate)
     else:
         results_filename = "results/results_visualize_connectivity_d_{}_v_{}_{}_{}_{}_{}.csv".format(num_d, num_v, train_mode_str, parser_args.dataset, parser_args.algo, parser_args.interpolate)
 
     results_df.to_csv(results_filename, index=False)
-
 
 
 def visualize_mask_2D(model, criterion, data, validate):
@@ -624,13 +612,13 @@ def visualize_mask_2D(model, criterion, data, validate):
     for name, params in model.named_parameters():
         if ".score" in name:
             flat_tensor.append(params.data)
-    mask_init = _flatten_dense_tensors(flat_tensor) # a: flat_tensor, b = mask_init,
+    mask_init = _flatten_dense_tensors(flat_tensor)  # a: flat_tensor, b = mask_init,
 
     # select random direction to go
     sparsity = 0.05
-    num_d = 1 # 100
-    num_v = 10 # 100
-    resol = 1000 #1000
+    num_d = 1  # 100
+    num_v = 10  # 100
+    resol = 1000  # 1000
 
     # batch data to test
     for data_, label_ in data.train_loader:
@@ -642,31 +630,30 @@ def visualize_mask_2D(model, criterion, data, validate):
     train_mode_str = 'weight_training' if parser_args.weight_training else 'pruning'
     results_filename = "results/results_2D_visualize_sharpness_epoch_sparsity_{}_d_{}_v_{}_{}_{}_{}".format(sparsity, num_d, num_v, train_mode_str, parser_args.dataset, parser_args.algo)
 
-    #init_time = time.time()
+    # init_time = time.time()
     for d1_idx in range(num_d):
 
-        d1 = torch.bernoulli(torch.ones_like(mask_init) * sparsity) # d1
+        d1 = torch.bernoulli(torch.ones_like(mask_init) * sparsity)  # d1
         print('sum of d1: ', torch.sum(d1))
-        d2 = torch.bernoulli(torch.ones_like(mask_init) * sparsity) # d2
+        d2 = torch.bernoulli(torch.ones_like(mask_init) * sparsity)  # d2
         print('sum of d2: ', torch.sum(d2))
         print('sum of d1*d2: ', torch.sum(d1*d2))
 
-        #new_d1 = (d1 + mask_init) % 2
-        #new_d2 = (d2 + mask_init) % 2
+        # new_d1 = (d1 + mask_init) % 2
+        # new_d2 = (d2 + mask_init) % 2
 
         loss_arr = np.zeros((resol, resol))
         for i1 in range(resol):
-            p1 = i1/resol # probability of adding elements from d1 
+            p1 = i1/resol  # probability of adding elements from d1
             for i2 in range(resol):
-                p2 = i2/resol # probability of adding elements from d2 
+                p2 = i2/resol  # probability of adding elements from d2
                 loss_avg = 0
 
                 for v_idx in range(num_v):
-                
-                    sampling_vct1 = torch.bernoulli(torch.ones_like(mask_init) * p1) # [0, 1]^n  1: I'll add d1 elements
-                    sampling_vct2 = torch.bernoulli(torch.ones_like(mask_init) * p2) # [0, 1]^n  1: I'll add d2 elements
+                    sampling_vct1 = torch.bernoulli(torch.ones_like(mask_init) * p1)  # [0, 1]^n  1: I'll add d1 elements
+                    sampling_vct2 = torch.bernoulli(torch.ones_like(mask_init) * p2)  # [0, 1]^n  1: I'll add d2 elements
 
-                    new_mask = (mask_init + sampling_vct1 * d1 + sampling_vct2 * d2) % 2 # w+v1+v2
+                    new_mask = (mask_init + sampling_vct1 * d1 + sampling_vct2 * d2) % 2  # w+v1+v2
 
                     # put merged masks back to the model
                     new_mask_unflat = _unflatten_dense_tensors(new_mask, flat_tensor)
@@ -676,13 +663,13 @@ def visualize_mask_2D(model, criterion, data, validate):
                             params.data = new_mask_unflat[idx]
                             idx += 1
 
-                    # compute loss for the mask 
+                    # compute loss for the mask
                     loss = criterion(cp_model(data_), label_)
-                    #print(i1, i2, v_idx, loss.data.item())
+                    # print(i1, i2, v_idx, loss.data.item())
                     loss_avg += loss.data.item()
                 loss_arr[i1, i2] = loss_avg/num_v
 
-        #print(loss_arr)
+        # print(loss_arr)
         np.save(results_filename + "_{}.npy".format(d1_idx), loss_arr)
         saved_loss = np.load(results_filename + "_{}.npy".format(d1_idx))
         print('saved_loss for d1_idx {}'.format(d1_idx), saved_loss)
