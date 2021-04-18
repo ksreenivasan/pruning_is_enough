@@ -24,7 +24,7 @@ from utils.net_utils import (
     get_lr,
     LabelSmoothing,
     hc_round,
-    get_score_sparsity_hc
+    get_model_sparsity
 )
 from utils.schedulers import get_policy
 from utils.utils import set_seed, plot_histogram_scores
@@ -110,7 +110,7 @@ def main_worker():
                 cp_model = copy.deepcopy(model)
                 if parser_args.algo in ['hc']: 
                     hc_round(cp_model, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio)
-                    get_score_sparsity_hc(cp_model)
+                    # get_score_sparsity_hc(cp_model)
 
                     acc1, acc5, acc10 = validate(
                         data.val_loader, cp_model, criterion,
@@ -123,7 +123,7 @@ def main_worker():
                 cp_model2 = copy.deepcopy(model2)
                 if parser_args.algo in ['hc']: 
                     hc_round(cp_model2, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio)
-                    get_score_sparsity_hc(cp_model2)
+                    # get_score_sparsity_hc(cp_model2)
 
                     acc1, acc5, acc10 = validate(
                         data.val_loader, cp_model2, criterion,
@@ -186,7 +186,7 @@ def main_worker():
 
     # sanity check for 50% sparsity initialization
     if parser_args.score_init == 'bern':
-        get_score_sparsity_hc(model)
+        # get_score_sparsity_hc(model)
 
     # Start training
     for epoch in range(parser_args.start_epoch, parser_args.epochs):
@@ -225,11 +225,16 @@ def main_worker():
                 plot_histogram_scores(model, epoch)
                 print('Plotted the score histogram')
 
+        if not parser_args.weight_training:
+            avg_sparsity = get_model_sparsity(model)
+        else:
+            # haven't written a weight sparsity function yet
+            avg_sparsity = -1
         # update all results lists
         epoch_list.append(epoch)
         test_acc_list.append(acc1)
         # TODO: define sparsity for cifar10 networks
-        model_sparsity_list.append(-1)
+        model_sparsity_list.append(avg_sparsity)
 
         # remember best acc@1 and save checkpoint
         is_best = acc1 > best_acc1
@@ -340,7 +345,7 @@ def main_worker():
             print('Apply rounding for the final model:')
             hc_round(cp_model, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio)
            # hc_round(model, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio)
-            get_score_sparsity_hc(cp_model)
+            # get_score_sparsity_hc(cp_model)
 
             acc1, acc5, acc10 = validate(
                 data.val_loader, cp_model, criterion,
