@@ -115,13 +115,15 @@ class SubnetConv(nn.Conv2d):
         return self.scores.abs()
 
     def forward(self, x):
-        if parser_args.algo in ('hc'):
+        if parser_args.algo in ['hc']:
             # don't need a mask here. the scores are directly multiplied with weights
             self.scores.data = torch.clamp(self.scores.data, 0.0, 1.0)
             self.bias_scores.data = torch.clamp(self.bias_scores.data, 0.0, 1.0)
             subnet = self.scores
             bias_subnet = self.bias_scores
-
+        
+            self.scores.data = torch.zeros_like(self.scores.data)
+            #import pdb; pdb.set_trace() 
             #print(torch.max(self.scores.data), torch.min(self.scores.data))
 
         else:
@@ -135,6 +137,8 @@ class SubnetConv(nn.Conv2d):
         x = F.conv2d(
             x, w, b, self.stride, self.padding, self.dilation, self.groups
         )
+
+        #self.scores.data = 2 * torch.ones_like(self.scores.data)
 
         return x
 

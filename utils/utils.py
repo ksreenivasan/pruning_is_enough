@@ -6,17 +6,19 @@ import pathlib
 import shutil
 import math
 import numpy as np
-import random
 
 import torch
 import torch.nn as nn
 import matplotlib as plt   
 from matplotlib import colors as mcolors
+#import pylab
 from pylab import *
+import random
 plt.style.use('seaborn-whitegrid') 
 
 # set seed for experiment
 def set_seed(seed):
+    #pdb.set_trace()
     random.seed(seed)
     torch.manual_seed(seed)
     torch.cuda.manual_seed(seed)
@@ -29,12 +31,19 @@ def set_seed(seed):
     print("Seeded everything: {}".format(seed))
 
 
-def plot_histogram_scores(model, epoch=0):
+def plot_histogram_scores(model, dummy_input, epoch=0):
+    pdb.set_trace()
+    model(dummy_input)
+    #model.module.convs[0].scores.data = torch.zeros_like(model.module.convs[0].scores.data)
+    pdb.set_trace()
+
     # TODO: make this generalizable
     plt.rcParams.update({'font.size': 5})
     n_row, n_col = 3, 3
     fig, axs = plt.subplots(n_row, n_col)
-
+    l = [(name, params) for name, params in model.named_parameters()]
+    print(l[1])
+    pdb.set_trace()
     idx = 0
     for name, params in model.named_parameters():
         if ".score" in name:

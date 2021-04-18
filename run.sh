@@ -32,45 +32,35 @@ BLOCK
 ## CIFAR-10, train (EP)
 :<<BLOCK
 python main.py --config configs/ep/conv4/conv4_sc_ep.yml \
-                --multigpu 0,3 \
-              --name conv4-sc-ep \
-              --prune-rate 0.5 \
-              --fixed-init \
-              --seed 1424
+               --multigpu 1,2 \
+               --name conv4-sc-ep \
+               --prune-rate 0.5 \
 BLOCK
 
 
 
 # CIFAR-10, test (EP)
-#:<<BLOCK
-#python main.py --config configs/hypercube/conv4/conv4_kn_unsigned.yml \
-#               --multigpu 1,2 \
-#               --name conv4-kn-unsigned \
-#               --prune-rate 0.5 \
-#               --pretrained 'models/pretrained/conv4-kn-unsigned.pth' \
-#               --evaluate 1
-#BLOCK
+:<<BLOCK
+python main.py --config configs/hypercube/conv4/conv4_kn_unsigned.yml \
+               --multigpu 1,2 \
+               --name conv4-kn-unsigned \
+               --prune-rate 0.5 \
+               --pretrained 'models/pretrained/conv4-kn-unsigned.pth' \
+               --evaluate 1
+BLOCK
 
 
 
 # # CIFAR-10, train (HC)
-:<<BLOCK
+#:<<BLOCK
 python main.py --config configs/hypercube/conv4/conv4_sc_no_lr_decay_hypercube.yml \
-                --multigpu 0,3 \
+                --multigpu 0 \
                 --name conv4-sc-bern-no-lr-decay-hypercube \
-                --prune-rate 0.0 \
-                --score-init bern \
-                --hc-warmup 30 \
-                --hc-period 10 \
-                --round naive \
-                --seed 2038 \
-                --fixed-init \
-                --noise \
-                --noise-ratio 0.00 
-BLOCK
+                #--plot-hc-convergence
+#BLOCK
 
 # # CIFAR-10, test (HC), mode connectivity
-#:<<BLOCK
+:<<BLOCK
 python main.py --config configs/hypercube/conv4/conv4_sc_hypercube.yml \
                 --multigpu 0,3 \
                 --prune-rate 0.0 \
@@ -82,7 +72,7 @@ python main.py --config configs/hypercube/conv4/conv4_sc_hypercube.yml \
                 --round naive \
                 --noise \
                 --noise-ratio 0.0 
-#BLOCK
+BLOCK
 #                --pretrained 'models/pretrained/conv4-sc-no-lr-decay-hypercube-149.state' \
 #                --pretrained2 'models/pretrained/conv4-sc-no-lr-decay-hypercube-149-seed-1532.state' \
 

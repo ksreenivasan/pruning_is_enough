@@ -1,7 +1,7 @@
 """
 Replications of models from Frankle et al. Lottery Ticket Hypothesis
 """
-
+import torch
 import torch.nn as nn
 from utils.builder import get_builder
 
@@ -60,9 +60,12 @@ class Conv4(nn.Module):
         )
 
     def forward(self, x):
+        #import pdb; pdb.set_trace()
+        print('hi: {}'.format(torch.sum(self.convs[0].scores.data)))
         out = self.convs(x)
         out = out.view(out.size(0), 8192, 1, 1)
         out = self.linear(out)
+        print('bye: {}'.format(torch.sum(self.convs[0].scores.data)))
         return out.squeeze()
 
 
