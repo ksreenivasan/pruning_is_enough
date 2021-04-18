@@ -27,7 +27,7 @@ from utils.net_utils import (
     get_score_sparsity_hc
 )
 from utils.schedulers import get_policy
-from utils.utils import set_seed
+from utils.utils import set_seed, plot_histogram_scores
 
 import importlib
 
@@ -205,6 +205,7 @@ def main_worker():
         train_time.update((time.time() - start_train) / 60)
 
 
+
         # apply round for every T epochs (after E warm-up epoch)
         if epoch >= parser_args.hc_warmup and epoch % parser_args.hc_period == 0:
             print('Apply rounding: {}'.format(parser_args.round))
@@ -212,13 +213,19 @@ def main_worker():
 
         # evaluate on validation set
         start_validation = time.time()
-        if parser_args.plot_hc_convergence:
+        if parser_args.algo in ['hc']:
             cp_model = copy.deepcopy(model)
             hc_round(cp_model, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio)
             acc1, acc5, acc10 = validate(data.val_loader, cp_model, criterion, parser_args, writer, epoch)
         else:
             acc1, acc5, acc10 = validate(data.val_loader, model, criterion, parser_args, writer, epoch)
         validation_time.update((time.time() - start_validation) / 60)
+
+        # save the histrogram of scores
+        if not parser_args.weight_training:
+            if epoch % 5 == 1: # %10 %50
+                plot_histogram_scores(model, epoch)
+                print('Plotted the score histogram')
 
         # update all results lists
         epoch_list.append(epoch)
@@ -779,15 +786,15 @@ def get_model(parser_args):
 
     print("=> Creating model '{}'".format(parser_args.arch))
     if parser_args.fixed_init:
-        set_seed(42)
+        set_seed(parser_args.seed)
     model = models.__dict__[parser_args.arch]() #model = models.__dict__[parser_args.arch](shift=parser_args.shift)
     if parser_args.fixed_init:    
-        set_seed(parser_args.seed)
+        set_seed(parser_args.seed2)
     for name, params in model.named_parameters():
         if ".weight" in name:
             print(torch.sum(params.data))
 
-    if parser_args.mode == "pruning":
+    if not parser_args.weight_training:
         # applying sparsity to the network
         if (
             parser_args.conv_type != "DenseConv"
