@@ -209,6 +209,7 @@ def get_layer_sparsity(layer, threshold=0):
     return weight_sparsity, bias_sparsity
 
 
+# returns avg_sparsity = number of non-zero weights!
 def get_model_sparsity(model, threshold=0):
     # compute mean sparsity of each layer
     # TODO: find a nicer way to do this (skip dropout)
@@ -218,15 +219,15 @@ def get_model_sparsity(model, threshold=0):
     bs_conv = []
     s_linear = []
     bs_linear = []
-    for conv_layer in [0, 2, 4, 6]:
+    for conv_layer in [0, 2, 5, 7]:
         s, bs = get_layer_sparsity(model.module.convs[conv_layer], threshold)
         s_conv.append(s)
         bs_conv.append(bs)
 
     for lin_layer in [0, 2, 4]:
         s, bs = get_layer_sparsity(model.module.linear[lin_layer], threshold)
-        s_conv.append(s)
-        bs_conv.append(bs)
+        s_linear.append(s)
+        bs_linear.append(bs)
 
     avg_sparsity = (sum(s_conv) + sum(s_linear))/(len(s_conv) + len(s_linear))
     return avg_sparsity
