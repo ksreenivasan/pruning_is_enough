@@ -190,17 +190,6 @@ def main_worker():
     if parser_args.score_init == 'bern':
         get_score_sparsity_hc(model)
 
-    # save the histrogram of scores
-    if not parser_args.weight_training:
-        for img, label in data.val_loader:
-            break
-        if True: #epoch % 5 == 1: # %10 %50
-            plot_histogram_scores(model, img)
-            #plot_histogram_scores(model, img, epoch)
-            print('Plotted the score histogram')
-
-
-
     # Start training
     for epoch in range(parser_args.start_epoch, parser_args.epochs):
         lr_policy(epoch, iteration=None)
@@ -231,6 +220,14 @@ def main_worker():
         else:
             acc1, acc5, acc10 = validate(data.val_loader, model, criterion, parser_args, writer, epoch)
         validation_time.update((time.time() - start_validation) / 60)
+
+        # save the histrogram of scores
+        if not parser_args.weight_training:
+            for img, label in data.val_loader:
+                break
+            if epoch % 10 == 0: # %10 %50
+                plot_histogram_scores(model, img, epoch)
+                print('Plotted the score histogram')
 
         # update all results lists
         epoch_list.append(epoch)

@@ -122,7 +122,7 @@ class SubnetConv(nn.Conv2d):
             subnet = self.scores
             bias_subnet = self.bias_scores
         
-            self.scores.data = torch.zeros_like(self.scores.data)
+            #self.scores.data = torch.zeros_like(self.scores.data)
             #import pdb; pdb.set_trace() 
             #print(torch.max(self.scores.data), torch.min(self.scores.data))
 
