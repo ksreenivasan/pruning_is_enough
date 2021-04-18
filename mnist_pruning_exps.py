@@ -21,6 +21,7 @@ from utils.utils import set_seed
 
 import pdb
 import time
+import copy
 plt.style.use('seaborn-whitegrid')
 
 parser_args = None
@@ -454,12 +455,13 @@ def plot_histogram_scores(model, epoch=0):
     plt.savefig(filename, format='pdf', bbox_inches='tight', pad_inches=0.05)
 
 
-def round_and_evaluate(model):
+def round_and_evaluate(model, device, criterion, train_loader, test_loader):
     test(model, device, criterion, test_loader)
-    cp_model = Net().to(device)
+    # cp_model = Net().to(device)
     acc_list = []
     for itr in range(parser_args.num_test):
-        cp_model.load_state_dict(torch.load('model_checkpoints/mnist_pruned_model_{}_{}.pt'.format(parser_args.algo, parser_args.epochs)))
+        cp_model = copy.deepcopy(model)
+        # cp_model.load_state_dict(torch.load('model_checkpoints/mnist_pruned_model_{}_{}.pt'.format(parser_args.algo, parser_args.epochs)))
         print('Testing rounding technique of {}'.format(parser_args.round))
         for name, params in cp_model.named_parameters():
             if ".score" in name:
@@ -481,7 +483,7 @@ def round_and_evaluate(model):
     print("Rounding results: ")
     print('Mean Acc: {}, Std Dev: {}'.format(np.mean(acc_list), np.std(acc_list)))
 
-    return acc_list
+    return np.mean(acc_list)
 
 
 def main():
@@ -502,8 +504,8 @@ def main():
                         help='Weight decay (default: 0.0005)')
     parser.add_argument('--no-cuda', action='store_true', default=False,
                         help='disables CUDA training')
-    parser.add_argument('--seed', type=int, default=1, metavar='S',
-                        help='random seed (default: 1)')
+    parser.add_argument('--seed', type=int, default=42, metavar='S',
+                        help='random seed (default: 42)')
     parser.add_argument('--log-interval', type=int, default=10, metavar='N',
                         help='how many batches to wait before logging training status')
     parser.add_argument('--save-model', action='store_true', default=True,
@@ -597,7 +599,8 @@ def main():
     if not parser_args.evaluate_only:
         for epoch in range(1, parser_args.epochs + 1):
             train(model, device, train_loader, optimizer, criterion, epoch)
-            test_acc = test(model, device, criterion, test_loader)
+            test_acc = round_and_evaluate(model, device, criterion, train_loader, test_loader)
+            # test_acc = test(model, device, criterion, test_loader)
             scheduler.step()
             epoch_list.append(epoch)
             test_acc_list.append(test_acc)
@@ -632,7 +635,7 @@ def main():
     if parser_args.algo in ('hc'):
         # irrespective of evaluate_only, add an evaluate_only step
         model.load_state_dict(torch.load('model_checkpoints/mnist_pruned_model_{}_{}.pt'.format(parser_args.algo, parser_args.epochs)))
-        round_acc_list = round_and_evaluate(model)
+        round_acc_list = round_and_evaluate(model, device, criterion, train_loader, test_loader)
 
         print("Test Acc: {:.2f}%\n".format(test_acc))
 

@@ -121,6 +121,9 @@ class SubnetConv(nn.Conv2d):
             self.bias_scores.data = torch.clamp(self.bias_scores.data, 0.0, 1.0)
             subnet = self.scores
             bias_subnet = self.bias_scores
+
+            #print(torch.max(self.scores.data), torch.min(self.scores.data))
+
         else:
             subnet, bias_subnet = GetSubnet.apply(self.scores.abs(), self.bias_scores.abs(), parser_args.prune_rate)
 
