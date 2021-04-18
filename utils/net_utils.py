@@ -1,3 +1,4 @@
+from args import args as parser_args
 from functools import partial
 import os
 import pdb
@@ -162,28 +163,78 @@ def hc_round(model, round_scheme, noise=False, ratio=0.0):
                 params.data = (params.data + delta) % 2
 
 
-def get_score_sparsity_hc(model):                                                                                                                                                                               
-    sparsity = []     
-    numer = 0     
-    denom = 0     
-    for name, scores in model.named_parameters():     
-        if ".score" in name:     
-            num_ones = torch.sum(scores.detach().flatten())     
-            numer += num_ones.item()     
-            denom += scores.numel()     
-            curr_sparsity = 100 * num_ones.item()/scores.numel()                                                                                                                                                
-            sparsity.append(curr_sparsity)     
-            print(name, '{}/{} ({:.2f} %)'.format((int)(num_ones.item()), scores.numel(), curr_sparsity))        
-    print('overall sparsity: {}/{} ({:.2f} %)'.format((int)(numer), denom, 100*numer/denom))        
-     
-    return 100*numer/denom     
+# @deprecated
+def get_score_sparsity_hc(model):
+    sparsity = []
+    numer = 0
+    denom = 0
+    for name, scores in model.named_parameters():
+        if ".score" in name:
+            num_ones = torch.sum(scores.detach().flatten())
+            numer += num_ones.item()
+            denom += scores.numel()
+            curr_sparsity = 100 * num_ones.item()/scores.numel()
+            sparsity.append(curr_sparsity)
+            print(name, '{}/{} ({:.2f} %)'.format((int)(num_ones.item()), scores.numel(), curr_sparsity))
+    print('overall sparsity: {}/{} ({:.2f} %)'.format((int)(numer), denom, 100*numer/denom))
+
+    return 100*numer/denom
 
 
+def get_layer_sparsity(layer, threshold=0):
+    # for algos where the score IS the mask
+    if parser_args.algo in ['hc']:
+        # num_elements \in [threshold, 1-threshold]
+        num_middle = torch.gt(layer.scores,
+            torch.ones_like(layer.scores)*threshold) *\
+             torch.lt(layer.scores, torch.ones_like(layer.scores)*(1-threshold)).int()
+        weight_sparsity = 100*torch.sum(num_middle).item()/num_middle.numel()
+
+        if parser_args.bias:
+            num_middle = torch.gt(layer.bias_scores,
+                torch.ones_like(layer.bias_scores)*threshold) *\
+                 torch.lt(layer.bias_scores, torch.ones_like(layer.bias_scores)*(1-threshold)).int()
+            bias_sparsity = 100*torch.sum(num_middle).item()/num_middle.numel()
+        else:
+            bias_sparsity = 0
+    else:
+        # traditional pruning where we just check non-zero values in mask
+        weight_mask, bias_mask = GetSubnet.apply(layer.scores.abs(), layer.bias_scores.abs(), parser_args.sparsity)
+        weight_sparsity = 100.0 * weight_mask.sum().item() / weight_mask.flatten().numel()
+        if parser_args.bias:
+            bias_sparsity = 100.0 * bias_mask.sum().item() / bias_mask.flatten().numel()
+        else:
+            bias_sparsity = 0
+    # TODO: handle bias sparsity also
+    return weight_sparsity, bias_sparsity
 
 
-        
+def get_model_sparsity(model, threshold=0):
+    # compute mean sparsity of each layer
+    # TODO: find a nicer way to do this (skip dropout)
+    # TODO: Update: can't use .children() or .named_modules() because of the way things are wrapped in builder
+    # TODO: for now, just write this code for each model
+    s_conv = []
+    bs_conv = []
+    s_linear = []
+    bs_linear = []
+    for conv_layer in [0, 2, 4, 6]:
+        s, bs = get_layer_sparsity(model.module.convs[conv_layer], threshold)
+        s_conv.append(s)
+        bs_conv.append(bs)
+
+    for lin_layer in [0, 2, 4]:
+        s, bs = get_layer_sparsity(model.module.linear[lin_layer], threshold)
+        s_conv.append(s)
+        bs_conv.append(bs)
+
+    avg_sparsity = (sum(s_conv) + sum(s_linear))/(len(s_conv) + len(s_linear))
+    return avg_sparsity
+
+
 #### Functions used for greedy pruning ####
 def get_sparsity(model):
+    # ONLY FOR GREEDY
     if "Baseline" in model.__class__.__name__:
         return 0
     else:
