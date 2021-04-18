@@ -41,8 +41,7 @@ from torch._utils import _flatten_dense_tensors, _unflatten_dense_tensors
 def main():
     print(parser_args)
 
-    if parser_args.seed is not None:
-        set_seed(parser_args.seed)
+    set_seed(parser_args.seed)
 
     # Simply call main_worker function
     main_worker()

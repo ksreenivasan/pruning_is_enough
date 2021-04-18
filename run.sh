@@ -54,7 +54,7 @@ BLOCK
 # # CIFAR-10, train (HC)
 #:<<BLOCK
 python main.py --config configs/hypercube/conv4/conv4_sc_no_lr_decay_hypercube.yml \
-                --multigpu 0 \
+                --multigpu 1 \
                 --name conv4-sc-bern-no-lr-decay-hypercube \
                 #--plot-hc-convergence
 #BLOCK

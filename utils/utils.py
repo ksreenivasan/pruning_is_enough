@@ -32,8 +32,8 @@ def set_seed(seed):
 
 
 def plot_histogram_scores(model, dummy_input, epoch=0):
-    #pdb.set_trace()
-    #model(dummy_input)
+    pdb.set_trace()
+    model(dummy_input)
     ##model.module.convs[0].scores.data = torch.zeros_like(model.module.convs[0].scores.data)
     #pdb.set_trace()
 
