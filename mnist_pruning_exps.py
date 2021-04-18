@@ -21,6 +21,7 @@ from utils.utils import set_seed
 
 import pdb
 import time
+import copy
 plt.style.use('seaborn-whitegrid')
 
 parser_args = None
@@ -503,8 +504,8 @@ def main():
                         help='Weight decay (default: 0.0005)')
     parser.add_argument('--no-cuda', action='store_true', default=False,
                         help='disables CUDA training')
-    parser.add_argument('--seed', type=int, default=1, metavar='S',
-                        help='random seed (default: 1)')
+    parser.add_argument('--seed', type=int, default=42, metavar='S',
+                        help='random seed (default: 42)')
     parser.add_argument('--log-interval', type=int, default=10, metavar='N',
                         help='how many batches to wait before logging training status')
     parser.add_argument('--save-model', action='store_true', default=True,
@@ -598,7 +599,7 @@ def main():
     if not parser_args.evaluate_only:
         for epoch in range(1, parser_args.epochs + 1):
             train(model, device, train_loader, optimizer, criterion, epoch)
-            test_acc = round_and_evaluate(model)
+            test_acc = round_and_evaluate(model, device, criterion, train_loader, test_loader)
             # test_acc = test(model, device, criterion, test_loader)
             scheduler.step()
             epoch_list.append(epoch)

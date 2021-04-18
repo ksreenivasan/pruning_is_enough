@@ -410,7 +410,7 @@ def parse_arguments():
     parser.add_argument(
         "--seed",
         type=int,
-        default=None,
+        default=42,
         metavar="S",
         help="Random seed (default: None)"
     )
