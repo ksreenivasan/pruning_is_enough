@@ -8,6 +8,8 @@ import math
 import torch
 import torch.nn as nn
 
+from utils.mask_layers import MaskLinear, MaskConv
+
 
 def save_checkpoint(state, is_best, filename="checkpoint.pth", save=False):
     filename = pathlib.Path(filename)
@@ -187,10 +189,10 @@ def get_sparsity(model):
     else:
         total_num_params = 0
         total_num_kept = 0
-        for name, param in model.named_parameters():
-            if "mask" in name:
-                total_num_params += torch.numel(param)
-                total_num_kept += torch.sum(param)
+        for child in model.children():
+            if isinstance(child, MaskLinear) or isinstance(child, MaskConv):
+                total_num_params += torch.numel(child.mask_weight)
+                total_num_kept += torch.sum(child.mask_weight * child.fixed_weight)
 
         return 1 - (total_num_kept / total_num_params)      # The sparsity of a network is the ratio of weights that have been removed (pruned) to all the weights in the network
 

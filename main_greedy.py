@@ -7,6 +7,7 @@ import time
 import pathlib
 import shutil
 import csv
+import copy
 
 import pandas as pd
 
@@ -21,12 +22,13 @@ import torch.autograd as autograd
 from utils import data
 from utils.train_test import prune_weights, prune_activations, inference, train, simulated_annealing
 from utils.net_utils import get_sparsity, flip, zero_one_loss
+from utils.mask_layers import MaskLinear, MaskConv
 from utils.conv_type import GetSubnet as GetSubnetConv
 from utils.linear_type import GetSubnet as GetSubnetLinear
 import models.greedy as models
 
 from args import args
-import main
+
 
 def main():
     print(args, "\n")
@@ -117,6 +119,21 @@ def main():
         print("Exiting ...")
         sys.exit()
 
+    if args.algo == "ep+greedy":
+        ep_model = models.__dict__['TwoLayerFC_EP'](data.INPUT_SIZE, data.NUM_CLASSES, args).to(device)
+        ep_model.load_state_dict(torch.load(args.pretrained))
+        for name, child in model.named_children():
+            if isinstance(child, MaskLinear):
+                mask_weight, mask_bias = GetSubnetLinear.apply(getattr(ep_model, name).scores.abs(), getattr(ep_model, name).bias_scores.abs(), args.prune_rate)
+                child.set_fixed_mask(mask_weight, mask_bias)
+            elif isinstance(child, MaskConv):
+                mask_weight, mask_bias = GetSubnetConv.apply(getattr(ep_model, name).scores.abs(), getattr(ep_model, name).bias_scores.abs(), args.prune_rate)
+                child.set_fixed_mask(mask_weight, mask_bias)
+            child.weight = getattr(ep_model, name).weight
+            if args.bias:
+                child.bias = getattr(ep_model, name).bias
+        del ep_model
+
     train_time = 0
     start = time.time()
     update_curr_and_best_results(curr_and_best, model, device, data, criterion, args.batch_size)
@@ -145,19 +162,6 @@ def main():
         filename=ckpt_dir / f"initial.state",
         save=False,
     )
-
-    if args.algo == "ep+greedy":
-       main.main_worker()
-       ep_model = copy.deepcopy(model)
-       main.pretrained(args.pretrained, ep_model)
-       for name, child in model.named_children():
-           if "Mask" in name:
-               if isinstance(param, nn.Linear):
-                   mask_weight, mask_bias = GetSubnetLinear(ep_model.scores.abs(), ep_model.bias_scores.abs(), args.prune_rate)
-                   child.set_fixed_mask(mask_weight, mask_bias)
-               elif isinstance(param, nn.Conv2d):
-                   mask_weight, mask_bias = GetSubnetConv(ep_model.scores.abs(), ep_model.bias_scores.abs(), args.prune_rate)
-                   child.set_fixed_mask(mask_weight, mask_bias)
 
     for epoch in range(start_epoch, args.num_epochs):
         print("\nEpoch:", epoch+1)

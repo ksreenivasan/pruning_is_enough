@@ -9,6 +9,8 @@ import torch.nn as nn
 from utils.net_utils import get_sparsity, zero_one_loss
 from utils.logging import log_batch
 
+from utils.mask_layers import MaskLinear, MaskConv
+
 # amp in pytorch
 from torch.cuda.amp import autocast
 
@@ -29,7 +31,7 @@ def prune_weights(model, device, train_loader, criterion, args, topk=(1, 5)):
     loss = 0
     acc = [0] * len(topk)
     
-    prev_masks = {name: copy.deepcopy(param) for name, param in model.named_parameters() if name == "mask_weight" or name == "mask_bias"}
+    prev_masks = {name: copy.deepcopy(param) for name, param in model.named_parameters() if "mask_weight" in name or "mask_bias" in name}
     
     if "random" in args.how_to_prune:
         params_dict = {}
@@ -38,7 +40,7 @@ def prune_weights(model, device, train_loader, criterion, args, topk=(1, 5)):
         idx_start = 0   # Starting index for a particular flattened binary mask in the network. 
 
         for name, param in model.named_parameters():
-            if name == "mask_weight" or name == "mask_bias":
+            if "mask_weight" in name or "mask_bias" in name:
                 flat_param = param.flatten()
                 params_dict[name] = flat_param
                 idx_dict[name] = idx_start
@@ -91,7 +93,7 @@ def prune_weights(model, device, train_loader, criterion, args, topk=(1, 5)):
         avg_acc = [x / (batch_idx+1) for x in acc]
 
     elif "layer" in args.how_to_prune:
-        net_size = sum([param.numel() for name, param in model.named_parameters() if "mask" not in name])
+        net_size = sum([(child.mask_weight * child.fixed_weight).sum() for child in model.children() if isinstance(child, MaskLinear) or isinstance(child, MaskConv)])
         if args.how_to_prune == "layer_reversed":
             named_params = reversed(list(model.named_parameters()))
         else:
@@ -110,20 +112,21 @@ def prune_weights(model, device, train_loader, criterion, args, topk=(1, 5)):
         submask = 1
         it = iter(train_loader)
         for name, param in named_params:
-            if name == "mask_weight" or name == "mask_bias":
+            if "mask_weight" in name or "mask_bias" in name:
                 flat_param = param.flatten()
                 module = getattr(model, name.split('.')[0])
-                if name == "mask_weight":
-                    fixed_mask = module.fixed_mask_weight
+                if "mask_weight" in name:
+                    fixed_mask = module.fixed_weight
                 else:
-                    fixed_mask = module.fixed_mask_bias
+                    fixed_mask = module.fixed_bias
+                flat_mask = fixed_mask.flatten()
                 for i in range(math.ceil(len(flat_param) / args.submask_size)):
 #                    if isinstance(module, nn.Linear):
 #                        can_prune = not module.pruned_activation[math.floor(i / module.in_features)]
 #                    else:
 #                        # handle case where layer is convlutional
 #                    if (args.pruning_strategy == "activations_and_weights" and can_prune) or args.pruning_strategy != "activations_and_weights":      # TODO: this if statement only works for linear layers...
-                    if fixed_mask[i] == 1: 
+                    if flat_mask[i] == 1: 
                         try:
                             data, target = it.next()
                         except StopIteration:
@@ -173,7 +176,7 @@ def prune_weights(model, device, train_loader, criterion, args, topk=(1, 5)):
         print("Exiting ...")
         sys.exit()
 
-    curr_masks = {name: copy.deepcopy(param) for name, param in model.named_parameters() if name == "mask_weight" or name == "mask_bias"}
+    curr_masks = {name: copy.deepcopy(param) for name, param in model.named_parameters() if "mask_weight" in name or "mask_bias" in name}
 
     hamming_dist = 0        # determine the hamming distance between previous and current masks
 
@@ -188,7 +191,7 @@ def prune_activations(model, device, train_loader, criterion, args, topk=(1, 5))
     loss = 0
     acc = [0] * len(topk) 
     net_size = sum([param.numel() for name, param in model.named_parameters() if "mask" not in name])
-    prev_masks = {name: copy.deepcopy(param) for name, param in model.named_parameters() if name == "mask_weight" or name == "mask_bias"}
+    prev_masks = {name: copy.deepcopy(param) for name, param in model.named_parameters() if "mask_weight" in name or "mask_bias" in name}
     
     num_iter = 0
     it = iter(train_loader)
@@ -239,7 +242,7 @@ def prune_activations(model, device, train_loader, criterion, args, topk=(1, 5))
     avg_loss = loss / num_iter
     avg_acc = [x / num_iter for x in acc]
 
-    curr_masks = {name: copy.deepcopy(param) for name, param in model.named_parameters() if name == "mask_weight" or name == "mask_bias"}
+    curr_masks = {name: copy.deepcopy(param) for name, param in model.named_parameters() if "mask_weight" in name or "mask_bias" in name}
 
     hamming_dist = 0        # determine the hamming distance between previous and current masks
 
@@ -263,7 +266,7 @@ def simulated_annealing(model, device, train_loader, criterion, args, topk=(1, 5
 
     flat_params = []
     for name, param in model.named_parameters():
-        if name == "mask_weight" or name == "mask_bias":
+        if "mask_weight" in name or "mask_bias" in name:
             flat_params.append(param.flatten())
     
     num_mask_params = sum([x.numel() for x in flat_params])
@@ -276,7 +279,7 @@ def simulated_annealing(model, device, train_loader, criterion, args, topk=(1, 5
     idx_start = 0   # Starting index for a particular flattened binary mask in the network. 
 
     for name, param in model.named_parameters():
-        if name == "mask_weight" or name == "mask_bias":
+        if "mask_weight" in name or "mask_bias" in name:
             flat_param = param.flatten()
             params_dict[name] = flat_param
             idx_dict[name] = idx_start

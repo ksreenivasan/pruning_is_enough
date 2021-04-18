@@ -1,5 +1,3 @@
-import copy
-
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -12,7 +10,7 @@ class MaskLinear(nn.Linear):
         
         if kwargs['bias']:
             self.mask_bias = nn.Parameter(torch.ones(self.bias.size()))
-            self.fixed_mask_bias = nn.Parameter(torch.ones(self.bias.size()))
+            self.fixed_bias = nn.Parameter(torch.ones(self.bias.size()))
 
         # create a list of boolean flags to indicate whether each activation has been pruned. This is used when
         # args.pruning_strategy is set to "activations_and_weights." Once activations are pruned, we do not went to check
@@ -22,7 +20,7 @@ class MaskLinear(nn.Linear):
         # create a second mask weight that captures permanent changes to the pruned network. This matrix is relevant 
         # when the network is pruned by activation first and then weights, or when EP is used, followed by greedy pruning.
         # this fixed mask is checked before pruning (or replacing) a weight from self.mask_weight
-        self.fixed_mask_weight = torch.ones(self.weight.size())
+        self.fixed_weight = nn.Parameter(torch.ones(self.weight.size()))
 
     def update_mask_weight(self, out_idx, in_idx, value):
         self.mask_weight[out_idx, in_idx] = value
@@ -32,17 +30,17 @@ class MaskLinear(nn.Linear):
 
     def set_fixed_mask(self, mask_weight, mask_bias):
         # argument mask is some mask learned from a different pruning algorithm. must have the same shape as self.mask_weight
-        self.fixed_mask_weight = copy.deepcopy(mask_weight)
+        self.fixed_weight = nn.Parameter(mask_weight.detach().clone())
         if mask_bias is not None:
-            self.fixed_mask_bias = copy.deepcopy(mask_bias)
+            self.fixed_bias = nn.Parameter(mask_bias.detach().clone())
 
     def forward(self, x):
-        w = self.weight * self.mask_weight
+        w = self.weight * self.mask_weight * self.fixed_weight
 
         if self.bias == None:
             b = None
         else:
-            b = self.bias * self.mask_bias
+            b = self.bias * self.mask_bias * self.fixed_bias
 
         return F.linear(x, w, b)
 
@@ -56,7 +54,7 @@ class MaskConv(nn.Conv2d):
 
         if kwargs['bias']:
             self.mask_bias = nn.Parameter(torch.ones(self.bias.size()))
-            self.fixed_mask_bias = nn.Parameter(torch.ones(self.bias.size()))
+            self.fixed_bias = nn.Parameter(torch.ones(self.bias.size()))
 
         # create a list of boolean flags to indicate whether each activation has been pruned. This is used when
         # args.pruning_strategy is set to "activations_and_weights." Once activations are pruned, we do not went to check
@@ -66,20 +64,20 @@ class MaskConv(nn.Conv2d):
         # create a second mask weight that captures permanent changes to the pruned network. This matrix is relevant 
         # when the network is pruned by activation first and then weights, or when EP is used, followed by greedy pruning.
         # this fixed mask is checked before pruning (or replacing) a weight from self.mask_weight
-        self.fixed_mask = torch.ones(self.weight.size())
+        self.fixed_weight = nn.Parameter(torch.ones(self.weight.size()))
 
-    def set_fixed_mask(self, mask):
+    def set_fixed_mask(self, mask_weight, mask_bias):
         # argument mask is some mask learned from a different pruning algorithm. must have the same shape as self.mask_weight
-        self.fixed_mask = copy.deepcopy(mask)
+        self.fixed_weight = nn.Parameter(mask_weight.detach().clone())
         if mask_bias is not None:
-            self.fixed_mask_bias = copy.deepcopy(mask_bias)
+            self.fixed_bias = nn.Parameter(mask_bias.detach().clone())
 
     def forward(self, x):
-        w = self.weight * self.mask_weight
+        w = self.weight * self.mask_weight * self.fixed_weight
 
         if self.bias == None:
             b = None
         else:
-            b = self.bias * self.mask_bias
+            b = self.bias * self.mask_bias * self.fixed_bias
 
         return F.conv2d(x, w, b, self.stride, self.padding, self.dilation, self.groups)

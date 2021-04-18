@@ -4,6 +4,7 @@ import torch.nn.functional as F
 
 from utils.mask_layers import MaskLinear
 from utils.net_utils import step
+from utils.linear_type import SubnetLinear
 
 class TwoLayerFC(nn.Module):
     def __init__(self, input_size, num_classes, args):
@@ -47,6 +48,23 @@ class FourLayerFC(nn.Module):
 
         output = F.log_softmax(x, dim=1)
 
+        return output
+
+
+class TwoLayerFC_EP(nn.Module):
+    def __init__(self, input_size, num_classes, args):
+        super(TwoLayerFC_EP, self).__init__()
+        self.fc1 = SubnetLinear(input_size, 500, bias=args.bias)
+        self.fc2 = SubnetLinear(500, num_classes, bias=args.bias)
+
+    def forward(self, x): 
+        x = x.view(x.size()[0], -1) 
+        x = self.fc1(x)
+        x = F.relu(x)
+        x = self.fc2(x)
+
+        output = F.log_softmax(x, dim=1)
+        
         return output
 
 
