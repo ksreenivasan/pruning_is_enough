@@ -41,8 +41,7 @@ from torch._utils import _flatten_dense_tensors, _unflatten_dense_tensors
 def main():
     print(parser_args)
 
-    if parser_args.seed is not None:
-        set_seed(parser_args.seed)
+    set_seed(parser_args.seed)
 
     # Simply call main_worker function
     main_worker()
@@ -54,8 +53,8 @@ def main_worker():
     if parser_args.gpu is not None:
         print("Use GPU: {} for training".format(parser_args.gpu))
 
-    #err = torch.zeros(parser_args.num_trial)
-    #for i in range(parser_args.num_trial):
+    # err = torch.zeros(parser_args.num_trial)
+    # for i in range(parser_args.num_trial):
     for i in range(1):
         # create model and optimizer
         model = get_model(parser_args)
@@ -65,10 +64,9 @@ def main_worker():
             pretrained(parser_args.pretrained, model)
         if parser_args.pretrained2:
             model2 = copy.deepcopy(model)
-            #model2.load_state_dict(torch.load(parser_args.pretrained2)['state_dict'])
+            # model2.load_state_dict(torch.load(parser_args.pretrained2)['state_dict'])
             pretrained(parser_args.pretrained2, model2)
 
-        #pdb.set_trace()
         optimizer = get_optimizer(parser_args, model)
         data = get_dataset(parser_args)
         lr_policy = get_policy(parser_args.lr_policy)(optimizer, parser_args)
@@ -223,7 +221,7 @@ def main_worker():
 
         # save the histrogram of scores
         if not parser_args.weight_training:
-            if epoch % 5 == 1: # %10 %50
+            if epoch % 5 == 1:  # %10 %50
                 plot_histogram_scores(model, epoch)
                 print('Plotted the score histogram')
 

@@ -6,14 +6,15 @@ import pathlib
 import shutil
 import math
 import numpy as np
-import random
 
 import torch
 import torch.nn as nn
-import matplotlib as plt   
+import matplotlib as plt
 from matplotlib import colors as mcolors
 from pylab import *
-plt.style.use('seaborn-whitegrid') 
+import random
+plt.style.use('seaborn-whitegrid')
+
 
 # set seed for experiment
 def set_seed(seed):

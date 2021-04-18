@@ -42,6 +42,15 @@ def train(train_loader, model, criterion, optimizer, epoch, args, writer):
         # compute output
         output = model(images)
 
+        # TODO: if we wanted to stick with DataParallel and fix the bug, this is
+        # how to do it
+        # TODO: clamp scores. this might be a way to handle data
+        # parallel issues
+        # if parser_algs.algo in ['hc', 'pt', 'blah']:
+        #    for name, params in
+        #    model.named_parameters():
+        #        # clamp params if name has ".scores"
+
         loss = criterion(output, target)
         regularization_loss = 0
         if args.regularization:

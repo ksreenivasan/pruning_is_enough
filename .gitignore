@@ -135,3 +135,9 @@ dmypy.json
 
 # datasets
 data/datasets/
+
+# results and checkpoints
+results/
+model_checkpoints/
+plots/
+runs/
