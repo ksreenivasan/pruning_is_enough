@@ -305,9 +305,10 @@ def test(model, device, criterion, test_loader):
     return test_acc
 
 
-def get_layer_sparsity(layer, threshold=None):
+# TODO: KS: Change this to the cifar function so that it uses parser_args.algo
+def get_layer_sparsity(layer, threshold=None, rounded=False):
     # this parameter makes sense only for HC
-    if threshold:
+    if threshold and not rounded:
         # num_elements \in [threshold, 1-threshold]
         num_middle = torch.gt(layer.scores,
             torch.ones_like(layer.scores)*threshold) *\
@@ -321,6 +322,12 @@ def get_layer_sparsity(layer, threshold=None):
             bias_sparsity = 100*torch.sum(num_middle).item()/num_middle.numel()
         else:
             bias_sparsity = 0
+    elif rounded:
+        weight_sparsity = 100.0 * layer.scores.sum().item() / layer.scores.flatten().numel()
+        if parser_args.bias:
+            bias_sparsity = 100.0 * layer.bias_scores.sum().item() / layer.bias_scores.flatten().numel()
+        else:
+            bias_sparsity = 0
     else:
         # traditional pruning where we just check non-zero values in mask
         weight_mask, bias_mask = GetSubnet.apply(layer.scores.abs(), layer.bias_scores.abs(), parser_args.sparsity)
@@ -331,6 +338,7 @@ def get_layer_sparsity(layer, threshold=None):
             bias_sparsity = 0
     # TODO: handle bias sparsity also
     return weight_sparsity, bias_sparsity
+
 
 def get_model_sparsity(model, threshold=None):
     # compute mean sparsity of each layer
@@ -376,6 +384,7 @@ def compute_loss(model, device, train_loader, criterion):
     return loss
 
 
+# derivative based rounding
 def round_down(cp_model, params, device, train_loader, criterion):
 
     scores = params.data
@@ -453,6 +462,26 @@ def plot_histogram_scores(model, epoch=0):
 
     filename = 'plots/weights_histogram_epoch_{}.pdf'.format(epoch)
     plt.savefig(filename, format='pdf', bbox_inches='tight', pad_inches=0.05)
+
+
+def round_model(model, device, train_loader):
+    cp_model = copy.deepcopy(model)
+    for name, params in cp_model.named_parameters():
+        if ".score" in name:
+            if parser_args.round == 'naive':
+                params.data = torch.gt(params, torch.ones_like(params)*0.5).int()
+            elif parser_args.round == 'prob':
+                params.data = torch.bernoulli(params)
+            elif parser_args.round == 'pb':
+                params.data = round_down(cp_model, params, device, train_loader, criterion)
+                print(name, ' ended')
+            else:
+                print("INVALID ROUNDING")
+                print("EXITING")
+                exit()
+
+    print("Rounding complete: Returning rounded model after {} rounding".format(parser_args.round))
+    return cp_model
 
 
 def round_and_evaluate(model, device, criterion, train_loader, test_loader):
@@ -606,7 +635,8 @@ def main():
             test_acc_list.append(test_acc)
             if parser_args.mode != "training":
                 if parser_args.algo == 'hc':
-                    model_sparsity = get_model_sparsity(model, 0.01)
+                    cp_model = round_model(model, device, train_loader)
+                    model_sparsity = get_model_sparsity(cp_model, rounded=True)
                 else:
                     model_sparsity = get_model_sparsity(model)
 
