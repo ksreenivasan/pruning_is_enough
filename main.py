@@ -214,7 +214,7 @@ def main_worker():
         # save the histrogram of scores
         if not parser_args.weight_training:
             if epoch % 5 == 1:  # %10 %50
-                plot_histogram_scores(model, epoch)
+                plot_histogram_scores(model, parser_args.algo, epoch)
                 print('Plotted the score histogram')
 
         if not parser_args.weight_training:

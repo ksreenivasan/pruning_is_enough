@@ -1,5 +1,4 @@
 from functools import partial
-from args import args as parser_args
 import os
 import pdb
 import pathlib
@@ -30,7 +29,7 @@ def set_seed(seed):
     print("Seeded everything: {}".format(seed))
 
 
-def plot_histogram_scores(model, epoch=0):
+def plot_histogram_scores(model, algo='undefined', epoch=0):
     # TODO: make this generalizable
     plt.rcParams.update({'font.size': 5})
     n_row, n_col = 3, 3
@@ -46,5 +45,5 @@ def plot_histogram_scores(model, epoch=0):
             axs[r, c].set_title('{}'.format(name))                   
             idx += 1
 
-    filename = 'plots/weights_histogram_{}_epoch_{}.pdf'.format(parser_args.algo, epoch)
+    filename = 'plots/weights_histogram_{}_epoch_{}.pdf'.format(algo, epoch)
     plt.savefig(filename, format='pdf', bbox_inches='tight', pad_inches=0.05)
