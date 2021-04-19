@@ -14,7 +14,7 @@ lr: 0.01
 lr_policy: cosine_lr
 
 # ===== Network training config ===== #
-epochs: 150
+epochs: 10
 weight_decay: 0.0 #0.0001
 momentum: 0.9
 batch_size: 128
@@ -38,3 +38,4 @@ noise_ratio: 0.00
 
 # ===== Hardware setup ===== #
 workers: 4
+

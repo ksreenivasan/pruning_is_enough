@@ -50,22 +50,12 @@ BLOCK
 
 
 # # CIFAR-10, train (HC)
-:<<BLOCK
-python main.py  --config configs/hypercube/conv4/conv4_sc_no_lr_decay_hypercube.yml \
-                --name conv4-sc-bern-no-lr-decay-hypercube \
-                --prune-rate 0.0 \
-                --score-init bern \
-                --hc-warmup 30 \
-                --hc-period 10 \
-                --round naive \
-                --seed 2038 \
-                --fixed-init \
-                --noise \
-                --noise-ratio 0.00 
-BLOCK
+#:<<BLOCK
+python main.py --config configs/hypercube/conv4/conv4_sc_hypercube.yml
+#BLOCK
 
 # # CIFAR-10, test (HC), mode connectivity
-#:<<BLOCK
+:<<BLOCK
 python main.py  --config configs/hypercube/conv4/conv4_sc_hypercube.yml \
                 --prune-rate 0.0 \
                 --pretrained 'models/pretrained/conv4-sc-no-lr-decay-hypercube-149-fixed-init-seed-1532.state' \
@@ -76,7 +66,7 @@ python main.py  --config configs/hypercube/conv4/conv4_sc_hypercube.yml \
                 --round naive \
                 --noise \
                 --noise-ratio 0.0 
-#BLOCK
+BLOCK
 #                --pretrained 'models/pretrained/conv4-sc-no-lr-decay-hypercube-149.state' \
 #                --pretrained2 'models/pretrained/conv4-sc-no-lr-decay-hypercube-149-seed-1532.state' \
 
