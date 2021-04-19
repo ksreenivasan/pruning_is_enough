@@ -218,7 +218,12 @@ def main_worker():
                 print('Plotted the score histogram')
 
         if not parser_args.weight_training:
-            avg_sparsity = get_model_sparsity(model)
+            if parser_args.algo in ['hc']
+                cp_model = copy.deepcopy(model)
+                hc_round(cp_model, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio)
+                avg_sparsity = get_model_sparsity(cp_model)
+            else:
+                avg_sparsity = get_model_sparsity(model)
         else:
             # haven't written a weight sparsity function yet
             avg_sparsity = -1

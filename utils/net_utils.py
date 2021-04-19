@@ -144,8 +144,8 @@ class SubnetL1RegLoss(nn.Module):
 
         
 #### Functions used for hypercube (HC) ####
+# TODO: KS: make this copy and return model. not change model.
 def hc_round(model, round_scheme, noise=False, ratio=0.0):
-
     for name, params in model.named_parameters():
         if ".score" in name:
             if round_scheme == 'naive':
@@ -161,6 +161,7 @@ def hc_round(model, round_scheme, noise=False, ratio=0.0):
             if noise:
                 delta = torch.bernoulli(torch.ones_like(params.data)*ratio)
                 params.data = (params.data + delta) % 2
+
 
 
 # @deprecated
