@@ -5,6 +5,7 @@ import pdb
 import pathlib
 import shutil
 import math
+import copy
 
 import torch
 import torch.nn as nn
@@ -190,9 +191,10 @@ def get_layer_sparsity(layer, threshold=0):
     # for algos where the score IS the mask
     if parser_args.algo in ['hc']:
         # assume the model is rounded
-        num_middle = torch.gt(layer.scores,
+        num_middle = torch.sum(torch.gt(layer.scores,
                         torch.ones_like(layer.scores)*threshold) *\
-                        torch.lt(layer.scores, torch.ones_like(layer.scores*(1-threshold)).int())
+                        torch.lt(layer.scores,
+                        torch.ones_like(layer.scores*(1-threshold)).int()))
         if num_middle > 0:
             print("WARNING: Model scores are not binary. Sparsity number is unreliable.")
         weight_sparsity = 100.0 * layer.scores.detach().sum().item() / layer.scores.detach().flatten().numel()
@@ -223,12 +225,12 @@ def get_model_sparsity(model, threshold=0):
     s_linear = []
     bs_linear = []
     for conv_layer in [0, 2, 5, 7]:
-        s, bs = get_layer_sparsity(model.module.convs[conv_layer], threshold)
+        s, bs = get_layer_sparsity(model.convs[conv_layer], threshold)
         s_conv.append(s)
         bs_conv.append(bs)
 
     for lin_layer in [0, 2, 4]:
-        s, bs = get_layer_sparsity(model.module.linear[lin_layer], threshold)
+        s, bs = get_layer_sparsity(model.linear[lin_layer], threshold)
         s_linear.append(s)
         bs_linear.append(bs)
 

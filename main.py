@@ -40,15 +40,12 @@ from torch._utils import _flatten_dense_tensors, _unflatten_dense_tensors
 
 def main():
     print(parser_args)
-
     set_seed(parser_args.seed)
-
     # Simply call main_worker function
     main_worker()
 
 
 def main_worker():
-    parser_args.gpu = None
     train, validate, modifier = get_trainer(parser_args)
     if parser_args.gpu is not None:
         print("Use GPU: {} for training".format(parser_args.gpu))
@@ -220,7 +217,7 @@ def main_worker():
                 print('Plotted the score histogram')
 
         if not parser_args.weight_training:
-            if parser_args.algo in ['hc']
+            if parser_args.algo in ['hc']:
                 # @GD: check
                 cp_model = copy.deepcopy(model)
                 cp_model = round_model(cp_model, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio)
