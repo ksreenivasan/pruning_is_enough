@@ -6,7 +6,7 @@ arch: Conv4
 
 # ===== Dataset ===== #
 dataset: CIFAR10
-name: conv4_sc_unsigned
+name: conv4_sc_bern_hypercube
 
 # ===== Learning Rate Policy ======== #
 optimizer: adam
@@ -23,9 +23,19 @@ batch_size: 128
 conv_type: SubnetConv
 bn_type: NonAffineBatchNorm
 freeze_weights: True
-prune_rate: -1
+prune_rate: 0.0
 init: signed_constant
+score_init: bern #bern #unif
 scale_fan: False #True
+
+
+# ===== Rounding ===== #
+round: naive
+#hc_warmup: 30 # 150
+#hc_period: 10
+noise: True
+noise_ratio: 0.00
 
 # ===== Hardware setup ===== #
 workers: 4
+multigpu: 0

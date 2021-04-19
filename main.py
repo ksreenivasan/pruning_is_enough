@@ -53,8 +53,6 @@ def main_worker():
     if parser_args.gpu is not None:
         print("Use GPU: {} for training".format(parser_args.gpu))
 
-    # err = torch.zeros(parser_args.num_trial)
-    # for i in range(parser_args.num_trial):
     for i in range(1):
         # create model and optimizer
         model = get_model(parser_args)
@@ -100,12 +98,7 @@ def main_worker():
             print('Performance of model2')
             print('acc1: {}, acc5: {}, acc10: {}'.format(acc1, acc5, acc10))
 
-            if parser_args.round in ['prob']:
-                trial_num = 10
-            else:
-                trial_num = 1
-
-            for trial in range(trial_num):
+            for trial in range(parser_args.num_test):
                 cp_model = copy.deepcopy(model)
                 if parser_args.algo in ['hc']:
                     hc_round(cp_model, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio)
@@ -333,12 +326,7 @@ def main_worker():
 
     # check the performance of trained model
     if parser_args.algo in ['hc']:
-        if parser_args.round in ['prob']:
-            trial_num = 1
-        else:
-            trial_num = 1
-
-        for trial in range(trial_num):
+        for trial in range(parser_args.num_round):
             cp_model = copy.deepcopy(model)
             print('Apply rounding for the final model:')
             hc_round(cp_model, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio)

@@ -235,6 +235,14 @@ def parse_arguments():
     )
 
     parser.add_argument(
+        "--num_round",
+        type=int,
+        default=1,
+        help='number of different models testing in rounding'
+    )
+
+    # do we need it?
+    parser.add_argument(
         "--num_test",
         type=int,
         default=1,
