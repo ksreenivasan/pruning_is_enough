@@ -312,7 +312,8 @@ def get_layer_sparsity(layer, threshold=None, rounded=False):
         # num_elements \in [threshold, 1-threshold]
         num_middle = torch.gt(layer.scores,
             torch.ones_like(layer.scores)*threshold) *\
-             torch.lt(layer.scores, torch.ones_like(layer.scores)*(1-threshold)).int()
+             torch.lt(layer.scores,
+                     torch.ones_like(layer.scores*(1-threshold)).int())
         weight_sparsity = 100*torch.sum(num_middle).item()/num_middle.numel()
 
         if parser_args.bias:
@@ -323,9 +324,9 @@ def get_layer_sparsity(layer, threshold=None, rounded=False):
         else:
             bias_sparsity = 0
     elif rounded:
-        weight_sparsity = 100.0 * layer.scores.sum().item() / layer.scores.flatten().numel()
+        weight_sparsity = 100.0 * layer.scores.detach().sum().item() / layer.scores.detach().flatten().numel()
         if parser_args.bias:
-            bias_sparsity = 100.0 * layer.bias_scores.sum().item() / layer.bias_scores.flatten().numel()
+            bias_sparsity = 100.0 * layer.bias_scores.detach().sum().item() / layer.bias_scores.detach().flatten().numel()
         else:
             bias_sparsity = 0
     else:
@@ -340,13 +341,13 @@ def get_layer_sparsity(layer, threshold=None, rounded=False):
     return weight_sparsity, bias_sparsity
 
 
-def get_model_sparsity(model, threshold=None):
+def get_model_sparsity(model, threshold=None, rounded=False):
     # compute mean sparsity of each layer
     # TODO: find a nicer way to do this (skip dropout)
-    s1, bs1 = get_layer_sparsity(model.conv1, threshold)
-    s2, bs2 = get_layer_sparsity(model.conv2, threshold)
-    s3, bs3 = get_layer_sparsity(model.fc1, threshold)
-    s4, bs4 = get_layer_sparsity(model.fc2, threshold)
+    s1, bs1 = get_layer_sparsity(model.conv1, threshold, rounded)
+    s2, bs2 = get_layer_sparsity(model.conv2, threshold, rounded)
+    s3, bs3 = get_layer_sparsity(model.fc1, threshold, rounded)
+    s4, bs4 = get_layer_sparsity(model.fc2, threshold, rounded)
 
     avg_sparsity = (s1 + s2 + s3 + s4)/4
     return avg_sparsity
