@@ -96,10 +96,8 @@ def main_worker():
             print('acc1: {}, acc5: {}, acc10: {}'.format(acc1, acc5, acc10))
 
             for trial in range(parser_args.num_test):
-                cp_model = copy.deepcopy(model)
                 if parser_args.algo in ['hc']:
-                    # @GD: check
-                    cp_model = round_model(cp_model, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio)
+                    cp_model = round_model(model, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio)
 
                     acc1, acc5, acc10 = validate(
                         data.val_loader, cp_model, criterion,
@@ -109,10 +107,8 @@ def main_worker():
                     print('acc1: {}, acc5: {}, acc10: {}'.format(acc1, acc5, acc10))
 
             if parser_args.pretrained2:
-                cp_model2 = copy.deepcopy(model2)
                 if parser_args.algo in ['hc']:
-                    # @GD: check
-                    cp_model2 = round_model(cp_model2, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio)
+                    cp_model2 = round_model(model2, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio)
 
                     acc1, acc5, acc10 = validate(
                         data.val_loader, cp_model2, criterion,
@@ -202,9 +198,7 @@ def main_worker():
         # evaluate on validation set
         start_validation = time.time()
         if parser_args.algo in ['hc']:
-            cp_model = copy.deepcopy(model)
-            # @GD: check
-            cp_model = round_model(cp_model, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio)
+            cp_model = round_model(model, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio)
             acc1, acc5, acc10 = validate(data.val_loader, cp_model, criterion, parser_args, writer, epoch)
         else:
             acc1, acc5, acc10 = validate(data.val_loader, model, criterion, parser_args, writer, epoch)
@@ -218,9 +212,8 @@ def main_worker():
 
         if not parser_args.weight_training:
             if parser_args.algo in ['hc']:
-                # @GD: check
-                cp_model = copy.deepcopy(model)
-                cp_model = round_model(cp_model, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio)
+                # Round before checking sparsity
+                cp_model = round_model(model, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio)
                 avg_sparsity = get_model_sparsity(cp_model)
             else:
                 avg_sparsity = get_model_sparsity(model)
