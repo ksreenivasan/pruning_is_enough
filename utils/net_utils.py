@@ -143,10 +143,10 @@ class SubnetL1RegLoss(nn.Module):
 
 
         
-#### Functions used for hypercube (HC) ####
-# TODO: KS: make this copy and return model. not change model.
-def hc_round(model, round_scheme, noise=False, ratio=0.0):
-    for name, params in model.named_parameters():
+# rounds model by round_scheme and returns the rounded model
+def round_model(model, round_scheme, noise=False, ratio=0.0):
+    cp_model = copy.deepcopy(model)
+    for name, params in cp_model.named_parameters():
         if ".score" in name:
             if round_scheme == 'naive':
                 params.data = torch.gt(params.data, torch.ones_like(params.data)*0.5).int().float()
@@ -162,8 +162,11 @@ def hc_round(model, round_scheme, noise=False, ratio=0.0):
                 delta = torch.bernoulli(torch.ones_like(params.data)*ratio)
                 params.data = (params.data + delta) % 2
 
+    return cp_model
 
 
+
+"""
 # @deprecated
 def get_score_sparsity_hc(model):
     sparsity = []
@@ -180,22 +183,21 @@ def get_score_sparsity_hc(model):
     print('overall sparsity: {}/{} ({:.2f} %)'.format((int)(numer), denom, 100*numer/denom))
 
     return 100*numer/denom
+"""
 
 
 def get_layer_sparsity(layer, threshold=0):
     # for algos where the score IS the mask
     if parser_args.algo in ['hc']:
-        # num_elements \in [threshold, 1-threshold]
+        # assume the model is rounded
         num_middle = torch.gt(layer.scores,
-            torch.ones_like(layer.scores)*threshold) *\
-             torch.lt(layer.scores, torch.ones_like(layer.scores)*(1-threshold)).int()
-        weight_sparsity = 100*torch.sum(num_middle).item()/num_middle.numel()
-
+                        torch.ones_like(layer.scores)*threshold) *\
+                        torch.lt(layer.scores, torch.ones_like(layer.scores*(1-threshold)).int())
+        if num_middle > 0:
+            print("WARNING: Model scores are not binary. Sparsity number is unreliable.")
+        weight_sparsity = 100.0 * layer.scores.detach().sum().item() / layer.scores.detach().flatten().numel()
         if parser_args.bias:
-            num_middle = torch.gt(layer.bias_scores,
-                torch.ones_like(layer.bias_scores)*threshold) *\
-                 torch.lt(layer.bias_scores, torch.ones_like(layer.bias_scores)*(1-threshold)).int()
-            bias_sparsity = 100*torch.sum(num_middle).item()/num_middle.numel()
+            bias_sparsity = 100.0 * layer.bias_scores.detach().sum().item() / layer.bias_scores.detach().flatten().numel()
         else:
             bias_sparsity = 0
     else:

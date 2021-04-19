@@ -305,25 +305,15 @@ def test(model, device, criterion, test_loader):
     return test_acc
 
 
-# TODO: KS: Change this to the cifar function so that it uses parser_args.algo
-def get_layer_sparsity(layer, threshold=None, rounded=False):
-    # this parameter makes sense only for HC
-    if threshold and not rounded:
-        # num_elements \in [threshold, 1-threshold]
+def get_layer_sparsity(layer, threshold=0):
+    # for algos where the score IS the mask
+    if parser_args.algo in ['hc']:
+        # assume the model is rounded
         num_middle = torch.gt(layer.scores,
-            torch.ones_like(layer.scores)*threshold) *\
-             torch.lt(layer.scores,
-                     torch.ones_like(layer.scores*(1-threshold)).int())
-        weight_sparsity = 100*torch.sum(num_middle).item()/num_middle.numel()
-
-        if parser_args.bias:
-            num_middle = torch.gt(layer.bias_scores,
-                torch.ones_like(layer.bias_scores)*threshold) *\
-                 torch.lt(layer.bias_scores, torch.ones_like(layer.bias_scores)*(1-threshold)).int()
-            bias_sparsity = 100*torch.sum(num_middle).item()/num_middle.numel()
-        else:
-            bias_sparsity = 0
-    elif rounded:
+                        torch.ones_like(layer.scores)*threshold) *\
+                        torch.lt(layer.scores, torch.ones_like(layer.scores*(1-threshold)).int())
+        if num_middle > 0:
+            print("WARNING: Model scores are not binary. Sparsity number is unreliable.")
         weight_sparsity = 100.0 * layer.scores.detach().sum().item() / layer.scores.detach().flatten().numel()
         if parser_args.bias:
             bias_sparsity = 100.0 * layer.bias_scores.detach().sum().item() / layer.bias_scores.detach().flatten().numel()
@@ -341,18 +331,21 @@ def get_layer_sparsity(layer, threshold=None, rounded=False):
     return weight_sparsity, bias_sparsity
 
 
-def get_model_sparsity(model, threshold=None, rounded=False):
+
+# returns avg_sparsity = number of non-zero weights!
+def get_model_sparsity(model, threshold=None):
     # compute mean sparsity of each layer
     # TODO: find a nicer way to do this (skip dropout)
-    s1, bs1 = get_layer_sparsity(model.conv1, threshold, rounded)
-    s2, bs2 = get_layer_sparsity(model.conv2, threshold, rounded)
-    s3, bs3 = get_layer_sparsity(model.fc1, threshold, rounded)
-    s4, bs4 = get_layer_sparsity(model.fc2, threshold, rounded)
+    s1, bs1 = get_layer_sparsity(model.conv1, threshold)
+    s2, bs2 = get_layer_sparsity(model.conv2, threshold)
+    s3, bs3 = get_layer_sparsity(model.fc1, threshold)
+    s4, bs4 = get_layer_sparsity(model.fc2, threshold)
 
     avg_sparsity = (s1 + s2 + s3 + s4)/4
     return avg_sparsity
 
 
+"""
 # @deprecated
 def get_model_sparsity_hc(model):
     # handle bias
@@ -365,6 +358,7 @@ def get_model_sparsity_hc(model):
             print(name, '{}/{} ({:.2f} %)'.format(torch.sum(num_middle).item(), num_middle.numel(), curr_sparsity))
 
     return sparsity
+"""
 
 
 def compute_loss(model, device, train_loader, criterion):

@@ -23,7 +23,7 @@ from utils.net_utils import (
     save_checkpoint,
     get_lr,
     LabelSmoothing,
-    hc_round,
+    round_model,
     get_model_sparsity
 )
 from utils.schedulers import get_policy
@@ -101,8 +101,8 @@ def main_worker():
             for trial in range(parser_args.num_test):
                 cp_model = copy.deepcopy(model)
                 if parser_args.algo in ['hc']:
-                    hc_round(cp_model, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio)
-                    # get_score_sparsity_hc(cp_model)
+                    # @GD: check
+                    cp_model = round_model(cp_model, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio)
 
                     acc1, acc5, acc10 = validate(
                         data.val_loader, cp_model, criterion,
@@ -114,8 +114,8 @@ def main_worker():
             if parser_args.pretrained2:
                 cp_model2 = copy.deepcopy(model2)
                 if parser_args.algo in ['hc']:
-                    hc_round(cp_model2, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio)
-                    # get_score_sparsity_hc(cp_model2)
+                    # @GD: check
+                    cp_model2 = round_model(cp_model2, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio)
 
                     acc1, acc5, acc10 = validate(
                         data.val_loader, cp_model2, criterion,
@@ -199,13 +199,15 @@ def main_worker():
         # apply round for every T epochs (after E warm-up epoch)
         if epoch >= parser_args.hc_warmup and epoch % parser_args.hc_period == 0:
             print('Apply rounding: {}'.format(parser_args.round))
-            hc_round(model, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio)
+            # @GD: check
+            model = round_model(model, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio)
 
         # evaluate on validation set
         start_validation = time.time()
         if parser_args.algo in ['hc']:
             cp_model = copy.deepcopy(model)
-            hc_round(cp_model, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio)
+            # @GD: check
+            cp_model = round_model(cp_model, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio)
             acc1, acc5, acc10 = validate(data.val_loader, cp_model, criterion, parser_args, writer, epoch)
         else:
             acc1, acc5, acc10 = validate(data.val_loader, model, criterion, parser_args, writer, epoch)
@@ -219,8 +221,9 @@ def main_worker():
 
         if not parser_args.weight_training:
             if parser_args.algo in ['hc']
+                # @GD: check
                 cp_model = copy.deepcopy(model)
-                hc_round(cp_model, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio)
+                cp_model = round_model(cp_model, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio)
                 avg_sparsity = get_model_sparsity(cp_model)
             else:
                 avg_sparsity = get_model_sparsity(model)
@@ -333,11 +336,9 @@ def main_worker():
     # check the performance of trained model
     if parser_args.algo in ['hc']:
         for trial in range(parser_args.num_round):
-            cp_model = copy.deepcopy(model)
             print('Apply rounding for the final model:')
-            hc_round(cp_model, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio)
+            round_model(model, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio)
             # hc_round(model, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio)
-            # get_score_sparsity_hc(cp_model)
 
             acc1, acc5, acc10 = validate(
                 data.val_loader, cp_model, criterion,
