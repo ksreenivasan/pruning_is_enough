@@ -9,7 +9,6 @@
 # CIFAR-10, train (weight training)
 :<<BLOCK
 python main.py --config configs/training/conv4/conv4_training.yml \
-                --multigpu 0 \
                 --name conv4-adam-training \
                 --fixed-init \
                 --seed 1224
@@ -18,7 +17,6 @@ BLOCK
 # # CIFAR-10, test (weight training), mode connectivity
 :<<BLOCK
 python main.py --config configs/training/conv4/conv4_training.yml \
-               --multigpu 1 \
                --pretrained 'models/pretrained/conv4-weight-training-fixed-init-seed-1218.pth' \
                --pretrained2 'models/pretrained/conv4-weight-training-fixed-init-seed-1224.pth' \
                --evaluate \
@@ -32,7 +30,6 @@ BLOCK
 ## CIFAR-10, train (EP)
 :<<BLOCK
 python main.py --config configs/ep/conv4/conv4_sc_ep.yml \
-               --multigpu 0 \
                --name conv4-sc-ep \
                --prune-rate 0.5 \
                --fixed-init \
@@ -44,7 +41,6 @@ BLOCK
 # CIFAR-10, test (EP)
 #:<<BLOCK
 #python main.py --config configs/hypercube/conv4/conv4_kn_unsigned.yml \
-#               --multigpu 1 \
 #               --name conv4-kn-unsigned \
 #               --prune-rate 0.5 \
 #               --pretrained 'models/pretrained/conv4-kn-unsigned.pth' \
@@ -56,7 +52,6 @@ BLOCK
 # # CIFAR-10, train (HC)
 :<<BLOCK
 python main.py  --config configs/hypercube/conv4/conv4_sc_no_lr_decay_hypercube.yml \
-                --multigpu 0 \
                 --name conv4-sc-bern-no-lr-decay-hypercube \
                 --prune-rate 0.0 \
                 --score-init bern \
@@ -72,7 +67,6 @@ BLOCK
 # # CIFAR-10, test (HC), mode connectivity
 #:<<BLOCK
 python main.py  --config configs/hypercube/conv4/conv4_sc_hypercube.yml \
-                --multigpu 0 \
                 --prune-rate 0.0 \
                 --pretrained 'models/pretrained/conv4-sc-no-lr-decay-hypercube-149-fixed-init-seed-1532.state' \
                 --pretrained2 'models/pretrained/conv4-sc-no-lr-decay-hypercube-149-fixed-init-seed-1957.state' \
@@ -91,7 +85,6 @@ python main.py  --config configs/hypercube/conv4/conv4_sc_hypercube.yml \
 # # CIFAR-10, test (HC), epoch-30 model (81.77%)
 :<<BLOCK
 python main.py --config configs/hypercube/conv4/conv4_sc_hypercube.yml \
-                --multigpu 1 \
                 --prune-rate 0.0 \
                 --pretrained 'models/pretrained/conv4-sc-no-lr-decay-hypercube-30.pth' \
                 --evaluate \
@@ -105,7 +98,6 @@ BLOCK
 # # CIFAR-10, test (HC), epoch-1 model
 :<<BLOCK
 python main.py --config configs/hypercube/conv4/conv4_sc_hypercube.yml \
-                --multigpu 0 \
                 --prune-rate 0.0 \
                 --pretrained 'models/pretrained/conv4-sc-no-lr-decay-hypercube-0.pth' \
                 --evaluate \

@@ -38,4 +38,3 @@ noise_ratio: 0.00
 
 # ===== Hardware setup ===== #
 workers: 4
-multigpu: 0

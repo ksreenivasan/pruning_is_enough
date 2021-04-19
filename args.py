@@ -98,7 +98,6 @@ def parse_arguments():
         default=None,  #"cosine_lr",
         help="Learning rate scheduler"
     )
-
     parser.add_argument(
         "--momentum",
         type=float,
@@ -156,28 +155,24 @@ def parse_arguments():
         metavar="MI",
         help="Maximum number of iterations to run simulated annealing for before terminating. It's recommended to set this to a value that at is at least as big as the number of parameters in the network (default: 100000)"
     )
-
     parser.add_argument(
         "--algo",
         type=str,
         default='ep',
         help="pruning algo to use |ep|pt_hack|pt_reg|hc|ep+greedy|greedy+ep|"
     )
-
     parser.add_argument(
         "--optimizer",
         type=str,
         default='sgd',
         help="optimizer option to use |sgd|adam|"
     )
-
     parser.add_argument(
         '--evaluate-only',
         action='store_true',
         default=False,
         help='just use rounding techniques to evaluate a saved model'
     )
-
     parser.add_argument(
         "--round",
         type=str,
@@ -185,21 +180,18 @@ def parse_arguments():
         help='rounding technique to use |naive|prob|pb|'
         # naive: threshold(0.5), prob: probabilistic rounding, pb: pseudo-boolean paper's choice (RoundDown)
     )
-
     parser.add_argument(
         '--noise',
         action='store_true',
         default=False,
         help='flag that decides if we add noise to the rounded p_i'
     )
-
     parser.add_argument(
         "--noise-ratio",
         type=float,
         default=0.0,
         help="portion of score flipping"
     )
-
     parser.add_argument(
         "--score-init",
         type=str,
@@ -212,35 +204,30 @@ def parse_arguments():
         default="prob",
         help="way of interpolating masks/weights |prob|linear|"
     )
-
     parser.add_argument(
         '--plot-hc-convergence',
         action='store_true',
         default=False,
         help='flag that decides if we plot convergence of hc'
     )
-
     parser.add_argument(
         "--hc-warmup",
         default=9999,
         type=int,
         help="warmup epochs for hypercube"
     )
-
     parser.add_argument(
         "--hc-period",
         default=1,
         type=int,
         help="rounding period for hypercube"
     )
-
     parser.add_argument(
         "--num_round",
         type=int,
         default=1,
         help='number of different models testing in rounding'
     )
-
     # do we need it?
     parser.add_argument(
         "--num_test",
@@ -248,15 +235,12 @@ def parse_arguments():
         default=1,
         help='number of different models testing in prob rounding'
     )
-
     parser.add_argument(
         "--save-model",
         action='store_true',
         default=False,
         help='For Saving the current Model'
     )
-
-
     # Architecture and training
     parser.add_argument(
         "--arch",
@@ -284,7 +268,6 @@ def parse_arguments():
         default=True,
         help="Boolean flag to indicate whether weights should be frozen. Used when sparsifying (default: False)"
     )
-
     parser.add_argument(
         "--conv-type",
         type=str,
@@ -361,7 +344,6 @@ def parse_arguments():
         help="Amount of pruning to do during sparse training",
         type=float,
     )
-
     parser.add_argument(
         "--dataset",
         type=str,
@@ -374,7 +356,6 @@ def parse_arguments():
         default="cross-entropy-loss",
         help="which loss to use for pruning: cross-entropy-loss or zero-one-loss"
     )
-    
 #    # Save/Load
 #    parser.add_argument(
 #        "--save-dir",
@@ -413,7 +394,6 @@ def parse_arguments():
         default=-1,
         help="The number of epochs to train before saving the next checkpoint"
     )
-
     # Device settings
     parser.add_argument(
         "--seed",
@@ -422,7 +402,6 @@ def parse_arguments():
         metavar="S",
         help="Random seed (default: None)"
     )
-
     parser.add_argument(
         "--seed2",
         type=int,
@@ -430,14 +409,12 @@ def parse_arguments():
         metavar="S",
         help="Random seed (default:42)"
     )
-
     parser.add_argument(
         "--fixed-init",
         action="store_true",
         default=False,
         help="fixed weight initialization"
     )
-
     parser.add_argument(
         "--no-cuda",
         action="store_true",
@@ -447,7 +424,7 @@ def parse_arguments():
     parser.add_argument(
         "--gpu",
         type=int,
-        default=None,
+        default=0,
         metavar="G",
         help="Override the default choice for a CUDA-enabled GPU by specifying the GPU\"s integer index (i.e. \"0\" for \"cuda:0\")"
     )
@@ -470,11 +447,12 @@ def parse_arguments():
         default=1,
         help="number of trials for testing sharpness"
     )
-    parser.add_argument(    
-        "--multigpu",   
-        default=None,   
-        type=lambda x: [int(a) for a in x.split(",")],  
-        help="Which GPUs to use for multigpu training", 
+    # WARNING: With DataParallel, this causes some issues
+    parser.add_argument(
+        "--multigpu",
+        default=None,
+        type=lambda x: [int(a) for a in x.split(",")],
+        help="Which GPUs to use for multigpu training",
     )
     parser.add_argument(
         "--pretrained",
@@ -554,14 +532,12 @@ def parse_arguments():
         default=False,
         help='flag that decides if we are doing pruning or weight training'
     )
-
     parser.add_argument(
         '--lmbda',
         type=float,
         default=0.001,
         help='regularization coefficient lambda'
     )
-
     parser.add_argument(
         '--regularization',
         action='store_true',
