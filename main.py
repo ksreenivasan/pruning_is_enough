@@ -322,6 +322,7 @@ def main_worker():
         # TODO: move this to utils
         train_mode_str = 'weight_training' if parser_args.weight_training else 'pruning'
         results_filename = "results/results_acc_{}_{}_{}.csv".format(train_mode_str, parser_args.dataset, parser_args.algo)
+    print("Writing results into: {}".format(results_filename))
     results_df.to_csv(results_filename, index=False)
 
     # sanity check whether the weight values did not change
