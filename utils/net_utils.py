@@ -241,12 +241,11 @@ def get_model_sparsity(model, threshold=0):
 
 
 def get_model_sparsity_GD(model, threshold=0):
-    sparsity = []
     numer = 0
     denom = 0
 
     for conv_layer in [0, 2, 5, 7]:
-        w_numer, w_denom, b_numer, b_denom = get_layer_sparsity(model.convs[conv_layer], threshold)
+        w_numer, w_denom, b_numer, b_denom = get_layer_sparsity_GD(model.convs[conv_layer], threshold)
         numer += w_numer
         denom += w_denom
         if parser_args.bias:
@@ -254,25 +253,12 @@ def get_model_sparsity_GD(model, threshold=0):
             denom += b_denom
 
     for lin_layer in [0, 2, 4]:
-        w_numer, w_denom, b_numer, b_denom = get_layer_sparsity(model.linear[lin_layer], threshold)
+        w_numer, w_denom, b_numer, b_denom = get_layer_sparsity_GD(model.linear[lin_layer], threshold)
         numer += w_numer
         denom += w_denom
         if parser_args.bias:
             numer += b_numer
             denom += b_denom
-    '''
-    for name, scores in model.named_parameters():
-        if ".score" in name:
-            curr_numer, curr_denom = get_layer_sparsity_GD(scores, threshold)
-            numer += curr_numer
-            denom += curr_denom
-            
-            num_ones = torch.sum(scores.detach().flatten())
-            numer += num_ones.item()
-            denom += scores.numel()
-            curr_sparsity = 100 * num_ones.item()/scores.numel()
-            print(name, '{}/{} ({:.2f} %)'.format((int)(num_ones.item()), scores.numel(), curr_sparsity))
-    '''
     print('overall sparsity: {}/{} ({:.2f} %)'.format((int)(numer), denom, 100*numer/denom))
 
     return 100*numer/denom

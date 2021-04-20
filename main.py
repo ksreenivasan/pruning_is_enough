@@ -25,7 +25,7 @@ from utils.net_utils import (
     LabelSmoothing,
     round_model,
     get_model_sparsity,
-    get_model_sparsity_GD
+    get_model_sparsity_GD,
     get_score_sparsity_hc
 )
 from utils.schedulers import get_policy
@@ -219,7 +219,7 @@ def main_worker():
                 avg_sparsity = get_model_sparsity_GD(cp_model)     #avg_sparsity = get_model_sparsity(cp_model)
                 print('avg_sparsity: ', avg_sparsity)
                 avg_sparsity2 = get_score_sparsity_hc(cp_model)
-                print('avg_sparsity2: ', avg_sparsity2)
+                print('avg_sparsity2: ', avg_sparsity2) # avg_sparsity2 should be same as avg_sparsity 
             else:
                 avg_sparsity = get_model_sparsity_GD(model)            #avg_sparsity = get_model_sparsity(model)
         else:
