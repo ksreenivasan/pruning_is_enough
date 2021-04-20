@@ -167,7 +167,7 @@ def round_model(model, round_scheme, noise=False, ratio=0.0):
 
 
 
-"""
+#"""
 # @deprecated
 def get_score_sparsity_hc(model):
     sparsity = []
@@ -184,7 +184,7 @@ def get_score_sparsity_hc(model):
     print('overall sparsity: {}/{} ({:.2f} %)'.format((int)(numer), denom, 100*numer/denom))
 
     return 100*numer/denom
-"""
+#"""
 
 
 def get_layer_sparsity(layer, threshold=0):
@@ -234,6 +234,8 @@ def get_model_sparsity(model, threshold=0):
         s_linear.append(s)
         bs_linear.append(bs)
 
+    print(s_conv)
+    print(s_linear)
     avg_sparsity = (sum(s_conv) + sum(s_linear))/(len(s_conv) + len(s_linear))
     return avg_sparsity
 

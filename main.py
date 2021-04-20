@@ -24,7 +24,8 @@ from utils.net_utils import (
     get_lr,
     LabelSmoothing,
     round_model,
-    get_model_sparsity
+    get_model_sparsity,
+    get_score_sparsity_hc
 )
 from utils.schedulers import get_policy
 from utils.utils import set_seed, plot_histogram_scores
@@ -215,6 +216,9 @@ def main_worker():
                 # Round before checking sparsity
                 cp_model = round_model(model, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio)
                 avg_sparsity = get_model_sparsity(cp_model)
+                print('avg_sparsity: ', avg_sparsity)
+                avg_sparsity2 = get_score_sparsity_hc(cp_model)
+                print('avg_sparsity2: ', avg_sparsity2)
             else:
                 avg_sparsity = get_model_sparsity(model)
         else:
