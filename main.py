@@ -25,6 +25,7 @@ from utils.net_utils import (
     LabelSmoothing,
     round_model,
     get_model_sparsity,
+    get_model_sparsity_GD
     get_score_sparsity_hc
 )
 from utils.schedulers import get_policy
@@ -215,12 +216,12 @@ def main_worker():
             if parser_args.algo in ['hc']:
                 # Round before checking sparsity
                 cp_model = round_model(model, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio)
-                avg_sparsity = get_model_sparsity(cp_model)
+                avg_sparsity = get_model_sparsity_GD(cp_model)     #avg_sparsity = get_model_sparsity(cp_model)
                 print('avg_sparsity: ', avg_sparsity)
                 avg_sparsity2 = get_score_sparsity_hc(cp_model)
                 print('avg_sparsity2: ', avg_sparsity2)
             else:
-                avg_sparsity = get_model_sparsity(model)
+                avg_sparsity = get_model_sparsity_GD(model)            #avg_sparsity = get_model_sparsity(model)
         else:
             # haven't written a weight sparsity function yet
             avg_sparsity = -1
