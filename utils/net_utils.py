@@ -166,8 +166,7 @@ def round_model(model, round_scheme, noise=False, ratio=0.0):
     return cp_model
 
 
-
-#"""
+"""
 # @deprecated
 def get_score_sparsity_hc(model):
     sparsity = []
@@ -184,7 +183,7 @@ def get_score_sparsity_hc(model):
     print('overall sparsity: {}/{} ({:.2f} %)'.format((int)(numer), denom, 100*numer/denom))
 
     return 100*numer/denom
-#"""
+"""
 
 
 # returns avg_sparsity = number of non-zero weights!
@@ -210,7 +209,7 @@ def get_model_sparsity(model, threshold=0):
         if parser_args.bias:
             numer += b_numer
             denom += b_denom
-    print('Overall sparsity: {}/{} ({:.2f} %)'.format((int)(numer), denom, 100*numer/denom))
+    # print('Overall sparsity: {}/{} ({:.2f} %)'.format((int)(numer), denom, 100*numer/denom))
 
     return 100*numer/denom
 
