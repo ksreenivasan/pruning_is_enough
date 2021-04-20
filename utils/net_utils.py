@@ -187,65 +187,16 @@ def get_score_sparsity_hc(model):
 #"""
 
 
-def get_layer_sparsity(layer, threshold=0):
-    # for algos where the score IS the mask
-    if parser_args.algo in ['hc']:
-        # assume the model is rounded
-        num_middle = torch.sum(torch.gt(layer.scores,
-                        torch.ones_like(layer.scores)*threshold) *\
-                        torch.lt(layer.scores,
-                        torch.ones_like(layer.scores*(1-threshold)).int()))
-        if num_middle > 0:
-            print("WARNING: Model scores are not binary. Sparsity number is unreliable.")
-        weight_sparsity = 100.0 * layer.scores.detach().sum().item() / layer.scores.detach().flatten().numel()
-        if parser_args.bias:
-            bias_sparsity = 100.0 * layer.bias_scores.detach().sum().item() / layer.bias_scores.detach().flatten().numel()
-        else:
-            bias_sparsity = 0
-    else:
-        # traditional pruning where we just check non-zero values in mask
-        weight_mask, bias_mask = GetSubnet.apply(layer.scores.abs(), layer.bias_scores.abs(), parser_args.sparsity)
-        weight_sparsity = 100.0 * weight_mask.sum().item() / weight_mask.flatten().numel()
-        if parser_args.bias:
-            bias_sparsity = 100.0 * bias_mask.sum().item() / bias_mask.flatten().numel()
-        else:
-            bias_sparsity = 0
-    # TODO: handle bias sparsity also
-    return weight_sparsity, bias_sparsity
-
-
 # returns avg_sparsity = number of non-zero weights!
 def get_model_sparsity(model, threshold=0):
-    # compute mean sparsity of each layer
-    # TODO: find a nicer way to do this (skip dropout)
-    # TODO: Update: can't use .children() or .named_modules() because of the way things are wrapped in builder
-    # TODO: for now, just write this code for each model
-    s_conv = []
-    bs_conv = []
-    s_linear = []
-    bs_linear = []
-    for conv_layer in [0, 2, 5, 7]:
-        s, bs = get_layer_sparsity(model.convs[conv_layer], threshold)
-        s_conv.append(s)
-        bs_conv.append(bs)
-
-    for lin_layer in [0, 2, 4]:
-        s, bs = get_layer_sparsity(model.linear[lin_layer], threshold)
-        s_linear.append(s)
-        bs_linear.append(bs)
-
-    print(s_conv)
-    print(s_linear)
-    avg_sparsity = (sum(s_conv) + sum(s_linear))/(len(s_conv) + len(s_linear))
-    return avg_sparsity
-
-
-def get_model_sparsity_GD(model, threshold=0):
     numer = 0
     denom = 0
 
+    # TODO: find a nicer way to do this (skip dropout)
+    # TODO: Update: can't use .children() or .named_modules() because of the way things are wrapped in builder
+    # TODO: for now, just write this code for each model
     for conv_layer in [0, 2, 5, 7]:
-        w_numer, w_denom, b_numer, b_denom = get_layer_sparsity_GD(model.convs[conv_layer], threshold)
+        w_numer, w_denom, b_numer, b_denom = get_layer_sparsity(model.convs[conv_layer], threshold)
         numer += w_numer
         denom += w_denom
         if parser_args.bias:
@@ -253,19 +204,20 @@ def get_model_sparsity_GD(model, threshold=0):
             denom += b_denom
 
     for lin_layer in [0, 2, 4]:
-        w_numer, w_denom, b_numer, b_denom = get_layer_sparsity_GD(model.linear[lin_layer], threshold)
+        w_numer, w_denom, b_numer, b_denom = get_layer_sparsity(model.linear[lin_layer], threshold)
         numer += w_numer
         denom += w_denom
         if parser_args.bias:
             numer += b_numer
             denom += b_denom
-    print('overall sparsity: {}/{} ({:.2f} %)'.format((int)(numer), denom, 100*numer/denom))
+    print('Overall sparsity: {}/{} ({:.2f} %)'.format((int)(numer), denom, 100*numer/denom))
 
     return 100*numer/denom
 
 
-
-def get_layer_sparsity_GD(layer, threshold=0):
+# returns num_nonzero elements, total_num_elements so that it is easier to compute
+# average sparsity in the end
+def get_layer_sparsity(layer, threshold=0):
     # for algos where the score IS the mask
     if parser_args.algo in ['hc']:
         # assume the model is rounded
@@ -277,27 +229,22 @@ def get_layer_sparsity_GD(layer, threshold=0):
             print("WARNING: Model scores are not binary. Sparsity number is unreliable.")
             raise ValueError
         w_numer, w_denom = layer.scores.detach().sum().item(), layer.scores.detach().flatten().numel()
-        #weight_sparsity = 100.0 * layer.scores.detach().sum().item() / layer.scores.detach().flatten().numel()
+
         if parser_args.bias:
             b_numer, b_denom = layer.bias_scores.detach().sum().item(), layer.bias_scores.detach().flatten().numel()
-            #bias_sparsity = 100.0 * layer.bias_scores.detach().sum().item() / layer.bias_scores.detach().flatten().numel()
         else:
-            b_numer, b_denom = None, None 
-            #bias_sparsity = 0
+            b_numer, b_denom = 0, 0
     else:
         # traditional pruning where we just check non-zero values in mask
         weight_mask, bias_mask = GetSubnet.apply(layer.scores.abs(), layer.bias_scores.abs(), parser_args.sparsity)
         w_numer, w_denom = weight_mask.sum().item(), weight_mask.flatten().numel()
-        #weight_sparsity = 100.0 * weight_mask.sum().item() / weight_mask.flatten().numel()
+
         if parser_args.bias:
             b_numer, b_denom = bias_mask.sum().item(), bias_mask.flatten().numel()
             #bias_sparsity = 100.0 * bias_mask.sum().item() / bias_mask.flatten().numel()
         else:
-            b_numer, b_denom = None, None 
-            #bias_sparsity = 0
-    # TODO: handle bias sparsity also
+            b_numer, b_denom = 0, 0
     return w_numer, w_denom, b_numer, b_denom
-    #return weight_sparsity, bias_sparsity
 
 
 #### Functions used for greedy pruning ####
