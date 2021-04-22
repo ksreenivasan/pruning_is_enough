@@ -345,16 +345,16 @@ def get_model_sparsity(model, threshold=0):
     # TODO: find a nicer way to do this (skip dropout)
     # TODO: Update: can't use .children() or .named_modules() because of the way things are wrapped in builder
     # TODO: for now, just write this code for each model
-    for conv_layer in [0, 1]:
-        w_numer, w_denom, b_numer, b_denom = get_layer_sparsity(model.convs[conv_layer], threshold)
+    for conv_layer in [model.conv1, model.conv2]:
+        w_numer, w_denom, b_numer, b_denom = get_layer_sparsity(conv_layer, threshold)
         numer += w_numer
         denom += w_denom
         if parser_args.bias:
             numer += b_numer
             denom += b_denom
 
-    for lin_layer in [4, 5]:
-        w_numer, w_denom, b_numer, b_denom = get_layer_sparsity(model.linear[lin_layer], threshold)
+    for lin_layer in [model.fc1, model.fc2]:
+        w_numer, w_denom, b_numer, b_denom = get_layer_sparsity(lin_layer, threshold)
         numer += w_numer
         denom += w_denom
         if parser_args.bias:
