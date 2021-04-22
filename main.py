@@ -212,7 +212,8 @@ def main_worker():
                 algo_str = parser_args.algo
                 reg_str = 'reg' if parser_args.regularization else 'noreg'
                 opt_str = parser_args.optimizer
-                plot_histogram_scores(model, algo_str, reg_str, opt_str, epoch)
+                dataset_str = parser_args.dataset
+                plot_histogram_scores(model, dataset_str, algo_str, reg_str, opt_str, epoch)
                 print('Plotted the score histogram')
 
         if not parser_args.weight_training:

@@ -494,7 +494,7 @@ def plot_histogram_scores(model, epoch=0):
     algo = parser_args.algo
     reg = 'reg' if parser_args.regularization else 'noreg'
     opt = parser_args.optimizer
-    filename = 'plots/weights_histogram_{}_{}_{}_epoch_{}.pdf'.format(algo, reg, opt, epoch)
+    filename = 'plots/weights_histogram_MNIST_{}_{}_{}_epoch_{}.pdf'.format(dataset, algo, reg, opt, epoch)
     plt.savefig(filename, format='pdf', bbox_inches='tight', pad_inches=0.05)
 
 
