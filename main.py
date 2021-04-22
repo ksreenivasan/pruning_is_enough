@@ -193,7 +193,9 @@ def main_worker():
         if epoch >= parser_args.hc_warmup and epoch % parser_args.hc_period == 0:
             print('Apply rounding: {}'.format(parser_args.round))
             # @GD: check
+            #pdb.set_trace()
             model = round_model(model, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio)
+            #pdb.set_trace()
 
         # evaluate on validation set
         start_validation = time.time()

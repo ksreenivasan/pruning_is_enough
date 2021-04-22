@@ -10,8 +10,8 @@ name: conv4_sc_bern_hypercube
 
 # ===== Learning Rate Policy ======== #
 optimizer: adam
-lr: 0.01
-lr_policy: cosine_lr
+lr: 0.01 #0.01
+#lr_policy: cosine_lr
 
 # ===== Network training config ===== #
 epochs: 150
@@ -31,11 +31,12 @@ scale_fan: False #True
 
 # ===== Rounding ===== #
 round: naive
-#hc_warmup: 30 # 150
-#hc_period: 10
+hc_warmup: 30 # 150
+hc_period: 10
 noise: True
-noise_ratio: 0.00
+noise_ratio: 0 #0.001
 
 # ===== Hardware setup ===== #
 workers: 4
+gpu: 2
 

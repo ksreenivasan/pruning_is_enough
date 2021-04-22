@@ -11,7 +11,7 @@ import torch
 import torch.nn as nn
 
 from utils.mask_layers import MaskLinear, MaskConv
-
+from utils.conv_type import GetSubnet as GetSubnetConv
 
 def save_checkpoint(state, is_best, filename="checkpoint.pth", save=False):
     filename = pathlib.Path(filename)
@@ -149,6 +149,10 @@ def round_model(model, round_scheme, noise=False, ratio=0.0):
     cp_model = copy.deepcopy(model)
     for name, params in cp_model.named_parameters():
         if ".score" in name:
+            if noise:
+                delta = torch.randn_like(params.data)*ratio
+                params.data += delta
+
             if round_scheme == 'naive':
                 params.data = torch.gt(params.data, torch.ones_like(params.data)*0.5).int().float()
                 #params.data = torch.gt(params.detach(), torch.ones_like(params.data)*0.5).int().float()
@@ -158,10 +162,11 @@ def round_model(model, round_scheme, noise=False, ratio=0.0):
             else:
                 print("INVALID ROUNDING")
                 print("EXITING")  
-
+            '''    
             if noise:
                 delta = torch.bernoulli(torch.ones_like(params.data)*ratio)
                 params.data = (params.data + delta) % 2
+            '''
 
     return cp_model
 
@@ -235,7 +240,8 @@ def get_layer_sparsity(layer, threshold=0):
             b_numer, b_denom = 0, 0
     else:
         # traditional pruning where we just check non-zero values in mask
-        weight_mask, bias_mask = GetSubnet.apply(layer.scores.abs(), layer.bias_scores.abs(), parser_args.sparsity)
+        weight_mask, bias_mask = GetSubnetConv.apply(layer.scores.abs(), layer.bias_scores.abs(), parser_args.prune_rate)
+        #weight_mask, bias_mask = GetSubnetConv.apply(layer.scores.abs(), layer.bias_scores.abs(), parser_args.sparsity)
         w_numer, w_denom = weight_mask.sum().item(), weight_mask.flatten().numel()
 
         if parser_args.bias:

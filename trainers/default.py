@@ -63,7 +63,7 @@ def train(train_loader, model, criterion, optimizer, epoch, args, writer):
                 elif ".score" in name:
                     regularization_loss += torch.sum(torch.pow(params, 1) * torch.pow(1-params, 1))
 
-            loss += args.lmbda * R_p
+            loss += args.lmbda * regularization_loss
 
         # measure accuracy and record loss
         acc1, acc5, acc10 = accuracy(output, target, topk=(1, 5, 10))
