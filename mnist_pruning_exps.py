@@ -491,7 +491,10 @@ def plot_histogram_scores(model, epoch=0):
                    density=False, linewidth=0.5, bins=20)
     axs[1, 1].set_title('FC2 Scores Distribution')
 
-    filename = 'plots/weights_histogram_epoch_{}.pdf'.format(epoch)
+    algo = parser_args.algo
+    reg = 'reg' if parser_args.regularization else 'noreg'
+    opt = parser_args.optimizer
+    filename = 'plots/weights_histogram_{}_{}_{}_epoch_{}.pdf'.format(algo, reg, opt, epoch)
     plt.savefig(filename, format='pdf', bbox_inches='tight', pad_inches=0.05)
 
 
@@ -577,7 +580,7 @@ def main():
                         help='probability threshold for pruning')
     parser.add_argument('--normalize-scores', action='store_true', default=False,
                         help='to normalize or not to normalize')
-    parser.add_argument('--results-filename', type=str, default='results/results_acc_mnist.csv',
+    parser.add_argument('--results-filename', type=str, default='results_acc_mnist.csv',
                         help='csv results filename')
     parser.add_argument('--lmbda', type=float, default=0.001,
                         help='regularization coefficient lambda')
@@ -680,7 +683,7 @@ def main():
             print("Test Acc: {:.2f}%\n".format(test_acc))
             print("---------------------------------------------------------")
             results_df = pd.DataFrame({'epoch': epoch_list, 'test_acc': test_acc_list, 'model_sparsity': model_sparsity_list})
-            results_df.to_csv(parser_args.results_filename, index=False)
+            results_df.to_csv('results/{}'.format(parser_args.results_filename), index=False)
 
         if parser_args.mode != "training":
             # gotta plot the final histogram as well

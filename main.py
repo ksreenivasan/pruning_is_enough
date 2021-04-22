@@ -208,8 +208,11 @@ def main_worker():
 
         # save the histrogram of scores
         if not parser_args.weight_training:
-            if epoch % 5 == 1:  # %10 %50
-                plot_histogram_scores(model, parser_args.algo, epoch)
+            if (epoch % 25 == 1) or epoch == (parser_args.epochs-1):  # %10 %50
+                algo_str = parser_args.algo
+                reg_str = 'reg' if parser_args.regularization else 'noreg'
+                opt_str = parser_args.optimizer
+                plot_histogram_scores(model, algo_str, reg_str, opt_str, epoch)
                 print('Plotted the score histogram')
 
         if not parser_args.weight_training:
@@ -319,7 +322,10 @@ def main_worker():
     else:
         # TODO: move this to utils
         train_mode_str = 'weight_training' if parser_args.weight_training else 'pruning'
-        results_filename = "results/results_acc_{}_{}_{}.csv".format(train_mode_str, parser_args.dataset, parser_args.algo)
+        algo_str = parser_args.algo
+        reg_str = 'reg' if parser_args.regularization else 'noreg'
+        opt_str = parser_args.optimizer
+        results_filename = "results/results_acc_{}_{}_{}_{}_{}.csv".format(train_mode_str, parser_args.dataset, parser_args.algo, reg_str, opt_str)
     print("Writing results into: {}".format(results_filename))
     results_df.to_csv(results_filename, index=False)
 
