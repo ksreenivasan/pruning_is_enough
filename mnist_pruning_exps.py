@@ -667,7 +667,7 @@ def main():
             if parser_args.mode != "training":
                 if parser_args.algo == 'hc':
                     cp_model = round_model(model, device, train_loader)
-                    model_sparsity = get_model_sparsity(cp_model, rounded=True)
+                    model_sparsity = get_model_sparsity(cp_model)
                 else:
                     model_sparsity = get_model_sparsity(model)
 
