@@ -591,10 +591,10 @@ def main():
                         help='optimizer option to use |sgd|adam|')
     parser.add_argument('--evaluate-only', action='store_true', default=False,
                         help='just use rounding techniques to evaluate a saved model')
-    parser.add_argument('--round', type=str, default='naive',
+    parser.add_argument('--round', type=str, default='prob',
                         help='rounding technique to use |naive|prob|pb|')
     # naive: threshold(0.5), prob: probabilistic rounding, pb: pseudo-boolean paper's choice (RoundDown)
-    parser.add_argument('--num-test', type=int, default=1,
+    parser.add_argument('--num-test', type=int, default=10,
                         help='number of different models testing in prob rounding')
     parser.add_argument('--mode', type=str, default="pruning",
                         help='can be used for either pruning | training.')
