@@ -228,7 +228,7 @@ def get_layer_sparsity(layer, threshold=0):
         num_middle = torch.sum(torch.gt(layer.scores,
                         torch.ones_like(layer.scores)*threshold) *\
                         torch.lt(layer.scores,
-                        torch.ones_like(layer.scores*(1-threshold)).int()))
+                        torch.ones_like(layer.scores.detach()*(1-threshold)).int()))
         if num_middle > 0:
             print("WARNING: Model scores are not binary. Sparsity number is unreliable.")
             raise ValueError

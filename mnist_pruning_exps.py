@@ -314,7 +314,7 @@ def get_layer_sparsity(layer, threshold=0):
         num_middle = torch.sum(torch.gt(layer.scores,
                         torch.ones_like(layer.scores)*threshold) *\
                         torch.lt(layer.scores,
-                        torch.ones_like(layer.scores*(1-threshold)).int()))
+                        torch.ones_like(layer.scores.detach()*(1-threshold)).int()))
         if num_middle > 0:
             print("WARNING: Model scores are not binary. Sparsity number is unreliable.")
             raise ValueError
@@ -345,16 +345,16 @@ def get_model_sparsity(model, threshold=0):
     # TODO: find a nicer way to do this (skip dropout)
     # TODO: Update: can't use .children() or .named_modules() because of the way things are wrapped in builder
     # TODO: for now, just write this code for each model
-    for conv_layer in [0, 1]:
-        w_numer, w_denom, b_numer, b_denom = get_layer_sparsity(model.convs[conv_layer], threshold)
+    for conv_layer in [model.conv1, model.conv2]:
+        w_numer, w_denom, b_numer, b_denom = get_layer_sparsity(conv_layer, threshold)
         numer += w_numer
         denom += w_denom
         if parser_args.bias:
             numer += b_numer
             denom += b_denom
 
-    for lin_layer in [4, 5]:
-        w_numer, w_denom, b_numer, b_denom = get_layer_sparsity(model.linear[lin_layer], threshold)
+    for lin_layer in [model.fc1, model.fc2]:
+        w_numer, w_denom, b_numer, b_denom = get_layer_sparsity(lin_layer, threshold)
         numer += w_numer
         denom += w_denom
         if parser_args.bias:
@@ -591,10 +591,10 @@ def main():
                         help='optimizer option to use |sgd|adam|')
     parser.add_argument('--evaluate-only', action='store_true', default=False,
                         help='just use rounding techniques to evaluate a saved model')
-    parser.add_argument('--round', type=str, default='naive',
+    parser.add_argument('--round', type=str, default='prob',
                         help='rounding technique to use |naive|prob|pb|')
     # naive: threshold(0.5), prob: probabilistic rounding, pb: pseudo-boolean paper's choice (RoundDown)
-    parser.add_argument('--num-test', type=int, default=1,
+    parser.add_argument('--num-test', type=int, default=10,
                         help='number of different models testing in prob rounding')
     parser.add_argument('--mode', type=str, default="pruning",
                         help='can be used for either pruning | training.')
@@ -667,7 +667,7 @@ def main():
             if parser_args.mode != "training":
                 if parser_args.algo == 'hc':
                     cp_model = round_model(model, device, train_loader)
-                    model_sparsity = get_model_sparsity(cp_model, rounded=True)
+                    model_sparsity = get_model_sparsity(cp_model)
                 else:
                     model_sparsity = get_model_sparsity(model)
 
