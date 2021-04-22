@@ -200,8 +200,13 @@ def main_worker():
         # evaluate on validation set
         start_validation = time.time()
         if parser_args.algo in ['hc']:
-            cp_model = round_model(model, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio)
-            acc1, acc5, acc10 = validate(data.val_loader, cp_model, criterion, parser_args, writer, epoch)
+            acc_avg = 0
+            for num_trial in range(parser_args.num_test):
+                cp_model = round_model(model, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio)
+                acc1, acc5, acc10 = validate(data.val_loader, cp_model, criterion, parser_args, writer, epoch)
+                acc_avg += acc1
+            acc_avg /= parser_args.num_test
+            print('acc_avg: ', acc_avg)
         else:
             acc1, acc5, acc10 = validate(data.val_loader, model, criterion, parser_args, writer, epoch)
         validation_time.update((time.time() - start_validation) / 60)
