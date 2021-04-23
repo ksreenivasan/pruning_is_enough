@@ -330,23 +330,9 @@ def main_worker():
     if parser_args.algo in ['hc']:
         for trial in range(parser_args.num_round):
 
-            print('Before rounding for the final model:')
-            acc1, acc5, acc10 = validate(
-                data.val_loader, model, criterion,
-                parser_args, writer=None, epoch=parser_args.start_epoch
-            )
-            print('acc1: {}, acc5: {}, acc10: {}'.format(acc1, acc5, acc10))
-
-
-            print('Apply rounding for the final model:')
+            eval_and_print(data.val_loader, model, criterion, parser_args, writer=None, epoch=parser_args.start_epoch, description='final model before rounding')
             cp_model = round_model(model, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio)
-            # hc_round(model, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio)
-
-            acc1, acc5, acc10 = validate(
-                data.val_loader, cp_model, criterion,
-                parser_args, writer=None, epoch=parser_args.start_epoch
-            )
-            print('acc1: {}, acc5: {}, acc10: {}'.format(acc1, acc5, acc10))
+            eval_and_print(data.val_loader, cp_model, criterion, parser_args, writer=None, epoch=parser_args.start_epoch, description='final model after rounding')
 
 
 # connect two masks trained by pruning
