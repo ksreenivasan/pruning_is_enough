@@ -55,8 +55,8 @@ def multistep_lr(optimizer, args, **kwargs):
     """Sets the learning rate to the initial LR decayed by 10 every 30 epochs"""
 
     def _lr_adjuster(epoch, iteration):
-        lr = args.lr * (args.lr_gamma ** (epoch // args.lr_adjust))
-
+        lr = args.lr * (args.lr_gamma ** (epoch // args.lr_adjust)) #lr = args.lr * (0.1 ** (epoch // 50)) 
+        print('learning rate: ', lr)
         assign_learning_rate(optimizer, lr)
 
         return lr
