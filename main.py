@@ -66,8 +66,7 @@ def main_worker():
         if parser_args.pretrained:
             pretrained(parser_args.pretrained, model)
         if parser_args.pretrained2:
-            model2 = copy.deepcopy(model)
-            # model2.load_state_dict(torch.load(parser_args.pretrained2)['state_dict'])
+            model2 = copy.deepcopy(model) # model2.load_state_dict(torch.load(parser_args.pretrained2)['state_dict'])
             pretrained(parser_args.pretrained2, model2)
 
         optimizer = get_optimizer(parser_args, model)
@@ -132,6 +131,7 @@ def main_worker():
     acc1 = None
 
     epoch_list = []
+    test_acc_list_br = []    
     test_acc_list = []
     model_sparsity_list = []
 
@@ -174,25 +174,24 @@ def main_worker():
         train_time.update((time.time() - start_train) / 60)
 
 
-
         # apply round for every T epochs (after E warm-up epoch)
-        if epoch >= parser_args.hc_warmup and epoch % parser_args.hc_period == 0:
+        if parser_args.algo in ['hc'] and epoch >= parser_args.hc_warmup and epoch % parser_args.hc_period == 0:
             print('Apply rounding: {}'.format(parser_args.round))
-            # @GD: check
-            #pdb.set_trace()
             model = round_model(model, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio)
-            #pdb.set_trace()
 
         # evaluate on validation set
         start_validation = time.time()
         if parser_args.algo in ['hc']:
+            br_acc1, br_acc5, br_acc10 = validate(data.val_loader, model, criterion, parser_args, writer, epoch) # before rounding
+            print('acc before rounding: ', br_acc1)
             acc_avg = 0
             for num_trial in range(parser_args.num_test):
                 cp_model = round_model(model, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio)
                 acc1, acc5, acc10 = validate(data.val_loader, cp_model, criterion, parser_args, writer, epoch)
                 acc_avg += acc1
             acc_avg /= parser_args.num_test
-            print('acc_avg: ', acc_avg)
+            acc1 = acc_avg
+            print('avg acc after rounding: ', acc1)
         else:
             acc1, acc5, acc10 = validate(data.val_loader, model, criterion, parser_args, writer, epoch)
         validation_time.update((time.time() - start_validation) / 60)
@@ -222,6 +221,7 @@ def main_worker():
             avg_sparsity = -1
         # update all results lists
         epoch_list.append(epoch)
+        test_acc_list_br.append(br_acc1)
         test_acc_list.append(acc1)
         # TODO: define sparsity for cifar10 networks
         model_sparsity_list.append(avg_sparsity)
@@ -308,7 +308,7 @@ def main_worker():
     )
 
     # TODO: plot histograms here too
-    results_df = pd.DataFrame({'epoch': epoch_list, 'test_acc': test_acc_list, 'model_sparsity': model_sparsity_list})
+    results_df = pd.DataFrame({'epoch': epoch_list, 'test_acc_before_rounding': test_acc_list_br,'test_acc': test_acc_list, 'model_sparsity': model_sparsity_list})
     if parser_args.results_filename:
         results_filename = parser_args.results_filename
     else:
