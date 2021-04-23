@@ -120,13 +120,14 @@ def main_worker():
             else:
                 cp_model2 = None
 
-            if parser_args.weight_training:
-                print('We are connecting weights')
-                connect_weight(cp_model, criterion, data, validate, cp_model2)
-            elif parser_args.algo in ['hc', 'ep']:
-                print('We are connecting masks')
-                connect_mask(cp_model, criterion, data, validate, cp_model2)
-            # visualize_mask_2D(cp_model, criterion, data, validate)
+            if parser_args.pretrained and parser_args.pretrained2:
+                if parser_args.weight_training:
+                    print('We are connecting weights')
+                    connect_weight(cp_model, criterion, data, validate, cp_model2)
+                elif parser_args.algo in ['hc', 'ep']:
+                    print('We are connecting masks')
+                    connect_mask(cp_model, criterion, data, validate, cp_model2)
+                # visualize_mask_2D(cp_model, criterion, data, validate)
 
             return
 
@@ -344,8 +345,17 @@ def main_worker():
     # check the performance of trained model
     if parser_args.algo in ['hc']:
         for trial in range(parser_args.num_round):
+
+            print('Before rounding for the final model:')
+            acc1, acc5, acc10 = validate(
+                data.val_loader, model, criterion,
+                parser_args, writer=None, epoch=parser_args.start_epoch
+            )
+            print('acc1: {}, acc5: {}, acc10: {}'.format(acc1, acc5, acc10))
+
+
             print('Apply rounding for the final model:')
-            round_model(model, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio)
+            cp_model = round_model(model, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio)
             # hc_round(model, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio)
 
             acc1, acc5, acc10 = validate(
