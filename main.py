@@ -38,7 +38,7 @@ import copy
 from torch._utils import _flatten_dense_tensors, _unflatten_dense_tensors
 
 
-def eval_and_print(data_loader, model, criterion, parser_args, writer=None, epoch=parser_args.start_epoch, description='model')
+def eval_and_print(validate, data_loader, model, criterion, parser_args, writer=None, epoch=parser_args.start_epoch, description='model')
 
     acc1, acc5, acc10 = validate(data_loader, model, criterion, parser_args, writer=None, epoch=parser_args.start_epoch)
     print('Performance of {}'.format(description))
@@ -90,18 +90,18 @@ def main_worker():
             best_acc1 = resume(parser_args, model, optimizer)
 
         if parser_args.evaluate:
-            eval_and_print(data.val_loader, model, criterion, parser_args, writer=None, epoch=parser_args.start_epoch, description='model')
+            eval_and_print(validate, data.val_loader, model, criterion, parser_args, writer=None, epoch=parser_args.start_epoch, description='model')
 
             for trial in range(parser_args.num_test):
                 if parser_args.algo in ['hc']:
                     cp_model = round_model(model, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio)
-                    eval_and_print(data.val_loader, cp_model, criterion, parser_args, writer=None, epoch=parser_args.start_epoch, description='model after pruning')
+                    eval_and_print(validate, data.val_loader, cp_model, criterion, parser_args, writer=None, epoch=parser_args.start_epoch, description='model after pruning')
 
             if parser_args.pretrained2:
-                eval_and_print(data.val_loader, model2, criterion, parser_args, writer=None, epoch=parser_args.start_epoch, description='model2')
+                eval_and_print(validate, data.val_loader, model2, criterion, parser_args, writer=None, epoch=parser_args.start_epoch, description='model2')
                 if parser_args.algo in ['hc']:
                     cp_model2 = round_model(model2, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio)
-                    eval_and_print(data.val_loader, cp_model2, criterion, parser_args, writer=None, epoch=parser_args.start_epoch, description='model2 after pruning')
+                    eval_and_print(validate, data.val_loader, cp_model2, criterion, parser_args, writer=None, epoch=parser_args.start_epoch, description='model2 after pruning')
 
             if parser_args.pretrained and parser_args.pretrained2:
                 if parser_args.weight_training:
@@ -330,9 +330,9 @@ def main_worker():
     if parser_args.algo in ['hc']:
         for trial in range(parser_args.num_round):
 
-            eval_and_print(data.val_loader, model, criterion, parser_args, writer=None, epoch=parser_args.start_epoch, description='final model before rounding')
+            eval_and_print(validate, data.val_loader, model, criterion, parser_args, writer=None, epoch=parser_args.start_epoch, description='final model before rounding')
             cp_model = round_model(model, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio)
-            eval_and_print(data.val_loader, cp_model, criterion, parser_args, writer=None, epoch=parser_args.start_epoch, description='final model after rounding')
+            eval_and_print(validate, data.val_loader, cp_model, criterion, parser_args, writer=None, epoch=parser_args.start_epoch, description='final model after rounding')
 
 
 # connect two masks trained by pruning
