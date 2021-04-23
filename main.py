@@ -38,7 +38,7 @@ import copy
 from torch._utils import _flatten_dense_tensors, _unflatten_dense_tensors
 
 
-def eval_and_print(data_loader, model, criterion, parser_args, writer=None, epoch=parser_args.start_epoch, description='model')
+def eval_and_print(data_loader, model, criterion, parser_args, writer=None, epoch=parser_args.start_epoch, description='model'):
 
     acc1, acc5, acc10 = validate(data_loader, model, criterion, parser_args, writer=None, epoch=parser_args.start_epoch)
     print('Performance of {}'.format(description))
