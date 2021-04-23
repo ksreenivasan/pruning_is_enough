@@ -146,6 +146,7 @@ class SubnetL1RegLoss(nn.Module):
         
 # rounds model by round_scheme and returns the rounded model
 def round_model(model, round_scheme, noise=False, ratio=0.0):
+    print("we are rounding model with scheme {}".format(round_scheme))
     cp_model = copy.deepcopy(model)
     for name, params in cp_model.named_parameters():
         if ".score" in name:
@@ -159,6 +160,14 @@ def round_model(model, round_scheme, noise=False, ratio=0.0):
             elif round_scheme == 'prob':
                 params.data = torch.clamp(params.data, 0.0, 1.0)
                 params.data = torch.bernoulli(params.data).float()
+            elif round_scheme == 'naive_prob':
+                if name == 'linear.0.scores':
+                    print("I am applying prob. rounding to {}".format(name))
+                    params.data = torch.clamp(params.data, 0.0, 1.0)
+                    params.data = torch.bernoulli(params.data).float()
+                else:
+                    params.data = torch.gt(params.data, torch.ones_like(params.data)*0.5).int().float()
+
             else:
                 print("INVALID ROUNDING")
                 print("EXITING")  

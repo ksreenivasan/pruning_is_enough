@@ -89,11 +89,12 @@ def main_worker():
             print('Performance of model')
             print('acc1: {}, acc5: {}, acc10: {}'.format(acc1, acc5, acc10))
 
-            acc1, acc5, acc10 = validate(
-                data.val_loader, model2, criterion, parser_args,
-                writer=None, epoch=parser_args.start_epoch)
-            print('Performance of model2')
-            print('acc1: {}, acc5: {}, acc10: {}'.format(acc1, acc5, acc10))
+            if parser_args.pretrained2:
+                acc1, acc5, acc10 = validate(
+                    data.val_loader, model2, criterion, parser_args,
+                    writer=None, epoch=parser_args.start_epoch)
+                print('Performance of model2')
+                print('acc1: {}, acc5: {}, acc10: {}'.format(acc1, acc5, acc10))
 
             for trial in range(parser_args.num_test):
                 if parser_args.algo in ['hc']:
