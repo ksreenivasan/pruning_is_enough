@@ -99,6 +99,19 @@ def parse_arguments():
         help="Learning rate scheduler"
     )
     parser.add_argument(
+        "--lr-gamma",
+        type=float,
+        default=0.1,
+        help="Multistep lr decay ratio (default: 0.1)"
+    )
+    parser.add_argument(
+        "--lr-adjust",
+        type=int,
+        default=50,
+        help="Multistep lr decay period (default: 50)"
+    )
+
+    parser.add_argument(
         "--momentum",
         type=float,
         default=0.9,

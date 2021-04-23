@@ -307,7 +307,6 @@ def main_worker():
         name=parser_args.name,
     )
 
-    # TODO: plot histograms here too
     results_df = pd.DataFrame({'epoch': epoch_list, 'test_acc_before_rounding': test_acc_list_br,'test_acc': test_acc_list, 'model_sparsity': model_sparsity_list})
     if parser_args.results_filename:
         results_filename = parser_args.results_filename
@@ -317,7 +316,8 @@ def main_worker():
         algo_str = parser_args.algo
         reg_str = 'reg' if parser_args.regularization else 'noreg'
         opt_str = parser_args.optimizer
-        results_filename = "results/results_acc_{}_{}_{}_{}_{}.csv".format(train_mode_str, parser_args.dataset, parser_args.algo, reg_str, opt_str)
+        policy_str = parser_args.lr_policy
+        results_filename = "results/results_acc_{}_{}_{}_{}_{}_{}.csv".format(train_mode_str, parser_args.dataset, parser_args.algo, reg_str, opt_str, policy_str)
     print("Writing results into: {}".format(results_filename))
     results_df.to_csv(results_filename, index=False)
 
