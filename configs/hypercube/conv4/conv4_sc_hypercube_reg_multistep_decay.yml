@@ -12,6 +12,8 @@ name: conv4_sc_bern_hypercube
 optimizer: adam
 lr: 0.01 #0.01
 lr_policy: multistep_lr
+lr_gamma: 0.5
+lr_adjust: 30
 
 # ===== Network training config ===== #
 epochs: 150
