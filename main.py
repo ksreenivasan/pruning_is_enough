@@ -38,6 +38,14 @@ import copy
 from torch._utils import _flatten_dense_tensors, _unflatten_dense_tensors
 
 
+def eval_and_print(data_loader, model, criterion, parser_args, writer=None, epoch=parser_args.start_epoch, description='model')
+
+    acc1, acc5, acc10 = validate(data_loader, model, criterion, parser_args, writer=None, epoch=parser_args.start_epoch)
+    print('Performance of {}'.format(description))
+    print('acc1: {}, acc5: {}, acc10: {}'.format(acc1, acc5, acc10))
+
+
+
 def main():
     print(parser_args)
     set_seed(parser_args.seed)
@@ -83,42 +91,18 @@ def main_worker():
             best_acc1 = resume(parser_args, model, optimizer)
 
         if parser_args.evaluate:
-            acc1, acc5, acc10 = validate(
-                data.val_loader, model, criterion, parser_args,
-                writer=None, epoch=parser_args.start_epoch)
-            print('Performance of model')
-            print('acc1: {}, acc5: {}, acc10: {}'.format(acc1, acc5, acc10))
-
-            if parser_args.pretrained2:
-                acc1, acc5, acc10 = validate(
-                    data.val_loader, model2, criterion, parser_args,
-                    writer=None, epoch=parser_args.start_epoch)
-                print('Performance of model2')
-                print('acc1: {}, acc5: {}, acc10: {}'.format(acc1, acc5, acc10))
+            eval_and_print(data.val_loader, model, criterion, parser_args, writer=None, epoch=parser_args.start_epoch, description='model')
 
             for trial in range(parser_args.num_test):
                 if parser_args.algo in ['hc']:
                     cp_model = round_model(model, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio)
-
-                    acc1, acc5, acc10 = validate(
-                        data.val_loader, cp_model, criterion,
-                        parser_args, writer=None, epoch=parser_args.start_epoch
-                    )
-                    print('Performance of model after pruning')
-                    print('acc1: {}, acc5: {}, acc10: {}'.format(acc1, acc5, acc10))
+                    eval_and_print(data.val_loader, cp_model, criterion, parser_args, writer=None, epoch=parser_args.start_epoch, description='model after pruning')
 
             if parser_args.pretrained2:
+                eval_and_print(data.val_loader, model2, criterion, parser_args, writer=None, epoch=parser_args.start_epoch, description='model2')
                 if parser_args.algo in ['hc']:
                     cp_model2 = round_model(model2, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio)
-
-                    acc1, acc5, acc10 = validate(
-                        data.val_loader, cp_model2, criterion,
-                        parser_args, writer=None, epoch=parser_args.start_epoch
-                    )
-                    print('Performance of model2 after pruning')
-                    print('acc1: {}, acc5: {}, acc10: {}'.format(acc1, acc5, acc10))
-            else:
-                cp_model2 = None
+                    eval_and_print(data.val_loader, cp_model2, criterion, parser_args, writer=None, epoch=parser_args.start_epoch, description='model2 after pruning')
 
             if parser_args.pretrained and parser_args.pretrained2:
                 if parser_args.weight_training:
