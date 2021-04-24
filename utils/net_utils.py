@@ -13,6 +13,21 @@ import torch.nn as nn
 from utils.mask_layers import MaskLinear, MaskConv
 from utils.conv_type import GetSubnet as GetSubnetConv
 
+
+# return layer ids of conv layers and linear layers so we can parse them
+# efficiently
+def get_layer_ids(arch='Conv4'):
+    if arch == 'Conv4':
+        conv_layer_ids = [0, 2, 5, 7]
+        linear_layer_ids = [0, 2, 4]
+    elif arch == 'ResNet18':
+        print("ResNet18 not configured!")
+        exit()
+        conv_layer_ids = -1
+        linear_layer_ids = -1
+    return (conv_layer_ids, linear_layer_ids)
+
+
 def save_checkpoint(state, is_best, filename="checkpoint.pth", save=False):
     filename = pathlib.Path(filename)
 
@@ -202,13 +217,14 @@ def get_score_sparsity_hc(model):
 
 # returns avg_sparsity = number of non-zero weights!
 def get_model_sparsity(model, threshold=0):
+    conv_layer_ids, linear_layer_ids = get_layer_ids(parser_args.arch)
+
     numer = 0
     denom = 0
 
     # TODO: find a nicer way to do this (skip dropout)
     # TODO: Update: can't use .children() or .named_modules() because of the way things are wrapped in builder
-    # TODO: for now, just write this code for each model
-    for conv_layer in [0, 2, 5, 7]:
+    for conv_layer in conv_layer_ids:
         w_numer, w_denom, b_numer, b_denom = get_layer_sparsity(model.convs[conv_layer], threshold)
         numer += w_numer
         denom += w_denom
@@ -216,7 +232,7 @@ def get_model_sparsity(model, threshold=0):
             numer += b_numer
             denom += b_denom
 
-    for lin_layer in [0, 2, 4]:
+    for lin_layer in linear_layer_ids:
         w_numer, w_denom, b_numer, b_denom = get_layer_sparsity(model.linear[lin_layer], threshold)
         numer += w_numer
         denom += w_denom
@@ -259,6 +275,56 @@ def get_layer_sparsity(layer, threshold=0):
         else:
             b_numer, b_denom = 0, 0
     return w_numer, w_denom, b_numer, b_denom
+
+
+def get_regularization_loss(model, regularizer='var_red_1', lmbda=1, alpha=1, alpha_prime=1):
+    conv_layer_ids, linear_layer_ids = get_layer_ids(parser_args.arch)
+    def get_special_reg_sum(layer):
+        # reg_loss =  \sum_{i} w_i^2 * p_i(1-p_i)
+        # NOTE: alpha = alpha' = 1 here. Change if needed.
+        reg_sum = 0
+        w_i = layer.weight
+        p_i = layer.scores
+        reg_sum += torch.sum(torch.pow(w_i, 2) * torch.pow(p_i, 1) * torch.pow(1-p_i, 1))
+        if parser_args.bias:
+            b_i = layer.bias
+            p_i = layer.bias_scores
+            reg_sum += torch.sum(torch.pow(b_i, 2) * torch.pow(p_i, 1) * torch.pow(1-p_i, 1))
+        return reg_sum
+
+
+    regularization_loss = 0
+    if regularizer == 'var_red_1':
+        # reg_loss = lambda * p^{alpha} (1-p)^{alpha'}
+        for name, params in model.named_parameters():
+            if ".bias_score" in name:
+                if parser_args.bias:
+                    regularization_loss += torch.sum(torch.pow(params, alpha) * torch.pow(1-params, alpha_prime))
+
+            elif ".score" in name:
+                regularization_loss += torch.sum(torch.pow(params, alpha) * torch.pow(1-params, alpha_prime))
+
+        regularization_loss = lmbda * regularization_loss
+
+    elif regularizer == 'var_red_2':
+        # reg_loss =  \sum_{i} w_i^2 * p_i(1-p_i)
+        # NOTE: alpha = alpha' = 1 here. Change if needed.
+        for conv_layer in conv_layer_ids:
+            layer = model.convs[conv_layer]
+            regularization_loss += get_special_reg_sum(layer)
+
+        for lin_layer in linear_layer_ids:
+            layer = model.linear[lin_layer]
+            regularization_loss += get_special_reg_sum(layer)
+        # NOTE: no lambda here
+
+    elif regularizer == 'bin_cross_entropy':
+        # TODO: -p \log(1-p) ?
+        # this is convex but encourages sparsity and discourages 1 a lot.
+        # is this right?
+        print("BINARY CROSS ENTROPY NOT YET SUPPORTED")
+        exit()
+    return regularization_loss
 
 
 #### Functions used for greedy pruning ####

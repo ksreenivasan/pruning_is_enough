@@ -6,6 +6,7 @@ from utils.eval_utils import accuracy
 from utils.logging import AverageMeter, ProgressMeter
 
 
+
 __all__ = ["train", "validate", "modifier"]
 
 
@@ -46,7 +47,7 @@ def train(train_loader, model, criterion, optimizer, epoch, args, writer):
         # how to do it
         # TODO: clamp scores. this might be a way to handle data
         # parallel issues
-        # if parser_algs.algo in ['hc', 'pt', 'blah']:
+        # if parser_args.algo in ['hc', 'pt', 'blah']:
         #    for name, params in
         #    model.named_parameters():
         #        # clamp params if name has ".scores"
@@ -54,16 +55,12 @@ def train(train_loader, model, criterion, optimizer, epoch, args, writer):
         loss = criterion(output, target)
         regularization_loss = 0
         if args.regularization:
-            # add lambda * p(1-p)
-            for name, params in model.named_parameters():
-                if ".bias_score" in name:
-                    if args.bias:
-                        regularization_loss += torch.sum(torch.pow(params, 1) * torch.pow(1-params, 1))
+            regularization_loss =\
+                get_regularization_loss(model, regularizer=args.regularization,
+                                        lmbda=args.lmbda, alpha=args.alpha,
+                                        alpha_prime=args.alpha_prime)
 
-                elif ".score" in name:
-                    regularization_loss += torch.sum(torch.pow(params, 1) * torch.pow(1-params, 1))
-
-            loss += args.lmbda * regularization_loss
+        loss += regularization_loss
 
         # measure accuracy and record loss
         acc1, acc5, acc10 = accuracy(output, target, topk=(1, 5, 10))

@@ -262,19 +262,15 @@ def train(model, device, train_loader, optimizer, criterion, epoch):
         optimizer.zero_grad()
         output = model(data)
         loss = criterion(output, target)
-        if parser_args.regularization:
-            # add regularizer term p(1-p)
-            R_p = 0
-            for i, layer in enumerate(model.children()):
-                # ignore dropout
-                if i not in (2, 3):
-                    p = layer.scores
-                    p = torch.clamp(p, 0, 1)
-                    # TODO: Hacky fix. Figure out why it is becoming nan in the first place!
-                    # p = torch.nan_to_num(p, nan=0.0)
-                    R_p += torch.sum(torch.pow(p, 1) * torch.pow(1-p, 1))
-            # print("LOSS (before): {}".format(loss))
-            loss += parser_args.lmbda * R_p
+        regularization_loss = 0
+        if args.regularization:
+            regularization_loss =\
+                get_regularization_loss(model, regularizer=parser_args.regularization,
+                                        lmbda=parser_args.lmbda, alpha=parser_args.alpha,
+                                        alpha_prime=parser_args.alpha_prime)
+
+        # print("LOSS (before): {}".format(loss))
+        loss += regularization_loss
         loss.backward()
         optimizer.step()
         if batch_idx % parser_args.log_interval == 0:
@@ -518,6 +514,55 @@ def round_model(model, device, train_loader):
     return cp_model
 
 
+def get_regularization_loss(model, regularizer='var_red_1', lmbda=1, alpha=1, alpha_prime=1):
+    def get_special_reg_sum(layer):
+        # reg_loss =  \sum_{i} w_i^2 * p_i(1-p_i)
+        # NOTE: alpha = alpha' = 1 here. Change if needed.
+        reg_sum = 0
+        w_i = layer.weight
+        p_i = layer.scores
+        reg_sum += torch.sum(torch.pow(w_i, 2) * torch.pow(p_i, 1) * torch.pow(1-p_i, 1))
+        if parser_args.bias:
+            b_i = layer.bias
+            p_i = layer.bias_scores
+            reg_sum += torch.sum(torch.pow(b_i, 2) * torch.pow(p_i, 1) * torch.pow(1-p_i, 1))
+        return reg_sum
+
+
+    regularization_loss = 0
+    if regularizer == 'var_red_1':
+        # reg_loss = lambda * p^{alpha} (1-p)^{alpha'}
+        for name, params in model.named_parameters():
+            if ".bias_score" in name:
+                if parser_args.bias:
+                    regularization_loss += torch.sum(torch.pow(params, alpha) * torch.pow(1-params, alpha_prime))
+
+            elif ".score" in name:
+                regularization_loss += torch.sum(torch.pow(params, alpha) * torch.pow(1-params, alpha_prime))
+
+        regularization_loss = lmbda * regularization_loss
+
+    elif regularizer == 'var_red_2':
+        # reg_loss =  \sum_{i} w_i^2 * p_i(1-p_i)
+        # NOTE: alpha = alpha' = 1 here. Change if needed.
+        for conv_layer in [model.conv1, model.conv2]:
+            layer = conv_layer
+            regularization_loss += get_special_reg_sum(layer)
+
+        for lin_layer in [model.fc1, model.fc2]:
+            layer = lin_layer
+            regularization_loss += get_special_reg_sum(layer)
+        # NOTE: no lambda here
+
+    elif regularizer == 'bin_cross_entropy':
+        # TODO: -p \log(1-p) ?
+        # this is convex but encourages sparsity and discourages 1 a lot.
+        # is this right?
+        print("BINARY CROSS ENTROPY NOT YET SUPPORTED")
+        exit()
+    return regularization_loss
+
+
 def round_and_evaluate(model, device, criterion, train_loader, test_loader):
     test(model, device, criterion, test_loader)
     # cp_model = Net().to(device)
@@ -582,10 +627,6 @@ def main():
                         help='to normalize or not to normalize')
     parser.add_argument('--results-filename', type=str, default='results_acc_mnist.csv',
                         help='csv results filename')
-    parser.add_argument('--lmbda', type=float, default=0.001,
-                        help='regularization coefficient lambda')
-    parser.add_argument('--regularization', action='store_true', default=False,
-                        help='to regularize or not to regularize. that is the question : p(1-p)')
     # ep: edge-popup, pt_hack: KS hacky probability pruning, pt_reg: probability pruning with regularization
     # hc: hypercube pruning
     parser.add_argument('--algo', type=str, default='ep',
@@ -603,6 +644,15 @@ def main():
                         help='can be used for either pruning | training.')
     parser.add_argument('--bias', action='store_true', default=False,
                         help='can be used for either pruning | training.')
+    parser.add_argument('--regularization', default=None, type=str,
+                        help='which regularizer to add : |var_red_1|var_red_2|bin_cross_entropy|')
+    # var_red_1: lmbda * p^(alpha) (1-p)^(alpha') | var_red_2: w^2 p(1-p) | bin_cross_entropy: -plog(1-p)?
+    parser.add_argument('--lmbda', type=float, default=0.001,
+                        help='regularization coefficient lambda')
+    parser.add_argument("--alpha", default=1.0, type=float,
+                        help="first exponent in regularizer")
+    parser.add_argument("--alpha_prime", default=1.0, type=float,
+                        help="second exponent in regularizer",)
 
     epoch_list = []
     test_acc_list = []

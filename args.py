@@ -546,16 +546,33 @@ def parse_arguments():
         help='flag that decides if we are doing pruning or weight training'
     )
     parser.add_argument(
+        '--regularization',
+        default=None,
+        type=str,
+        help='which regularizer to add : |var_red_1|var_red_2|bin_cross_entropy|'
+    )
+    """
+    var_red_1: lmbda * p^(alpha) (1-p)^(alpha')
+    var_red_2: w^2 p(1-p)
+    bin_cross_entropy: -plog(1-p)?
+    """
+    parser.add_argument(
         '--lmbda',
         type=float,
         default=0.001,
         help='regularization coefficient lambda'
     )
     parser.add_argument(
-        '--regularization',
-        action='store_true',
-        default=False,
-        help='to regularize or not to regularize. that is the question : p(1-p)'
+        "--alpha",
+        default=1.0,
+        type=float,
+        help="first exponent in regularizer",
+    )
+    parser.add_argument(
+        "--alpha_prime",
+        default=1.0,
+        type=float,
+        help="second exponent in regularizer",
     )
 
     args = parser.parse_args()
