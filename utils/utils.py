@@ -29,7 +29,7 @@ def set_seed(seed):
     print("Seeded everything: {}".format(seed))
 
 
-def plot_histogram_scores(model, dataset='cifar10', algo=None, reg=None, opt=None, epoch=0):
+def plot_histogram_scores(model, filename=None):  # dataset='cifar10', algo=None, reg=None, opt=None, epoch=0):
     # TODO: make this generalizable
     plt.rcParams.update({'font.size': 5})
     n_row, n_col = 3, 3
@@ -45,6 +45,6 @@ def plot_histogram_scores(model, dataset='cifar10', algo=None, reg=None, opt=Non
             axs[r, c].set_title('{}'.format(name))                   
             idx += 1
 
-    filename = 'plots/weights_histogram_{}_{}_{}_{}_epoch_{}.pdf'.format(dataset, algo, reg, opt, epoch)
+    # filename = 'plots/weights_histogram_{}_{}_{}_{}_epoch_{}.pdf'.format(dataset, algo, reg, opt, epoch)
     plt.savefig(filename, format='pdf', bbox_inches='tight', pad_inches=0.05)
     print("Saved score histogram to: {}".format(filename))
