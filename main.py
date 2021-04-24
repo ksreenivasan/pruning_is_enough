@@ -313,10 +313,15 @@ def main_worker():
         # TODO: move this to utils
         train_mode_str = 'weight_training' if parser_args.weight_training else 'pruning'
         algo_str = parser_args.algo
-        reg_str = 'reg' if parser_args.regularization else 'noreg'
+        #reg_str = 'reg' if parser_args.regularization else 'noreg'
         opt_str = parser_args.optimizer
         policy_str = parser_args.lr_policy
-        results_filename = "results/results_acc_{}_{}_{}_{}_{}_{}.csv".format(train_mode_str, parser_args.dataset, parser_args.algo, reg_str, opt_str, policy_str)
+        lr_str = parser_args.lr
+        lr_gamma = parser_args.lr_gamma
+        lr_adj = parser_args.lr_adjust
+        reg_str = parser_args.regularization
+        reg_lmbda = parser_args.lmbda
+        results_filename = "results/results_acc_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}.csv".format(train_mode_str, parser_args.dataset, parser_args.algo, reg_str, reg_lmbda, opt_str, policy_str, lr_str, lr_gamma, lr_adj)
     print("Writing results into: {}".format(results_filename))
     results_df.to_csv(results_filename, index=False)
 
