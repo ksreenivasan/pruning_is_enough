@@ -32,7 +32,7 @@ scale_fan: False #True
 
 
 # ===== Rounding ===== #
-round: naive #prob #naive
+round: naive
 #num_test: 10
 #hc_warmup: 30 # 150
 #hc_period: 10

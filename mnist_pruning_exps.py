@@ -263,7 +263,7 @@ def train(model, device, train_loader, optimizer, criterion, epoch):
         output = model(data)
         loss = criterion(output, target)
         regularization_loss = 0
-        if args.regularization:
+        if parser_args.regularization:
             regularization_loss =\
                 get_regularization_loss(model, regularizer=parser_args.regularization,
                                         lmbda=parser_args.lmbda, alpha=parser_args.alpha,

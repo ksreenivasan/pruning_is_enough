@@ -1,4 +1,4 @@
-#:<<BLOCK
+:<<BLOCK
 python mnist_pruning_exps.py --mode pruning \
 --algo ep \
 --lr 0.1 \
@@ -6,7 +6,7 @@ python mnist_pruning_exps.py --mode pruning \
 --wd 0.0005 \
 --epochs 50 \
 --results-filename resuls_acc_mnist_ep_sgd.csv
-#BLOCK
+BLOCK
 
 
 :<<BLOCK
@@ -19,17 +19,17 @@ python mnist_pruning_exps.py --mode pruning \
 --results-filename resuls_acc_mnist_hc_noreg_adam.csv
 BLOCK
 
-<<BLOCK
+#<<BLOCK
 python mnist_pruning_exps.py --mode pruning \
 --algo hc \
 --lmbda 0.000001 \
---regularization \
+--regularization var_red_1 \
 --lr 0.01 \
 --optimizer adam \
 --wd 0 \
 --epochs 50 \
 --results-filename resuls_acc_mnist_hc_reg_adam.csv
-BLOCK
+#BLOCK
 
 
 <<BLOCK
