@@ -9,7 +9,7 @@ python mnist_pruning_exps.py --mode pruning \
 #BLOCK
 
 
-#:<<BLOCK
+:<<BLOCK
 python mnist_pruning_exps.py --mode pruning \
 --algo hc \
 --lr 0.01 \
@@ -17,9 +17,9 @@ python mnist_pruning_exps.py --mode pruning \
 --wd 0 \
 --epochs 50 \
 --results-filename resuls_acc_mnist_hc_noreg_adam.csv
-#BLOCK
+BLOCK
 
-#<<BLOCK
+<<BLOCK
 python mnist_pruning_exps.py --mode pruning \
 --algo hc \
 --lmbda 0.000001 \
@@ -29,7 +29,7 @@ python mnist_pruning_exps.py --mode pruning \
 --wd 0 \
 --epochs 50 \
 --results-filename resuls_acc_mnist_hc_reg_adam.csv
-#BLOCK
+BLOCK
 
 
 <<BLOCK

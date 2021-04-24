@@ -662,8 +662,10 @@ def main():
     if not parser_args.evaluate_only:
         for epoch in range(1, parser_args.epochs + 1):
             train(model, device, train_loader, optimizer, criterion, epoch)
-            test_acc = round_and_evaluate(model, device, criterion, train_loader, test_loader)
-            # test_acc = test(model, device, criterion, test_loader)
+            if parser_args.algo in ['hc']:
+                test_acc = round_and_evaluate(model, device, criterion, train_loader, test_loader)
+            else:
+                test_acc = test(model, device, criterion, test_loader)
             scheduler.step()
             epoch_list.append(epoch)
             test_acc_list.append(test_acc)
