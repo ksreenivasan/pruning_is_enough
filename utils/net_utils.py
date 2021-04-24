@@ -161,7 +161,7 @@ class SubnetL1RegLoss(nn.Module):
         
 # rounds model by round_scheme and returns the rounded model
 def round_model(model, round_scheme, noise=False, ratio=0.0):
-    print("we are rounding model with scheme {}".format(round_scheme))
+    print("Rounding model with scheme: {}".format(round_scheme))
     cp_model = copy.deepcopy(model)
     for name, params in cp_model.named_parameters():
         if ".score" in name:

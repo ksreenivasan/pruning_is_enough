@@ -236,14 +236,14 @@ def parse_arguments():
         help="rounding period for hypercube"
     )
     parser.add_argument(
-        "--num_round",
+        "--num-round",
         type=int,
         default=1,
         help='number of different models testing in rounding'
     )
     # do we need it?
     parser.add_argument(
-        "--num_test",
+        "--num-test",
         type=int,
         default=1,
         help='number of different models testing in prob rounding'

@@ -183,7 +183,7 @@ def main_worker():
         start_validation = time.time()
         if parser_args.algo in ['hc']:
             br_acc1, br_acc5, br_acc10 = validate(data.val_loader, model, criterion, parser_args, writer, epoch) # before rounding
-            print('acc before rounding: ', br_acc1)
+            print('Acc before rounding: {}'.format(br_acc1))
             acc_avg = 0
             for num_trial in range(parser_args.num_test):
                 cp_model = round_model(model, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio)
@@ -191,7 +191,7 @@ def main_worker():
                 acc_avg += acc1
             acc_avg /= parser_args.num_test
             acc1 = acc_avg
-            print('avg acc after rounding: ', acc1)
+            print('Avg acc after rounding: {}'.format(acc1))
         else:
             acc1, acc5, acc10 = validate(data.val_loader, model, criterion, parser_args, writer, epoch)
         validation_time.update((time.time() - start_validation) / 60)
@@ -204,14 +204,13 @@ def main_worker():
                 opt_str = parser_args.optimizer
                 dataset_str = parser_args.dataset
                 plot_histogram_scores(model, dataset_str, algo_str, reg_str, opt_str, epoch)
-                print('Plotted the score histogram')
 
         if not parser_args.weight_training:
             if parser_args.algo in ['hc']:
                 # Round before checking sparsity
                 cp_model = round_model(model, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio)
                 avg_sparsity = get_model_sparsity(cp_model)     #avg_sparsity = get_model_sparsity(cp_model)
-                print('Model avg sparsity: {}', avg_sparsity)
+                print('Model avg sparsity: {}'.format(avg_sparsity))
                 # avg_sparsity2 = get_score_sparsity_hc(cp_model)
                 # print('avg_sparsity2: ', avg_sparsity2) # avg_sparsity2 should be same as avg_sparsity
             else:

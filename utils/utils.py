@@ -47,3 +47,4 @@ def plot_histogram_scores(model, dataset='cifar10', algo=None, reg=None, opt=Non
 
     filename = 'plots/weights_histogram_{}_{}_{}_{}_epoch_{}.pdf'.format(dataset, algo, reg, opt, epoch)
     plt.savefig(filename, format='pdf', bbox_inches='tight', pad_inches=0.05)
+    print("Saved score histogram to: {}".format(filename))
