@@ -39,7 +39,7 @@ noise_ratio: 0 #0.001
 
 
 # ===== Regularization ===== #
-regularization: True
+regularization: var_red_1
 lmbda: 0.000001 #0.000001
 
 

@@ -318,12 +318,25 @@ def get_regularization_loss(model, regularizer='var_red_1', lmbda=1, alpha=1, al
             regularization_loss += get_special_reg_sum(layer)
         # NOTE: no lambda here
 
-    elif regularizer == 'bin_cross_entropy':
-        # TODO: -p \log(1-p) ?
-        # this is convex but encourages sparsity and discourages 1 a lot.
-        # is this right?
-        print("BINARY CROSS ENTROPY NOT YET SUPPORTED")
-        exit()
+    elif regularizer == 'bin_entropy':
+        # reg_loss = -p \log(p) - (1-p) \log(1-p)
+        # NOTE: This will be nan because log(0) = inf. therefore, replacing with 0
+        for name, params in model.named_parameters():
+            if ".bias_score" in name:
+                if parser_args.bias:
+                    regularization_loss +=\
+                        torch.sum(-1.0 * params * torch.log(params).\
+                            nan_to_num(posinf=0, neginf=0) - (1-params) * torch.log(params).\
+                            nan_to_num(posinf=0, neginf=0))
+
+            elif ".score" in name:
+                regularization_loss +=\
+                        torch.sum(-1.0 * params * torch.log(params).\
+                            nan_to_num(posinf=0, neginf=0) - (1-params) * torch.log(params).\
+                            nan_to_num(posinf=0, neginf=0))
+
+        regularization_loss = lmbda * regularization_loss
+
     return regularization_loss
 
 
