@@ -131,7 +131,7 @@ def main_worker():
     acc1 = None
 
     epoch_list = []
-    test_acc_list_br = []    
+    test_acc_before_round_list = []
     test_acc_list = []
     model_sparsity_list = []
 
@@ -220,7 +220,7 @@ def main_worker():
             avg_sparsity = -1
         # update all results lists
         epoch_list.append(epoch)
-        test_acc_list_br.append(br_acc1)
+        test_acc_before_round_list.append(br_acc1)
         test_acc_list.append(acc1)
         # TODO: define sparsity for cifar10 networks
         model_sparsity_list.append(avg_sparsity)
@@ -306,7 +306,7 @@ def main_worker():
         name=parser_args.name,
     )
 
-    results_df = pd.DataFrame({'epoch': epoch_list, 'test_acc_before_rounding': test_acc_list_br,'test_acc': test_acc_list, 'model_sparsity': model_sparsity_list})
+    results_df = pd.DataFrame({'epoch': epoch_list, 'test_acc_before_rounding': test_acc_before_round_list,'test_acc': test_acc_list, 'model_sparsity': model_sparsity_list})
     if parser_args.results_filename:
         results_filename = parser_args.results_filename
     else:
