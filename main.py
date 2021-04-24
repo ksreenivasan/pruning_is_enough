@@ -70,9 +70,9 @@ def main_worker():
     lr_adj = parser_args.lr_adjust
     idty_str = "{}_{}_{}_{}_{}_{}_{}_{}_{}_{}".format(train_mode_str, dataset_str, algo_str, reg_str, reg_lmbda, opt_str, policy_str, lr_str, lr_gamma, lr_adj)
 
-    plot_root = 'plots/weights_histogram_' + idty_str + '/'
-    if not os.path.isdir(plot_root):
-        os.mkdir(plot_root)
+    result_root = 'results/histogram_and_csv_' + idty_str + '/'
+    if not os.path.isdir(result_root):
+        os.mkdir(result_root)
 
     for i in range(1):
         # create model and optimizer
@@ -215,7 +215,7 @@ def main_worker():
         # save the histrogram of scores
         if not parser_args.weight_training:
             if (epoch % 25 == 1) or epoch == (parser_args.epochs-1):  # %10 %50
-                plot_histogram_scores(model, plot_root+'Epoch_{}.pdf'.format(epoch))  # dataset_str, algo_str, reg_str, opt_str, epoch)
+                plot_histogram_scores(model, result_root+'Epoch_{}.pdf'.format(epoch))  # dataset_str, algo_str, reg_str, opt_str, epoch)
 
         if not parser_args.weight_training:
             if parser_args.algo in ['hc']:
@@ -324,7 +324,7 @@ def main_worker():
     else:
         # TODO: move this to utils
         # results_filename = "results/results_acc_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}.csv".format(train_mode_str, parser_args.dataset, parser_args.algo, reg_str, reg_lmbda, opt_str, policy_str, lr_str, lr_gamma, lr_adj)
-        results_filename = "results/results_acc_" + idty_str + ".csv"    
+        results_filename = result_root + 'acc_and_sparsity.csv'    
     print("Writing results into: {}".format(results_filename))
     results_df.to_csv(results_filename, index=False)
 
