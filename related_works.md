@@ -1,6 +1,6 @@
 
 * Weak LTH, Pruning+Training 
-	* [Learning both Weights and Connections for Efficient Neural Networks](https://arxiv.org/pdf/1506.02626.pdf): Learn only the "important" connections. Combination of pruning \& training.
+	* [Learning both Weights and Connections for Efficient Neural Networks](https://arxiv.org/pdf/1506.02626.pdf): Learn only the "important" connections. Combination of pruning \& training. This can be considered as finding tickets
 	* [Lottery Ticket Hypothesis](https://arxiv.org/pdf/1803.03635.pdf): Neural networks contain sparse subnetworks that can be effectively trained from scratch when reset to their initialization
 
 	* [Deconstructing Lottery Tickets: Zeros, Signs, and the Supermask](https://arxiv.org/pdf/1905.01067.pdf): NOTE: Sec.5 has some technique using probabilistic masking. We need to compare it with ours
