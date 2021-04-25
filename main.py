@@ -50,26 +50,42 @@ def compare_rounding(validate, data_loader, model, criterion, parser_args, resul
 
     # generate supermask from naive rounding
     naive_model = round_model(model, 'naive')
+    naive_mask, _ = get_mask(naive_model)
 
-    idx_list, test_acc_list, distance_list = [], [], []
+    idx_list, test_acc_list, dist_list = [], [], []
     for i in range(10):
         # generate supermask from probabilistic rounding
-        prob_model = round_model(model, 'naive_prob')
+        prob_model = round_model(model, 'prob')
+        #prob_model = round_model(model, 'naive_prob')
 
         # evaluate and check the hamming distance btw naive_model & prob_model
         acc1 = eval_and_print(validate, data_loader, prob_model, criterion, parser_args, description='probabilistic model {}'.format(i))
         idx_list.append(i)
         test_acc_list.append(acc1)    
 
-
+        prob_mask, _ = get_mask(prob_model)
+        hamm_dist = torch.sum(torch.abs(naive_mask - prob_mask))/len(naive_mask)
+        dist_list.append(hamm_dist.data.item())
 
     # save the result in the dataframe
-    compare_df = pd.DataFrame({'idx': idx_list, 'test_acc': test_acc_list}) #, 'hamming dist to naive': distance_list})
+    compare_df = pd.DataFrame({'idx': idx_list, 'test_acc': test_acc_list, 'hamming dist to naive': dist_list})
     results_filename = result_root + 'compare_rounding.csv'    
     print("Writing rounding compare results into: {}".format(results_filename))
-    results_df.to_csv(results_filename, index=False)
+    compare_df.to_csv(results_filename, index=False)
 
     return compare_df
+
+def get_mask(model):
+
+    flat_tensor = []
+    for name, params in model.named_parameters():
+        if ".score" in name:
+            flat_tensor.append(params.data)
+            # print(name, params.data)
+    mask = _flatten_dense_tensors(flat_tensor)  # a: flat_tensor, b = mask_init,
+
+    return mask, flat_tensor
+
 
 
 def main():
