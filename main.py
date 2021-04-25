@@ -114,7 +114,7 @@ def main_worker():
     train_mode_str = 'weight_training' if parser_args.weight_training else 'pruning'
     dataset_str = parser_args.dataset
     algo_str = parser_args.algo
-    reg_str = parser_args.regularization  # reg_str = 'reg' if parser_args.regularization else 'noreg'
+    reg_str = parser_args.regularization
     reg_lmbda = parser_args.lmbda
     opt_str = parser_args.optimizer
     policy_str = parser_args.lr_policy
@@ -122,7 +122,10 @@ def main_worker():
     lr_gamma = parser_args.lr_gamma
     lr_adj = parser_args.lr_adjust
     seed_str = parser_args.seed + parser_args.trial_num - 1
-    idty_str = "{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_seed_{}".format(train_mode_str, dataset_str, algo_str, reg_str, reg_lmbda, opt_str, policy_str, lr_str, lr_gamma, lr_adj, seed_str)
+    idty_str = "{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_seed_{}".\
+        format(train_mode_str, dataset_str, algo_str, reg_str, reg_lmbda,
+        opt_str, policy_str, lr_str, lr_gamma, lr_adj,
+        seed_str).replace(".", "_")
 
     result_root = 'results/histogram_and_csv_' + idty_str + '/'
     if not os.path.isdir(result_root):
