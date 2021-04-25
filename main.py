@@ -52,8 +52,9 @@ def compare_rounding(validate, data_loader, model, criterion, parser_args, resul
     naive_model = round_model(model, 'naive')
     naive_mask, _ = get_mask(naive_model)
 
-    idx_list, test_acc_list, dist_list = [], [], []
-    for i in range(10):
+    idx_list, test_acc_list, dist_list, mask_list = [], [], [], []
+    n_rand = 10
+    for i in range(n_rand):
         # generate supermask from probabilistic rounding
         prob_model = round_model(model, 'prob')
         #prob_model = round_model(model, 'naive_prob')
@@ -66,6 +67,7 @@ def compare_rounding(validate, data_loader, model, criterion, parser_args, resul
         prob_mask, _ = get_mask(prob_model)
         hamm_dist = torch.sum(torch.abs(naive_mask - prob_mask))/len(naive_mask)
         dist_list.append(hamm_dist.data.item())
+        mask_list.append(prob_mask.data)
 
     # save the result in the dataframe
     compare_df = pd.DataFrame({'idx': idx_list, 'test_acc': test_acc_list, 'hamming dist to naive': dist_list})
@@ -73,7 +75,14 @@ def compare_rounding(validate, data_loader, model, criterion, parser_args, resul
     print("Writing rounding compare results into: {}".format(results_filename))
     compare_df.to_csv(results_filename, index=False)
 
-    return compare_df
+    compare_prob = np.zeros((10, 10))
+    for i in range(n_rand):
+        for j in range(n_rand):
+            compare_prob[i, j] = torch.sum(torch.abs(mask_list[i] - mask_list[j])/len(mask_list[i]))
+    print(compare_prob)
+    pd.DataFrame(compare_prob).to_csv(result_root + 'compare_probs.csv', header=None, index=False)
+
+    return
 
 def get_mask(model):
 
