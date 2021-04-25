@@ -7,6 +7,7 @@ arch: Conv4
 # Evalutation
 evaluate: True
 pretrained: models/pretrained/conv4-sc-bern-hypercube-reg-8592.state
+compare_rounding: True
 
 # ===== Dataset ===== #
 dataset: CIFAR10

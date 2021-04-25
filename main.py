@@ -44,6 +44,33 @@ def eval_and_print(validate, data_loader, model, criterion, parser_args, writer=
     print('Performance of {}'.format(description))
     print('acc1: {}, acc5: {}, acc10: {}'.format(acc1, acc5, acc10))
 
+    return acc1
+
+def compare_rounding(validate, data_loader, model, criterion, parser_args, result_root):
+
+    # generate supermask from naive rounding
+    naive_model = round_model(model, 'naive')
+
+
+    idx_list, test_acc_list, distance_list = [], [], []
+    for i in range(10):
+        # generate supermask from probabilistic rounding
+        prob_model = round_model(model, 'naive_prob')
+
+        # evaluate and check the hamming distance btw naive_model & prob_model
+        acc1 = eval_and_print(validate, data_loader, prob_model, criterion, parser_args, description='probabilistic model {}'.format(i))
+        idx_list.append(i)
+        test_acc_list.append(acc1)    
+
+
+
+    # save the result in the dataframe
+    compare_df = pd.DataFrame({'idx': idx_list, 'test_acc': test_acc_list}) #, 'hamming dist to naive': distance_list})
+    results_filename = result_root + 'compare_rounding.csv'    
+    print("Writing rounding compare results into: {}".format(results_filename))
+    results_df.to_csv(results_filename, index=False)
+
+    return compare_df
 
 
 def main():
@@ -108,6 +135,9 @@ def main_worker():
 
         if parser_args.evaluate:
             eval_and_print(validate, data.val_loader, model, criterion, parser_args, writer=None, epoch=parser_args.start_epoch, description='model')
+
+            if parser_args.compare_rounding:
+                compare_rounding(validate, data.val_loader, model, criterion, parser_args, result_root)
 
             for trial in range(parser_args.num_test):
                 if parser_args.algo in ['hc']:

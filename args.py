@@ -506,6 +506,12 @@ def parse_arguments():
         help="evaluate model on validation set",
     )
     parser.add_argument(
+        "--compare-rounding",
+        dest="compare-rounding",
+        action="store_true",
+        help="compare different rounding schemes",
+    )
+    parser.add_argument(
         "--resume",
         default=None,
         type=str,
