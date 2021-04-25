@@ -48,7 +48,7 @@ def eval_and_print(validate, data_loader, model, criterion, parser_args, writer=
 
 def main():
     print(parser_args)
-    set_seed(parser_args.seed)
+    set_seed(parser_args.seed + parser_args.trial_num - 1)
     # Simply call main_worker function
     main_worker()
 
@@ -68,7 +68,8 @@ def main_worker():
     lr_str = parser_args.lr
     lr_gamma = parser_args.lr_gamma
     lr_adj = parser_args.lr_adjust
-    idty_str = "{}_{}_{}_{}_{}_{}_{}_{}_{}_{}".format(train_mode_str, dataset_str, algo_str, reg_str, reg_lmbda, opt_str, policy_str, lr_str, lr_gamma, lr_adj)
+    seed_str = parser_args.seed + parser_args.trial_num - 1
+    idty_str = "{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_seed_{}".format(train_mode_str, dataset_str, algo_str, reg_str, reg_lmbda, opt_str, policy_str, lr_str, lr_gamma, lr_adj, seed_str)
 
     result_root = 'results/histogram_and_csv_' + idty_str + '/'
     if not os.path.isdir(result_root):
