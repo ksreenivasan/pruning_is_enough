@@ -552,7 +552,7 @@ def get_regularization_loss(model, regularizer='var_red_1', lmbda=1, alpha=1, al
         for lin_layer in [model.fc1, model.fc2]:
             layer = lin_layer
             regularization_loss += get_special_reg_sum(layer)
-        # NOTE: no lambda here
+        regularization_loss = lmbda * regularization_loss
 
     elif regularizer == 'bin_entropy':
         # reg_loss = -p \log(p) - (1-p) \log(1-p)

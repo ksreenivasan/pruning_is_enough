@@ -46,7 +46,9 @@ def eval_and_print(validate, data_loader, model, criterion, parser_args, writer=
 
     return acc1
 
+
 def compare_rounding(validate, data_loader, model, criterion, parser_args, result_root):
+
 
     # generate supermask from naive rounding
     naive_model = round_model(model, 'naive')
@@ -57,12 +59,12 @@ def compare_rounding(validate, data_loader, model, criterion, parser_args, resul
     for i in range(n_rand):
         # generate supermask from probabilistic rounding
         prob_model = round_model(model, 'prob')
-        #prob_model = round_model(model, 'naive_prob')
+        # prob_model = round_model(model, 'naive_prob')
 
         # evaluate and check the hamming distance btw naive_model & prob_model
         acc1 = eval_and_print(validate, data_loader, prob_model, criterion, parser_args, description='probabilistic model {}'.format(i))
         idx_list.append(i)
-        test_acc_list.append(acc1)    
+        test_acc_list.append(acc1)
 
         prob_mask, _ = get_mask(prob_model)
         hamm_dist = torch.sum(torch.abs(naive_mask - prob_mask))/len(naive_mask)
@@ -71,7 +73,7 @@ def compare_rounding(validate, data_loader, model, criterion, parser_args, resul
 
     # save the result in the dataframe
     compare_df = pd.DataFrame({'idx': idx_list, 'test_acc': test_acc_list, 'hamming dist to naive': dist_list})
-    results_filename = result_root + 'compare_rounding.csv'    
+    results_filename = result_root + 'compare_rounding.csv'
     print("Writing rounding compare results into: {}".format(results_filename))
     compare_df.to_csv(results_filename, index=False)
 

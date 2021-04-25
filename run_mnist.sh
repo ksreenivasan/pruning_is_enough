@@ -22,13 +22,13 @@ BLOCK
 #<<BLOCK
 python mnist_pruning_exps.py --mode pruning \
 --algo hc \
---lmbda 0.000001 \
---regularization var_red_1 \
---lr 0.01 \
+--lmbda 0.001 \
+--regularization var_red_2 \
+--lr 0.001 \
 --optimizer adam \
 --wd 0 \
 --epochs 50 \
---results-filename resuls_acc_mnist_hc_reg_adam.csv
+--results-filename resuls_acc_mnist_hc_new_reg_adam.csv
 #BLOCK
 
 
