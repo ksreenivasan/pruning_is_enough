@@ -287,7 +287,8 @@ def main_worker():
             avg_sparsity = -1
         # update all results lists
         epoch_list.append(epoch)
-        test_acc_before_round_list.append(br_acc1)
+        if parser_args.algo in ['hc']:
+            test_acc_before_round_list.append(br_acc1)
         test_acc_list.append(acc1)
         # TODO: define sparsity for cifar10 networks
         model_sparsity_list.append(avg_sparsity)
