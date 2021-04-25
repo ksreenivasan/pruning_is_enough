@@ -51,7 +51,6 @@ def compare_rounding(validate, data_loader, model, criterion, parser_args, resul
     # generate supermask from naive rounding
     naive_model = round_model(model, 'naive')
 
-
     idx_list, test_acc_list, distance_list = [], [], []
     for i in range(10):
         # generate supermask from probabilistic rounding
