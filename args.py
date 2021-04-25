@@ -353,7 +353,7 @@ def parse_arguments():
 
     parser.add_argument(
         "--prune-rate",
-        default=0.0,
+        default=0.5,
         help="Amount of pruning to do during sparse training",
         type=float,
     )
