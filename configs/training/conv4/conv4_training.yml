@@ -14,7 +14,7 @@ lr: 0.001
 lr_policy: constant_lr
 
 # ===== Network training config ===== #
-epochs: 100
+epochs: 150 #100
 weight_decay: 0.0001
 momentum: 0.9
 batch_size: 128
