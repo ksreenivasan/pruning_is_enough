@@ -490,7 +490,7 @@ def plot_histogram_scores(model, epoch=0):
     algo = parser_args.algo
     reg = 'reg' if parser_args.regularization else 'noreg'
     opt = parser_args.optimizer
-    filename = 'plots/weights_histogram_MNIST_{}_{}_{}_epoch_{}.pdf'.format(algo, reg, opt, epoch)
+    filename = 'results/MNIST/weights_histogram_MNIST_{}_{}_{}_epoch_{}.pdf'.format(algo, reg, opt, epoch)
     plt.savefig(filename, format='pdf', bbox_inches='tight', pad_inches=0.05)
 
 
@@ -673,6 +673,11 @@ def main():
     parser_args = parser.parse_args()
     use_cuda = not parser_args.no_cuda and torch.cuda.is_available()
 
+
+    results_dir = 'results/MNIST/'
+    if not os.path.isdir(results_dir):
+        os.mkdir(results_dir)
+
     set_seed(parser_args.seed)
 
     device = torch.device("cuda:2" if use_cuda else "cpu")
@@ -747,7 +752,7 @@ def main():
             print("Test Acc: {:.2f}%\n".format(test_acc))
             print("---------------------------------------------------------")
             results_df = pd.DataFrame({'epoch': epoch_list, 'test_acc': test_acc_list, 'model_sparsity': model_sparsity_list})
-            results_df.to_csv('results/{}'.format(parser_args.results_filename), index=False)
+            results_df.to_csv('results/MNIST/{}'.format(parser_args.results_filename), index=False)
 
         if parser_args.mode != "training":
             # gotta plot the final histogram as well
