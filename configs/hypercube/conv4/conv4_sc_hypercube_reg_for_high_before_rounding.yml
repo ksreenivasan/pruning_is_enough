@@ -10,10 +10,10 @@ name: conv4_sc_bern_hypercube
 
 # ===== Learning Rate Policy ======== #
 optimizer: adam
-lr: 0.005 # 0.002 # 0.01
-#lr_policy: multistep_lr
-#lr_gamma: 0.5
-#lr_adjust: 30
+lr: 0.01 #075 #0.0075 #0.01 # 0.002 # 0.01
+lr_policy: multistep_lr
+lr_gamma: 0.5
+lr_adjust: 30
 
 
 # ===== Network training config ===== #
@@ -26,10 +26,10 @@ batch_size: 128
 conv_type: SubnetConv
 bn_type: NonAffineBatchNorm
 freeze_weights: True
-prune_rate: 0.0
+#prune_rate: 0.5
 #init: signed_constant
 #score_init: bern #bern #unif
-scale_fan: False #True
+scale_fan: False #True #False #True
 
 
 # ===== Rounding ===== #
@@ -42,11 +42,11 @@ noise_ratio: 0 #0.001
 
 
 # ===== Regularization ===== #
-#regularization: var_red_1
-#lmbda: 0.000001 #0.0000001 #0.000001
+regularization: var_red_1
+lmbda: 0.0000001 #0.0000001 #0.000001
 
 
 # ===== Hardware setup ===== #
 workers: 4
-gpu: 1 #1
+gpu: 3 #1
 

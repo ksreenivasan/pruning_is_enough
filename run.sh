@@ -11,8 +11,8 @@
 
 
 #:<<BLOCK
-weight_init_arr=('signed_constant' 'kaiming_normal')
-score_init_arr=('bern' 'unif')
+weight_init_arr=('signed_constant' 'kaiming_normal') #('kaiming_normal') #('signed_constant' 'kaiming_normal')
+score_init_arr=('unif') #('bern') #('unif') #('bern' 'unif')
 
 for w in ${weight_init_arr[@]}
 do

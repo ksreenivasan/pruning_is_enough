@@ -122,10 +122,12 @@ def main_worker():
     lr_gamma = parser_args.lr_gamma
     lr_adj = parser_args.lr_adjust
     fan_str = parser_args.scale_fan
+    w_str = parser_args.init
+    s_str = parser_args.score_init
     seed_str = parser_args.seed + parser_args.trial_num - 1
-    idty_str = "{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_seed_{}".\
+    idty_str = "{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_fan_{}_{}_{}_seed_{}".\
         format(train_mode_str, dataset_str, algo_str, reg_str, reg_lmbda,
-        opt_str, policy_str, lr_str, lr_gamma, lr_adj, fan_str,
+        opt_str, policy_str, lr_str, lr_gamma, lr_adj, fan_str, w_str, s_str,
         seed_str).replace(".", "_")
 
     result_root = 'results/histogram_and_csv_' + idty_str + '/'
