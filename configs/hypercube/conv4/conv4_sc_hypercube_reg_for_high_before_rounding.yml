@@ -1,25 +1,23 @@
 # Hypercube optimization
-algo: 'ep' #hc' #training' #ep' #'hc'
-#weight_training: True
+algo: 'hc'
 
 # Architecture
-arch: Conv4 #Conv4Normal #Conv4
+arch: Conv4
 
 # ===== Dataset ===== #
 dataset: CIFAR10
 name: conv4_sc_bern_hypercube
 
 # ===== Learning Rate Policy ======== #
-optimizer: sgd #adam
-lr: 0.01 #0.01
-lr_policy: cosine_lr
+optimizer: adam
+lr: 0.005 # 0.002 # 0.01
 #lr_policy: multistep_lr
-#lr_gamma: 0.2
-#lr_adjust: 20
+#lr_gamma: 0.5
+#lr_adjust: 30
 
 
 # ===== Network training config ===== #
-epochs: 5 #150 #150
+epochs: 150 #150
 weight_decay: 0 #0.0001
 momentum: 0.9 #0.9
 batch_size: 128
@@ -28,10 +26,10 @@ batch_size: 128
 conv_type: SubnetConv
 bn_type: NonAffineBatchNorm
 freeze_weights: True
-#prune_rate: 0.0
-init: signed_constant #kaiming_normal #signed_constant
-#score_init: unif  # bern #bern #unif
-scale_fan: False #True #False #True #False #True
+prune_rate: 0.0
+#init: signed_constant
+#score_init: bern #bern #unif
+scale_fan: False #True
 
 
 # ===== Rounding ===== #
@@ -45,10 +43,10 @@ noise_ratio: 0 #0.001
 
 # ===== Regularization ===== #
 #regularization: var_red_1
-#lmbda: 0.000001 #0.000001
+#lmbda: 0.000001 #0.0000001 #0.000001
 
 
 # ===== Hardware setup ===== #
 workers: 4
-gpu: 2 #2
+gpu: 1 #1
 
