@@ -3,7 +3,7 @@ algo: 'hc'
 
 # Architecture
 arch: Conv4
-width: 2
+width: 1
 
 # ===== Dataset ===== #
 dataset: CIFAR10
@@ -28,11 +28,10 @@ batch_size: 128
 conv_type: SubnetConv
 bn_type: NonAffineBatchNorm
 freeze_weights: True
-#prune_rate: 0.5
 init: signed_constant
 score_init: bern #bern #unif
 scale_fan: False #True #False #True
-
+fixed_init: True
 
 # ===== Rounding ===== #
 round: naive #prob #naive

@@ -125,11 +125,12 @@ def main_worker():
     fan_str = parser_args.scale_fan
     w_str = parser_args.init
     s_str = parser_args.score_init
+    width_str = parser_args.width
     seed_str = parser_args.seed + parser_args.trial_num - 1
-    idty_str = "{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_fan_{}_{}_{}_seed_{}".\
+    idty_str = "{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_fan_{}_{}_{}_width_{}_seed_{}".\
         format(train_mode_str, dataset_str, algo_str, reg_str, reg_lmbda,
-        opt_str, policy_str, lr_str, lr_gamma, lr_adj, fan_str, w_str, s_str,
-        seed_str).replace(".", "_")
+        opt_str, policy_str, lr_str, lr_gamma, lr_adj, fan_str, w_str, s_str, 
+        width_str, seed_str).replace(".", "_")
 
     result_root = 'results/histogram_and_csv_' + idty_str + '/'
     if not os.path.isdir(result_root):
@@ -383,7 +384,11 @@ def main_worker():
         name=parser_args.name,
     )
 
-    results_df = pd.DataFrame({'epoch': epoch_list, 'test_acc_before_rounding': test_acc_before_round_list,'test_acc': test_acc_list, 'model_sparsity': model_sparsity_list})
+    if parser_args.algo in ['hc']:
+        results_df = pd.DataFrame({'epoch': epoch_list, 'test_acc_before_rounding': test_acc_before_round_list,'test_acc': test_acc_list, 'model_sparsity': model_sparsity_list})
+    else:
+        results_df = pd.DataFrame({'epoch': epoch_list, 'test_acc': test_acc_list, 'model_sparsity': model_sparsity_list})
+
     if parser_args.results_filename:
         results_filename = parser_args.results_filename
     else:
@@ -763,8 +768,6 @@ def set_gpu(parser_args, model):
             parser_args.multigpu[0]
         )
 
-    cudnn.benchmark = True
-
     return model
 
 
@@ -831,10 +834,13 @@ def get_model(parser_args):
 
     print("=> Creating model '{}'".format(parser_args.arch))
     if parser_args.fixed_init:
-        set_seed(parser_args.seed)
-    model = models.__dict__[parser_args.arch]() #model = models.__dict__[parser_args.arch](shift=parser_args.shift)
+        set_seed(parser_args.seed_fixed_init)
+    if parser_args.arch == 'Conv4':
+        model = models.__dict__[parser_args.arch](width=parser_args.width)
+    else:
+        model = models.__dict__[parser_args.arch]()
     if parser_args.fixed_init:    
-        set_seed(parser_args.seed2)
+        set_seed(parser_args.seed)
     for name, params in model.named_parameters():
         if ".weight" in name:
             print(torch.sum(params.data))

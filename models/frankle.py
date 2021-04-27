@@ -37,33 +37,41 @@ class Conv2(nn.Module):
 
 
 class Conv4(nn.Module):
-    def __init__(self):
+    def __init__(self, width=1.0):
         super(Conv4, self).__init__()
         builder = get_builder()
+        print(width)
+        self.width = width
+        self.n0 = (int)(8*width)
+        self.n1 = (int)(64*width)
+        self.n2 = (int)(128*width)
+        self.n3 = (int)(256*width)
+
         self.convs = nn.Sequential(
-            builder.conv3x3(3, 64, first_layer=True),
+            builder.conv3x3(3, self.n1, first_layer=True),
             nn.ReLU(),
-            builder.conv3x3(64, 64),
+            builder.conv3x3(self.n1, self.n1),
             nn.ReLU(),
             nn.MaxPool2d((2, 2)),
-            builder.conv3x3(64, 128),
+            builder.conv3x3(self.n1, self.n2),
             nn.ReLU(),
-            builder.conv3x3(128, 128),
+            builder.conv3x3(self.n2, self.n2),
             nn.ReLU(),
             nn.MaxPool2d((2, 2))
         )
 
         self.linear = nn.Sequential(
-            builder.conv1x1(32 * 32 * 8, 256),
+            builder.conv1x1(32 * 32 * self.n0, self.n3),
             nn.ReLU(),
-            builder.conv1x1(256, 256),
+            builder.conv1x1(self.n3, self.n3),
             nn.ReLU(),
-            builder.conv1x1(256, 10),
+            builder.conv1x1(self.n3, 10),
         )
 
     def forward(self, x):
         out = self.convs(x)
-        out = out.view(out.size(0), 8192, 1, 1)
+        #import pdb; pdb.set_trace()
+        out = out.view(out.size(0), (int)(8192 * self.width), 1, 1)
         out = self.linear(out)
         return out.squeeze()
 

@@ -263,6 +263,14 @@ def parse_arguments():
         # help="Model architecture: " + " | ".join(models.__dict__["__all__"]) + " | (default: TwoLayerFC)"
     )
     parser.add_argument(
+        "--width",
+        type=float,
+        default=1.0,
+        help="portion of additional width compared with original width"
+    )
+
+
+    parser.add_argument(
         "--hidden-size",
         type=int,
         default=500,
@@ -416,11 +424,11 @@ def parse_arguments():
         help="Random seed (default: 42)"
     )
     parser.add_argument(
-        "--seed2",
+        "--seed-fixed-init",
         type=int,
         default=24,
         metavar="S",
-        help="Random seed (default:24)"
+        help="Random seed when used for fixing weight/score init  (default:24)"
     )
     parser.add_argument(
         "--trial-num",
