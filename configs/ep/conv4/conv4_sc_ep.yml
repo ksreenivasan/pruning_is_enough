@@ -9,9 +9,12 @@ dataset: CIFAR10
 name: conv4_ep_sc
 
 # ===== Learning Rate Policy ======== #
-optimizer: sgd
-lr: 0.1
-lr_policy: cosine_lr
+optimizer: adam #sgd
+lr: 0.00001 #0.1
+lr_policy: multistep_lr # cosine_lr
+lr_gamma: 0.7
+lr_adjust: 20 #20
+
 
 # ===== Network training config ===== #
 epochs: 150
@@ -29,3 +32,4 @@ scale_fan: True
 
 # ===== Hardware setup ===== #
 workers: 4
+gpu: 0

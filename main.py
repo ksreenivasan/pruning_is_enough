@@ -382,7 +382,11 @@ def main_worker():
         name=parser_args.name,
     )
 
-    results_df = pd.DataFrame({'epoch': epoch_list, 'test_acc_before_rounding': test_acc_before_round_list,'test_acc': test_acc_list, 'model_sparsity': model_sparsity_list})
+    if parser_args.algo in ['hc']:
+        results_df = pd.DataFrame({'epoch': epoch_list, 'test_acc_before_rounding': test_acc_before_round_list,'test_acc': test_acc_list, 'model_sparsity': model_sparsity_list})
+    else:
+        results_df = pd.DataFrame({'epoch': epoch_list, 'test_acc': test_acc_list, 'model_sparsity': model_sparsity_list})
+
     if parser_args.results_filename:
         results_filename = parser_args.results_filename
     else:
