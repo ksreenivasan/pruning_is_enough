@@ -25,7 +25,7 @@ def set_seed(seed):
     os.environ['PYTHONHASHSEED'] = str(seed)
     # making sure GPU runs are deterministic even if they are slower
     torch.backends.cudnn.deterministic = True
-    torch.backends.cudnn.benchmark = False
+    torch.backends.cudnn.benchmark = True
     print("Seeded everything: {}".format(seed))
 
 

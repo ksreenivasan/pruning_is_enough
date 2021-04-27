@@ -766,8 +766,6 @@ def set_gpu(parser_args, model):
             parser_args.multigpu[0]
         )
 
-    cudnn.benchmark = True
-
     return model
 
 

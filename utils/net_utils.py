@@ -336,7 +336,6 @@ def get_regularization_loss(model, regularizer='var_red_1', lmbda=1, alpha=1, al
                             nan_to_num(posinf=0, neginf=0) - (1-params) * torch.log(params).\
                             nan_to_num(posinf=0, neginf=0))
 
-        print('lmbda: ', lmbda)
         regularization_loss = lmbda * regularization_loss
 
     return regularization_loss
