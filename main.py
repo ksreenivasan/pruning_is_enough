@@ -84,6 +84,7 @@ def compare_rounding(validate, data_loader, model, criterion, parser_args, resul
     print(compare_prob)
     pd.DataFrame(compare_prob).to_csv(result_root + 'compare_probs.csv', header=None, index=False)
 
+
     return
 
 def get_mask(model):
