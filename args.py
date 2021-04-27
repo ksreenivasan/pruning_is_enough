@@ -263,6 +263,14 @@ def parse_arguments():
         # help="Model architecture: " + " | ".join(models.__dict__["__all__"]) + " | (default: TwoLayerFC)"
     )
     parser.add_argument(
+        "--width",
+        type=float,
+        default=1.0,
+        help="portion of additional width compared with original width"
+    )
+
+
+    parser.add_argument(
         "--hidden-size",
         type=int,
         default=500,

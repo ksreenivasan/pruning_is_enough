@@ -124,11 +124,12 @@ def main_worker():
     fan_str = parser_args.scale_fan
     w_str = parser_args.init
     s_str = parser_args.score_init
+    width_str = parser_args.width
     seed_str = parser_args.seed + parser_args.trial_num - 1
-    idty_str = "{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_fan_{}_{}_{}_seed_{}".\
+    idty_str = "{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_fan_{}_{}_{}_width_{}_seed_{}".\
         format(train_mode_str, dataset_str, algo_str, reg_str, reg_lmbda,
-        opt_str, policy_str, lr_str, lr_gamma, lr_adj, fan_str, w_str, s_str,
-        seed_str).replace(".", "_")
+        opt_str, policy_str, lr_str, lr_gamma, lr_adj, fan_str, w_str, s_str, 
+        width_str, seed_str).replace(".", "_")
 
     result_root = 'results/histogram_and_csv_' + idty_str + '/'
     if not os.path.isdir(result_root):
@@ -835,7 +836,10 @@ def get_model(parser_args):
     print("=> Creating model '{}'".format(parser_args.arch))
     if parser_args.fixed_init:
         set_seed(parser_args.seed)
-    model = models.__dict__[parser_args.arch]() #model = models.__dict__[parser_args.arch](shift=parser_args.shift)
+    if parser_args.arch == 'Conv4':
+        model = models.__dict__[parser_args.arch](width=parser_args.width)
+    else:
+        model = models.__dict__[parser_args.arch]()
     if parser_args.fixed_init:    
         set_seed(parser_args.seed2)
     for name, params in model.named_parameters():
