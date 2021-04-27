@@ -424,11 +424,11 @@ def parse_arguments():
         help="Random seed (default: 42)"
     )
     parser.add_argument(
-        "--seed2",
+        "--seed-fixed-init",
         type=int,
         default=24,
         metavar="S",
-        help="Random seed (default:24)"
+        help="Random seed when used for fixing weight/score init  (default:24)"
     )
     parser.add_argument(
         "--trial-num",

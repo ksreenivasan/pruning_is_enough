@@ -833,13 +833,13 @@ def get_model(parser_args):
 
     print("=> Creating model '{}'".format(parser_args.arch))
     if parser_args.fixed_init:
-        set_seed(parser_args.seed)
+        set_seed(parser_args.seed_fixed_init)
     if parser_args.arch == 'Conv4':
         model = models.__dict__[parser_args.arch](width=parser_args.width)
     else:
         model = models.__dict__[parser_args.arch]()
     if parser_args.fixed_init:    
-        set_seed(parser_args.seed2)
+        set_seed(parser_args.seed)
     for name, params in model.named_parameters():
         if ".weight" in name:
             print(torch.sum(params.data))
