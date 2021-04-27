@@ -443,6 +443,18 @@ def parse_arguments():
         help="fixed weight initialization"
     )
     parser.add_argument(
+        "--mode-connect",
+        action="store_true",
+        default=False,
+        help="Boolean flag to indicate whether to run mode connectivity"
+    )
+    parser.add_argument(
+        '--mode-connect-filename',
+        type=str,
+        default=None,
+        help='filename for state_dict used for mode connectivity'
+    )
+    parser.add_argument(
         "--no-cuda",
         action="store_true",
         default=False,

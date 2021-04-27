@@ -28,7 +28,7 @@ def get_layer_ids(arch='Conv4'):
     return (conv_layer_ids, linear_layer_ids)
 
 
-def save_checkpoint(state, is_best, filename="checkpoint.pth", save=False):
+def save_checkpoint(state, is_best, filename="checkpoint.pth", save=False, parser_args=None):
     filename = pathlib.Path(filename)
 
     if not filename.parent.exists():
@@ -39,8 +39,15 @@ def save_checkpoint(state, is_best, filename="checkpoint.pth", save=False):
     if is_best:
         shutil.copyfile(filename, str(filename.parent / "model_best.pth"))
 
+        # added for mode connectivity
+        if parser_args is not None and parser_args.mode_connect:
+            print('We are saving stat_dict for checking mode connectivity: {}'.format(parser_args.mode_connect_filename))
+            shutil.copyfile(filename, parser_args.mode_connect_filename)
+
         if not save:
             os.remove(filename)
+
+        
 
 
 def get_lr(optimizer):

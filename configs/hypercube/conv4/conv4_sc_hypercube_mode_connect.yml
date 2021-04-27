@@ -1,0 +1,54 @@
+# Hypercube optimization
+algo: 'hc'
+mode_connect: True
+
+# Architecture
+arch: Conv4
+width: 1
+
+# ===== Dataset ===== #
+dataset: CIFAR10
+name: conv4_sc_bern_hypercube
+
+
+# ===== Learning Rate Policy ======== #
+optimizer: adam
+lr: 0.01 #075 #0.0075 #0.01 # 0.002 # 0.01
+lr_policy: multistep_lr
+lr_gamma: 0.5
+lr_adjust: 30
+
+
+# ===== Network training config ===== #
+epochs: 150 #150 #150
+weight_decay: 0 #0.0001
+momentum: 0.9 #0.9
+batch_size: 128
+
+# ===== Sparsity =========== #
+conv_type: SubnetConv
+bn_type: NonAffineBatchNorm
+freeze_weights: True
+init: signed_constant
+score_init: bern #bern #unif
+scale_fan: False #True #False #True
+fixed_init: True
+
+# ===== Rounding ===== #
+round: naive #prob #naive
+#num_test: 10
+#hc_warmup: 30 # 150
+#hc_period: 10
+noise: True
+noise_ratio: 0 #0.001
+
+
+# ===== Regularization ===== #
+regularization: var_red_2 #bin_entropy #var_red_2 #var_red_1
+lmbda: 0.0000001 #0.0000001 #0.000001
+
+
+# ===== Hardware setup ===== #
+workers: 4
+gpu: 3 #1
+

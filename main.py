@@ -170,8 +170,8 @@ def main_worker():
         if parser_args.evaluate:
             eval_and_print(validate, data.val_loader, model, criterion, parser_args, writer=None, epoch=parser_args.start_epoch, description='model')
 
-            if parser_args.compare_rounding:
-                compare_rounding(validate, data.val_loader, model, criterion, parser_args, result_root)
+            #if parser_args.compare_rounding:
+            #    compare_rounding(validate, data.val_loader, model, criterion, parser_args, result_root)
 
             for trial in range(parser_args.num_test):
                 if parser_args.algo in ['hc']:
@@ -184,7 +184,7 @@ def main_worker():
                     cp_model2 = round_model(model2, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio)
                     eval_and_print(validate, data.val_loader, cp_model2, criterion, parser_args, writer=None, epoch=parser_args.start_epoch, description='model2 after pruning')
 
-            if parser_args.pretrained and parser_args.pretrained2:
+            if parser_args.pretrained and parser_args.pretrained2 and parser_args.mode_connect:
                 if parser_args.weight_training:
                     print('We are connecting weights')
                     connect_weight(cp_model, criterion, data, validate, cp_model2)
@@ -336,7 +336,15 @@ def main_worker():
                 is_best,
                 filename=ckpt_base_dir / f"epoch_{epoch}.state",
                 save=save,
+                parser_args=parser_args,
             )
+
+            # added for mode connectivity
+            '''
+            if parser_args.mode_connect:
+                print('We are saving stat_dict for checking mode connectivity: {}'.format(parser_args.mode_connect_filename))
+                torch.save(model.state_dict(), parser_args.mode_connect_filename)
+            '''
 
         epoch_time.update((time.time() - end_epoch) / 60)
         progress_overall.display(epoch)
@@ -438,21 +446,13 @@ def connect_mask(model, criterion, data, validate, model2=None):
 
     # select random direction to go
     num_d = 1  # 100
-    num_v = 5  # 5 # 100
-    resol = 100  # 1000
+    num_v = 1  # 5 # 100
+    resol = 100  # 100  # 1000
 
     # batch data to test
     for data_, label_ in data.train_loader:
         data_, label_ = data_.cuda(), label_.cuda()
         break
-
-    # sanity check on the input model
-    '''
-    init_loss = criterion(model(data_), label_)
-    print(init_loss.data.item())
-    init_loss2 = criterion(model2(data_), label_)
-    print(init_loss2.data.item())
-    '''
 
     # setting for saving results
     cp_model = copy.deepcopy(model)
@@ -467,7 +467,7 @@ def connect_mask(model, criterion, data, validate, model2=None):
         train_acc_std_list = []
         test_acc_mean_list = []
         test_acc_std_list = []
-        if model2 is None:
+        if model2 is None: # when 2nd model is not specified (use random direction)
             sparsity1 = 0.2
             d1 = torch.bernoulli(torch.ones_like(mask_init) * sparsity1) # d1
             # print('sum of d1: ', torch.sum(d1))
@@ -475,7 +475,7 @@ def connect_mask(model, criterion, data, validate, model2=None):
         else:
             new_d1 = mask_fin
         normalized_hamming_dist = (torch.sum(torch.abs(mask_init - new_d1))/len(mask_init)).data.item()
-        print('dist btw mask_init and new_d1: ', normalized_hamming_dist)
+        print('dist btw mask_src and mask_dest: ', normalized_hamming_dist)
 
         for i in range(resol+1):
             p = i/resol  # probability of sampling new_d1
@@ -540,7 +540,7 @@ def connect_mask(model, criterion, data, validate, model2=None):
     if model2 is None:
         results_filename = "results/results_visualize_sharpness_sparsity1_{}_d1_{}_v_{}_{}_{}_{}.csv".format(sparsity1, num_d, num_v, train_mode_str, parser_args.dataset, parser_args.algo)
     else:
-        results_filename = "results/results_visualize_connectivity_d_{}_v_{}_{}_{}_{}_{}.csv".format(num_d, num_v, train_mode_str, parser_args.dataset, parser_args.algo, parser_args.interpolate)
+        results_filename = "results/results_visualize_connectivity_d_{}_v_{}_resol_{}_{}_{}_{}_{}.csv".format(num_d, num_v, resol, train_mode_str, parser_args.dataset, parser_args.algo, parser_args.interpolate)
 
     results_df.to_csv(results_filename, index=False)
 
@@ -796,10 +796,7 @@ def resume(parser_args, model, optimizer):
 def pretrained(path, model):
     if os.path.isfile(path):
         print("=> loading pretrained weights from '{}'".format(path))
-        pretrained = torch.load(
-            path,
-            map_location=torch.device("cuda:0"), #map_location=torch.device("cuda:{}".format(parser_args.multigpu[0])),
-        )["state_dict"]
+        pretrained = torch.load(path, map_location=torch.device("cuda:0"))["state_dict"]                 #map_location=torch.device("cuda:{}".format(parser_args.multigpu[0])),
 
         model_state_dict = model.state_dict()
         for k, v in pretrained.items():
