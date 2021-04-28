@@ -47,8 +47,6 @@ def save_checkpoint(state, is_best, filename="checkpoint.pth", save=False, parse
         if not save:
             os.remove(filename)
 
-        
-
 
 def get_lr(optimizer):
     return optimizer.param_groups[0]["lr"]
