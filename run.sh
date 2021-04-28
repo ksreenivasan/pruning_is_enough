@@ -59,4 +59,5 @@ BLOCK
 # RESNET18 CIFAR10 EXPERIMENTS ######################
 #####################################################
 
-python main.py --config configs/ep/resnet18/resnet18_sc_ep.yml
+# python main.py --config configs/ep/resnet18/resnet18_sc_ep.yml
+python main.py --config configs/hypercube/resnet18/resnet18_sc_hypercube_noreg.yml

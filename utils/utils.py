@@ -32,7 +32,7 @@ def set_seed(seed):
 
 def plot_histogram_scores(model, filename=None, arch='Conv4'):
     plt.rcParams.update({'font.size': 5})
-    (conv_layers, linear_layers) = get_layers(model, arch)
+    (conv_layers, linear_layers) = get_layers(arch, model)
     num_layers = len(conv_layers) + len(linear_layers)
     # find the nearest square that will fit all the histograms
     grid_size = int(np.ceil(np.sqrt(num_layers)))

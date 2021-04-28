@@ -114,9 +114,10 @@ def main_worker():
 
     train_mode_str = 'weight_training' if parser_args.weight_training else 'pruning'
     dataset_str = parser_args.dataset
+    model_str = parser_args.arch
     algo_str = parser_args.algo
-    reg_str = parser_args.regularization
-    reg_lmbda = parser_args.lmbda
+    reg_str = 'reg_{}'.format(parser_args.regularization)
+    reg_lmbda = parser_args.lmbda if parser_args.regularization else ''
     opt_str = parser_args.optimizer
     policy_str = parser_args.lr_policy
     lr_str = parser_args.lr
@@ -127,12 +128,12 @@ def main_worker():
     s_str = parser_args.score_init
     width_str = parser_args.width
     seed_str = parser_args.seed + parser_args.trial_num - 1
-    idty_str = "{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_fan_{}_{}_{}_width_{}_seed_{}".\
-        format(train_mode_str, dataset_str, algo_str, reg_str, reg_lmbda,
-        opt_str, policy_str, lr_str, lr_gamma, lr_adj, fan_str, w_str, s_str, 
+    idty_str = "{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_fan_{}_{}_{}_width_{}_seed_{}".\
+        format(train_mode_str, dataset_str, model_str, algo_str, reg_str, reg_lmbda,
+        opt_str, policy_str, lr_str, lr_gamma, lr_adj, fan_str, w_str, s_str,
         width_str, seed_str).replace(".", "_")
 
-    result_root = 'results/histogram_and_csv_' + idty_str + '/'
+    result_root = 'results/results_' + idty_str + '/'
     if not os.path.isdir(result_root):
         os.mkdir(result_root)
 
@@ -144,7 +145,7 @@ def main_worker():
         if parser_args.pretrained:
             pretrained(parser_args.pretrained, model)
         if parser_args.pretrained2:
-            model2 = copy.deepcopy(model) # model2.load_state_dict(torch.load(parser_args.pretrained2)['state_dict'])
+            model2 = copy.deepcopy(model)  # model2.load_state_dict(torch.load(parser_args.pretrained2)['state_dict'])
             pretrained(parser_args.pretrained2, model2)
 
         optimizer = get_optimizer(parser_args, model)
