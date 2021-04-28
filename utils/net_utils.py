@@ -14,18 +14,24 @@ from utils.mask_layers import MaskLinear, MaskConv
 from utils.conv_type import GetSubnet as GetSubnetConv
 
 
-# return layer ids of conv layers and linear layers so we can parse them
+# return layer objects of conv layers and linear layers so we can parse them
 # efficiently
-def get_layer_ids(arch='Conv4'):
+def get_layers(arch='Conv4', model=None):
     if arch == 'Conv4':
-        conv_layer_ids = [0, 2, 5, 7]
-        linear_layer_ids = [0, 2, 4]
-    elif arch == 'ResNet18':
-        print("ResNet18 not configured!")
-        exit()
-        conv_layer_ids = -1
-        linear_layer_ids = -1
-    return (conv_layer_ids, linear_layer_ids)
+        conv_layers = [model.convs[0], model.convs[2], model.convs[5], model.convs[7]]
+        linear_layers = [model.linear[0], model.linear[2], model.linear[4]]
+    elif arch == 'cResNet18':
+        conv_layers = [model.conv1]
+        for layer in [model.layer1, model.layer2, model.layer3, model.layer4]:
+            for basic_block_id in [0, 1]:
+                conv_layers.append(layer[basic_block_id].conv1)
+                conv_layers.append(layer[basic_block_id].conv2)
+                # handle shortcut
+                if len(layer[basic_block_id].shortcut) > 0:
+                    conv_layers.append(layer[basic_block_id].shortcut[0])
+
+        linear_layers = [model.fc]
+    return (conv_layers, linear_layers)
 
 
 def save_checkpoint(state, is_best, filename="checkpoint.pth", save=False, parser_args=None):
@@ -46,8 +52,6 @@ def save_checkpoint(state, is_best, filename="checkpoint.pth", save=False, parse
 
         if not save:
             os.remove(filename)
-
-        
 
 
 def get_lr(optimizer):
@@ -225,30 +229,28 @@ def get_score_sparsity_hc(model):
 
 # returns avg_sparsity = number of non-zero weights!
 def get_model_sparsity(model, threshold=0):
-    conv_layer_ids, linear_layer_ids = get_layer_ids(parser_args.arch)
-
+    conv_layers, linear_layers = get_layers(parser_args.arch, model)
     numer = 0
     denom = 0
 
     # TODO: find a nicer way to do this (skip dropout)
     # TODO: Update: can't use .children() or .named_modules() because of the way things are wrapped in builder
-    for conv_layer in conv_layer_ids:
-        w_numer, w_denom, b_numer, b_denom = get_layer_sparsity(model.convs[conv_layer], threshold)
+    for conv_layer in conv_layers:
+        w_numer, w_denom, b_numer, b_denom = get_layer_sparsity(conv_layer, threshold)
         numer += w_numer
         denom += w_denom
         if parser_args.bias:
             numer += b_numer
             denom += b_denom
 
-    for lin_layer in linear_layer_ids:
-        w_numer, w_denom, b_numer, b_denom = get_layer_sparsity(model.linear[lin_layer], threshold)
+    for lin_layer in linear_layers:
+        w_numer, w_denom, b_numer, b_denom = get_layer_sparsity(lin_layer, threshold)
         numer += w_numer
         denom += w_denom
         if parser_args.bias:
             numer += b_numer
             denom += b_denom
     # print('Overall sparsity: {}/{} ({:.2f} %)'.format((int)(numer), denom, 100*numer/denom))
-
     return 100*numer/denom
 
 
@@ -259,9 +261,9 @@ def get_layer_sparsity(layer, threshold=0):
     if parser_args.algo in ['hc']:
         # assume the model is rounded
         num_middle = torch.sum(torch.gt(layer.scores,
-                        torch.ones_like(layer.scores)*threshold) *\
-                        torch.lt(layer.scores,
-                        torch.ones_like(layer.scores.detach()*(1-threshold)).int()))
+                               torch.ones_like(layer.scores)*threshold) *
+                               torch.lt(layer.scores,
+                               torch.ones_like(layer.scores.detach()*(1-threshold)).int()))
         if num_middle > 0:
             print("WARNING: Model scores are not binary. Sparsity number is unreliable.")
             raise ValueError
@@ -286,7 +288,7 @@ def get_layer_sparsity(layer, threshold=0):
 
 
 def get_regularization_loss(model, regularizer='var_red_1', lmbda=1, alpha=1, alpha_prime=1):
-    conv_layer_ids, linear_layer_ids = get_layer_ids(parser_args.arch)
+    conv_layers, linear_layers = get_layers(parser_args.arch, model)
     def get_special_reg_sum(layer):
         # reg_loss =  \sum_{i} w_i^2 * p_i(1-p_i)
         # NOTE: alpha = alpha' = 1 here. Change if needed.
@@ -317,31 +319,29 @@ def get_regularization_loss(model, regularizer='var_red_1', lmbda=1, alpha=1, al
     elif regularizer == 'var_red_2':
         # reg_loss =  \sum_{i} w_i^2 * p_i(1-p_i)
         # NOTE: alpha = alpha' = 1 here. Change if needed.
-        for conv_layer in conv_layer_ids:
-            layer = model.convs[conv_layer]
-            regularization_loss += get_special_reg_sum(layer)
+        for conv_layer in conv_layers:
+            regularization_loss += get_special_reg_sum(conv_layer)
 
-        for lin_layer in linear_layer_ids:
-            layer = model.linear[lin_layer]
-            regularization_loss += get_special_reg_sum(layer)
+        for lin_layer in linear_layers:
+            regularization_loss += get_special_reg_sum(lin_layer)
         regularization_loss = lmbda * regularization_loss
 
     elif regularizer == 'bin_entropy':
         # reg_loss = -p \log(p) - (1-p) \log(1-p)
-        # NOTE: This will be nan because log(0) = inf. therefore, replacing with 0
+        # NOTE: This will be nan because log(0) = inf. therefore, ignoring the end points
         for name, params in model.named_parameters():
             if ".bias_score" in name:
                 if parser_args.bias:
+                    params_filt = params[(params > 0) & (params < 1)]
                     regularization_loss +=\
-                        torch.sum(-1.0 * params * torch.log(params).\
-                            nan_to_num(posinf=0, neginf=0) - (1-params) * torch.log(params).\
-                            nan_to_num(posinf=0, neginf=0))
+                        torch.sum(-1.0 * params_filt * torch.log(params_filt)
+                            - (1-params_filt) * torch.log(1-params_filt))
 
             elif ".score" in name:
+                params_filt = params[(params > 0) & (params < 1)]
                 regularization_loss +=\
-                        torch.sum(-1.0 * params * torch.log(params).\
-                            nan_to_num(posinf=0, neginf=0) - (1-params) * torch.log(params).\
-                            nan_to_num(posinf=0, neginf=0))
+                        torch.sum(-1.0 * params_filt * torch.log(params_filt)
+                            - (1-params_filt) * torch.log(1-params_filt))
 
         regularization_loss = lmbda * regularization_loss
 

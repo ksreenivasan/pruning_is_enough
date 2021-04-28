@@ -27,7 +27,10 @@
 	* [Linear Mode Connectivity and the Lottery Ticket Hypothesis](https://arxiv.org/pdf/1912.05671.pdf)
 	* [Loss Surfaces, Mode Connectivity, and Fast Ensembling of DNNs](https://arxiv.org/pdf/1802.10026.pdf)
 	* [Analyzing Monotonic Linear Interpolation in Neural Network Loss Landscapes](https://arxiv.org/abs/2104.11044)
-		- Linear interpolation from initial to final neural net params typically decreases the loss monotonically
+		- MLI property: linear interpolation from initial to final neural net params typically decreases the loss monotonically
+		- Proved that MLI property holds with high probability for networks of sufficient width
+		- Proved that small "Gauss length" gives monotonicity
+		- Kind of related with "laze training" saying that training goes to the closest minima?
 		- NOTE: the connectivity is quite good. See what's happening
 
 

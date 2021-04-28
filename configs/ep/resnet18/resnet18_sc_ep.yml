@@ -1,34 +1,32 @@
-# Edge-popup version
 algo: 'ep'
 
 # Architecture
-arch: Conv4
+arch: cResNet18
 
 # ===== Dataset ===== #
 dataset: CIFAR10
-name: conv4_ep_sc
+name: resnet18_cifar10_sc
 
 # ===== Learning Rate Policy ======== #
-optimizer: adam #sgd
-lr: 0.0001 #0.1
-lr_policy: multistep_lr # cosine_lr
-lr_gamma: 0.5
-lr_adjust: 20 #20
-
+optimizer: sgd
+lr: 0.1
+lr_policy: cosine_lr
 
 # ===== Network training config ===== #
-epochs: 150
-weight_decay: 0.0001
+epochs: 10
+weight_decay: 0.0005
 momentum: 0.9
-batch_size: 128
+batch_size: 256
 
 # ===== Sparsity =========== #
 conv_type: SubnetConv
 bn_type: NonAffineBatchNorm
-freeze_weights: True
-prune_rate: 0.5
 init: signed_constant
+mode: fan_in
+nonlinearity: relu
+prune_rate: 0.5
 scale_fan: True
+freeze_weights: True
 
 # ===== Hardware setup ===== #
 workers: 4

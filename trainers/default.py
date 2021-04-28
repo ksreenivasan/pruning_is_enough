@@ -54,7 +54,7 @@ def train(train_loader, model, criterion, optimizer, epoch, args, writer):
         #        # clamp params if name has ".scores"
 
         loss = criterion(output, target)
-        regularization_loss = 0
+        regularization_loss = torch.tensor(0)
         if args.regularization:
             regularization_loss =\
                 get_regularization_loss(model, regularizer=args.regularization,
@@ -84,7 +84,7 @@ def train(train_loader, model, criterion, optimizer, epoch, args, writer):
             progress.display(i)
             progress.write_to_tensorboard(writer, prefix="train", global_step=t)
 
-    return top1.avg, top5.avg, top10.avg
+    return top1.avg, top5.avg, top10.avg, regularization_loss.item()
 
 
 def validate(val_loader, model, criterion, args, writer, epoch):
