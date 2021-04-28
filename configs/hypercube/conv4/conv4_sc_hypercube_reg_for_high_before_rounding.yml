@@ -3,7 +3,7 @@ algo: 'hc'
 
 # Architecture
 arch: Conv4
-width: 2
+width: 1 #2
 
 # ===== Dataset ===== #
 dataset: CIFAR10
@@ -44,7 +44,7 @@ noise_ratio: 0 #0.001
 
 
 # ===== Regularization ===== #
-regularization: var_red_2 #bin_entropy #var_red_2 #var_red_1
+regularization: bin_entropy #var_red_2 #bin_entropy #var_red_2 #var_red_1
 lmbda: 0.0000001 #0.0000001 #0.000001
 
 
