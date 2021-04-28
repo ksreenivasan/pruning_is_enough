@@ -292,7 +292,7 @@ def get_regularization_loss(model, regularizer='var_red_1', lmbda=1, alpha=1, al
     def get_special_reg_sum(layer):
         # reg_loss =  \sum_{i} w_i^2 * p_i(1-p_i)
         # NOTE: alpha = alpha' = 1 here. Change if needed.
-        reg_sum = 0
+        reg_sum = torch.tensor(0)
         w_i = layer.weight
         p_i = layer.scores
         reg_sum += torch.sum(torch.pow(w_i, 2) * torch.pow(p_i, 1) * torch.pow(1-p_i, 1))
@@ -302,8 +302,7 @@ def get_regularization_loss(model, regularizer='var_red_1', lmbda=1, alpha=1, al
             reg_sum += torch.sum(torch.pow(b_i, 2) * torch.pow(p_i, 1) * torch.pow(1-p_i, 1))
         return reg_sum
 
-
-    regularization_loss = 0
+    regularization_loss = torch.tensor(0)
     if regularizer == 'var_red_1':
         # reg_loss = lambda * p^{alpha} (1-p)^{alpha'}
         for name, params in model.named_parameters():
