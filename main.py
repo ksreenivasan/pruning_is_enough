@@ -214,6 +214,7 @@ def main_worker():
     epoch_list = []
     test_acc_before_round_list = []
     test_acc_list = []
+    reg_loss_list = []
     model_sparsity_list = []
 
     # Save the initial state
@@ -249,7 +250,7 @@ def main_worker():
 
         # train for one epoch
         start_train = time.time()
-        train_acc1, train_acc5, train_acc10 = train(
+        train_acc1, train_acc5, train_acc10, reg_loss = train(
             data.train_loader, model, criterion, optimizer, epoch, parser_args, writer=writer
         )
         train_time.update((time.time() - start_train) / 60)
@@ -300,8 +301,10 @@ def main_worker():
         if parser_args.algo in ['hc']:
             test_acc_before_round_list.append(br_acc1)
         test_acc_list.append(acc1)
+        reg_loss_list.append(reg_loss)
         # TODO: define sparsity for cifar10 networks
         model_sparsity_list.append(avg_sparsity)
+        print(epoch, br_acc1, acc1, reg_loss)
 
         # remember best acc@1 and save checkpoint
         is_best = acc1 > best_acc1
@@ -339,12 +342,6 @@ def main_worker():
                 parser_args=parser_args,
             )
 
-            # added for mode connectivity
-            '''
-            if parser_args.mode_connect:
-                print('We are saving stat_dict for checking mode connectivity: {}'.format(parser_args.mode_connect_filename))
-                torch.save(model.state_dict(), parser_args.mode_connect_filename)
-            '''
 
         epoch_time.update((time.time() - end_epoch) / 60)
         progress_overall.display(epoch)
@@ -393,7 +390,7 @@ def main_worker():
     )
 
     if parser_args.algo in ['hc']:
-        results_df = pd.DataFrame({'epoch': epoch_list, 'test_acc_before_rounding': test_acc_before_round_list,'test_acc': test_acc_list, 'model_sparsity': model_sparsity_list})
+        results_df = pd.DataFrame({'epoch': epoch_list, 'test_acc_before_rounding': test_acc_before_round_list,'test_acc': test_acc_list, 'regularization_loss': reg_loss_list, 'model_sparsity': model_sparsity_list})
     else:
         results_df = pd.DataFrame({'epoch': epoch_list, 'test_acc': test_acc_list, 'model_sparsity': model_sparsity_list})
 
