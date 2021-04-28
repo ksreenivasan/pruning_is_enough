@@ -13,7 +13,7 @@ lr: 0.1
 lr_policy: cosine_lr
 
 # ===== Network training config ===== #
-epochs: 10
+epochs: 150
 weight_decay: 0.0005
 momentum: 0.9
 batch_size: 256
@@ -30,4 +30,4 @@ freeze_weights: True
 
 # ===== Hardware setup ===== #
 workers: 4
-gpu: 0
+gpu: 2
