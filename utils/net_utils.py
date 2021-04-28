@@ -19,16 +19,18 @@ from utils.conv_type import GetSubnet as GetSubnetConv
 def get_layers(arch='Conv4', model=None):
     if arch == 'Conv4':
         conv_layers = [model.convs[0], model.convs[2], model.convs[5], model.convs[7]]
-        # conv_layers = [0, 2, 5, 7]
         linear_layers = [model.linear[0], model.linear[2], model.linear[4]]
-        # linear_layer_ids = [0, 2, 4]
     elif arch == 'cResNet18':
-        # TODO: This is going to be complicated due to the nested structure of ResNet
-        # I think it can be done
-        # For now, warning
-        print("WARNING: ResNet layer_ids not configured")
-        conv_layer_ids = []
-        linear_layer_ids = []
+        conv_layers = [model.conv1]
+        for layer in [model.layer1, model.layer2, model.layer3, model.layer4]:
+            for basic_block_id in [0, 1]:
+                conv_layers.append(layer[basic_block_id].conv1)
+                conv_layers.append(layer[basic_block_id].conv2)
+                # handle shortcut
+                if len(layer[basic_block_id].shortcut) > 0:
+                    conv_layers.append(layer[basic_block_id].shortcut[0])
+
+        linear_layers = [model.fc]
     return (conv_layers, linear_layers)
 
 
