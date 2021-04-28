@@ -332,14 +332,16 @@ def get_regularization_loss(model, regularizer='var_red_1', lmbda=1, alpha=1, al
         for name, params in model.named_parameters():
             if ".bias_score" in name:
                 if parser_args.bias:
+                    params_filt = params[(params > 0) & (params < 1)]
                     regularization_loss +=\
-                        torch.sum(-1.0 * params[params>0] * torch.log(params[params>0])
-                            - (1-params[params<1]) * torch.log(1-params[params<1]))
+                        torch.sum(-1.0 * params_filt * torch.log(params_filt)
+                            - (1-params_filt) * torch.log(1-params_filt))
 
             elif ".score" in name:
+                params_filt = params[(params > 0) & (params < 1)]
                 regularization_loss +=\
-                        torch.sum(-1.0 * params[params>0] * torch.log(params[params>0])
-                            - (1-params[params<1]) * torch.log(1-params[params<1]))
+                        torch.sum(-1.0 * params_filt * torch.log(params_filt)
+                            - (1-params_filt) * torch.log(1-params_filt))
 
         regularization_loss = lmbda * regularization_loss
 
