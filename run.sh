@@ -2,13 +2,13 @@
 # python main.py --config configs/training/conv4/conv4_training.yml
 
 # TODO: add a comment for what this experiment does
-#:<<BLOCK
+:<<BLOCK
 width_arr=(2) #1.5 2)
 for th in ${width_arr[@]}
 do
     python main.py --config configs/ep/conv4/conv4_sc_ep.yml --width $th
 done
-#BLOCK
+BLOCK
 
 # HC regularization experiments
 # python main.py --config configs/hypercube/conv4/conv4_sc_hypercube_reg.yml #> log_hc_reg_naive 2>&1
@@ -59,7 +59,8 @@ BLOCK
 # TODO: add title of experiment as comment
 # python main.py --config configs/hypercube/conv4/conv4_sc_hypercube_reg_for_high_before_rounding_sgd.yml
 
+#####################################################
+# RESNET18 CIFAR10 EXPERIMENTS ######################
+#####################################################
 
-
-
-
+python main.py --config configs/ep/resnet18/resnet18_sc_ep.yml
