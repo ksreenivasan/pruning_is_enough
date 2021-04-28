@@ -328,20 +328,18 @@ def get_regularization_loss(model, regularizer='var_red_1', lmbda=1, alpha=1, al
 
     elif regularizer == 'bin_entropy':
         # reg_loss = -p \log(p) - (1-p) \log(1-p)
-        # NOTE: This will be nan because log(0) = inf. therefore, replacing with 0
+        # NOTE: This will be nan because log(0) = inf. therefore, ignoring the end points
         for name, params in model.named_parameters():
             if ".bias_score" in name:
                 if parser_args.bias:
                     regularization_loss +=\
-                        torch.sum(-1.0 * params * torch.log(params).\
-                            nan_to_num(posinf=0, neginf=0) - (1-params) * torch.log(params).\
-                            nan_to_num(posinf=0, neginf=0))
+                        torch.sum(-1.0 * params[params>0] * torch.log(params[params>0])
+                            - (1-params[params<1]) * torch.log(1-params[params<1]))
 
             elif ".score" in name:
                 regularization_loss +=\
-                        torch.sum(-1.0 * params * torch.log(params).\
-                            nan_to_num(posinf=0, neginf=0) - (1-params) * torch.log(params).\
-                            nan_to_num(posinf=0, neginf=0))
+                        torch.sum(-1.0 * params[params>0] * torch.log(params[params>0])
+                            - (1-params[params<1]) * torch.log(1-params[params<1]))
 
         regularization_loss = lmbda * regularization_loss
 
