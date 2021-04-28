@@ -2,14 +2,14 @@
 # python main.py --config configs/training/conv4/conv4_training.yml
 
 # run EP/HC over multiple overparameterization setup (w/ SGD)
-:<<BLOCK
-width_arr=(1.5 2) #1.5 2)
+#:<<BLOCK
+width_arr=(2) #1.5 2)
 for th in ${width_arr[@]}
 do
     #python main.py --config configs/ep/conv4/conv4_sc_ep_sgd.yml --width $th
-    python main.py --config configs/hypercube/conv4/conv4_sc_hypercube_adam.yml --width $th > log_$th 2>&1
+    python main.py --config configs/hypercube/conv4/conv4_sc_hypercube_adam.yml --width $th #> log_$th 2>&1
 done
-BLOCK
+#BLOCK
 
 # HC + regularization experiments 
 # python main.py --config configs/hypercube/conv4/conv4_sc_hypercube_adam.yml > log_entropy 2>&1
