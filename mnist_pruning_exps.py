@@ -487,6 +487,7 @@ def plot_histogram_scores(model, epoch=0):
                    density=False, linewidth=0.5, bins=20)
     axs[1, 1].set_title('FC2 Scores Distribution')
 
+    plt.tight_layout()
     algo = parser_args.algo
     reg = 'reg' if parser_args.regularization else 'noreg'
     opt = parser_args.optimizer

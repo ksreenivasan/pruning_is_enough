@@ -12,6 +12,7 @@ import matplotlib as plt
 from matplotlib import colors as mcolors
 from pylab import *
 import random
+from utils.net_utils import get_layers
 plt.style.use('seaborn-whitegrid')
 
 
@@ -29,22 +30,24 @@ def set_seed(seed):
     print("Seeded everything: {}".format(seed))
 
 
-def plot_histogram_scores(model, filename=None):  # dataset='cifar10', algo=None, reg=None, opt=None, epoch=0):
-    # TODO: make this generalizable
+def plot_histogram_scores(model, filename=None, arch='Conv4'):
     plt.rcParams.update({'font.size': 5})
-    n_row, n_col = 3, 3
+    (conv_layers, linear_layers) = get_layers(model, arch)
+    num_layers = len(conv_layers) + len(linear_layers)
+    # find the nearest square that will fit all the histograms
+    grid_size = int(np.ceil(np.sqrt(num_layers)))
+    n_row, n_col = grid_size, grid_size
     fig, axs = plt.subplots(n_row, n_col)
-
     idx = 0
     for name, params in model.named_parameters():
         if ".score" in name:
             scores = params.data.flatten().cpu().numpy()
             r, c = divmod(idx, n_row)
             axs[r, c].hist(scores, facecolor='#2ab0ff', edgecolor='#169acf',
-                   density=False, linewidth=0.5, bins=20)
-            axs[r, c].set_title('{}'.format(name))                   
+                           density=False, linewidth=0.5, bins=20)
+            axs[r, c].set_title('{}'.format(name))
             idx += 1
+    plt.tight_layout()
 
-    # filename = 'plots/weights_histogram_{}_{}_{}_{}_epoch_{}.pdf'.format(dataset, algo, reg, opt, epoch)
     plt.savefig(filename, format='pdf', bbox_inches='tight', pad_inches=0.05)
     print("Saved score histogram to: {}".format(filename))

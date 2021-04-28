@@ -280,19 +280,17 @@ def main_worker():
 
         # save the histrogram of scores
         if not parser_args.weight_training:
-            if (epoch % 25 == 1) or epoch == (parser_args.epochs-1):  # %10 %50
-                plot_histogram_scores(model, result_root+'Epoch_{}.pdf'.format(epoch))  # dataset_str, algo_str, reg_str, opt_str, epoch)
+            if (epoch % 25 == 1) or epoch == (parser_args.epochs-1):
+                plot_histogram_scores(model, result_root+'Epoch_{}.pdf'.format(epoch), parser_args.arch)
 
         if not parser_args.weight_training:
             if parser_args.algo in ['hc']:
                 # Round before checking sparsity
                 cp_model = round_model(model, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio)
-                avg_sparsity = get_model_sparsity(cp_model)     #avg_sparsity = get_model_sparsity(cp_model)
+                avg_sparsity = get_model_sparsity(cp_model)
                 print('Model avg sparsity: {}'.format(avg_sparsity))
-                # avg_sparsity2 = get_score_sparsity_hc(cp_model)
-                # print('avg_sparsity2: ', avg_sparsity2) # avg_sparsity2 should be same as avg_sparsity
             else:
-                avg_sparsity = get_model_sparsity(model)            #avg_sparsity = get_model_sparsity(model)
+                avg_sparsity = get_model_sparsity(model)
         else:
             # haven't written a weight sparsity function yet
             avg_sparsity = -1
@@ -301,10 +299,10 @@ def main_worker():
         if parser_args.algo in ['hc']:
             test_acc_before_round_list.append(br_acc1)
         else:
+            # no before rounding for EP/weight training
             test_acc_before_round_list.append(-1)
         test_acc_list.append(acc1)
         reg_loss_list.append(reg_loss)
-        # TODO: define sparsity for cifar10 networks
         model_sparsity_list.append(avg_sparsity)
 
         # remember best acc@1 and save checkpoint
