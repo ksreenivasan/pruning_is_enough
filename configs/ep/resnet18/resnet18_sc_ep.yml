@@ -1,7 +1,7 @@
 algo: 'ep'
 
 # Architecture
-arch: cResNet18 
+arch: cResNet18
 
 # ===== Dataset ===== #
 dataset: CIFAR10

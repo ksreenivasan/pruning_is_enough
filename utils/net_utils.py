@@ -20,11 +20,13 @@ def get_layer_ids(arch='Conv4'):
     if arch == 'Conv4':
         conv_layer_ids = [0, 2, 5, 7]
         linear_layer_ids = [0, 2, 4]
-    elif arch == 'ResNet18':
-        print("ResNet18 not configured!")
-        exit()
-        conv_layer_ids = -1
-        linear_layer_ids = -1
+    elif arch == 'cResNet18':
+        # TODO: This is going to be complicated due to the nested structure of ResNet
+        # I think it can be done
+        # For now, warning
+        print("WARNING: ResNet layer_ids not configured")
+        conv_layer_ids = []
+        linear_layer_ids = []
     return (conv_layer_ids, linear_layer_ids)
 
 
