@@ -10,7 +10,7 @@ name: conv4_ep_sc
 
 # ===== Learning Rate Policy ======== #
 optimizer: sgd
-lr: 0.1
+lr: 0.15
 lr_policy: multistep_lr # cosine_lr
 lr_gamma: 0.5
 lr_adjust: 20 #20
@@ -32,4 +32,4 @@ scale_fan: True
 
 # ===== Hardware setup ===== #
 workers: 4
-gpu: 2
+gpu: 0
