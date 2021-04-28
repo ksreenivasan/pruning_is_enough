@@ -170,7 +170,7 @@ def main_worker():
         if parser_args.evaluate:
             eval_and_print(validate, data.val_loader, model, criterion, parser_args, writer=None, epoch=parser_args.start_epoch, description='model')
 
-            #if parser_args.compare_rounding:
+            # if parser_args.compare_rounding:
             #    compare_rounding(validate, data.val_loader, model, criterion, parser_args, result_root)
 
             for trial in range(parser_args.num_test):
@@ -198,7 +198,6 @@ def main_worker():
     # Set up directories
     run_base_dir, ckpt_base_dir, log_base_dir = get_directories(parser_args)
     parser_args.ckpt_base_dir = ckpt_base_dir
-
     writer = SummaryWriter(log_dir=log_base_dir)
     epoch_time = AverageMeter("epoch_time", ":.4f", write_avg=False)
     validation_time = AverageMeter("validation_time", ":.4f", write_avg=False)

@@ -230,7 +230,6 @@ def get_score_sparsity_hc(model):
 # returns avg_sparsity = number of non-zero weights!
 def get_model_sparsity(model, threshold=0):
     conv_layers, linear_layers = get_layers(parser_args.arch, model)
-
     numer = 0
     denom = 0
 
@@ -262,9 +261,9 @@ def get_layer_sparsity(layer, threshold=0):
     if parser_args.algo in ['hc']:
         # assume the model is rounded
         num_middle = torch.sum(torch.gt(layer.scores,
-                        torch.ones_like(layer.scores)*threshold) *\
-                        torch.lt(layer.scores,
-                        torch.ones_like(layer.scores.detach()*(1-threshold)).int()))
+                               torch.ones_like(layer.scores)*threshold) *
+                               torch.lt(layer.scores,
+                               torch.ones_like(layer.scores.detach()*(1-threshold)).int()))
         if num_middle > 0:
             print("WARNING: Model scores are not binary. Sparsity number is unreliable.")
             raise ValueError
