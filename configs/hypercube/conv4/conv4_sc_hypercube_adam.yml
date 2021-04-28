@@ -13,7 +13,7 @@ name: conv4_sc_bern_hypercube
 # ===== Learning Rate Policy ======== #
 optimizer: adam
 lr: 0.01 #075 #0.0075 #0.01 # 0.002 # 0.01
-lr_policy: multistep_lr
+lr_policy: multistep_lr #cosine_lr #multistep_lr
 lr_gamma: 0.5
 lr_adjust: 30
 
@@ -50,5 +50,5 @@ lmbda: 0.00000001 #0.0000001 #0.000001
 
 # ===== Hardware setup ===== #
 workers: 4
-gpu: 3 #1
+gpu: 2 #1
 
