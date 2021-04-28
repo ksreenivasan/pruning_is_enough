@@ -16,11 +16,11 @@ from utils.conv_type import GetSubnet as GetSubnetConv
 
 # return layer objects of conv layers and linear layers so we can parse them
 # efficiently
-def get_layers(arch='Conv4', model):
+def get_layers(arch='Conv4', model=None):
     if arch == 'Conv4':
         conv_layers = [model.convs[0], model.convs[2], model.convs[5], model.convs[7]]
         # conv_layers = [0, 2, 5, 7]
-        linear_layers = [model.linear[0] + model.linear[2] + model.linear[4]]
+        linear_layers = [model.linear[0], model.linear[2], model.linear[4]]
         # linear_layer_ids = [0, 2, 4]
     elif arch == 'cResNet18':
         # TODO: This is going to be complicated due to the nested structure of ResNet
@@ -29,7 +29,7 @@ def get_layers(arch='Conv4', model):
         print("WARNING: ResNet layer_ids not configured")
         conv_layer_ids = []
         linear_layer_ids = []
-    return (conv_layers, linear_layer)
+    return (conv_layers, linear_layers)
 
 
 def save_checkpoint(state, is_best, filename="checkpoint.pth", save=False, parser_args=None):
@@ -234,24 +234,22 @@ def get_model_sparsity(model, threshold=0):
 
     # TODO: find a nicer way to do this (skip dropout)
     # TODO: Update: can't use .children() or .named_modules() because of the way things are wrapped in builder
-    if parser_args.arch == 'conv4':
-        for conv_layer in conv_layers:
-            w_numer, w_denom, b_numer, b_denom = get_layer_sparsity(conv_layer, threshold)
-            numer += w_numer
-            denom += w_denom
-            if parser_args.bias:
-                numer += b_numer
-                denom += b_denom
+    for conv_layer in conv_layers:
+        w_numer, w_denom, b_numer, b_denom = get_layer_sparsity(conv_layer, threshold)
+        numer += w_numer
+        denom += w_denom
+        if parser_args.bias:
+            numer += b_numer
+            denom += b_denom
 
-        for lin_layer in linear_layers:
-            w_numer, w_denom, b_numer, b_denom = get_layer_sparsity(lin_layer, threshold)
-            numer += w_numer
-            denom += w_denom
-            if parser_args.bias:
-                numer += b_numer
-                denom += b_denom
-        # print('Overall sparsity: {}/{} ({:.2f} %)'.format((int)(numer), denom, 100*numer/denom))
-
+    for lin_layer in linear_layers:
+        w_numer, w_denom, b_numer, b_denom = get_layer_sparsity(lin_layer, threshold)
+        numer += w_numer
+        denom += w_denom
+        if parser_args.bias:
+            numer += b_numer
+            denom += b_denom
+    # print('Overall sparsity: {}/{} ({:.2f} %)'.format((int)(numer), denom, 100*numer/denom))
     return 100*numer/denom
 
 

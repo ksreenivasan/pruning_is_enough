@@ -300,11 +300,12 @@ def main_worker():
         epoch_list.append(epoch)
         if parser_args.algo in ['hc']:
             test_acc_before_round_list.append(br_acc1)
+        else:
+            test_acc_before_round_list.append(-1)
         test_acc_list.append(acc1)
         reg_loss_list.append(reg_loss)
         # TODO: define sparsity for cifar10 networks
         model_sparsity_list.append(avg_sparsity)
-        print(epoch, br_acc1, acc1, reg_loss)
 
         # remember best acc@1 and save checkpoint
         is_best = acc1 > best_acc1

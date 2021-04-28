@@ -32,4 +32,4 @@ scale_fan: True
 
 # ===== Hardware setup ===== #
 workers: 4
-gpu: 2
+gpu: 0
