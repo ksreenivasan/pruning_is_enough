@@ -83,7 +83,6 @@ def train(train_loader, model, criterion, optimizer, epoch, args, writer):
             t = (num_batches * epoch + i) * batch_size
             progress.display(i)
             progress.write_to_tensorboard(writer, prefix="train", global_step=t)
-
     return top1.avg, top5.avg, top10.avg, regularization_loss.item()
 
 

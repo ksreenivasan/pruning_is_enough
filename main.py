@@ -114,9 +114,10 @@ def main_worker():
 
     train_mode_str = 'weight_training' if parser_args.weight_training else 'pruning'
     dataset_str = parser_args.dataset
+    model_str = parser_args.arch
     algo_str = parser_args.algo
-    reg_str = parser_args.regularization
-    reg_lmbda = parser_args.lmbda
+    reg_str = 'reg_{}'.format(parser_args.regularization)
+    reg_lmbda = parser_args.lmbda if parser_args.regularization else ''
     opt_str = parser_args.optimizer
     policy_str = parser_args.lr_policy
     lr_str = parser_args.lr
@@ -127,12 +128,12 @@ def main_worker():
     s_str = parser_args.score_init
     width_str = parser_args.width
     seed_str = parser_args.seed + parser_args.trial_num - 1
-    idty_str = "{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_fan_{}_{}_{}_width_{}_seed_{}".\
-        format(train_mode_str, dataset_str, algo_str, reg_str, reg_lmbda,
-        opt_str, policy_str, lr_str, lr_gamma, lr_adj, fan_str, w_str, s_str, 
+    idty_str = "{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_fan_{}_{}_{}_width_{}_seed_{}".\
+        format(train_mode_str, dataset_str, model_str, algo_str, reg_str, reg_lmbda,
+        opt_str, policy_str, lr_str, lr_gamma, lr_adj, fan_str, w_str, s_str,
         width_str, seed_str).replace(".", "_")
 
-    result_root = 'results/histogram_and_csv_' + idty_str + '/'
+    result_root = 'results/results_' + idty_str + '/'
     if not os.path.isdir(result_root):
         os.mkdir(result_root)
 
@@ -144,7 +145,7 @@ def main_worker():
         if parser_args.pretrained:
             pretrained(parser_args.pretrained, model)
         if parser_args.pretrained2:
-            model2 = copy.deepcopy(model) # model2.load_state_dict(torch.load(parser_args.pretrained2)['state_dict'])
+            model2 = copy.deepcopy(model)  # model2.load_state_dict(torch.load(parser_args.pretrained2)['state_dict'])
             pretrained(parser_args.pretrained2, model2)
 
         optimizer = get_optimizer(parser_args, model)
@@ -170,7 +171,7 @@ def main_worker():
         if parser_args.evaluate:
             eval_and_print(validate, data.val_loader, model, criterion, parser_args, writer=None, epoch=parser_args.start_epoch, description='model')
 
-            #if parser_args.compare_rounding:
+            # if parser_args.compare_rounding:
             #    compare_rounding(validate, data.val_loader, model, criterion, parser_args, result_root)
 
             for trial in range(parser_args.num_test):
@@ -198,7 +199,6 @@ def main_worker():
     # Set up directories
     run_base_dir, ckpt_base_dir, log_base_dir = get_directories(parser_args)
     parser_args.ckpt_base_dir = ckpt_base_dir
-
     writer = SummaryWriter(log_dir=log_base_dir)
     epoch_time = AverageMeter("epoch_time", ":.4f", write_avg=False)
     validation_time = AverageMeter("validation_time", ":.4f", write_avg=False)
@@ -280,19 +280,17 @@ def main_worker():
 
         # save the histrogram of scores
         if not parser_args.weight_training:
-            if (epoch % 25 == 1) or epoch == (parser_args.epochs-1):  # %10 %50
-                plot_histogram_scores(model, result_root+'Epoch_{}.pdf'.format(epoch))  # dataset_str, algo_str, reg_str, opt_str, epoch)
+            if (epoch % 25 == 1) or epoch == (parser_args.epochs-1):
+                plot_histogram_scores(model, result_root+'Epoch_{}.pdf'.format(epoch), parser_args.arch)
 
         if not parser_args.weight_training:
             if parser_args.algo in ['hc']:
                 # Round before checking sparsity
                 cp_model = round_model(model, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio)
-                avg_sparsity = get_model_sparsity(cp_model)     #avg_sparsity = get_model_sparsity(cp_model)
+                avg_sparsity = get_model_sparsity(cp_model)
                 print('Model avg sparsity: {}'.format(avg_sparsity))
-                # avg_sparsity2 = get_score_sparsity_hc(cp_model)
-                # print('avg_sparsity2: ', avg_sparsity2) # avg_sparsity2 should be same as avg_sparsity
             else:
-                avg_sparsity = get_model_sparsity(model)            #avg_sparsity = get_model_sparsity(model)
+                avg_sparsity = get_model_sparsity(model)
         else:
             # haven't written a weight sparsity function yet
             avg_sparsity = -1
@@ -301,10 +299,10 @@ def main_worker():
         if parser_args.algo in ['hc']:
             test_acc_before_round_list.append(br_acc1)
         else:
+            # no before rounding for EP/weight training
             test_acc_before_round_list.append(-1)
         test_acc_list.append(acc1)
         reg_loss_list.append(reg_loss)
-        # TODO: define sparsity for cifar10 networks
         model_sparsity_list.append(avg_sparsity)
 
         # remember best acc@1 and save checkpoint

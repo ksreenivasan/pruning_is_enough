@@ -230,7 +230,6 @@ def get_score_sparsity_hc(model):
 # returns avg_sparsity = number of non-zero weights!
 def get_model_sparsity(model, threshold=0):
     conv_layers, linear_layers = get_layers(parser_args.arch, model)
-
     numer = 0
     denom = 0
 
@@ -262,9 +261,9 @@ def get_layer_sparsity(layer, threshold=0):
     if parser_args.algo in ['hc']:
         # assume the model is rounded
         num_middle = torch.sum(torch.gt(layer.scores,
-                        torch.ones_like(layer.scores)*threshold) *\
-                        torch.lt(layer.scores,
-                        torch.ones_like(layer.scores.detach()*(1-threshold)).int()))
+                               torch.ones_like(layer.scores)*threshold) *
+                               torch.lt(layer.scores,
+                               torch.ones_like(layer.scores.detach()*(1-threshold)).int()))
         if num_middle > 0:
             print("WARNING: Model scores are not binary. Sparsity number is unreliable.")
             raise ValueError
@@ -293,7 +292,7 @@ def get_regularization_loss(model, regularizer='var_red_1', lmbda=1, alpha=1, al
     def get_special_reg_sum(layer):
         # reg_loss =  \sum_{i} w_i^2 * p_i(1-p_i)
         # NOTE: alpha = alpha' = 1 here. Change if needed.
-        reg_sum = 0
+        reg_sum = torch.tensor(0)
         w_i = layer.weight
         p_i = layer.scores
         reg_sum += torch.sum(torch.pow(w_i, 2) * torch.pow(p_i, 1) * torch.pow(1-p_i, 1))
@@ -303,8 +302,7 @@ def get_regularization_loss(model, regularizer='var_red_1', lmbda=1, alpha=1, al
             reg_sum += torch.sum(torch.pow(b_i, 2) * torch.pow(p_i, 1) * torch.pow(1-p_i, 1))
         return reg_sum
 
-
-    regularization_loss = 0
+    regularization_loss = torch.tensor(0)
     if regularizer == 'var_red_1':
         # reg_loss = lambda * p^{alpha} (1-p)^{alpha'}
         for name, params in model.named_parameters():

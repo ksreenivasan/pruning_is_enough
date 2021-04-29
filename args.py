@@ -4,6 +4,7 @@ import yaml
 
 from configs import parser as _parser
 
+
 def parse_arguments():
     parser = argparse.ArgumentParser(description="Pruning random networks")
 
