@@ -136,7 +136,7 @@ def main_worker():
     result_root = 'results/results_' + idty_str + '/'
     if not os.path.isdir(result_root):
         os.mkdir(result_root)
-
+    
     for i in range(1):
         # create model and optimizer
         model = get_model(parser_args)
@@ -176,15 +176,21 @@ def main_worker():
 
             for trial in range(parser_args.num_test):
                 if parser_args.algo in ['hc']:
-                    cp_model = round_model(model, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio)
+                    if parser_args.how_to_connect == "prob":
+                        cp_model = round_model(model, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio)
+                    else:
+                        cp_model = copy.deepcopy(model)
                     eval_and_print(validate, data.val_loader, cp_model, criterion, parser_args, writer=None, epoch=parser_args.start_epoch, description='model after pruning')
 
             if parser_args.pretrained2:
                 eval_and_print(validate, data.val_loader, model2, criterion, parser_args, writer=None, epoch=parser_args.start_epoch, description='model2')
                 if parser_args.algo in ['hc']:
-                    cp_model2 = round_model(model2, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio)
+                    if parser_args.how_to_connect == "prob":
+                        cp_model2 = round_model(model2, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio)
+                    else:
+                        cp_model2 = copy.deepcopy(model2)
                     eval_and_print(validate, data.val_loader, cp_model2, criterion, parser_args, writer=None, epoch=parser_args.start_epoch, description='model2 after pruning')
-
+ 
             if parser_args.pretrained and parser_args.pretrained2 and parser_args.mode_connect:
                 if parser_args.weight_training:
                     print('We are connecting weights')
@@ -486,8 +492,11 @@ def connect_mask(model, criterion, data, validate, model2=None):
             loss_arr, train_acc_arr, acc_arr = np.zeros(num_v), np.zeros(num_v), np.zeros(num_v)
 
             for v_idx in range(num_v):
-                sampling_vct = torch.bernoulli(torch.ones_like(mask_init) * p)  # [0, 1]^n  0 : I'll sample mask_init, 1: I'll sample d1
-                new_mask = mask_init * (1-sampling_vct) + new_d1 * sampling_vct   # w+v
+                if parser_args.how_to_connect == "prob":
+                    sampling_vct = torch.bernoulli(torch.ones_like(mask_init) * p)  # [0, 1]^n  0 : I'll sample mask_init, 1: I'll sample d1
+                    new_mask = mask_init * (1-sampling_vct) + new_d1 * sampling_vct   # w+v
+                else:
+                    new_mask = mask_init * p + mask_fin * (1-p) 
 
                 # pdb.set_trace()
                 # print(torch.sum(torch.abs(new_mask - new_d1)))
@@ -500,6 +509,10 @@ def connect_mask(model, criterion, data, validate, model2=None):
                         # print(name, params.data.shape)
                         # print(torch.sum(torch.abs(params.data - flat_tensor2[idx])))
                         idx += 1
+
+                if parser_args.how_to_connect == "round":
+                    cp_model = round_model(cp_model, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio)
+
                 # compute loss for the mask
                 loss = criterion(cp_model(data_), label_)
                 acc1, acc5, acc10 = validate(

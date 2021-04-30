@@ -456,6 +456,12 @@ def parse_arguments():
         help='filename for state_dict used for mode connectivity'
     )
     parser.add_argument(
+        '--how-to-connect',
+        type=str,
+        default='prob',
+        help="procedure for interpolating the mask. Can be \"random\", which chooses a binary value for a mask coordinate with bern(alpha), \"soft\" which uses the [0, 1] score for each coordinate for interpolation (the mask consists of continuous values rather than binary in this case), and \"round\" which is uses the mask obtained from the \"soft\" option and applies naive rounding."
+    )
+    parser.add_argument(
         "--no-cuda",
         action="store_true",
         default=False,
