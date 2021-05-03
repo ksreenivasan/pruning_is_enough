@@ -11,6 +11,10 @@ name: resnet18_cifar10_hypercube_noreg
 # ===== Learning Rate Policy ======== #
 optimizer: adam
 lr: 0.01
+lr_policy: multistep_lr
+lr_gamma: 0.5
+lr_adjust: 30 #20
+
 #lr_policy: cosine_lr
 
 # ===== Network training config ===== #
@@ -26,7 +30,7 @@ freeze_weights: True
 prune_rate: 0.0
 init: signed_constant
 score_init: unif
-scale_fan: True
+scale_fan: False #True
 
 
 # ===== Rounding ===== #
@@ -37,7 +41,7 @@ noise_ratio: 0
 
 # ===== Regularization ===== #
 regularization: False
-lmbda: 0.000001 #0.000001
+lmbda: 0 #0.000001 #0.000001
 
 
 # ===== Hardware setup ===== #
