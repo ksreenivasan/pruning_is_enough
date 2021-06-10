@@ -1,20 +1,32 @@
-# Conventional (Weight training, EP)
+#####################################################
+# CONV4 CIFAR10 EXPERIMENTS #########################
+#####################################################
+
+# Conventional Weight training
 :<<BLOCK
-python main.py --config configs/training/conv4/conv4_training.yml
+python main.py --config configs/training/conv4/conv4_training.yml > log_conv4_weight_training 2>&1
 BLOCK
+
+# Ramanujan's EP
+:<<BLOCK
+python main.py --config configs/ep/conv4/conv4_sc_ep.yml > log_conv4_sc_ep 2>&1
+BLOCK
+
 
 # run EP/HC over multiple overparameterization setup (w/ SGD)
 :<<BLOCK
 width_arr=(2) #1.5 2)
 for th in ${width_arr[@]}
 do
-    #python main.py --config configs/ep/conv4/conv4_sc_ep_sgd.yml --width $th
+    # python main.py --config configs/ep/conv4/conv4_sc_ep_sgd.yml --width $th
     python main.py --config configs/hypercube/conv4/conv4_sc_hypercube_adam.yml --width $th #> log_$th 2>&1
 done
 BLOCK
 
 # HC + regularization experiments 
-# python main.py --config configs/hypercube/conv4/conv4_sc_hypercube_adam.yml > log_entropy 2>&1
+#:<<BLOCK
+python main.py --config configs/hypercube/conv4/conv4_sc_hypercube_reg_multistep_decay.yml > log_conv4_hc_reg_multistep 2>&1
+#BLOCK
 
 # for testing probabilistic pruning (for some layer) and naive rounding (for other layers)
 # python main.py --config configs/hypercube/conv4/conv4_sc_hypercube_reg_test_hybrid_pruning.yml
