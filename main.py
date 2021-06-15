@@ -841,7 +841,7 @@ def get_model(parser_args):
     print("=> Creating model '{}'".format(parser_args.arch))
     if parser_args.fixed_init:
         set_seed(parser_args.seed_fixed_init)
-    if parser_args.arch == 'Conv4':
+    if parser_args.arch in ['Conv4', 'Conv4Normal']:
         model = models.__dict__[parser_args.arch](width=parser_args.width)
     else:
         model = models.__dict__[parser_args.arch]()

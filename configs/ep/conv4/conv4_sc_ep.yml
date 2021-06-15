@@ -1,4 +1,6 @@
 # Edge-popup version
+# ksreenivsan: rolling back EP config to original Ramanujan config
+
 algo: 'ep'
 
 # Architecture
@@ -9,12 +11,9 @@ dataset: CIFAR10
 name: conv4_ep_sc
 
 # ===== Learning Rate Policy ======== #
-optimizer: adam #sgd
-lr: 0.0001 #0.1
-lr_policy: multistep_lr # cosine_lr
-lr_gamma: 0.5
-lr_adjust: 20 #20
-
+optimizer: sgd
+lr: 0.1
+lr_policy: cosine_lr
 
 # ===== Network training config ===== #
 epochs: 150
@@ -32,4 +31,4 @@ scale_fan: True
 
 # ===== Hardware setup ===== #
 workers: 4
-gpu: 0
+gpu: 3
