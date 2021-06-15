@@ -33,6 +33,7 @@ init: signed_constant
 score_init: bern #bern #unif
 scale_fan: False #True #False #True
 fixed_init: True
+seed_fixed_init: 42
 
 # ===== Rounding ===== #
 round: naive #prob #naive
@@ -50,5 +51,5 @@ lmbda: 0.0000001 #0.0000001 #0.000001
 
 # ===== Hardware setup ===== #
 workers: 4
-gpu: 3 #1
+gpu: 0
 
