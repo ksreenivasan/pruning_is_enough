@@ -1,15 +1,18 @@
-# Conventional (Weight training, EP)
-# python main.py --config configs/training/conv4/conv4_training.yml
+# Conventional (Weight training)
+#python main.py --config configs/training/conv4/conv4_training_sgd.yml --width 2
+#python main.py --config configs/training/conv4/conv4_training_adam.yml --width 2
+
 
 # run EP/HC over multiple overparameterization setup (w/ SGD)
-:<<BLOCK
-width_arr=(2) #1.5 2)
+#:<<BLOCK
+width_arr=(1) 
 for th in ${width_arr[@]}
 do
-    #python main.py --config configs/ep/conv4/conv4_sc_ep_sgd.yml --width $th
-    python main.py --config configs/hypercube/conv4/conv4_sc_hypercube_adam.yml --width $th #> log_$th 2>&1
+    python main.py --config configs/ep/conv4/conv4_sc_ep_sgd.yml --width $th --alpha 1 --alpha_prime 0
+    #python main.py --config configs/hypercube/conv4/conv4_sc_hypercube_adam.yml --width $th #> log_$th 2>&1
+    #python main.py --config configs/hypercube/conv4/conv4_sc_hypercube_sgd.yml --width $th #> log_$th 2>&1
 done
-BLOCK
+#BLOCK
 
 # HC + regularization experiments 
 # python main.py --config configs/hypercube/conv4/conv4_sc_hypercube_adam.yml > log_entropy 2>&1
@@ -62,9 +65,10 @@ BLOCK
 # python main.py --config configs/ep/resnet18/resnet18_sc_ep.yml > log_resnet18_ep 2>&1
 #python main.py --config configs/hypercube/resnet18/resnet18_sc_hypercube_noreg.yml #> log_resnet18_hc 2>&1
 
+:<<BLOCK
 lmbda=(0.001) #0.01 0.0001 0.000001)
 for lm in ${lmbda[@]}
 do
-    python main.py --config configs/hypercube/resnet18/resnet18_sc_hypercube_reg.yml --lmbda $lm # > log_resnet18_hc_lmbda_$lm 2>&1
+    python main.py --config configs/hypercube/resnet18/resnet18_sc_hypercube_reg.yml --lmbda $lm #> log_resnet18_hc_lr_01_var_red_2_lmbda_$lm 2>&1
 done
-
+BLOCK
