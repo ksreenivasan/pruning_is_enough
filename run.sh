@@ -14,18 +14,21 @@ BLOCK
 
 
 # run EP/HC over multiple overparameterization setup (w/ SGD)
-:<<BLOCK
-width_arr=(2) #1.5 2)
+#:<<BLOCK
+width_arr=(1) 
 for th in ${width_arr[@]}
 do
-    # python main.py --config configs/ep/conv4/conv4_sc_ep_sgd.yml --width $th
-    python main.py --config configs/hypercube/conv4/conv4_sc_hypercube_adam.yml --width $th #> log_$th 2>&1
+    python main.py --config configs/ep/conv4/conv4_sc_ep_sgd.yml --width $th --alpha 1 --alpha_prime 0
+    #python main.py --config configs/hypercube/conv4/conv4_sc_hypercube_adam.yml --width $th #> log_$th 2>&1
+    #python main.py --config configs/hypercube/conv4/conv4_sc_hypercube_sgd.yml --width $th #> log_$th 2>&1
 done
-BLOCK
+#BLOCK
+
+
 
 # HC + regularization experiments 
 #:<<BLOCK
-python main.py --config configs/hypercube/conv4/conv4_sc_hypercube_reg_multistep_decay.yml > log_conv4_hc_reg_multistep 2>&1
+#python main.py --config configs/hypercube/conv4/conv4_sc_hypercube_reg_multistep_decay.yml > log_conv4_hc_reg_multistep 2>&1
 #BLOCK
 
 # for testing probabilistic pruning (for some layer) and naive rounding (for other layers)
