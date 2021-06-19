@@ -11,12 +11,13 @@ class ImageNet:
     def __init__(self, args):
         super(ImageNet, self).__init__()
 
-        data_root = os.path.join(args.data, "imagenet")
+#        data_root = os.path.join(args.data, "imagenet")
+        data_root = args.data
 
         use_cuda = torch.cuda.is_available()
 
         # Data loading code
-        kwargs = {"num_workers": args.workers, "pin_memory": True} if use_cuda else {}
+        kwargs = {"num_workers": args.num_workers, "pin_memory": True} if use_cuda else {}
 
         # Data loading code
         traindir = os.path.join(data_root, "train")

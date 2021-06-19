@@ -20,9 +20,9 @@ lr_adjust: 30
 
 
 # ===== Network training config ===== #
-epochs: 150 #150 #150
-weight_decay: 0 #0.0001
-momentum: 0.9 #0.9
+epochs: 150
+weight_decay: 0
+momentum: 0.9
 batch_size: 128
 
 # ===== Sparsity =========== #
@@ -30,17 +30,18 @@ conv_type: SubnetConv
 bn_type: NonAffineBatchNorm
 freeze_weights: True
 init: signed_constant
-score_init: bern #bern #unif
-scale_fan: False #True #False #True
+score_init: bern
+scale_fan: True
 fixed_init: True
+seed_fixed_init: 42
 
 # ===== Rounding ===== #
-round: naive #prob #naive
+round: naive #prob
 #num_test: 10
 #hc_warmup: 30 # 150
 #hc_period: 10
 noise: True
-noise_ratio: 0 #0.001
+noise_ratio: 0
 
 
 # ===== Regularization ===== #
@@ -50,5 +51,5 @@ lmbda: 0.0000001 #0.0000001 #0.000001
 
 # ===== Hardware setup ===== #
 workers: 4
-gpu: 3 #1
+gpu: 0
 

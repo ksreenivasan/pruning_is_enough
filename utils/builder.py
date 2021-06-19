@@ -82,7 +82,7 @@ class Builder(object):
         return self.bn_layer(planes)
 
     def activation(self):
-        if args.nonlinearity == "relu":
+        if parser_args.nonlinearity == "relu":
             return (lambda: nn.ReLU(inplace=True))()
         else:
             raise ValueError(f"{args.nonlinearity} is not an initialization option!")

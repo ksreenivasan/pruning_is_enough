@@ -2,18 +2,21 @@
 algo: 'hc'
 
 # Architecture
-arch: Conv4
+arch: ResNet50
 
 # ===== Dataset ===== #
-dataset: CIFAR10
-name: conv4_sc_bern_hypercube
+dataset: ImageNet
+data: ../imagenet_data/
+name: resnet50_imagenet_hypercube_reg_exp2
 
 # ===== Learning Rate Policy ======== #
 optimizer: adam
-lr: 0.02
+lr: 400
+#lr_policy: cosine_lr
 lr_policy: multistep_lr
-lr_gamma: 0.5
-lr_adjust: 30
+lr_gamma: 0.99
+lr_adjust: 1
+
 
 # ===== Network training config ===== #
 epochs: 150
@@ -33,19 +36,16 @@ scale_fan: False #True
 
 # ===== Rounding ===== #
 round: naive
-#num_test: 10
-#hc_warmup: 30 # 150
-#hc_period: 10
 noise: True
-noise_ratio: 0 #0.001
+noise_ratio: 0
 
 
 # ===== Regularization ===== #
-regularization: var_red_1
-lmbda: 0.000001 #0.000001
+regularization: var_red_2
+lmbda: 0 #0.000001
 
 
 # ===== Hardware setup ===== #
-workers: 4
-gpu: 3
+num_workers: 4
+gpu: 1
 

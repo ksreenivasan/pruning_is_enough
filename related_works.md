@@ -2,7 +2,6 @@
 * Weak LTH, Pruning+Training 
 	* [Learning both Weights and Connections for Efficient Neural Networks](https://arxiv.org/pdf/1506.02626.pdf): Learn only the "important" connections. Combination of pruning \& training. This can be considered as finding tickets
 	* [Lottery Ticket Hypothesis](https://arxiv.org/pdf/1803.03635.pdf): Neural networks contain sparse subnetworks that can be effectively trained from scratch when reset to their initialization
-
 	* [Deconstructing Lottery Tickets: Zeros, Signs, and the Supermask](https://arxiv.org/pdf/1905.01067.pdf): NOTE: Sec.5 has some technique using probabilistic masking. We need to compare it with ours
 
 
@@ -10,11 +9,8 @@
 	* [What’s Hidden in a Randomly Weighted Neural Network?](https://arxiv.org/pdf/1911.13299.pdf): Randomly weighted (overparameterized) neural network contains a subnetwork which performs near SOTA. Suggested Edge-popup (EP) algorithm.
 
 * Sparsity usinig L0 regularization
-
 	* [LEARNING SPARSE NEURAL NETWORKS THROUGH L0 REGULARIZATION](https://arxiv.org/pdf/1712.01312.pdf): Suggested "surrogate" L0 regularization, in order to sparsify NN. [Q] Not sure how they applied "reparameterization trick"
-	
 	* [Winning the Lottery with Continuous Sparsification](https://arxiv.org/pdf/1912.04427.pdf)
-
 	* [SNIP: SINGLE-SHOT NETWORK PRUNING BASED ON CONNECTION SENSITIVITY](https://arxiv.org/pdf/1810.02340.pdf)
 
 
@@ -32,6 +28,9 @@
 		- Proved that small "Gauss length" gives monotonicity
 		- Kind of related with "laze training" saying that training goes to the closest minima?
 		- NOTE: the connectivity is quite good. See what's happening
+
+* Mathematical analysis on pruning
+	* Proving the Lottery Ticket Hypothesis: Pruning is All You Need
 
 
 * To Be Categorized
