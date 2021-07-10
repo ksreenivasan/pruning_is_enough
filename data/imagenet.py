@@ -39,8 +39,18 @@ class ImageNet:
             ),
         )
 
+        if args.multiprocessing_distributed:
+            train_sampler = torch.utils.data.distributed.DistributedSampler(train_dataset)
+        else:
+            train_sampler = None
+
+
         self.train_loader = torch.utils.data.DataLoader(
-            train_dataset, batch_size=args.batch_size, shuffle=True, **kwargs
+            train_dataset,
+            batch_size=args.batch_size,
+            shuffle=(train_sampler is None),
+            sampler=train_sampler,
+            **kwargs
         )
 
         self.val_loader = torch.utils.data.DataLoader(

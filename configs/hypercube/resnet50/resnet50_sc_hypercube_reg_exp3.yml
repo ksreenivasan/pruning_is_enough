@@ -42,12 +42,13 @@ noise_ratio: 0
 
 # ===== Regularization ===== #
 regularization: var_red_2
-lmbda: 0 #0.000001
+lmbda: 0.000001
 
 
 # ===== Hardware setup ===== #
-num_workers: 7
+num_workers: 6
 gpu: 0
 multiprocessing_distributed: True
+dist_backend: nccl
 world_size: 1
 rank: 0

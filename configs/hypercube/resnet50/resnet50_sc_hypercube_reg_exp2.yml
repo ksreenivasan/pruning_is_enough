@@ -6,12 +6,12 @@ arch: ResNet50
 
 # ===== Dataset ===== #
 dataset: ImageNet
-data: ../imagenet_data/
+data: /hdd1/acnagle/
 name: resnet50_imagenet_hypercube_reg_exp2
 
 # ===== Learning Rate Policy ======== #
 optimizer: adam
-lr: 400
+lr: 0.1
 #lr_policy: cosine_lr
 lr_policy: multistep_lr
 lr_gamma: 0.99
@@ -22,7 +22,7 @@ lr_adjust: 1
 epochs: 150
 weight_decay: 0.0 #0.0001
 momentum: 0.9
-batch_size: 128
+batch_size: 64
 
 # ===== Sparsity =========== #
 conv_type: SubnetConv

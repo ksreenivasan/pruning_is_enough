@@ -495,12 +495,6 @@ def parse_arguments():
     )
     # WARNING: With DataParallel, this causes some issues
     parser.add_argument(
-        "--multigpu",
-        default=None,
-        type=lambda x: [int(a) for a in x.split(",")],
-        help="Which GPUs to use for multigpu training",
-    )
-    parser.add_argument(
         "--pretrained",
         dest="pretrained",
         default=None,
@@ -613,6 +607,40 @@ def parse_arguments():
         type=float,
         help="second exponent in regularizer",
     )
+
+    # Distributed training
+    parser.add_argument(
+        "--world-size",
+        default=-1,
+        type=int,
+        help="number of nodes for distributed training"
+    )
+    parser.add_argument(
+        "--rank",
+        default=-1,
+        type=int,
+        help="node rank for distributed training"
+    )
+    parser.add_argument(
+        "--dist-backend",
+        default="nccl",
+        type=str,
+        help="distributed backend"
+    )
+    parser.add_argument(
+        "--multiprocessing-distributed",
+        action="store_true",
+        help="Use multi-processing distributed training to launch "
+             "N processes per node, which has N GPUs. This is the "
+             "fastest way to use PyTorch for either single node or "
+             "multi node data parallel training"
+    )
+#    parser.add_argument(
+#        "--multigpu",
+#        default=None,
+#        type=str,
+#        help="Which GPUs to use for multigpu training, comma separated"
+#    )
 
     args = parser.parse_args()
     get_config(args)

@@ -14,6 +14,7 @@ import torch.backends.cudnn as cudnn
 import torch.optim
 import torch.utils.data
 import torch.utils.data.distributed
+import torch.multiprocessing as mp
 
 from utils.conv_type import FixedSubnetConv, SampleSubnetConv
 from utils.logging import AverageMeter, ProgressMeter
@@ -98,19 +99,49 @@ def get_mask(model):
 
     return mask, flat_tensor
 
+def setup_distributed(ngpus_per_node):
+    # for debugging
+    os.environ['NCCL_DEBUG'] = 'INFO'
 
+    # setup environment
+    os.environ['MASTER_ADDR'] = '127.0.0.1'
+    os.environ['MASTER_PORT'] = '29500'
+
+    # Since we have ngpus_per_node processes per node, the total world_size
+    # needs to be adjusted accordingly
+    parser_args.world_size = ngpus_per_node * parser_args.world_size
+
+def cleanup_distributed():
+    torch.distributed.destroy_process_group()
 
 def main():
     print(parser_args)
     set_seed(parser_args.seed + parser_args.trial_num - 1)
-    # Simply call main_worker function
-    main_worker()
+
+#    parser_args.distributed = parser_args.world_size > 1 or parser_args.multiprocessing_distributed
+    ngpus_per_node = torch.cuda.device_count()
+    
+    if parser_args.multiprocessing_distributed:
+        setup_distributed(ngpus_per_node)
+        mp.spawn(main_worker, nprocs=ngpus_per_node, args=(ngpus_per_node,), join=True)
+    else:
+        # Simply call main_worker function
+        main_worker(parser_args.gpu, ngpus_per_node)
 
 
-def main_worker():
+def main_worker(gpu, ngpus_per_node):
     train, validate, modifier = get_trainer(parser_args)
+    parser_args.gpu = gpu
+
     if parser_args.gpu is not None:
         print("Use GPU: {} for training".format(parser_args.gpu))
+
+    if parser_args.multiprocessing_distributed:
+        parser_args.rank = parser_args.rank * ngpus_per_node + parser_args.gpu
+        # When using a single GPU per process and per DistributedDataParallel, we need to divide the batch size
+        # ourselves based on the total number of GPUs we have
+        parser_args.batch_size = int(parser_args.batch_size / ngpus_per_node)
+        parser_args.num_workers = int((parser_args.num_workers + ngpus_per_node - 1) / ngpus_per_node)
 
     train_mode_str = 'weight_training' if parser_args.weight_training else 'pruning'
     dataset_str = parser_args.dataset
@@ -420,6 +451,9 @@ def main_worker():
             eval_and_print(validate, data.val_loader, model, criterion, parser_args, writer=None, epoch=parser_args.start_epoch, description='final model before rounding')
             cp_model = round_model(model, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio)
             eval_and_print(validate, data.val_loader, cp_model, criterion, parser_args, writer=None, epoch=parser_args.start_epoch, description='final model after rounding')
+
+    if args.multiprocessing_distributed:
+        cleanup_distributed()
 
 
 # connect two masks trained by pruning
@@ -765,17 +799,18 @@ def set_gpu(parser_args, model):
 
     if parser_args.gpu is not None:
         torch.cuda.set_device(parser_args.gpu)
-        model = model.cuda(parser_args.gpu)
-    elif parser_args.multigpu is None:
-        device = torch.device("cpu")
+        model.cuda(parser_args.gpu)
+       
+        if parser_args.multiprocessing_distributed:
+            torch.distributed.init_process_group(
+                backend=parser_args.dist_backend,
+                init_method='env://',
+                world_size=parser_args.world_size,
+                rank=parser_args.rank
+            )
+            model = nn.parallel.DistributedDataParallel(model, device_ids=[parser_args.gpu])
     else:
-        # DataParallel will divide and allocate batch_size to all available GPUs
-        print(f"=> Parallelizing on {parser_args.multigpu} gpus")
-        torch.cuda.set_device(parser_args.multigpu[0])
-        parser_args.gpu = parser_args.multigpu[0]
-        model = torch.nn.DataParallel(model, device_ids=parser_args.multigpu).cuda(
-            parser_args.multigpu[0]
-        )
+        device = torch.device("cpu")
 
     return model
 

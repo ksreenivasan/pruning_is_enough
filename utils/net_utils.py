@@ -29,6 +29,16 @@ def get_layers(arch='Conv4', model=None):
                 # handle shortcut
                 if len(layer[basic_block_id].shortcut) > 0:
                     conv_layers.append(layer[basic_block_id].shortcut[0])
+    elif arch == 'ResNet50':
+        conv_layers = [model.conv1]
+        for layer in [model.layer1, model.layer2, model.layer3, model.layer4]:
+            for basic_block_id in [i for i in range(len(layer))]:
+                conv_layers.append(layer[basic_block_id].conv1)
+                conv_layers.append(layer[basic_block_id].conv2)
+                conv_layers.append(layer[basic_block_id].conv3)
+                # handle shortcut
+#                if len(layer[basic_block_id].shortcut) > 0:
+#                    conv_layers.append(layer[basic_block_id].shortcut[0])
 
         linear_layers = [model.fc]
     return (conv_layers, linear_layers)
