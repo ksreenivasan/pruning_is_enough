@@ -6,8 +6,8 @@ arch: ResNet50
 
 # ===== Dataset ===== #
 dataset: ImageNet
-data: /hdd1/acnagle/
-name: resnet50_imagenet_hypercube_reg_exp1
+data: /workspace/datasets/ILSVRC2012
+name: resnet50_imagenet_hypercube_reg_exp3
 
 # ===== Learning Rate Policy ======== #
 optimizer: adam
