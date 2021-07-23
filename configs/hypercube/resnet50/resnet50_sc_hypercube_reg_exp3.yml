@@ -13,6 +13,7 @@ name: resnet50_imagenet_hypercube_reg_exp3
 optimizer: adam
 lr: 0.01
 lr_policy: cosine_lr
+#bias: True
 #lr_policy: multistep_lr
 #lr_gamma: 0.5
 #lr_adjust: 50 #30
@@ -46,7 +47,7 @@ lmbda: 0.000001
 
 
 # ===== Hardware setup ===== #
-num_workers: 6
+num_workers: 10
 gpu: 0
 multiprocessing_distributed: True
 dist_backend: nccl

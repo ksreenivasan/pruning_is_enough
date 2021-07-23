@@ -5,7 +5,7 @@ arch: ResNet50
 
 # ===== Dataset ===== #
 dataset: ImageNet
-data: /hdd1/acnagle/
+data: /workspace/datasets/ILSVRC2012
 name: resnet50_ep
 
 # ===== Learning Rate Policy ======== #
@@ -46,7 +46,7 @@ scale_fan: True
 
 
 # ===== Hardware setup ===== #
-num_workers: 6
+num_workers: 12
 gpu: 0
 multiprocessing_distributed: True
 dist_backend: nccl

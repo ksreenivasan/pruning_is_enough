@@ -6,12 +6,12 @@ arch: ResNet50
 
 # ===== Dataset ===== #
 dataset: ImageNet
-data: /hdd1/acnagle/
+data: /workspace/datasets/ILSVRC2012
 name: resnet50_imagenet_hypercube_reg_exp1
 
 # ===== Learning Rate Policy ======== #
 optimizer: adam
-lr: 0.01
+lr: 0.1
 lr_policy: cosine_lr
 #lr_policy: multistep_lr
 #lr_gamma: 0.5
@@ -22,7 +22,7 @@ lr_policy: cosine_lr
 epochs: 150
 weight_decay: 0.0 #0.0001
 momentum: 0.9
-batch_size: 64
+batch_size: 256
 
 # ===== Sparsity =========== #
 conv_type: SubnetConv
@@ -42,12 +42,13 @@ noise_ratio: 0
 
 # ===== Regularization ===== #
 regularization: var_red_2
-lmbda: 0 #0.000001
+lmbda: 0.0001 #0.000001
 
 
 # ===== Hardware setup ===== #
-num_workers: 7
+num_workers: 12
 gpu: 0
 multiprocessing_distributed: True
+dist_backend: nccl
 world_size: 1
 rank: 0

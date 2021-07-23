@@ -88,6 +88,7 @@ def compare_rounding(validate, data_loader, model, criterion, parser_args, resul
 
     return
 
+
 def get_mask(model):
 
     flat_tensor = []
@@ -99,20 +100,20 @@ def get_mask(model):
 
     return mask, flat_tensor
 
+
 def setup_distributed(ngpus_per_node):
     # for debugging
-    os.environ['NCCL_DEBUG'] = 'INFO'
+#    os.environ['NCCL_DEBUG'] = 'INFO'
+#    os.environ['TORCH_DISTRIBUTED_DEBUG'] = 'INFO'
 
     # setup environment
     os.environ['MASTER_ADDR'] = '127.0.0.1'
     os.environ['MASTER_PORT'] = '29500'
 
-    # Since we have ngpus_per_node processes per node, the total world_size
-    # needs to be adjusted accordingly
-    parser_args.world_size = ngpus_per_node * parser_args.world_size
 
 def cleanup_distributed():
     torch.distributed.destroy_process_group()
+
 
 def main():
     print(parser_args)
@@ -142,6 +143,9 @@ def main_worker(gpu, ngpus_per_node):
         # ourselves based on the total number of GPUs we have
         parser_args.batch_size = int(parser_args.batch_size / ngpus_per_node)
         parser_args.num_workers = int((parser_args.num_workers + ngpus_per_node - 1) / ngpus_per_node)
+        # Since we have ngpus_per_node processes per node, the total world_size
+        # needs to be adjusted accordingly
+        parser_args.world_size = ngpus_per_node * parser_args.world_size
 
     train_mode_str = 'weight_training' if parser_args.weight_training else 'pruning'
     dataset_str = parser_args.dataset
@@ -188,6 +192,9 @@ def main_worker(gpu, ngpus_per_node):
         else:
             criterion = LabelSmoothing(smoothing=parser_args.label_smoothing)
 
+#        if isinstance(model, nn.parallel.DistributedDataParallel):
+#            model = model.module
+
         # optionally resume from a checkpoint
         best_acc1 = 0.0
         best_acc5 = 0.0
@@ -208,7 +215,7 @@ def main_worker(gpu, ngpus_per_node):
             for trial in range(parser_args.num_test):
                 if parser_args.algo in ['hc']:
                     if parser_args.how_to_connect == "prob":
-                        cp_model = round_model(model, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio)
+                        cp_model = round_model(model, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio, rank=parser_args.gpu)
                     else:
                         cp_model = copy.deepcopy(model)
                     eval_and_print(validate, data.val_loader, cp_model, criterion, parser_args, writer=None, epoch=parser_args.start_epoch, description='model after pruning')
@@ -217,7 +224,7 @@ def main_worker(gpu, ngpus_per_node):
                 eval_and_print(validate, data.val_loader, model2, criterion, parser_args, writer=None, epoch=parser_args.start_epoch, description='model2')
                 if parser_args.algo in ['hc']:
                     if parser_args.how_to_connect == "prob":
-                        cp_model2 = round_model(model2, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio)
+                        cp_model2 = round_model(model2, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio, rank=parser_args.gpu)
                     else:
                         cp_model2 = copy.deepcopy(model2)
                     eval_and_print(validate, data.val_loader, cp_model2, criterion, parser_args, writer=None, epoch=parser_args.start_epoch, description='model2 after pruning')
@@ -280,6 +287,9 @@ def main_worker(gpu, ngpus_per_node):
 
     # Start training
     for epoch in range(parser_args.start_epoch, parser_args.epochs):
+        if parser_args.multiprocessing_distributed:
+            data.train_loader.sampler.set_epoch(epoch)
+
         lr_policy(epoch, iteration=None)
         modifier(parser_args, epoch, model)
 
@@ -292,11 +302,10 @@ def main_worker(gpu, ngpus_per_node):
         )
         train_time.update((time.time() - start_train) / 60)
 
-
         # apply round for every T epochs (after E warm-up epoch)
         if parser_args.algo in ['hc'] and epoch >= parser_args.hc_warmup and epoch % parser_args.hc_period == 0:
             print('Apply rounding: {}'.format(parser_args.round))
-            model = round_model(model, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio)
+            model = round_model(model, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio, rank=parser_args.gpu)
 
         # evaluate on validation set
         start_validation = time.time()
@@ -305,7 +314,7 @@ def main_worker(gpu, ngpus_per_node):
             print('Acc before rounding: {}'.format(br_acc1))
             acc_avg = 0
             for num_trial in range(parser_args.num_test):
-                cp_model = round_model(model, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio)
+                cp_model = round_model(model, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio, rank=parser_args.gpu)
                 acc1, acc5, acc10 = validate(data.val_loader, cp_model, criterion, parser_args, writer, epoch)
                 acc_avg += acc1
             acc_avg /= parser_args.num_test
@@ -323,7 +332,7 @@ def main_worker(gpu, ngpus_per_node):
         if not parser_args.weight_training:
             if parser_args.algo in ['hc']:
                 # Round before checking sparsity
-                cp_model = round_model(model, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio)
+                cp_model = round_model(model, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio, rank=parser_args.gpu)
                 avg_sparsity = get_model_sparsity(cp_model)
                 print('Model avg sparsity: {}'.format(avg_sparsity))
             else:
@@ -449,7 +458,7 @@ def main_worker(gpu, ngpus_per_node):
         for trial in range(parser_args.num_round):
 
             eval_and_print(validate, data.val_loader, model, criterion, parser_args, writer=None, epoch=parser_args.start_epoch, description='final model before rounding')
-            cp_model = round_model(model, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio)
+            cp_model = round_model(model, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio, rank=parser_args.gpu)
             eval_and_print(validate, data.val_loader, cp_model, criterion, parser_args, writer=None, epoch=parser_args.start_epoch, description='final model after rounding')
 
     if args.multiprocessing_distributed:
@@ -545,7 +554,7 @@ def connect_mask(model, criterion, data, validate, model2=None):
                         idx += 1
 
                 if parser_args.how_to_connect == "round":
-                    cp_model = round_model(cp_model, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio)
+                    cp_model = round_model(cp_model, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio, rank=parser_args.gpu)
 
                 # compute loss for the mask
                 loss = criterion(cp_model(data_), label_)
@@ -808,7 +817,7 @@ def set_gpu(parser_args, model):
                 world_size=parser_args.world_size,
                 rank=parser_args.rank
             )
-            model = nn.parallel.DistributedDataParallel(model, device_ids=[parser_args.gpu])
+            model = nn.parallel.DistributedDataParallel(model, device_ids=[parser_args.gpu], find_unused_parameters=True)
     else:
         device = torch.device("cpu")
 

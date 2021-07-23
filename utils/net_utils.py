@@ -17,6 +17,8 @@ from utils.conv_type import GetSubnet as GetSubnetConv
 # return layer objects of conv layers and linear layers so we can parse them
 # efficiently
 def get_layers(arch='Conv4', model=None):
+    if isinstance(model, nn.parallel.DistributedDataParallel):
+        model = model.module
     if arch == 'Conv4':
         conv_layers = [model.convs[0], model.convs[2], model.convs[5], model.convs[7]]
         linear_layers = [model.linear[0], model.linear[2], model.linear[4]]
@@ -181,9 +183,12 @@ class SubnetL1RegLoss(nn.Module):
 
         
 # rounds model by round_scheme and returns the rounded model
-def round_model(model, round_scheme, noise=False, ratio=0.0):
+def round_model(model, round_scheme, noise=False, ratio=0.0, rank=None):
     print("Rounding model with scheme: {}".format(round_scheme))
-    cp_model = copy.deepcopy(model)
+    if isinstance(model, nn.parallel.DistributedDataParallel):
+        cp_model = model.module
+    else:
+        cp_model = copy.deepcopy(model)
     for name, params in cp_model.named_parameters():
         if ".score" in name:
             if noise:
@@ -239,6 +244,8 @@ def get_score_sparsity_hc(model):
 
 # returns avg_sparsity = number of non-zero weights!
 def get_model_sparsity(model, threshold=0):
+    if isinstance(model, nn.parallel.DistributedDataParallel):
+        model = model.module
     conv_layers, linear_layers = get_layers(parser_args.arch, model)
     numer = 0
     denom = 0
@@ -298,6 +305,8 @@ def get_layer_sparsity(layer, threshold=0):
 
 
 def get_regularization_loss(model, regularizer='var_red_1', lmbda=1, alpha=1, alpha_prime=1):
+    if isinstance(model, nn.parallel.DistributedDataParallel):
+        model = model.module
     conv_layers, linear_layers = get_layers(parser_args.arch, model)
     def get_special_reg_sum(layer):
         # reg_loss =  \sum_{i} w_i^2 * p_i(1-p_i)
@@ -360,7 +369,6 @@ def get_regularization_loss(model, regularizer='var_red_1', lmbda=1, alpha=1, al
 
 #### Functions used for greedy pruning ####
 def get_sparsity(model):
-    # ONLY FOR GREEDY
     if "Baseline" in model.__class__.__name__:
         return 0
     else:
