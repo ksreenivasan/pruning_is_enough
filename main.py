@@ -461,7 +461,7 @@ def main_worker(gpu, ngpus_per_node):
             cp_model = round_model(model, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio, rank=parser_args.gpu)
             eval_and_print(validate, data.val_loader, cp_model, criterion, parser_args, writer=None, epoch=parser_args.start_epoch, description='final model after rounding')
 
-    if args.multiprocessing_distributed:
+    if parser_args.multiprocessing_distributed:
         cleanup_distributed()
 
 

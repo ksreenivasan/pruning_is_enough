@@ -62,8 +62,8 @@ def save_checkpoint(state, is_best, filename="checkpoint.pth", save=False, parse
             print('We are saving stat_dict for checking mode connectivity: {}'.format(parser_args.mode_connect_filename))
             shutil.copyfile(filename, parser_args.mode_connect_filename)
 
-        if not save:
-            os.remove(filename)
+#        if not save:
+#            os.remove(filename)
 
 
 def get_lr(optimizer):
@@ -186,7 +186,7 @@ class SubnetL1RegLoss(nn.Module):
 def round_model(model, round_scheme, noise=False, ratio=0.0, rank=None):
     print("Rounding model with scheme: {}".format(round_scheme))
     if isinstance(model, nn.parallel.DistributedDataParallel):
-        cp_model = model.module
+        cp_model = copy.deepcopy(model.module)
     else:
         cp_model = copy.deepcopy(model)
     for name, params in cp_model.named_parameters():
@@ -218,6 +218,9 @@ def round_model(model, round_scheme, noise=False, ratio=0.0, rank=None):
                 delta = torch.bernoulli(torch.ones_like(params.data)*ratio)
                 params.data = (params.data + delta) % 2
             '''
+
+    if isinstance(model, nn.parallel.DistributedDataParallel):
+        cp_model = nn.parallel.DistributedDataParallel(cp_model, device_ids=[rank], find_unused_parameters=True)
 
     return cp_model
 
