@@ -1,4 +1,9 @@
-
+# Checking optimal sparsity
+python mnist_pruning_exps.py --algo ep \
+--lr 0.1 \
+--epochs 5 \
+--optimizer sgd \
+--results-filename vanilla_ep.csv
 
 # Weight training
 :<<BLOCK
@@ -11,7 +16,7 @@ python mnist_neurips.py --mode training \
 BLOCK
 
 # Width+Depth Pruning
-#:<<BLOCK
+:<<BLOCK
 python mnist_neurips.py --mode pruning \
 --algo ep \
 --lr 0.001 \
@@ -19,6 +24,7 @@ python mnist_neurips.py --mode pruning \
 --epochs 50 \
 --ratio 1 \
 --results-filename nips_binary_1.csv
+BLOCK
 
 :<<BLOCK
 python mnist_neurips.py --mode pruning \

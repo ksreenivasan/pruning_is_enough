@@ -25,10 +25,6 @@ import copy
 import random
 plt.style.use('seaborn-whitegrid')
 
-
-
-
-
 parser_args = None
 num_neuron = 20 #100
 print('num_neurons: ', num_neuron)

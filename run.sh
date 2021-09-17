@@ -14,7 +14,7 @@ BLOCK
 
 
 # run EP/HC over multiple overparameterization setup (w/ SGD)
-#:<<BLOCK
+:<<BLOCK
 width_arr=(1) 
 for th in ${width_arr[@]}
 do
@@ -22,7 +22,7 @@ do
     #python main.py --config configs/hypercube/conv4/conv4_sc_hypercube_adam.yml --width $th #> log_$th 2>&1
     #python main.py --config configs/hypercube/conv4/conv4_sc_hypercube_sgd.yml --width $th #> log_$th 2>&1
 done
-#BLOCK
+BLOCK
 
 
 

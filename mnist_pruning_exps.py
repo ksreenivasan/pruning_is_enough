@@ -8,6 +8,7 @@ import pandas as pd
 import matplotlib as plt
 from matplotlib import colors as mcolors
 from pylab import *
+import random
 
 import torch
 import torch.nn as nn
@@ -17,14 +18,26 @@ from torchvision import datasets, transforms
 from torch.optim.lr_scheduler import CosineAnnealingLR
 import torch.autograd as autograd
 
-from utils.utils import set_seed
-
 import pdb
 import time
 import copy
 plt.style.use('seaborn-whitegrid')
 
 parser_args = None
+
+
+# set seed for experiment
+def set_seed(seed):
+    random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+    np.random.seed(seed)
+    os.environ['PYTHONHASHSEED'] = str(seed)
+    # making sure GPU runs are deterministic even if they are slower
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = True
+    print("Seeded everything: {}".format(seed))
 
 
 class GetSubnet(autograd.Function):
@@ -681,7 +694,7 @@ def main():
 
     set_seed(parser_args.seed)
 
-    device = torch.device("cuda:2" if use_cuda else "cpu")
+    device = torch.device("cuda:0" if use_cuda else "cpu")
 
     kwargs = {'num_workers': 1, 'pin_memory': True} if use_cuda else {}
     train_loader = torch.utils.data.DataLoader(
