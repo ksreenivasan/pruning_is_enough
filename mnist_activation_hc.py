@@ -175,7 +175,7 @@ class LinearAct(nn.Linear):
         else:
             # dummy variable just so other things don't break
             self.bias_scores = nn.Parameter(torch.Tensor(1))
-        if parser_args.algo in ('hc_act'):
+        if parser_args.algo in ('hc', 'hc_act'):
             nn.init.uniform_(self.scores, a=0.0, b=1.0)
             nn.init.uniform_(self.bias_scores, a=0.0, b=1.0)
         else:
@@ -207,16 +207,25 @@ class LinearAct(nn.Linear):
         return F.linear(x, w, b)
 
 class NetActFC(nn.Module):
-    def __init__(self):
+    def __init__(self, n_hidden_layer):
         super(NetActFC, self).__init__()
+        self.n_hidden = n_hidden_layer
         self.fc1 = LinearAct(784, 1000, bias=parser_args.bias)
-        self.fc2 = SupermaskLinear(1000, 10, bias=parser_args.bias)
+        self.fc2 = LinearAct(1000, 1000, bias=parser_args.bias)
+        self.fc3 = LinearAct(1000, 1000, bias=parser_args.bias)
+        self.fc4 = SupermaskLinear(1000, 10, bias=parser_args.bias)
 
     def forward(self, x):
         x = torch.flatten(x, 1)
         x = self.fc1(x)
         x = F.relu(x)
-        x = self.fc2(x)
+        if self.n_hidden >= 2:
+            x = self.fc2(x)
+            x = F.relu(x)
+        if self.n_hidden >= 3:
+            x = self.fc3(x)
+            x = F.relu(x)
+        x = self.fc4(x)
         output = x
         #output = F.log_softmax(x, dim=1)
         return output
@@ -246,6 +255,29 @@ class NetAct(nn.Module):
         output = F.log_softmax(x, dim=1)
         return output
 
+class NetFC(nn.Module):
+    def __init__(self, n_hidden_layer):
+        super(NetFC, self).__init__()
+        self.n_hidden = n_hidden_layer
+        self.fc1 = SupermaskLinear(784, 1000, bias=parser_args.bias)
+        self.fc2 = SupermaskLinear(1000, 1000, bias=parser_args.bias)
+        self.fc3 = SupermaskLinear(1000, 1000, bias=parser_args.bias)
+        self.fc4 = SupermaskLinear(1000, 10, bias=parser_args.bias)
+
+    def forward(self, x):
+        x = torch.flatten(x, 1)
+        x = self.fc1(x)
+        x = F.relu(x)
+        if self.n_hidden >= 2:
+            x = self.fc2(x)
+            x = F.relu(x)
+        if self.n_hidden >= 3:
+            x = self.fc3(x)
+            x = F.relu(x)
+        x = self.fc4(x)
+        output = x
+        #output = F.log_softmax(x, dim=1)
+        return output
 
 class Net(nn.Module):
     def __init__(self):
@@ -589,7 +621,7 @@ def main():
     parser.add_argument('--n_hidden_layer', type=int, default=1,
                         help='number of hidden layers for FC')
     parser.add_argument('--algo', type=str, default='ep',
-                        help='pruning algo to use |ep|pt_hack|pt_reg|hc|hc_act|')
+                        help='pruning algo to use |hc|hc_act|')
     parser.add_argument('--optimizer', type=str, default='sgd',
                         help='optimizer option to use |sgd|adam|')
     parser.add_argument('--evaluate-only', action='store_true', default=False,
@@ -645,14 +677,19 @@ def main():
         batch_size=parser_args.test_batch_size, shuffle=True, **kwargs)
 
     if parser_args.mode == "pruning":
-        if parser_args.algo == 'hc_act':
+        if parser_args.algo in ['hc_act']:
             if parser_args.arch == 'Ramanujan':
                 model = NetAct().to(device)
             elif parser_args.arch == 'FC':
-                model = NetActFC().to(device)
-            
+                model = NetActFC(n_hidden_layer).to(device)
+        elif parser_args.algo in ['hc']:
+            if parser_args.arch == 'Ramanujan':
+                model = Net().to(device)
+            elif parser_args.arch == 'FC':
+                model = NetFC(n_hidden_layer).to(device)
         else:
-            model = Net().to(device)
+            raise NotImplementedError
+
     elif parser_args.mode == "training":
         model = NetNormal().to(device)
     else:
