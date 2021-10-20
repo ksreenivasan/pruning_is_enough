@@ -172,20 +172,20 @@ class SupermaskLinear(nn.Linear):
 
 
 
-class ActConv(nn.Conv2d):
+class ConvAct(nn.Conv2d):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        print('We need to revise ActConv!')
-
+        #pdb.set_trace()
         # initialize the scores
-        self.scores = nn.Parameter(torch.Tensor(self.weight.size()))
+        self.scores = nn.Parameter(torch.Tensor(self.weight.size()[0]))
+        #self.scores = nn.Parameter(torch.Tensor(self.weight.size()))
         if parser_args.bias:
             self.bias_scores = nn.Parameter(torch.Tensor(self.bias.size()))
         else:
             # dummy variable just so other things don't break
             self.bias_scores = nn.Parameter(torch.Tensor(1))
-        if parser_args.algo in ('hc'):
+        if parser_args.algo in ('hc', 'hc_act'):
             nn.init.uniform_(self.scores, a=0.0, b=1.0)
             nn.init.uniform_(self.bias_scores, a=0.0, b=1.0)
         else:
@@ -207,6 +207,12 @@ class ActConv(nn.Conv2d):
             self.scores.data = torch.clamp(self.scores.data, 0.0, 1.0)
             self.bias_scores.data = torch.clamp(self.bias_scores.data, 0.0, 1.0)
             subnet = self.scores
+            bias_subnet = self.bias_scores
+        elif parser_args.algo in ('hc_act'):
+            self.scores.data = torch.clamp(self.scores.data, 0.0, 1.0)
+            self.bias_scores.data = torch.clamp(self.bias_scores.data, 0.0, 1.0)
+            subnet = self.scores.reshape(-1,1,1,1).repeat(1,self.weight.size()[1], self.weight.size()[2], self.weight.size()[3])
+            #subnet = self.scores
             bias_subnet = self.bias_scores
         else:
             subnet, bias_subnet = GetSubnet.apply(self.scores.abs(), self.bias_scores.abs(), parser_args.sparsity)
@@ -222,21 +228,19 @@ class ActConv(nn.Conv2d):
         return x
 
 
-class ActLinear(nn.Linear):
+class LinearAct(nn.Linear):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-
-        print('start from here...')
-        pdb.set_trace()
         # initialize the scores
-        self.scores = nn.Parameter(torch.Tensor(self.weight.size()))
+        self.scores = nn.Parameter(torch.Tensor(self.weight.size()[0]))
+        #self.scores = nn.Parameter(torch.Tensor(self.weight.size()))
         if parser_args.bias:
             self.bias_scores = nn.Parameter(torch.Tensor(self.bias.size()))
         else:
             # dummy variable just so other things don't break
             self.bias_scores = nn.Parameter(torch.Tensor(1))
-        if parser_args.algo in ('hc'):
+        if parser_args.algo in ('hc_act'):
             nn.init.uniform_(self.scores, a=0.0, b=1.0)
             nn.init.uniform_(self.bias_scores, a=0.0, b=1.0)
         else:
@@ -253,11 +257,12 @@ class ActLinear(nn.Linear):
             self.bias.requires_grad = False
 
     def forward(self, x):
-        if parser_args.algo in ('hc'):
+        if parser_args.algo in ('hc_act'):
             # don't need a mask here. the scores are directly multiplied with weights
             self.scores.data = torch.clamp(self.scores.data, 0.0, 1.0)
             self.bias_scores.data = torch.clamp(self.bias_scores.data, 0.0, 1.0)
-            subnet = self.scores
+            subnet = self.scores.reshape(-1,1).repeat(1,self.weight.size()[1])
+            #subnet = self.scores
             bias_subnet = self.bias_scores
         else:
             subnet, bias_subnet = GetSubnet.apply(self.scores.abs(), self.bias_scores.abs(), parser_args.sparsity)
@@ -269,15 +274,15 @@ class ActLinear(nn.Linear):
             b = self.bias
         return F.linear(x, w, b)
 
-class ActNet(nn.Module):
+class NetAct(nn.Module):
     def __init__(self):
-        super(Net, self).__init__()
-        self.conv1 = ActConv(1, 32, 3, 1, bias=parser_args.bias)
-        self.conv2 = ActConv(32, 64, 3, 1, bias=parser_args.bias)
+        super(NetAct, self).__init__()
+        self.conv1 = ConvAct(1, 32, 3, 1, bias=parser_args.bias)
+        self.conv2 = ConvAct(32, 64, 3, 1, bias=parser_args.bias)
         self.dropout1 = nn.Dropout2d(0.25)
         self.dropout2 = nn.Dropout2d(0.5)
-        self.fc1 = ActLinear(9216, 128, bias=parser_args.bias)
-        self.fc2 = ActLinear(128, 10, bias=parser_args.bias)
+        self.fc1 = LinearAct(9216, 128, bias=parser_args.bias)
+        self.fc2 = LinearAct(128, 10, bias=parser_args.bias)
 
     def forward(self, x):
         x = self.conv1(x)
@@ -410,7 +415,7 @@ def get_layer_sparsity(layer, threshold=0):
             b_numer, b_denom = layer.bias_scores.detach().sum().item(), layer.bias_scores.detach().flatten().numel()
         else:
             b_numer, b_denom = 0, 0
-    elif parser_args.algo in ['hc_neuron']:
+    elif parser_args.algo in ['hc_act']:
         raise NotImplementedError
     else:
         # traditional pruning where we just check non-zero values in mask
@@ -703,7 +708,7 @@ def main():
     # ep: edge-popup, pt_hack: KS hacky probability pruning, pt_reg: probability pruning with regularization
     # hc: hypercube pruning
     parser.add_argument('--algo', type=str, default='ep',
-                        help='pruning algo to use |ep|pt_hack|pt_reg|hc|hc_neuron|')
+                        help='pruning algo to use |ep|pt_hack|pt_reg|hc|hc_act|')
     parser.add_argument('--optimizer', type=str, default='sgd',
                         help='optimizer option to use |sgd|adam|')
     parser.add_argument('--evaluate-only', action='store_true', default=False,
@@ -759,8 +764,8 @@ def main():
         batch_size=parser_args.test_batch_size, shuffle=True, **kwargs)
 
     if parser_args.mode == "pruning":
-        if parser_args.algo == 'hc_neuron':
-            model = ActNet().to(device)
+        if parser_args.algo == 'hc_act':
+            model = NetAct().to(device)
         else:
             model = Net().to(device)
     elif parser_args.mode == "training":
@@ -793,7 +798,7 @@ def main():
     if not parser_args.evaluate_only:
         for epoch in range(1, parser_args.epochs + 1):
             train(model, device, train_loader, optimizer, criterion, epoch)
-            if parser_args.algo in ['hc']:
+            if parser_args.algo in ['hc', 'hc_act']:
                 test_acc = round_and_evaluate(model, device, criterion, train_loader, test_loader)
             else:
                 test_acc = test(model, device, criterion, test_loader)
@@ -804,15 +809,24 @@ def main():
                 if parser_args.algo == 'hc':
                     cp_model = round_model(model, device, train_loader)
                     model_sparsity = get_model_sparsity(cp_model)
+                elif parser_args.algo == 'hc_act':
+                    print('TODO: implement get_model_sparsity soon')
                 else:
                     model_sparsity = get_model_sparsity(model)
 
                 if epoch % 10 == 1:
-                    plot_histogram_scores(model, epoch)
+                    if parser_args.algo == 'hc_act':
+                        print('TODO: implement plot_histogram_scores soon')
+                    else:
+                        plot_histogram_scores(model, epoch)
             else:
                 model_sparsity = (sum([p.numel() for p in model.parameters()]))
 
-            model_sparsity_list.append(model_sparsity)
+            if parser_args.algo != 'hc_act':
+                model_sparsity_list.append(model_sparsity)
+            else:
+                model_sparsity_list.append(0)
+                print('TODO: change soon')
             print("Test Acc: {:.2f}%\n".format(test_acc))
             print("---------------------------------------------------------")
             results_df = pd.DataFrame({'epoch': epoch_list, 'test_acc': test_acc_list, 'model_sparsity': model_sparsity_list})
@@ -829,7 +843,7 @@ def main():
                 model_filename = "model_checkpoints/mnist_trained_model_{}.pt".format(parser_args.epochs)
             torch.save(model.state_dict(), model_filename)
 
-    if parser_args.algo in ('hc'):
+    if parser_args.algo in ('hc', 'hc_act'):
         # irrespective of evaluate_only, add an evaluate_only step
         model.load_state_dict(torch.load('model_checkpoints/mnist_pruned_model_{}_{}.pt'.format(parser_args.algo, parser_args.epochs)))
         round_acc_list = round_and_evaluate(model, device, criterion, train_loader, test_loader)
