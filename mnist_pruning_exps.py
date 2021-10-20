@@ -738,7 +738,7 @@ def main():
         exit()
 
     criterion = nn.CrossEntropyLoss().to(device)
-    scheduler = CosineAnnealingLR(optimizer, T_max=parser_args.epochs)
+    #scheduler = CosineAnnealingLR(optimizer, T_max=parser_args.epochs)
 
     if not parser_args.evaluate_only:
         for epoch in range(1, parser_args.epochs + 1):
@@ -747,7 +747,7 @@ def main():
                 test_acc = round_and_evaluate(model, device, criterion, train_loader, test_loader)
             else:
                 test_acc = test(model, device, criterion, test_loader)
-            scheduler.step()
+            #scheduler.step()
             epoch_list.append(epoch)
             test_acc_list.append(test_acc)
             if parser_args.mode != "training":

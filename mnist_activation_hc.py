@@ -40,6 +40,88 @@ def set_seed(seed):
     print("Seeded everything: {}".format(seed))
 
 
+class SupermaskConv(nn.Conv2d):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        # initialize the scores
+        self.scores = nn.Parameter(torch.Tensor(self.weight.size()))
+        if parser_args.bias:
+            self.bias_scores = nn.Parameter(torch.Tensor(self.bias.size()))
+        else:
+            # dummy variable just so other things don't break
+            self.bias_scores = nn.Parameter(torch.Tensor(1))
+        nn.init.uniform_(self.scores, a=0.0, b=1.0)
+        nn.init.uniform_(self.bias_scores, a=0.0, b=1.0)
+
+        # NOTE: initialize the weights like this.
+        nn.init.kaiming_normal_(self.weight, mode="fan_in", nonlinearity="relu")
+        # self.weight.data = 2*torch.bernoulli(0.5*torch.ones_like(self.weight)) - 1
+
+        # NOTE: turn the gradient on the weights off
+        self.weight.requires_grad = False
+        if parser_args.bias:
+            self.bias.requires_grad = False
+
+    def forward(self, x):
+        # don't need a mask here. the scores are directly multiplied with weights
+        self.scores.data = torch.clamp(self.scores.data, 0.0, 1.0)
+        self.bias_scores.data = torch.clamp(self.bias_scores.data, 0.0, 1.0)
+        subnet = self.scores
+        bias_subnet = self.bias_scores
+
+        w = self.weight * subnet
+        if parser_args.bias:
+            b = self.bias * bias_subnet
+        else:
+            b = self.bias
+        x = F.conv2d(
+            x, w, b, self.stride, self.padding, self.dilation, self.groups
+        )
+        return x
+
+
+class SupermaskLinear(nn.Linear):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        # initialize the scores
+        self.scores = nn.Parameter(torch.Tensor(self.weight.size()))
+        if parser_args.bias:
+            self.bias_scores = nn.Parameter(torch.Tensor(self.bias.size()))
+        else:
+            # dummy variable just so other things don't break
+            self.bias_scores = nn.Parameter(torch.Tensor(1))
+        nn.init.uniform_(self.scores, a=0.0, b=1.0)
+        nn.init.uniform_(self.bias_scores, a=0.0, b=1.0)
+
+        # NOTE: initialize the weights like this.
+        nn.init.kaiming_normal_(self.weight, mode="fan_in", nonlinearity="relu")
+        # self.weight.data = 2*torch.bernoulli(0.5*torch.ones_like(self.weight)) - 1
+
+        # NOTE: turn the gradient on the weights off
+        self.weight.requires_grad = False
+        if parser_args.bias:
+            self.bias.requires_grad = False
+
+    def forward(self, x):
+        # don't need a mask here. the scores are directly multiplied with weights
+        self.scores.data = torch.clamp(self.scores.data, 0.0, 1.0)
+        self.bias_scores.data = torch.clamp(self.bias_scores.data, 0.0, 1.0)
+        subnet = self.scores
+        bias_subnet = self.bias_scores
+
+        w = self.weight * subnet
+        if parser_args.bias:
+            b = self.bias * bias_subnet
+        else:
+            b = self.bias
+        return F.linear(x, w, b)
+
+
+
+
+
 class ConvAct(nn.Conv2d):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -67,7 +149,7 @@ class ConvAct(nn.Conv2d):
         # don't need a mask here. the scores are directly multiplied with weights        
         self.scores.data = torch.clamp(self.scores.data, 0.0, 1.0)
         self.bias_scores.data = torch.clamp(self.bias_scores.data, 0.0, 1.0)
-        pdb.set_trace()
+        #pdb.set_trace()
         subnet = self.scores.reshape(-1,1,1,1).repeat(1,self.weight.size()[1], self.weight.size()[2], self.weight.size()[3])
         bias_subnet = self.bias_scores
 
@@ -126,9 +208,9 @@ class LinearAct(nn.Linear):
 
 class NetActFC(nn.Module):
     def __init__(self):
-        super(NetAct, self).__init__()
+        super(NetActFC, self).__init__()
         self.fc1 = LinearAct(784, 1000, bias=parser_args.bias)
-        self.fc2 = LinearAct(1000, 10, bias=parser_args.bias)
+        self.fc2 = SupermaskLinear(1000, 10, bias=parser_args.bias)
 
     def forward(self, x):
         x = torch.flatten(x, 1)
@@ -147,7 +229,8 @@ class NetAct(nn.Module):
         self.dropout1 = nn.Dropout2d(0.25)
         self.dropout2 = nn.Dropout2d(0.5)
         self.fc1 = LinearAct(9216, 128, bias=parser_args.bias)
-        self.fc2 = LinearAct(128, 10, bias=parser_args.bias)
+        self.fc2 = SupermaskLinear(128, 10, bias=parser_args.bias)
+        #self.fc2 = LinearAct(128, 10, bias=parser_args.bias)
 
     def forward(self, x):
         x = self.conv1(x)
@@ -503,6 +586,8 @@ def main():
     # hc: hypercube pruning
     parser.add_argument('--arch', type=str, default='Ramanujan',
                         help='pruning algo to use |Ramanujan|FC|')
+    parser.add_argument('--n_hidden_layer', type=int, default=1,
+                        help='number of hidden layers for FC')
     parser.add_argument('--algo', type=str, default='ep',
                         help='pruning algo to use |ep|pt_hack|pt_reg|hc|hc_act|')
     parser.add_argument('--optimizer', type=str, default='sgd',
@@ -561,9 +646,9 @@ def main():
 
     if parser_args.mode == "pruning":
         if parser_args.algo == 'hc_act':
-            if parser_args.arch == 'Ramanujan'
+            if parser_args.arch == 'Ramanujan':
                 model = NetAct().to(device)
-            elif parser_args.arch == 'FC'
+            elif parser_args.arch == 'FC':
                 model = NetActFC().to(device)
             
         else:
@@ -593,14 +678,14 @@ def main():
         exit()
 
     criterion = nn.CrossEntropyLoss().to(device)
-    scheduler = CosineAnnealingLR(optimizer, T_max=parser_args.epochs)
+    #scheduler = CosineAnnealingLR(optimizer, T_max=parser_args.epochs)
 
     if not parser_args.evaluate_only:
         for epoch in range(1, parser_args.epochs + 1):
             train(model, device, train_loader, optimizer, criterion, epoch)
             #test_acc = round_and_evaluate(model, device, criterion, train_loader, test_loader)
             test_acc = test(model, device, criterion, test_loader)
-            scheduler.step()
+            #scheduler.step()
             epoch_list.append(epoch)
             test_acc_list.append(test_acc)
             if parser_args.mode != "training":
