@@ -226,8 +226,8 @@ class NetActFC(nn.Module):
             x = self.fc3(x)
             x = F.relu(x)
         x = self.fc4(x)
-        output = x
-        #output = F.log_softmax(x, dim=1)
+        #output = x
+        output = F.log_softmax(x, dim=1)
         return output
 
 class NetAct(nn.Module):
@@ -681,12 +681,12 @@ def main():
             if parser_args.arch == 'Ramanujan':
                 model = NetAct().to(device)
             elif parser_args.arch == 'FC':
-                model = NetActFC(n_hidden_layer).to(device)
+                model = NetActFC(parser_args.n_hidden_layer).to(device)
         elif parser_args.algo in ['hc']:
             if parser_args.arch == 'Ramanujan':
                 model = Net().to(device)
             elif parser_args.arch == 'FC':
-                model = NetFC(n_hidden_layer).to(device)
+                model = NetFC(parser_args.n_hidden_layer).to(device)
         else:
             raise NotImplementedError
 
@@ -720,8 +720,8 @@ def main():
     if not parser_args.evaluate_only:
         for epoch in range(1, parser_args.epochs + 1):
             train(model, device, train_loader, optimizer, criterion, epoch)
-            #test_acc = round_and_evaluate(model, device, criterion, train_loader, test_loader)
-            test_acc = test(model, device, criterion, test_loader)
+            test_acc = round_and_evaluate(model, device, criterion, train_loader, test_loader)
+            #test_acc = test(model, device, criterion, test_loader)
             #scheduler.step()
             epoch_list.append(epoch)
             test_acc_list.append(test_acc)
@@ -753,8 +753,8 @@ def main():
     if parser_args.algo in ('hc', 'hc_act'):
         # irrespective of evaluate_only, add an evaluate_only step
         model.load_state_dict(torch.load('model_checkpoints/mnist_pruned_model_{}_{}.pt'.format(parser_args.algo, parser_args.epochs)))
-        #round_acc_list = round_and_evaluate(model, device, criterion, train_loader, test_loader)
-        round_acc_list = test(model, device, criterion, test_loader)
+        round_acc_list = round_and_evaluate(model, device, criterion, train_loader, test_loader)
+        #round_acc_list = test(model, device, criterion, test_loader)
 
         print("Test Acc: {:.2f}%\n".format(round_acc_list))
 
