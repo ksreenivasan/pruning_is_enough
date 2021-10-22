@@ -45,12 +45,13 @@ class SupermaskConv(nn.Conv2d):
         super().__init__(*args, **kwargs)
 
         # initialize flag (representing the pruned weights)
-        self.flag = torch.ones_like(self.weight.size()).long() # 
+        #pdb.set_trace()
+        self.flag = torch.ones(self.weight.size()).long().cuda() # 
         if parser_args.bias:
-            self.bias_flag = torch.ones_like(self.bias.size()).long()
+            self.bias_flag = torch.ones(self.bias.size()).long().cuda()
         else:
             # dummy variable just so other things don't break
-            self.bias_flag = torch.Tensor(1).long()
+            self.bias_flag = torch.Tensor(1).long().cuda()
 
         # initialize the scores
         self.scores = nn.Parameter(torch.Tensor(self.weight.size()))
@@ -77,6 +78,7 @@ class SupermaskConv(nn.Conv2d):
         # don't need a mask here. the scores are directly multiplied with weights
         self.scores.data = torch.clamp(self.scores.data, 0.0, 1.0)
         self.bias_scores.data = torch.clamp(self.bias_scores.data, 0.0, 1.0)
+        #pdb.set_trace()
         subnet = self.scores * self.flag.float()
         bias_subnet = self.bias_scores * self.bias_flag.float()
 
@@ -96,12 +98,12 @@ class SupermaskLinear(nn.Linear):
         super().__init__(*args, **kwargs)
 
         # initialize flag (representing the pruned weights)
-        self.flag = torch.ones_like(self.weight.size()) # 
+        self.flag = torch.ones(self.weight.size()).long().cuda() # 
         if parser_args.bias:
-            self.bias_flag = torch.ones_like(self.bias.size())
+            self.bias_flag = torch.ones(self.bias.size()).long().cuda()
         else:
             # dummy variable just so other things don't break
-            self.bias_flag = torch.Tensor(1)
+            self.bias_flag = torch.Tensor(1).long().cuda()
 
         # initialize the scores
         self.scores = nn.Parameter(torch.Tensor(self.weight.size()))
@@ -274,11 +276,9 @@ def test(model, device, criterion, test_loader):
 def prune(model, device):
 
     for layer in [model.conv1, model.conv2, model.fc1, model.fc2]:
-        #print(layer.weight.data.shape) 
-        #print(layer.scores.data.shape)
-        pdb.set_trace()
-        #layer.scores.data = torch.gt(layer.scores, torch.ones_like(layer.scores)*0.5).int()#.float()
-        layer.flag = torch.gt(layer.scores, torch.ones_like(layer.scores)*0.5).int()#.float()
+        #pdb.set_trace()
+        layer.flag = (layer.flag + torch.gt(layer.scores, torch.ones_like(layer.scores)*0.5).int() == 2).int()
+        #layer.flag = torch.gt(layer.scores, torch.ones_like(layer.scores)*0.5).int()
         #layer.weight.data = layer.weight.data * layer.scores.data
 
     return 
@@ -294,9 +294,9 @@ def get_layer_sparsity(layer, threshold=0):
     if parser_args.algo in ['hc_iter']:
         pattern = layer.flag
         #pattern = layer.scores.data * layer.weight.data
-        w_numer, w_denom = torch.sum((pattern == 0).int()).item(), pattern.flatten().numel()
+        w_numer, w_denom = torch.sum((pattern == 1).int()).item(), pattern.flatten().numel()
         print(layer, w_numer, w_denom)
-        pdb.set_trace()
+        #pdb.set_trace()
         if parser_args.bias:
             raise NotImplementedError
         else:
