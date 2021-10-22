@@ -63,6 +63,9 @@ class SupermaskConv(nn.Conv2d):
         nn.init.uniform_(self.scores, a=0.0, b=1.0)
         nn.init.uniform_(self.bias_scores, a=0.0, b=1.0)
 
+        if parser_args.rewind:
+            self.initial_scores = self.scores.data
+
         # NOTE: initialize the weights like this.
         nn.init.kaiming_normal_(self.weight, mode="fan_in", nonlinearity="relu")
         # self.weight.data = 2*torch.bernoulli(0.5*torch.ones_like(self.weight)) - 1
@@ -114,6 +117,9 @@ class SupermaskLinear(nn.Linear):
             self.bias_scores = nn.Parameter(torch.Tensor(1))
         nn.init.uniform_(self.scores, a=0.0, b=1.0)
         nn.init.uniform_(self.bias_scores, a=0.0, b=1.0)
+
+        if parser_args.rewind:
+            self.initial_scores = self.scores.data
 
         # NOTE: initialize the weights like this.
         nn.init.kaiming_normal_(self.weight, mode="fan_in", nonlinearity="relu")
@@ -280,6 +286,9 @@ def prune(model, device):
         layer.flag = (layer.flag + torch.gt(layer.scores, torch.ones_like(layer.scores)*0.5).int() == 2).int()
         #layer.flag = torch.gt(layer.scores, torch.ones_like(layer.scores)*0.5).int()
         #layer.weight.data = layer.weight.data * layer.scores.data
+
+        if parser_args.rewind:
+            self.scores.data = self.initial_scores
 
     return 
 
@@ -545,6 +554,10 @@ def main():
                         help='pruning algo to use |hc|hc_act|hc_iter')
     parser.add_argument('--iter_period', type=int, default=20,
                         help='period [epochs] for iterative pruning ')
+    parser.add_argument('--rewind', type=int, default=0,
+                        help='whether use rewinding (in the iterative pruning)')
+
+
     parser.add_argument('--optimizer', type=str, default='sgd',
                         help='optimizer option to use |sgd|adam|')
     parser.add_argument('--evaluate-only', action='store_true', default=False,
