@@ -376,12 +376,21 @@ def test(model, device, criterion, test_loader):
     return test_acc
 
 def prune(model, device):
-    for name, params in model.named_parameters():
+
+    for layer in [model.conv1, model.conv2, model.fc1, model.fc2]:
+        #print(layer.weight.data.shape) 
+        #print(layer.scores.data.shape)
+        layer.scores.data = torch.gt(layer.scores, torch.ones_like(layer.scores)*0.5).int().float()
+        #pdb.set_trace()
+        layer.weight.data = layer.weight.data * layer.scores.data
+
+    '''
+    for name, params in model.named_parameters():    
         if ".score" in name:
             params.data = torch.gt(params, torch.ones_like(params)*0.5).int()
             print("TODO: set score.requires_grad=False for those who have zero value")
             pdb.set_trace()
-
+    '''
     return 
 
 
@@ -389,7 +398,18 @@ def prune(model, device):
 # average sparsity in the end
 def get_layer_sparsity(layer, threshold=0):
     # for algos where the score IS the mask
-    if parser_args.algo in ['hc', 'hc_iter']:
+    #pdb.set_trace()
+    
+    if parser_args.algo in ['hc_iter']:
+        eff_weight = layer.scores.data * layer.weight.data
+        w_numer, w_denom = torch.sum((eff_weight == 0).int()).item(), eff_weight.flatten().numel()
+        print(layer, w_numer, w_denom)
+        pdb.set_trace()
+        if parser_args.bias:
+            raise NotImplementedError
+        else:
+            b_numer, b_denom = 0, 0
+    elif parser_args.algo in ['hc']:
         # assume the model is rounded
         num_middle = torch.sum(torch.gt(layer.scores,
                         torch.ones_like(layer.scores)*threshold) *\
@@ -596,7 +616,7 @@ def main():
     parser = argparse.ArgumentParser(description='PyTorch MNIST Example')
     parser.add_argument('--batch-size', type=int, default=64, metavar='N',
                         help='input batch size for training (default: 64)')
-    parser.add_argument('--test-batch-size', type=int, default=1000, metavar='N',
+    parser.add_argument('--test-batch-size', type=int, default=100, metavar='N',
                         help='input batch size for testing (default: 1000)')
     parser.add_argument('--epochs', type=int, default=50, metavar='N',
                         help='number of epochs to train (default: 14)')
@@ -747,10 +767,9 @@ def main():
             else:
                 model_sparsity = (sum([p.numel() for p in model.parameters()]))
 
-            #model_sparsity_list.append(model_sparsity)
-            model_sparsity_list.append(0)
-            print('TODO: change soon (fill in model_sparsity_list)')
+            model_sparsity_list.append(model_sparsity)
             print("Test Acc: {:.2f}%\n".format(test_acc))
+            print("Sparsity: {:.2f}%\n".format(model_sparsity))
             print("---------------------------------------------------------")
             results_df = pd.DataFrame({'epoch': epoch_list, 'test_acc': test_acc_list, 'model_sparsity': model_sparsity_list})
             results_df.to_csv('results/MNIST/{}'.format(parser_args.results_filename), index=False)
