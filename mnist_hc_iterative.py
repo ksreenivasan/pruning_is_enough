@@ -44,6 +44,14 @@ class SupermaskConv(nn.Conv2d):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
+        # initialize flag (representing the pruned weights)
+        self.flag = torch.ones_like(self.weight.size()).long() # 
+        if parser_args.bias:
+            self.bias_flag = torch.ones_like(self.bias.size()).long()
+        else:
+            # dummy variable just so other things don't break
+            self.bias_flag = torch.Tensor(1).long()
+
         # initialize the scores
         self.scores = nn.Parameter(torch.Tensor(self.weight.size()))
         if parser_args.bias:
@@ -60,15 +68,17 @@ class SupermaskConv(nn.Conv2d):
 
         # NOTE: turn the gradient on the weights off
         self.weight.requires_grad = False
+        self.flag.requires_grad = False
         if parser_args.bias:
             self.bias.requires_grad = False
+            self.bias_flag.requires_grad = False
 
     def forward(self, x):
         # don't need a mask here. the scores are directly multiplied with weights
         self.scores.data = torch.clamp(self.scores.data, 0.0, 1.0)
         self.bias_scores.data = torch.clamp(self.bias_scores.data, 0.0, 1.0)
-        subnet = self.scores
-        bias_subnet = self.bias_scores
+        subnet = self.scores * self.flag.float()
+        bias_subnet = self.bias_scores * self.bias_flag.float()
 
         w = self.weight * subnet
         if parser_args.bias:
@@ -85,6 +95,14 @@ class SupermaskLinear(nn.Linear):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
+        # initialize flag (representing the pruned weights)
+        self.flag = torch.ones_like(self.weight.size()) # 
+        if parser_args.bias:
+            self.bias_flag = torch.ones_like(self.bias.size())
+        else:
+            # dummy variable just so other things don't break
+            self.bias_flag = torch.Tensor(1)
+
         # initialize the scores
         self.scores = nn.Parameter(torch.Tensor(self.weight.size()))
         if parser_args.bias:
@@ -101,15 +119,17 @@ class SupermaskLinear(nn.Linear):
 
         # NOTE: turn the gradient on the weights off
         self.weight.requires_grad = False
+        self.flag.requires_grad = False
         if parser_args.bias:
             self.bias.requires_grad = False
+            self.bias_flag.requires_grad = False            
 
     def forward(self, x):
         # don't need a mask here. the scores are directly multiplied with weights
         self.scores.data = torch.clamp(self.scores.data, 0.0, 1.0)
         self.bias_scores.data = torch.clamp(self.bias_scores.data, 0.0, 1.0)
-        subnet = self.scores
-        bias_subnet = self.bias_scores
+        subnet = self.scores * self.flag
+        bias_subnet = self.bias_scores * self.bias_flag
 
         w = self.weight * subnet
         if parser_args.bias:
@@ -118,142 +138,6 @@ class SupermaskLinear(nn.Linear):
             b = self.bias
         return F.linear(x, w, b)
 
-
-
-
-
-class ConvAct(nn.Conv2d):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-        # initialize the scores
-        self.scores = nn.Parameter(torch.Tensor(self.weight.size()[0]))
-        if parser_args.bias:
-            self.bias_scores = nn.Parameter(torch.Tensor(self.bias.size()))
-        else:
-            # dummy variable just so other things don't break
-            self.bias_scores = nn.Parameter(torch.Tensor(1))
-        nn.init.uniform_(self.scores, a=0.0, b=1.0)
-        nn.init.uniform_(self.bias_scores, a=0.0, b=1.0)
-
-        # NOTE: initialize the weights like this.
-        nn.init.kaiming_normal_(self.weight, mode="fan_in", nonlinearity="relu")
-        # self.weight.data = 2*torch.bernoulli(0.5*torch.ones_like(self.weight)) - 1
-
-        # NOTE: turn the gradient on the weights off
-        self.weight.requires_grad = False
-        if parser_args.bias:
-            self.bias.requires_grad = False
-
-    def forward(self, x):
-        # don't need a mask here. the scores are directly multiplied with weights        
-        self.scores.data = torch.clamp(self.scores.data, 0.0, 1.0)
-        self.bias_scores.data = torch.clamp(self.bias_scores.data, 0.0, 1.0)
-        #pdb.set_trace()
-        subnet = self.scores.reshape(-1,1,1,1).repeat(1,self.weight.size()[1], self.weight.size()[2], self.weight.size()[3])
-        bias_subnet = self.bias_scores
-
-        w = self.weight * subnet
-        if parser_args.bias:
-            b = self.bias * bias_subnet
-        else:
-            b = self.bias
-        x = F.conv2d(
-            x, w, b, self.stride, self.padding, self.dilation, self.groups
-        )
-        return x
-
-
-class LinearAct(nn.Linear):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-        # initialize the scores
-        self.scores = nn.Parameter(torch.Tensor(self.weight.size()[0]))
-        if parser_args.bias:
-            self.bias_scores = nn.Parameter(torch.Tensor(self.bias.size()))
-        else:
-            # dummy variable just so other things don't break
-            self.bias_scores = nn.Parameter(torch.Tensor(1))
-        if 'hc' in parser_args.algo:
-            nn.init.uniform_(self.scores, a=0.0, b=1.0)
-            nn.init.uniform_(self.bias_scores, a=0.0, b=1.0)
-        else:
-            nn.init.kaiming_uniform_(self.scores, a=math.sqrt(5))
-            nn.init.uniform_(self.bias_scores, a=-1.0, b=1.0)
-
-        # NOTE: initialize the weights like this.
-        nn.init.kaiming_normal_(self.weight, mode="fan_in", nonlinearity="relu")
-        # self.weight.data = 2*torch.bernoulli(0.5*torch.ones_like(self.weight)) - 1
-
-        # NOTE: turn the gradient on the weights off
-        self.weight.requires_grad = False
-        if parser_args.bias:
-            self.bias.requires_grad = False
-
-    def forward(self, x):
-        # don't need a mask here. the scores are directly multiplied with weights
-        self.scores.data = torch.clamp(self.scores.data, 0.0, 1.0)
-        self.bias_scores.data = torch.clamp(self.bias_scores.data, 0.0, 1.0)
-        subnet = self.scores.reshape(-1,1).repeat(1,self.weight.size()[1])
-        #subnet = self.scores
-        bias_subnet = self.bias_scores
-
-        w = self.weight * subnet
-        if parser_args.bias:
-            b = self.bias * bias_subnet
-        else:
-            b = self.bias
-        return F.linear(x, w, b)
-
-class NetActFC(nn.Module):
-    def __init__(self, n_hidden_layer):
-        super(NetActFC, self).__init__()
-        self.n_hidden = n_hidden_layer
-        self.fc1 = LinearAct(784, 1000, bias=parser_args.bias)
-        self.fc2 = LinearAct(1000, 1000, bias=parser_args.bias)
-        self.fc3 = LinearAct(1000, 1000, bias=parser_args.bias)
-        self.fc4 = SupermaskLinear(1000, 10, bias=parser_args.bias)
-
-    def forward(self, x):
-        x = torch.flatten(x, 1)
-        x = self.fc1(x)
-        x = F.relu(x)
-        if self.n_hidden >= 2:
-            x = self.fc2(x)
-            x = F.relu(x)
-        if self.n_hidden >= 3:
-            x = self.fc3(x)
-            x = F.relu(x)
-        x = self.fc4(x)
-        #output = x
-        output = F.log_softmax(x, dim=1)
-        return output
-
-class NetAct(nn.Module):
-    def __init__(self):
-        super(NetAct, self).__init__()
-        self.conv1 = ConvAct(1, 32, 3, 1, bias=parser_args.bias)
-        self.conv2 = ConvAct(32, 64, 3, 1, bias=parser_args.bias)
-        self.dropout1 = nn.Dropout2d(0.25)
-        self.dropout2 = nn.Dropout2d(0.5)
-        self.fc1 = LinearAct(9216, 128, bias=parser_args.bias)
-        self.fc2 = SupermaskLinear(128, 10, bias=parser_args.bias)
-        #self.fc2 = LinearAct(128, 10, bias=parser_args.bias)
-
-    def forward(self, x):
-        x = self.conv1(x)
-        x = F.relu(x)
-        x = self.conv2(x)
-        x = F.max_pool2d(x, 2)
-        x = self.dropout1(x)
-        x = torch.flatten(x, 1)
-        x = self.fc1(x)
-        x = F.relu(x)
-        x = self.dropout2(x)
-        x = self.fc2(x)
-        output = F.log_softmax(x, dim=1)
-        return output
 
 class NetFC(nn.Module):
     def __init__(self, n_hidden_layer):
@@ -375,23 +259,30 @@ def test(model, device, criterion, test_loader):
     test_acc = 100. * correct/len(test_loader.dataset)
     return test_acc
 
+# def old_prune(model, device):
+
+#     for layer in [model.conv1, model.conv2, model.fc1, model.fc2]:
+#         #print(layer.weight.data.shape) 
+#         #print(layer.scores.data.shape)
+#         layer.scores.data = torch.gt(layer.scores, torch.ones_like(layer.scores)*0.5).int().float()
+#         #pdb.set_trace()
+#         layer.weight.data = layer.weight.data * layer.scores.data
+
+#     return 
+
+
 def prune(model, device):
 
     for layer in [model.conv1, model.conv2, model.fc1, model.fc2]:
         #print(layer.weight.data.shape) 
         #print(layer.scores.data.shape)
-        layer.scores.data = torch.gt(layer.scores, torch.ones_like(layer.scores)*0.5).int().float()
-        #pdb.set_trace()
-        layer.weight.data = layer.weight.data * layer.scores.data
+        pdb.set_trace()
+        #layer.scores.data = torch.gt(layer.scores, torch.ones_like(layer.scores)*0.5).int()#.float()
+        layer.flag = torch.gt(layer.scores, torch.ones_like(layer.scores)*0.5).int()#.float()
+        #layer.weight.data = layer.weight.data * layer.scores.data
 
-    '''
-    for name, params in model.named_parameters():    
-        if ".score" in name:
-            params.data = torch.gt(params, torch.ones_like(params)*0.5).int()
-            print("TODO: set score.requires_grad=False for those who have zero value")
-            pdb.set_trace()
-    '''
     return 
+
 
 
 # returns num_nonzero elements, total_num_elements so that it is easier to compute
@@ -401,8 +292,9 @@ def get_layer_sparsity(layer, threshold=0):
     #pdb.set_trace()
     
     if parser_args.algo in ['hc_iter']:
-        eff_weight = layer.scores.data * layer.weight.data
-        w_numer, w_denom = torch.sum((eff_weight == 0).int()).item(), eff_weight.flatten().numel()
+        pattern = layer.flag
+        #pattern = layer.scores.data * layer.weight.data
+        w_numer, w_denom = torch.sum((pattern == 0).int()).item(), pattern.flatten().numel()
         print(layer, w_numer, w_denom)
         pdb.set_trace()
         if parser_args.bias:
