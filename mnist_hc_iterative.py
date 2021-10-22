@@ -296,13 +296,13 @@ def get_layer_sparsity(layer, threshold=0):
         #pattern = layer.scores.data * layer.weight.data
         w_numer, w_denom = torch.sum((pattern == 1).int()).item(), pattern.flatten().numel()
         print(layer, w_numer, w_denom)
-        #pdb.set_trace()
         if parser_args.bias:
             raise NotImplementedError
         else:
             b_numer, b_denom = 0, 0
     elif parser_args.algo in ['hc']:
         # assume the model is rounded
+        #pdb.set_trace()
         num_middle = torch.sum(torch.gt(layer.scores,
                         torch.ones_like(layer.scores)*threshold) *\
                         torch.lt(layer.scores,
