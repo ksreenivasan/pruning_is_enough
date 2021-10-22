@@ -64,7 +64,7 @@ class SupermaskConv(nn.Conv2d):
         nn.init.uniform_(self.bias_scores, a=0.0, b=1.0)
 
         if parser_args.rewind:
-            self.initial_scores = self.scores.data
+            self.initial_scores = self.scores.data.cuda()
 
         # NOTE: initialize the weights like this.
         nn.init.kaiming_normal_(self.weight, mode="fan_in", nonlinearity="relu")
@@ -119,7 +119,7 @@ class SupermaskLinear(nn.Linear):
         nn.init.uniform_(self.bias_scores, a=0.0, b=1.0)
 
         if parser_args.rewind:
-            self.initial_scores = self.scores.data
+            self.initial_scores = self.scores.data.cuda()
 
         # NOTE: initialize the weights like this.
         nn.init.kaiming_normal_(self.weight, mode="fan_in", nonlinearity="relu")
@@ -288,7 +288,7 @@ def prune(model, device):
         #layer.weight.data = layer.weight.data * layer.scores.data
 
         if parser_args.rewind:
-            self.scores.data = self.initial_scores
+            layer.scores.data = layer.initial_scores
 
     return 
 

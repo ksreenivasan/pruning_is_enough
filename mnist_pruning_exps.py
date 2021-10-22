@@ -626,7 +626,7 @@ def main():
     parser = argparse.ArgumentParser(description='PyTorch MNIST Example')
     parser.add_argument('--batch-size', type=int, default=64, metavar='N',
                         help='input batch size for training (default: 64)')
-    parser.add_argument('--test-batch-size', type=int, default=1000, metavar='N',
+    parser.add_argument('--test-batch-size', type=int, default=100, metavar='N',
                         help='input batch size for testing (default: 1000)')
     parser.add_argument('--epochs', type=int, default=50, metavar='N',
                         help='number of epochs to train (default: 14)')
@@ -738,7 +738,7 @@ def main():
         exit()
 
     criterion = nn.CrossEntropyLoss().to(device)
-    #scheduler = CosineAnnealingLR(optimizer, T_max=parser_args.epochs)
+    scheduler = CosineAnnealingLR(optimizer, T_max=parser_args.epochs)
 
     if not parser_args.evaluate_only:
         for epoch in range(1, parser_args.epochs + 1):
@@ -747,7 +747,7 @@ def main():
                 test_acc = round_and_evaluate(model, device, criterion, train_loader, test_loader)
             else:
                 test_acc = test(model, device, criterion, test_loader)
-            #scheduler.step()
+            scheduler.step()
             epoch_list.append(epoch)
             test_acc_list.append(test_acc)
             if parser_args.mode != "training":
