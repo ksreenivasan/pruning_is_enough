@@ -315,7 +315,7 @@ def get_layer_sparsity(layer, threshold=0):
             b_numer, b_denom = 0, 0
     elif parser_args.algo in ['hc']:
         # assume the model is rounded
-        pdb.set_trace()
+        #pdb.set_trace()
         num_middle = torch.sum(torch.gt(layer.scores,
                         torch.ones_like(layer.scores)*threshold) *\
                         torch.lt(layer.scores,
