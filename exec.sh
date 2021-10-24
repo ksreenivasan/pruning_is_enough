@@ -27,11 +27,12 @@ BLOCK
 #:<<BLOCK
 python mnist_hc_iterative.py --algo hc_iter \
 --lr 0.01 \
---epochs 50 \
+--epochs 100 \
 --optimizer adam \
 --wd 0 \
---iter_period 1 \
---results-filename hc_iter_period_1.csv
+--iter_period 5 \
+--results-filename hc_iter_test.csv
+#--results-filename hc_iter_period_5_adam_lr_1e-2_100epoch.csv
 #BLOCK
 :<<BLOCK
 python mnist_hc_iterative.py --algo hc_iter \
@@ -45,16 +46,14 @@ python mnist_hc_iterative.py --algo hc_iter \
 #--arch FC \
 #--n_hidden_layer 3 \
 BLOCK
-:<<BLOCK
+#:<<BLOCK
 python mnist_hc_iterative.py --algo hc \
 --lr 0.01 \
---epochs 50 \
+--epochs 100 \
 --optimizer adam \
 --wd 0 \
---results-filename hc_vanilla.csv
-#--arch FC \
-#--n_hidden_layer 3 \
-BLOCK
+--results-filename hc_vanilla_lr_1e-2_100epoch.csv
+#BLOCK
 
 
 
