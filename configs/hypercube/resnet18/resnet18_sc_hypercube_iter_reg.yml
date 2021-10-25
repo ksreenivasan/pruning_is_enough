@@ -1,6 +1,6 @@
 # Hypercube optimization
 algo: 'hc_iter'
-iter_period: 20
+iter_period: 1
 
 # Architecture
 arch: cResNet18
@@ -11,7 +11,7 @@ name: resnet18_cifar10_hypercube_iter_reg
 
 # ===== Learning Rate Policy ======== #
 optimizer: adam
-lr: 0.01
+lr: 0.05
 lr_policy: cosine_lr
 #lr_policy: multistep_lr
 #lr_gamma: 0.5
@@ -19,8 +19,8 @@ lr_policy: cosine_lr
 
 
 # ===== Network training config ===== #
-epochs: 150
-weight_decay: 0.0001 # 0.0
+epochs: 100
+weight_decay: 0.0 #0.0001 # 0.0
 momentum: 0.9
 batch_size: 128
 

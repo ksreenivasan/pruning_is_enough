@@ -176,6 +176,12 @@ def parse_arguments():
         help="pruning algo to use |ep|pt_hack|pt_reg|hc|ep+greedy|greedy+ep|hc_iter|"
     )
     parser.add_argument(
+        "--iter_start", 
+        type=int, 
+        default=0,
+        help="starting epoch for iterative pruning"
+    )
+    parser.add_argument(
         "--iter_period", 
         type=int, 
         default=20,

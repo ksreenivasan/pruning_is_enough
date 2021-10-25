@@ -152,6 +152,7 @@ def main_worker(gpu, ngpus_per_node):
     dataset_str = parser_args.dataset
     model_str = parser_args.arch
     algo_str = parser_args.algo
+    period_str = parser_args.period
     reg_str = 'reg_{}'.format(parser_args.regularization)
     reg_lmbda = parser_args.lmbda if parser_args.regularization else ''
     opt_str = parser_args.optimizer
@@ -164,8 +165,8 @@ def main_worker(gpu, ngpus_per_node):
     s_str = parser_args.score_init
     width_str = parser_args.width
     seed_str = parser_args.seed + parser_args.trial_num - 1
-    idty_str = "{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_fan_{}_{}_{}_width_{}_seed_{}".\
-        format(train_mode_str, dataset_str, model_str, algo_str, reg_str, reg_lmbda,
+    idty_str = "{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_fan_{}_{}_{}_width_{}_seed_{}".\
+        format(train_mode_str, dataset_str, model_str, algo_str, period_str, reg_str, reg_lmbda,
         opt_str, policy_str, lr_str, lr_gamma, lr_adj, fan_str, w_str, s_str,
         width_str, seed_str).replace(".", "_")
 
@@ -426,6 +427,20 @@ def main_worker(gpu, ngpus_per_node):
         writer.add_scalar("test/lr", cur_lr, epoch)
         end_epoch = time.time()
 
+        if parser_args.algo in ['hc', 'hc_iter']:
+            results_df = pd.DataFrame({'epoch': epoch_list, 'test_acc_before_rounding': test_acc_before_round_list,'test_acc': test_acc_list, 'regularization_loss': reg_loss_list, 'model_sparsity': model_sparsity_list})
+        else:
+            results_df = pd.DataFrame({'epoch': epoch_list, 'test_acc': test_acc_list, 'model_sparsity': model_sparsity_list})
+
+        if parser_args.results_filename:
+            results_filename = parser_args.results_filename
+        else:
+            # TODO: move this to utils
+            # results_filename = "results/results_acc_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}.csv".format(train_mode_str, parser_args.dataset, parser_args.algo, reg_str, reg_lmbda, opt_str, policy_str, lr_str, lr_gamma, lr_adj)
+            results_filename = result_root + 'acc_and_sparsity.csv'    
+        print("Writing results into: {}".format(results_filename))
+        results_df.to_csv(results_filename, index=False)
+
     write_result_to_csv(
         best_acc1=best_acc1,
         best_acc5=best_acc5,
@@ -441,19 +456,6 @@ def main_worker(gpu, ngpus_per_node):
         name=parser_args.name,
     )
 
-    if parser_args.algo in ['hc', 'hc_iter']:
-        results_df = pd.DataFrame({'epoch': epoch_list, 'test_acc_before_rounding': test_acc_before_round_list,'test_acc': test_acc_list, 'regularization_loss': reg_loss_list, 'model_sparsity': model_sparsity_list})
-    else:
-        results_df = pd.DataFrame({'epoch': epoch_list, 'test_acc': test_acc_list, 'model_sparsity': model_sparsity_list})
-
-    if parser_args.results_filename:
-        results_filename = parser_args.results_filename
-    else:
-        # TODO: move this to utils
-        # results_filename = "results/results_acc_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}.csv".format(train_mode_str, parser_args.dataset, parser_args.algo, reg_str, reg_lmbda, opt_str, policy_str, lr_str, lr_gamma, lr_adj)
-        results_filename = result_root + 'acc_and_sparsity.csv'    
-    print("Writing results into: {}".format(results_filename))
-    results_df.to_csv(results_filename, index=False)
 
     # sanity check whether the weight values did not change
     for name, params in model.named_parameters():
