@@ -514,6 +514,24 @@ def round_and_evaluate(model, device, criterion, train_loader, test_loader):
 
     return np.mean(acc_list)
 
+def switch_to_wt(model):
+    parser_args.iter_period = 9999
+    for name, params in model.named_parameters():
+        if ".weight" in name:
+            params.requires_grad = True
+            print(name, ': update enabled')
+        elif ".bias" in name:
+            params.requires_grad = True
+            print(name, ': update enabled')
+        elif ".scores" in name:
+            params.requires_grad = False
+            print(name, ': update disabled')
+        elif ".bias_scores" in name:
+            params.requires_grad = False
+            print(name, ': update disabled')
+
+    
+
 
 def main():
     global parser_args
@@ -560,7 +578,10 @@ def main():
                         help='period [epochs] for iterative pruning ')
     parser.add_argument('--rewind', type=int, default=0,
                         help='whether use rewinding (in the iterative pruning)')
-
+    parser.add_argument('--switch_to_wt', type=int, default=0,
+                        help='whether use switching to weight training (either from hc or hc_iter)')
+    parser.add_argument('--switch_epoch', type=int, default=0,
+                        help='the moment for switching to weight training')
 
     parser.add_argument('--optimizer', type=str, default='sgd',
                         help='optimizer option to use |sgd|adam|')
@@ -682,6 +703,10 @@ def main():
             print("---------------------------------------------------------")
             results_df = pd.DataFrame({'epoch': epoch_list, 'test_acc': test_acc_list, 'model_sparsity': model_sparsity_list})
             results_df.to_csv('results/MNIST/{}'.format(parser_args.results_filename), index=False)
+
+            if parser_args.switch_to_wt and epoch==parser_args.switch_epoch:
+                switch_to_wt(model)
+                print('epoch ' + epoch + ': switched to weight training')
 
         #if parser_args.mode != "training":
         #    # gotta plot the final histogram as well
