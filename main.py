@@ -26,6 +26,7 @@ from utils.net_utils import (
     LabelSmoothing,
     round_model,
     get_model_sparsity,
+    prune,
 )
 from utils.schedulers import get_policy
 from utils.utils import set_seed, plot_histogram_scores
@@ -303,13 +304,13 @@ def main_worker(gpu, ngpus_per_node):
         train_time.update((time.time() - start_train) / 60)
 
         # apply round for every T epochs (after E warm-up epoch)
-        if parser_args.algo in ['hc'] and epoch >= parser_args.hc_warmup and epoch % parser_args.hc_period == 0:
+        if parser_args.algo in ['hc', 'hc_iter'] and epoch >= parser_args.hc_warmup and epoch % parser_args.hc_period == 0:
             print('Apply rounding: {}'.format(parser_args.round))
             model = round_model(model, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio, rank=parser_args.gpu)
 
         # evaluate on validation set
         start_validation = time.time()
-        if parser_args.algo in ['hc']:
+        if parser_args.algo in ['hc', 'hc_iter']:
             br_acc1, br_acc5, br_acc10 = validate(data.val_loader, model, criterion, parser_args, writer, epoch) # before rounding
             print('Acc before rounding: {}'.format(br_acc1))
             acc_avg = 0
@@ -329,8 +330,13 @@ def main_worker(gpu, ngpus_per_node):
             if (epoch % 25 == 1) or epoch == (parser_args.epochs-1):
                 plot_histogram_scores(model, result_root+'Epoch_{}.pdf'.format(epoch), parser_args.arch)
 
+        # prune the model (for iterative HC)
+        if parser_args.algo == 'hc_iter' and epoch % (parser_args.iter_period) == 0:
+            prune(model)
+
+        # get model sparsity
         if not parser_args.weight_training:
-            if parser_args.algo in ['hc']:
+            if parser_args.algo in ['hc', 'hc_iter']:
                 # Round before checking sparsity
                 cp_model = round_model(model, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio, rank=parser_args.gpu)
                 avg_sparsity = get_model_sparsity(cp_model)
@@ -340,9 +346,10 @@ def main_worker(gpu, ngpus_per_node):
         else:
             # haven't written a weight sparsity function yet
             avg_sparsity = -1
+
         # update all results lists
         epoch_list.append(epoch)
-        if parser_args.algo in ['hc']:
+        if parser_args.algo in ['hc', 'hc_iter']:
             test_acc_before_round_list.append(br_acc1)
         else:
             # no before rounding for EP/weight training
@@ -434,7 +441,7 @@ def main_worker(gpu, ngpus_per_node):
         name=parser_args.name,
     )
 
-    if parser_args.algo in ['hc']:
+    if parser_args.algo in ['hc', 'hc_iter']:
         results_df = pd.DataFrame({'epoch': epoch_list, 'test_acc_before_rounding': test_acc_before_round_list,'test_acc': test_acc_list, 'regularization_loss': reg_loss_list, 'model_sparsity': model_sparsity_list})
     else:
         results_df = pd.DataFrame({'epoch': epoch_list, 'test_acc': test_acc_list, 'model_sparsity': model_sparsity_list})
@@ -454,7 +461,7 @@ def main_worker(gpu, ngpus_per_node):
             print(torch.sum(params.data))
 
     # check the performance of trained model
-    if parser_args.algo in ['hc']:
+    if parser_args.algo in ['hc', 'hc_iter']:
         for trial in range(parser_args.num_round):
 
             eval_and_print(validate, data.val_loader, model, criterion, parser_args, writer=None, epoch=parser_args.start_epoch, description='final model before rounding')

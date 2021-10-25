@@ -173,7 +173,13 @@ def parse_arguments():
         "--algo",
         type=str,
         default='ep',
-        help="pruning algo to use |ep|pt_hack|pt_reg|hc|ep+greedy|greedy+ep|"
+        help="pruning algo to use |ep|pt_hack|pt_reg|hc|ep+greedy|greedy+ep|hc_iter|"
+    )
+    parser.add_argument(
+        "--iter_period", 
+        type=int, 
+        default=20,
+        help="period [epochs] for iterative pruning"
     )
     parser.add_argument(
         "--optimizer",
