@@ -254,8 +254,8 @@ def prune(model):
     print('We are in prune function')
     conv_layers, linear_layers = get_layers(parser_args.arch, model)
     for layer in [*conv_layers, *linear_layers]:
-        print(layer)
-        layer.flag = (layer.flag + torch.gt(layer.scores, torch.ones_like(layer.scores)*0.5).int() == 2).int()
+        #print(layer)
+        layer.flag.data = (layer.flag.data + torch.gt(layer.scores, torch.ones_like(layer.scores)*0.5).int() == 2).int()
     return 
 
 
@@ -294,7 +294,7 @@ def get_model_sparsity(model, threshold=0):
 def get_layer_sparsity(layer, threshold=0):
     # for algos where the score IS the mask
     if parser_args.algo in ['hc_iter']:
-        pattern = layer.flag
+        pattern = layer.flag.data
         #pattern = layer.scores.data * layer.weight.data
         w_numer, w_denom = torch.sum((pattern == 1).int()).item(), pattern.flatten().numel()
         print(layer, w_numer, w_denom)

@@ -1,25 +1,26 @@
 # Hypercube optimization
-algo: 'hc'
+algo: 'hc_iter'
+iter_period: 20
 
 # Architecture
 arch: cResNet18
 
 # ===== Dataset ===== #
 dataset: CIFAR10
-name: resnet18_cifar10_hypercube_noreg
+name: resnet18_cifar10_hypercube_iter_reg
 
 # ===== Learning Rate Policy ======== #
 optimizer: adam
 lr: 0.01
-lr_policy: multistep_lr
-lr_gamma: 0.5
-lr_adjust: 30 #20
+lr_policy: cosine_lr
+#lr_policy: multistep_lr
+#lr_gamma: 0.5
+#lr_adjust: 30 #30
 
-#lr_policy: cosine_lr
 
 # ===== Network training config ===== #
 epochs: 150
-weight_decay: 0.0 #0.0001
+weight_decay: 0.0001 # 0.0
 momentum: 0.9
 batch_size: 128
 
@@ -40,11 +41,11 @@ noise_ratio: 0
 
 
 # ===== Regularization ===== #
-regularization: False
-lmbda: 0 #0.000001 #0.000001
+regularization: var_red_2
+lmbda: 0.001 #0.000001
 
 
 # ===== Hardware setup ===== #
 workers: 4
-gpu: 2
+gpu: 1
 

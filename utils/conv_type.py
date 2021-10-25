@@ -3,6 +3,7 @@ import torch.autograd as autograd
 import torch.nn as nn
 import torch.nn.functional as F
 
+import pdb
 import math
 
 from args import args as parser_args
@@ -82,12 +83,12 @@ class SubnetConv(nn.Conv2d):
         super().__init__(*args, **kwargs)
 
         # initialize flag (representing the pruned weights)
-        self.flag = torch.ones(self.weight.size()).long().cuda() # 
+        self.flag = nn.Parameter(torch.ones(self.weight.size()))#.long())#.cuda() # 
         if parser_args.bias:
-            self.bias_flag = torch.ones(self.bias.size()).long().cuda()
+            self.bias_flag = nn.Parameter(torch.ones(self.bias.size()))#.long())#.cuda()
         else:
             # dummy variable just so other things don't break
-            self.bias_flag = torch.Tensor(1).long().cuda()
+            self.bias_flag = nn.Parameter(torch.Tensor(1))#.long())#.cuda()
         
         # initialize the scores
         self.scores = nn.Parameter(torch.Tensor(self.weight.size()))
@@ -129,8 +130,9 @@ class SubnetConv(nn.Conv2d):
             # don't need a mask here. the scores are directly multiplied with weights
             self.scores.data = torch.clamp(self.scores.data, 0.0, 1.0)
             self.bias_scores.data = torch.clamp(self.bias_scores.data, 0.0, 1.0)
-            subnet = self.scores * self.flag.float()
-            bias_subnet = self.bias_scores * self.bias_flag.float()
+            #pdb.set_trace()
+            subnet = self.scores * self.flag.data.float()
+            bias_subnet = self.bias_scores * self.bias_flag.data.float()
 
         else:
             subnet, bias_subnet = GetSubnet.apply(self.scores.abs(), self.bias_scores.abs(), parser_args.prune_rate)
