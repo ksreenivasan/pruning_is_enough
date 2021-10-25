@@ -245,6 +245,20 @@ def get_score_sparsity_hc(model):
     return 100*numer/denom
 """
 
+def prune(model):
+
+    if parser_args.algo != 'hc_iter':
+        print('not appropriate to use prune() in the current parser_args.algo')
+        raise ValueError
+
+    print('We are in prune function')
+    conv_layers, linear_layers = get_layers(parser_args.arch, model)
+    for layer in [*conv_layers, *linear_layers]:
+        print(layer)
+        layer.flag = (layer.flag + torch.gt(layer.scores, torch.ones_like(layer.scores)*0.5).int() == 2).int()
+    return 
+
+
 
 # returns avg_sparsity = number of non-zero weights!
 def get_model_sparsity(model, threshold=0):
@@ -279,7 +293,16 @@ def get_model_sparsity(model, threshold=0):
 # average sparsity in the end
 def get_layer_sparsity(layer, threshold=0):
     # for algos where the score IS the mask
-    if parser_args.algo in ['hc']:
+    if parser_args.algo in ['hc_iter']:
+        pattern = layer.flag
+        #pattern = layer.scores.data * layer.weight.data
+        w_numer, w_denom = torch.sum((pattern == 1).int()).item(), pattern.flatten().numel()
+        print(layer, w_numer, w_denom)
+        if parser_args.bias:
+            raise NotImplementedError
+        else:
+            b_numer, b_denom = 0, 0
+    elif parser_args.algo in ['hc']:
         # assume the model is rounded
         num_middle = torch.sum(torch.gt(layer.scores,
                                torch.ones_like(layer.scores)*threshold) *
