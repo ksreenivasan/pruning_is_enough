@@ -46,12 +46,12 @@ class SupermaskConv(nn.Conv2d):
 
         # initialize flag (representing the pruned weights)
         #pdb.set_trace()
-        self.flag = torch.ones(self.weight.size()).long().cuda() # 
+        self.flag = nn.Parameter(torch.ones(self.weight.size()))#.long().cuda() # 
         if parser_args.bias:
-            self.bias_flag = torch.ones(self.bias.size()).long().cuda()
+            self.bias_flag = nn.Parameter(torch.ones(self.bias.size()))#.long().cuda()
         else:
             # dummy variable just so other things don't break
-            self.bias_flag = torch.Tensor(1).long().cuda()
+            self.bias_flag = nn.Parameter(torch.Tensor(1))#.long().cuda()
 
         # initialize the scores
         self.scores = nn.Parameter(torch.Tensor(self.weight.size()))
@@ -81,9 +81,8 @@ class SupermaskConv(nn.Conv2d):
         # don't need a mask here. the scores are directly multiplied with weights
         self.scores.data = torch.clamp(self.scores.data, 0.0, 1.0)
         self.bias_scores.data = torch.clamp(self.bias_scores.data, 0.0, 1.0)
-        #pdb.set_trace()
-        subnet = self.scores * self.flag.float()
-        bias_subnet = self.bias_scores * self.bias_flag.float()
+        subnet = self.scores * self.flag.data.float()
+        bias_subnet = self.bias_scores * self.bias_flag.data.float()
 
         w = self.weight * subnet
         if parser_args.bias:
@@ -101,12 +100,12 @@ class SupermaskLinear(nn.Linear):
         super().__init__(*args, **kwargs)
 
         # initialize flag (representing the pruned weights)
-        self.flag = torch.ones(self.weight.size()).long().cuda() # 
+        self.flag = nn.Parameter(torch.ones(self.weight.size()))#.long().cuda() # 
         if parser_args.bias:
-            self.bias_flag = torch.ones(self.bias.size()).long().cuda()
+            self.bias_flag = nn.Parameter(torch.ones(self.bias.size()))#.long().cuda()
         else:
             # dummy variable just so other things don't break
-            self.bias_flag = torch.Tensor(1).long().cuda()
+            self.bias_flag = nn.Parameter(torch.Tensor(1))#.long().cuda()
 
         # initialize the scores
         self.scores = nn.Parameter(torch.Tensor(self.weight.size()))
@@ -136,8 +135,8 @@ class SupermaskLinear(nn.Linear):
         # don't need a mask here. the scores are directly multiplied with weights
         self.scores.data = torch.clamp(self.scores.data, 0.0, 1.0)
         self.bias_scores.data = torch.clamp(self.bias_scores.data, 0.0, 1.0)
-        subnet = self.scores * self.flag
-        bias_subnet = self.bias_scores * self.bias_flag
+        subnet = self.scores * self.flag.data
+        bias_subnet = self.bias_scores * self.bias_flag.data
 
         w = self.weight * subnet
         if parser_args.bias:
@@ -221,8 +220,34 @@ class NetNormal(nn.Module):
         output = F.log_softmax(x, dim=1)
         return output
 
+class NetNormal_with_flag(nn.Module):
+    # network for training (from pruned version)
+    def __init__(self):
+        super(NetNormal_with_flag, self).__init__()
+        self.conv1 = nn.Conv2d(1, 32, 3, 1, bias=parser_args.bias)
+        self.conv2 = nn.Conv2d(32, 64, 3, 1, bias=parser_args.bias)
+        self.dropout1 = nn.Dropout2d(0.25)
+        self.dropout2 = nn.Dropout2d(0.5)
+        self.fc1 = nn.Linear(9216, 128, bias=parser_args.bias)
+        self.fc2 = nn.Linear(128, 10, bias=parser_args.bias)
+
+    def forward(self, x):
+        x = self.conv1(x)
+        x = F.relu(x)
+        x = self.conv2(x)
+        x = F.max_pool2d(x, 2)
+        x = self.dropout1(x)
+        x = torch.flatten(x, 1)
+        x = self.fc1(x)
+        x = F.relu(x)
+        x = self.dropout2(x)
+        x = self.fc2(x)
+        output = F.log_softmax(x, dim=1)
+        return output
+
 
 def train(model, device, train_loader, optimizer, criterion, epoch):
+    model.to(device)
     model.train()
     for batch_idx, (data, target) in enumerate(train_loader):
         data, target = data.to(device), target.to(device)
@@ -287,9 +312,7 @@ def prune(model, device):
 
     for layer in [model.conv1, model.conv2, model.fc1, model.fc2]:
         #pdb.set_trace()
-        layer.flag = (layer.flag + torch.gt(layer.scores, torch.ones_like(layer.scores)*0.5).int() == 2).int()
-        #layer.flag = torch.gt(layer.scores, torch.ones_like(layer.scores)*0.5).int()
-        #layer.weight.data = layer.weight.data * layer.scores.data
+        layer.flag.data = (layer.flag.data + torch.gt(layer.scores, torch.ones_like(layer.scores)*0.5).int() == 2).int()
 
         if parser_args.rewind:
             layer.scores.data = layer.initial_scores
@@ -305,7 +328,7 @@ def get_layer_sparsity(layer, threshold=0):
     #pdb.set_trace()
     
     if parser_args.algo in ['hc_iter']:
-        pattern = layer.flag
+        pattern = layer.flag.data
         #pattern = layer.scores.data * layer.weight.data
         w_numer, w_denom = torch.sum((pattern == 1).int()).item(), pattern.flatten().numel()
         print(layer, w_numer, w_denom)
@@ -514,22 +537,62 @@ def round_and_evaluate(model, device, criterion, train_loader, test_loader):
 
     return np.mean(acc_list)
 
-def switch_to_wt(model):
+def switch_to_wt(model, device):
     parser_args.iter_period = 9999
+    parser_args.mode = "training"
+    parser_args.algo = "wt"
+    parser_args.optimizer = 'sgd'
+    parser_args.lr = 0.001
+    parser_args.wd = 0.0001
+    new_model = NetNormal().to(device)
+    
+    if parser_args.bias:
+        raise NotImplementedError
+
+    # load weight * flag to the NetNormal
+    new_model.conv1.weight.data = model.conv1.weight.data * model.conv1.flag.data
+    new_model.conv2.weight.data = model.conv2.weight.data * model.conv2.flag.data
+    new_model.fc1.weight.data = model.fc1.weight.data * model.fc1.flag.data
+    new_model.fc2.weight.data = model.fc2.weight.data * model.fc2.flag.data
+
+    if parser_args.optimizer == 'sgd':
+        optimizer = optim.SGD(
+            [p for p in new_model.parameters() if p.requires_grad],
+            lr=parser_args.lr,
+            momentum=parser_args.momentum,
+            weight_decay=parser_args.wd,
+        )
+
+    elif parser_args.optimizer == 'adam':
+        optimizer = torch.optim.Adam([p for p in new_model.parameters() if p.requires_grad],
+                                     lr=parser_args.lr,
+                                     weight_decay=parser_args.wd,
+                                     amsgrad=False,
+                                     )
+    else:
+        print("INVALID OPTIMIZER")
+        print("EXITING")
+        raise ValueError
+
+
+    '''
     for name, params in model.named_parameters():
         if ".weight" in name:
             params.requires_grad = True
             print(name, ': update enabled')
-        elif ".bias" in name:
+        if parser_args.bias and ".bias" in name:
             params.requires_grad = True
             print(name, ': update enabled')
-        elif ".scores" in name:
+        if ".scores" in name:
             params.requires_grad = False
             print(name, ': update disabled')
-        elif ".bias_scores" in name:
+        if parser_args.bias and ".bias_scores" in name:
             params.requires_grad = False
             print(name, ': update disabled')
+    
+    '''
 
+    return new_model, optimizer
     
 
 
@@ -620,7 +683,7 @@ def main():
 
     set_seed(parser_args.seed)
 
-    device = torch.device("cuda:0" if use_cuda else "cpu")
+    device = torch.device("cuda:3" if use_cuda else "cpu")
 
     kwargs = {'num_workers': 1, 'pin_memory': True} if use_cuda else {}
     train_loader = torch.utils.data.DataLoader(
@@ -705,8 +768,9 @@ def main():
             results_df.to_csv('results/MNIST/{}'.format(parser_args.results_filename), index=False)
 
             if parser_args.switch_to_wt and epoch==parser_args.switch_epoch:
-                switch_to_wt(model)
-                print('epoch ' + epoch + ': switched to weight training')
+                model, optimizer = switch_to_wt(model, device)
+                print('epoch {}: switched to weight training'.format(epoch))
+                test(model, device, criterion, test_loader)
 
         #if parser_args.mode != "training":
         #    # gotta plot the final histogram as well
