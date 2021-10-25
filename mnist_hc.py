@@ -95,6 +95,10 @@ class SupermaskConv(nn.Conv2d):
         return x
 
 
+
+
+
+
 class SupermaskLinear(nn.Linear):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -144,6 +148,68 @@ class SupermaskLinear(nn.Linear):
         else:
             b = self.bias
         return F.linear(x, w, b)
+
+
+
+
+class ConvFlag(nn.Conv2d):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        # initialize flag (representing the pruned weights)
+        self.flag = nn.Parameter(torch.ones(self.weight.size()))#.long().cuda() # 
+        if parser_args.bias:
+            self.bias_flag = nn.Parameter(torch.ones(self.bias.size()))#.long().cuda()
+        else:
+            self.bias_flag = nn.Parameter(torch.Tensor(1))#.long().cuda()
+        nn.init.kaiming_normal_(self.weight, mode="fan_in", nonlinearity="relu")
+
+        self.flag.requires_grad = False
+        if parser_args.bias:
+            self.bias_flag.requires_grad = False
+
+    def forward(self, x):
+        # don't need a mask here. the scores are directly multiplied with weights
+        w = self.weight * self.flag.data
+        if parser_args.bias:
+            b = self.bias * self.bias_flag.data
+        else:
+            b = self.bias
+        x = F.conv2d(
+            x, w, b, self.stride, self.padding, self.dilation, self.groups
+        )
+        return x
+
+class LinearFlag(nn.Linear):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        # initialize flag (representing the pruned weights) & weight
+        self.flag = nn.Parameter(torch.ones(self.weight.size()))
+        if parser_args.bias:
+            self.bias_flag = nn.Parameter(torch.ones(self.bias.size()))#.long().cuda()
+        else:
+            self.bias_flag = nn.Parameter(torch.Tensor(1))#.long().cuda()
+        nn.init.kaiming_normal_(self.weight, mode="fan_in", nonlinearity="relu")
+
+        self.flag.requires_grad = False
+        if parser_args.bias:
+            self.bias_flag.requires_grad = False            
+
+    def forward(self, x):
+        # don't need a mask here. the scores are directly multiplied with weights
+        w = self.weight * self.flag.data
+        if parser_args.bias:
+            b = self.bias * self.bias_flag.data
+        else:
+            b = self.bias
+        return F.linear(x, w, b)
+
+
+
+
+
+
 
 
 class NetFC(nn.Module):
@@ -220,16 +286,16 @@ class NetNormal(nn.Module):
         output = F.log_softmax(x, dim=1)
         return output
 
-class NetNormal_with_flag(nn.Module):
+class NetNormalFlag(nn.Module):
     # network for training (from pruned version)
     def __init__(self):
-        super(NetNormal_with_flag, self).__init__()
-        self.conv1 = nn.Conv2d(1, 32, 3, 1, bias=parser_args.bias)
-        self.conv2 = nn.Conv2d(32, 64, 3, 1, bias=parser_args.bias)
+        super(NetNormalFlag, self).__init__()
+        self.conv1 = ConvFlag(1, 32, 3, 1, bias=parser_args.bias)
+        self.conv2 = ConvFlag(32, 64, 3, 1, bias=parser_args.bias)
         self.dropout1 = nn.Dropout2d(0.25)
         self.dropout2 = nn.Dropout2d(0.5)
-        self.fc1 = nn.Linear(9216, 128, bias=parser_args.bias)
-        self.fc2 = nn.Linear(128, 10, bias=parser_args.bias)
+        self.fc1 = LinearFlag(9216, 128, bias=parser_args.bias)
+        self.fc2 = LinearFlag(128, 10, bias=parser_args.bias)
 
     def forward(self, x):
         x = self.conv1(x)
@@ -354,6 +420,14 @@ def get_layer_sparsity(layer, threshold=0):
             b_numer, b_denom = 0, 0
     elif parser_args.algo in ['hc_act']:
         raise NotImplementedError
+    elif parser_args.mode in ['training'] and parser_args.switch_to_wt:
+        print('checking the sparsity for weight trianing after switching from pruning')
+        if parser_args.bias:
+            raise NotImplementedError
+
+        eff_weight = layer.weight.data * layer.flag.data
+        w_numer, w_denom = (eff_weight != 0).int().sum().item(), eff_weight.flatten().numel()
+        b_numer, b_denom = 0, 0
     else:
         # traditional pruning where we just check non-zero values in mask
         weight_mask, bias_mask = GetSubnet.apply(layer.scores.abs(), layer.bias_scores.abs(), parser_args.sparsity)
@@ -544,16 +618,28 @@ def switch_to_wt(model, device):
     parser_args.optimizer = 'sgd'
     parser_args.lr = 0.001
     parser_args.wd = 0.0001
-    new_model = NetNormal().to(device)
+    new_model = NetNormalFlag().to(device)
     
     if parser_args.bias:
         raise NotImplementedError
 
     # load weight * flag to the NetNormal
+    '''
     new_model.conv1.weight.data = model.conv1.weight.data * model.conv1.flag.data
     new_model.conv2.weight.data = model.conv2.weight.data * model.conv2.flag.data
     new_model.fc1.weight.data = model.fc1.weight.data * model.fc1.flag.data
     new_model.fc2.weight.data = model.fc2.weight.data * model.fc2.flag.data
+    '''
+
+    new_model.conv1.weight.data = model.conv1.weight.data * model.conv1.flag.data
+    new_model.conv1.flag.data = model.conv1.flag.data
+    new_model.conv2.weight.data = model.conv2.weight.data * model.conv2.flag.data
+    new_model.conv2.flag.data = model.conv2.flag.data
+    new_model.fc1.weight.data = model.fc1.weight.data * model.fc1.flag.data
+    new_model.fc1.flag.data = model.fc1.flag.data
+    new_model.fc2.weight.data = model.fc2.weight.data * model.fc2.flag.data
+    new_model.fc2.flag.data = model.fc2.flag.data
+    
 
     if parser_args.optimizer == 'sgd':
         optimizer = optim.SGD(
@@ -758,7 +844,10 @@ def main():
                 #if epoch % 10 == 1:
                 #    plot_histogram_scores(model, epoch)
             else:
-                model_sparsity = (sum([p.numel() for p in model.parameters()]))
+                if parser_args.switch_to_wt:
+                    model_sparsity = get_model_sparsity(cp_model)
+                else:
+                    model_sparsity = 1 #(sum([p.numel() for p in model.parameters()]))
 
             model_sparsity_list.append(model_sparsity)
             print("Test Acc: {:.2f}%\n".format(test_acc))
