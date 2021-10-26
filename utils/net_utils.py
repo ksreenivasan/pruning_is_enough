@@ -47,6 +47,29 @@ def get_layers(arch='Conv4', model=None):
     return (conv_layers, linear_layers)
 
 
+def redraw(model, shuffle=False, mask=False):
+    cp_model = copy.deepcopy(model)
+    conv_layers, linear_layers = get_layers(parser_args.arch, cp_model)
+    for layer in [*conv_layers, *linear_layers]:
+    #for layer in [model.conv1, model.conv2, model.fc1, model.fc2]:
+        print(layer)
+        #print(layer.weight)
+        if shuffle:
+            if mask:
+                idx = torch.randperm(layer.flag.data.nelement())
+                layer.flag.data = layer.flag.data.view(-1)[idx].view(layer.flag.data.size())
+            else:
+                idx = torch.randperm(layer.weight.data.nelement())
+                layer.weight.data = layer.weight.data.view(-1)[idx].view(layer.weight.data.size())
+        else:
+            nn.init.kaiming_normal_(layer.weight, mode="fan_in", nonlinearity="relu")
+        #print(layer.weight)
+    return cp_model
+
+
+
+
+
 def save_checkpoint(state, is_best, filename="checkpoint.pth", save=False, parser_args=None):
     filename = pathlib.Path(filename)
 

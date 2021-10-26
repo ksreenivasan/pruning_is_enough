@@ -27,6 +27,7 @@ from utils.net_utils import (
     round_model,
     get_model_sparsity,
     prune,
+    redraw,
 )
 from utils.schedulers import get_policy
 from utils.utils import set_seed, plot_histogram_scores
@@ -47,6 +48,27 @@ def eval_and_print(validate, data_loader, model, criterion, parser_args, writer=
     print('acc1: {}, acc5: {}, acc10: {}'.format(acc1, acc5, acc10))
 
     return acc1
+
+def sanity_check(validate, data_loader, model, criterion, parser_args, writer=None, epoch=parser_args.start_epoch):
+
+    print('Doing sanity check')
+    cp_model = redraw(model)
+    acc1, acc5, acc10 = validate(data_loader, cp_model, criterion, parser_args, writer=None, epoch=parser_args.start_epoch)
+    print("After redrawing weights")
+    print('acc1: {}, acc5: {}, acc10: {}'.format(acc1, acc5, acc10))
+
+    cp_model = redraw(model, shuffle=True)
+    acc1, acc5, acc10 = validate(data_loader, cp_model, criterion, parser_args, writer=None, epoch=parser_args.start_epoch)
+    print("After shuffling weights")
+    print('acc1: {}, acc5: {}, acc10: {}'.format(acc1, acc5, acc10))
+
+    cp_model = redraw(model, shuffle=True, mask=True)
+    acc1, acc5, acc10 = validate(data_loader, cp_model, criterion, parser_args, writer=None, epoch=parser_args.start_epoch)
+    print("After shuffling masks")
+    print('acc1: {}, acc5: {}, acc10: {}'.format(acc1, acc5, acc10))
+
+    return 
+
 
 
 def compare_rounding(validate, data_loader, model, criterion, parser_args, result_root):
@@ -209,7 +231,13 @@ def main_worker(gpu, ngpus_per_node):
             best_acc1 = resume(parser_args, model, optimizer)
 
         if parser_args.evaluate:
-            eval_and_print(validate, data.val_loader, model, criterion, parser_args, writer=None, epoch=parser_args.start_epoch, description='model')
+            #eval_and_print(validate, data.val_loader, model, criterion, parser_args, writer=None, epoch=parser_args.start_epoch, description='model')
+            if parser_args.algo in ['hc_iter']:
+
+                model = round_model(model, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio, rank=parser_args.gpu)
+                eval_and_print(validate, data.val_loader, model, criterion, parser_args, writer=None, epoch=parser_args.start_epoch, description='final model after rounding')
+                sanity_check(validate, data.val_loader, model, criterion, parser_args, writer=None, epoch=parser_args.start_epoch)
+
 
             # if parser_args.compare_rounding:
             #    compare_rounding(validate, data.val_loader, model, criterion, parser_args, result_root)

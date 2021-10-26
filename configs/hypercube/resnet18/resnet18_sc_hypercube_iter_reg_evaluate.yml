@@ -1,6 +1,11 @@
 # Hypercube optimization
 algo: 'hc_iter'
 iter_period: 75
+evaluate: True
+pretrained: 'runs/resnet18_sc_hypercube_iter_reg/resnet18_cifar10_hypercube_iter_reg/prune_rate=0.0/4/checkpoints/model_best.pth'
+#pretrained: 'runs/resnet18_sc_hypercube_iter_reg/resnet18_cifar10_hypercube_iter_reg/prune_rate=0.0/3/checkpoints/model_best.pth'
+
+
 
 # Architecture
 arch: cResNet18
