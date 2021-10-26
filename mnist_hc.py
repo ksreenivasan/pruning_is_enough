@@ -679,7 +679,24 @@ def switch_to_wt(model, device):
     '''
 
     return new_model, optimizer
-    
+
+
+
+def redraw(model, shuffle=False, mask=False):
+    for layer in [model.conv1, model.conv2, model.fc1, model.fc2]:
+        #print(layer)
+        #print(layer.weight)
+        if shuffle:
+            if mask:
+                idx = torch.randperm(layer.flag.data.nelement())
+                layer.flag.data = layer.flag.data.view(-1)[idx].view(layer.flag.data.size())
+            else:
+                idx = torch.randperm(layer.weight.data.nelement())
+                layer.weight.data = layer.weight.data.view(-1)[idx].view(layer.weight.data.size())
+        else:
+            nn.init.kaiming_normal_(layer.weight, mode="fan_in", nonlinearity="relu")
+        #print(layer.weight)
+    return
 
 
 def main():
@@ -875,10 +892,32 @@ def main():
     if 'hc' in parser_args.algo:
         # irrespective of evaluate_only, add an evaluate_only step
         model.load_state_dict(torch.load('model_checkpoints/mnist_pruned_model_{}_{}.pt'.format(parser_args.algo, parser_args.epochs)))
-        round_acc_list = round_and_evaluate(model, device, criterion, train_loader, test_loader)
-        #round_acc_list = test(model, device, criterion, test_loader)
 
+        model = round_model(model, device, train_loader)
+        #round_acc_list = round_and_evaluate(model, device, criterion, train_loader, test_loader)
+        round_acc_list = test(model, device, criterion, test_loader)
         print("Test Acc: {:.2f}%\n".format(round_acc_list))
+        sparsity = get_model_sparsity(model)
+        print("Sparsity: {:.2f}%\n".format(sparsity))
+
+        # test shuffling weights 
+        redraw(model)#, device, criterion, test_loader)
+        redraw_acc_list = test(model, device, criterion, test_loader)
+        print("After redrawing weights")
+        print("Test Acc: {:.2f}%\n".format(redraw_acc_list))
+        
+        redraw(model, shuffle=True)#, device, criterion, test_loader)
+        shuff_acc_list = test(model, device, criterion, test_loader)
+        print("After shuffling weights")
+        print("Test Acc: {:.2f}%\n".format(shuff_acc_list))
+
+        redraw(model, shuffle=True, mask=True)#, device, criterion, test_loader)
+        shuff_acc_list = test(model, device, criterion, test_loader)
+        print("After shuffling masks")
+        print("Test Acc: {:.2f}%\n".format(shuff_acc_list))
+
+
+
 
     print("Experiment donezo")
 

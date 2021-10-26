@@ -152,7 +152,7 @@ def main_worker(gpu, ngpus_per_node):
     dataset_str = parser_args.dataset
     model_str = parser_args.arch
     algo_str = parser_args.algo
-    period_str = parser_args.period
+    period_str = parser_args.iter_period
     reg_str = 'reg_{}'.format(parser_args.regularization)
     reg_lmbda = parser_args.lmbda if parser_args.regularization else ''
     opt_str = parser_args.optimizer

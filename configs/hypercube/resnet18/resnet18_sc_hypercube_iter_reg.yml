@@ -1,6 +1,6 @@
 # Hypercube optimization
 algo: 'hc_iter'
-iter_period: 1
+iter_period: 25
 
 # Architecture
 arch: cResNet18
@@ -47,5 +47,5 @@ lmbda: 0.001 #0.000001
 
 # ===== Hardware setup ===== #
 workers: 4
-gpu: 1
+gpu: 2
 
