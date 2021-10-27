@@ -1,9 +1,14 @@
 # Checking optimal sparsity
-python mnist_pruning_exps.py --algo ep \
---lr 0.1 \
---epochs 5 \
---optimizer sgd \
---results-filename vanilla_ep.csv
+python mnist_pruning_exps.py --algo hc \
+--lr 0.01 \
+--epochs 100 \
+--optimizer adam \
+--wd 0 \
+--regularization var_red_1 \
+--lmbda 0.001 \
+--alpha 9 \
+--alpha_prime 1 \
+--results-filename sparse_hc.csv
 
 # Weight training
 :<<BLOCK

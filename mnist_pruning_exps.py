@@ -628,6 +628,8 @@ def main():
     global parser_args
     # Training settings
     parser = argparse.ArgumentParser(description='PyTorch MNIST Example')
+    parser.add_argument('--gpu', type=int, default=0, metavar='N',
+                        help='id of gpu to use')
     parser.add_argument('--batch-size', type=int, default=64, metavar='N',
                         help='input batch size for training (default: 64)')
     parser.add_argument('--test-batch-size', type=int, default=100, metavar='N',
@@ -698,7 +700,7 @@ def main():
 
     set_seed(parser_args.seed)
 
-    device = torch.device("cuda:0" if use_cuda else "cpu")
+    device = torch.device("cuda:{}".format(parser_args.gpu) if use_cuda else "cpu")
 
     kwargs = {'num_workers': 1, 'pin_memory': True} if use_cuda else {}
     train_loader = torch.utils.data.DataLoader(
