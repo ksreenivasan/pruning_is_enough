@@ -18,12 +18,16 @@ from torchvision import datasets, transforms
 from torch.optim.lr_scheduler import CosineAnnealingLR
 import torch.autograd as autograd
 
+import logging
+
 import pdb
 import time
 import copy
 plt.style.use('seaborn-whitegrid')
 
 parser_args = None
+
+logging.basicConfig()
 
 
 # set seed for experiment
@@ -37,21 +41,25 @@ def set_seed(seed):
     # making sure GPU runs are deterministic even if they are slower
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = True
-    print("Seeded everything: {}".format(seed))
+    logging.info("Seeded everything: {}".format(seed))
 
 
 class SupermaskConv(nn.Conv2d):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        # initialize flag (representing the pruned weights)
-        #pdb.set_trace()
-        self.flag = nn.Parameter(torch.ones(self.weight.size()))#.long().cuda() # 
+        # initialize pruned (pruned = 1 if weight is pruned, 0 if it is still active)
+        # initialize fixed (fixed = 1 if weight is selected, 0 otherwise)
+        # everything else is still in flux!
+
+        self.pruned = nn.Parameter(torch.zeros(self.weight.size()))
+        self.fixed = nn.Parameter(torch.zeros(self.weight.size()))
         if parser_args.bias:
-            self.bias_flag = nn.Parameter(torch.ones(self.bias.size()))#.long().cuda()
+            self.bias_pruned = nn.Parameter(torch.zeros(self.bias.size()))
+            self.fixed = nn.Parameter(torch.zeros(self.weight.size()))
         else:
             # dummy variable just so other things don't break
-            self.bias_flag = nn.Parameter(torch.Tensor(1))#.long().cuda()
+            self.bias_pruned = nn.Parameter(torch.Tensor(0))#.long().cuda()
 
         # initialize the scores
         self.scores = nn.Parameter(torch.Tensor(self.weight.size()))
@@ -72,17 +80,20 @@ class SupermaskConv(nn.Conv2d):
 
         # NOTE: turn the gradient on the weights off
         self.weight.requires_grad = False
-        self.flag.requires_grad = False
+        self.pruned.requires_grad = False
+        self.fixed.requires_grad = False
         if parser_args.bias:
             self.bias.requires_grad = False
-            self.bias_flag.requires_grad = False
+            self.bias_pruned.requires_grad = False
+            self.bias_fixed.requires_grad = False
 
     def forward(self, x):
         # don't need a mask here. the scores are directly multiplied with weights
         self.scores.data = torch.clamp(self.scores.data, 0.0, 1.0)
         self.bias_scores.data = torch.clamp(self.bias_scores.data, 0.0, 1.0)
-        subnet = self.scores * self.flag.data.float()
-        bias_subnet = self.bias_scores * self.bias_flag.data.float()
+        # only keep scores which are neither fixed nor pruned
+        subnet = self.scores * (1-self.pruned.data).float() * (1-self.fixed.data).float() + self.fixed.data.float()
+        bias_subnet = self.bias_scores * (1-self.bias_pruned.data).float() * (1-self.bias_fixed.data).float() + self.bias_fixed.data.float()
 
         w = self.weight * subnet
         if parser_args.bias:
@@ -96,20 +107,21 @@ class SupermaskConv(nn.Conv2d):
 
 
 
-
-
-
 class SupermaskLinear(nn.Linear):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        # initialize flag (representing the pruned weights)
-        self.flag = nn.Parameter(torch.ones(self.weight.size()))#.long().cuda() # 
+        # initialize pruned (representing the pruned weights)
+        # initialize fixed (fixed = 1 if weight is selected, 0 otherwise)
+        # everything else is still in flux!
+        self.pruned = nn.Parameter(torch.zeros(self.weight.size()))
+        self.fixed = nn.Parameter(torch.zeros(self.weight.size()))
         if parser_args.bias:
-            self.bias_flag = nn.Parameter(torch.ones(self.bias.size()))#.long().cuda()
+            self.bias_pruned = nn.Parameter(torch.zeros(self.bias.size()))
+            self.fixed = nn.Parameter(torch.zeros(self.weight.size()))
         else:
             # dummy variable just so other things don't break
-            self.bias_flag = nn.Parameter(torch.Tensor(1))#.long().cuda()
+            self.bias_pruned = nn.Parameter(torch.Tensor(0))
 
         # initialize the scores
         self.scores = nn.Parameter(torch.Tensor(self.weight.size()))
@@ -130,17 +142,20 @@ class SupermaskLinear(nn.Linear):
 
         # NOTE: turn the gradient on the weights off
         self.weight.requires_grad = False
-        self.flag.requires_grad = False
+        self.pruned.requires_grad = False
+        self.fixed.requires_grad = False
         if parser_args.bias:
             self.bias.requires_grad = False
-            self.bias_flag.requires_grad = False            
+            self.bias_pruned.requires_grad = False
+            self.bias_fixed.requires_grad = False          
 
     def forward(self, x):
         # don't need a mask here. the scores are directly multiplied with weights
         self.scores.data = torch.clamp(self.scores.data, 0.0, 1.0)
         self.bias_scores.data = torch.clamp(self.bias_scores.data, 0.0, 1.0)
-        subnet = self.scores * self.flag.data
-        bias_subnet = self.bias_scores * self.bias_flag.data
+        # only keep scores which are neither fixed nor pruned
+        subnet = self.scores * (1-self.pruned.data).float() * (1-self.fixed.data).float() + self.fixed.data.float()
+        bias_subnet = self.bias_scores * (1-self.bias_pruned.data).float() * (1-self.bias_fixed.data).float() + self.bias_fixed.data.float()
 
         w = self.weight * subnet
         if parser_args.bias:
@@ -156,23 +171,23 @@ class ConvFlag(nn.Conv2d):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        # initialize flag (representing the pruned weights)
-        self.flag = nn.Parameter(torch.ones(self.weight.size()))#.long().cuda() # 
+        # initialize pruned (representing the pruned weights)
+        self.pruned = nn.Parameter(torch.ones(self.weight.size()))#.long().cuda() # 
         if parser_args.bias:
-            self.bias_flag = nn.Parameter(torch.ones(self.bias.size()))#.long().cuda()
+            self.bias_pruned = nn.Parameter(torch.ones(self.bias.size()))#.long().cuda()
         else:
-            self.bias_flag = nn.Parameter(torch.Tensor(1))#.long().cuda()
+            self.bias_pruned = nn.Parameter(torch.Tensor(1))#.long().cuda()
         nn.init.kaiming_normal_(self.weight, mode="fan_in", nonlinearity="relu")
 
-        self.flag.requires_grad = False
+        self.pruned.requires_grad = False
         if parser_args.bias:
-            self.bias_flag.requires_grad = False
+            self.bias_pruned.requires_grad = False
 
     def forward(self, x):
         # don't need a mask here. the scores are directly multiplied with weights
-        w = self.weight * self.flag.data
+        w = self.weight * self.pruned.data
         if parser_args.bias:
-            b = self.bias * self.bias_flag.data
+            b = self.bias * self.bias_pruned.data
         else:
             b = self.bias
         x = F.conv2d(
@@ -184,31 +199,26 @@ class LinearFlag(nn.Linear):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        # initialize flag (representing the pruned weights) & weight
-        self.flag = nn.Parameter(torch.ones(self.weight.size()))
+        # initialize pruned (representing the pruned weights) & weight
+        self.pruned = nn.Parameter(torch.ones(self.weight.size()))
         if parser_args.bias:
-            self.bias_flag = nn.Parameter(torch.ones(self.bias.size()))#.long().cuda()
+            self.bias_pruned = nn.Parameter(torch.ones(self.bias.size()))#.long().cuda()
         else:
-            self.bias_flag = nn.Parameter(torch.Tensor(1))#.long().cuda()
+            self.bias_pruned = nn.Parameter(torch.Tensor(1))#.long().cuda()
         nn.init.kaiming_normal_(self.weight, mode="fan_in", nonlinearity="relu")
 
-        self.flag.requires_grad = False
+        self.pruned.requires_grad = False
         if parser_args.bias:
-            self.bias_flag.requires_grad = False            
+            self.bias_pruned.requires_grad = False            
 
     def forward(self, x):
         # don't need a mask here. the scores are directly multiplied with weights
-        w = self.weight * self.flag.data
+        w = self.weight * self.pruned.data
         if parser_args.bias:
-            b = self.bias * self.bias_flag.data
+            b = self.bias * self.bias_pruned.data
         else:
             b = self.bias
         return F.linear(x, w, b)
-
-
-
-
-
 
 
 
@@ -327,12 +337,12 @@ def train(model, device, train_loader, optimizer, criterion, epoch):
                                         lmbda=parser_args.lmbda, alpha=parser_args.alpha,
                                         alpha_prime=parser_args.alpha_prime)
 
-        # print("LOSS (before): {}".format(loss))
+        # logging.info("LOSS (before): {}".format(loss))
         loss += regularization_loss
         loss.backward()
         optimizer.step()
         if batch_idx % parser_args.log_interval == 0:
-            print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
+            logging.info('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
                 epoch, batch_idx * len(data), len(train_loader.dataset),
                 100. * batch_idx / len(train_loader), loss.item()))
 
@@ -351,34 +361,25 @@ def test(model, device, criterion, test_loader):
 
     test_loss /= len(test_loader.dataset)
 
-    print('\nTest set: Average loss: {:.4f}, Accuracy: {}/{} ({:.0f}%)\n'.format(
+    logging.info('\nTest set: Average loss: {:.4f}, Accuracy: {}/{} ({:.0f}%)\n'.format(
         test_loss, correct, len(test_loader.dataset),
         100. * correct / len(test_loader.dataset)))
 
     test_acc = 100. * correct/len(test_loader.dataset)
     return test_acc
 
-# def old_prune(model, device):
 
-#     for layer in [model.conv1, model.conv2, model.fc1, model.fc2]:
-#         #print(layer.weight.data.shape) 
-#         #print(layer.scores.data.shape)
-#         layer.scores.data = torch.gt(layer.scores, torch.ones_like(layer.scores)*0.5).int().float()
-#         #pdb.set_trace()
-#         layer.weight.data = layer.weight.data * layer.scores.data
-
-#     return 
-
-
-def prune(model, device):
-
+def prune(model, device, threshold=0.1):
     if parser_args.algo != 'hc_iter':
-        print('not appropriate to use prune() in the current parser_args.algo')
+        logging.info('not appropriate to use prune() in the current parser_args.algo')
         raise ValueError
 
     for layer in [model.conv1, model.conv2, model.fc1, model.fc2]:
         #pdb.set_trace()
-        layer.flag.data = (layer.flag.data + torch.gt(layer.scores, torch.ones_like(layer.scores)*0.5).int() == 2).int()
+        # if a weight was pruned or has score < threshold, prune it.
+        layer.pruned.data = ((layer.pruned.data + torch.lt(layer.scores, torch.ones_like(layer.scores)*threshold).int()) >= 1).int()
+        # if a weight was fixed or has score > threshold, fix it.
+        layer.fixed.data = ((layer.fixed.data + torch.gt(layer.scores, torch.ones_like(layer.scores)*(1-threshold)).int()) >= 1).int()
 
         if parser_args.rewind:
             layer.scores.data = layer.initial_scores
@@ -394,10 +395,10 @@ def get_layer_sparsity(layer, threshold=0):
     #pdb.set_trace()
     
     if parser_args.algo in ['hc_iter']:
-        pattern = layer.flag.data
+        pattern = layer.pruned.data
         #pattern = layer.scores.data * layer.weight.data
         w_numer, w_denom = torch.sum((pattern == 1).int()).item(), pattern.flatten().numel()
-        print(layer, w_numer, w_denom)
+        logging.info(layer, w_numer, w_denom)
         if parser_args.bias:
             raise NotImplementedError
         else:
@@ -410,7 +411,7 @@ def get_layer_sparsity(layer, threshold=0):
                         torch.lt(layer.scores,
                         torch.ones_like(layer.scores.detach()*(1-threshold)).int()))
         if num_middle > 0:
-            print("WARNING: Model scores are not binary. Sparsity number is unreliable.")
+            logging.info("WARNING: Model scores are not binary. Sparsity number is unreliable.")
             raise ValueError
         w_numer, w_denom = layer.scores.detach().sum().item(), layer.scores.detach().flatten().numel()
 
@@ -421,11 +422,11 @@ def get_layer_sparsity(layer, threshold=0):
     elif parser_args.algo in ['hc_act']:
         raise NotImplementedError
     elif parser_args.mode in ['training'] and parser_args.switch_to_wt:
-        print('checking the sparsity for weight trianing after switching from pruning')
+        logging.info('checking the sparsity for weight trianing after switching from pruning')
         if parser_args.bias:
             raise NotImplementedError
 
-        eff_weight = layer.weight.data * layer.flag.data
+        eff_weight = layer.weight.data * layer.pruned.data
         w_numer, w_denom = (eff_weight != 0).int().sum().item(), eff_weight.flatten().numel()
         b_numer, b_denom = 0, 0
     else:
@@ -464,7 +465,7 @@ def get_model_sparsity(model, threshold=0):
         if parser_args.bias:
             numer += b_numer
             denom += b_denom
-    # print('Overall sparsity: {}/{} ({:.2f} %)'.format((int)(numer), denom, 100*numer/denom))
+    # logging.info('Overall sparsity: {}/{} ({:.2f} %)'.format((int)(numer), denom, 100*numer/denom))
 
     return 100*numer/denom
 
@@ -511,13 +512,13 @@ def round_model(model, device, train_loader):
                 params.data = torch.bernoulli(params)
             elif parser_args.round == 'pb':
                 params.data = round_down(cp_model, params, device, train_loader, criterion)
-                print(name, ' ended')
+                logging.info(name, ' ended')
             else:
-                print("INVALID ROUNDING")
-                print("EXITING")
+                logging.info("INVALID ROUNDING")
+                logging.info("EXITING")
                 exit()
 
-    print("Rounding complete: Returning rounded model after {} rounding".format(parser_args.round))
+    logging.info("Rounding complete: Returning rounded model after {} rounding".format(parser_args.round))
     return cp_model
 
 
@@ -588,7 +589,7 @@ def round_and_evaluate(model, device, criterion, train_loader, test_loader):
     for itr in range(parser_args.num_test):
         cp_model = copy.deepcopy(model)
         # cp_model.load_state_dict(torch.load('model_checkpoints/mnist_pruned_model_{}_{}.pt'.format(parser_args.algo, parser_args.epochs)))
-        print('Testing rounding technique of {}'.format(parser_args.round))
+        logging.info('Testing rounding technique of {}'.format(parser_args.round))
         for name, params in cp_model.named_parameters():
             if ".score" in name:
                 if parser_args.round == 'naive':
@@ -597,17 +598,17 @@ def round_and_evaluate(model, device, criterion, train_loader, test_loader):
                     params.data = torch.bernoulli(params)
                 elif parser_args.round == 'pb':
                     params.data = round_down(cp_model, params, device, train_loader, criterion)
-                    print(name, ' ended')
+                    logging.info(name, ' ended')
                 else:
-                    print("INVALID ROUNDING")
-                    print("EXITING")
+                    logging.info("INVALID ROUNDING")
+                    logging.info("EXITING")
                     exit()
 
         acc = test(cp_model, device, criterion, test_loader)
         acc_list = np.append(acc_list, np.array([acc]))
 
-    print("Rounding results: ")
-    print('Mean Acc: {}, Std Dev: {}'.format(np.mean(acc_list), np.std(acc_list)))
+    logging.info("Rounding results: ")
+    logging.info('Mean Acc: {}, Std Dev: {}'.format(np.mean(acc_list), np.std(acc_list)))
 
     return np.mean(acc_list)
 
@@ -625,20 +626,20 @@ def switch_to_wt(model, device):
 
     # load weight * flag to the NetNormal
     '''
-    new_model.conv1.weight.data = model.conv1.weight.data * model.conv1.flag.data
-    new_model.conv2.weight.data = model.conv2.weight.data * model.conv2.flag.data
-    new_model.fc1.weight.data = model.fc1.weight.data * model.fc1.flag.data
-    new_model.fc2.weight.data = model.fc2.weight.data * model.fc2.flag.data
+    new_model.conv1.weight.data = model.conv1.weight.data * model.conv1.pruned.data
+    new_model.conv2.weight.data = model.conv2.weight.data * model.conv2.pruned.data
+    new_model.fc1.weight.data = model.fc1.weight.data * model.fc1.pruned.data
+    new_model.fc2.weight.data = model.fc2.weight.data * model.fc2.pruned.data
     '''
 
-    new_model.conv1.weight.data = model.conv1.weight.data * model.conv1.flag.data
-    new_model.conv1.flag.data = model.conv1.flag.data
-    new_model.conv2.weight.data = model.conv2.weight.data * model.conv2.flag.data
-    new_model.conv2.flag.data = model.conv2.flag.data
-    new_model.fc1.weight.data = model.fc1.weight.data * model.fc1.flag.data
-    new_model.fc1.flag.data = model.fc1.flag.data
-    new_model.fc2.weight.data = model.fc2.weight.data * model.fc2.flag.data
-    new_model.fc2.flag.data = model.fc2.flag.data
+    new_model.conv1.weight.data = model.conv1.weight.data * model.conv1.pruned.data
+    new_model.conv1.pruned.data = model.conv1.pruned.data
+    new_model.conv2.weight.data = model.conv2.weight.data * model.conv2.pruned.data
+    new_model.conv2.pruned.data = model.conv2.pruned.data
+    new_model.fc1.weight.data = model.fc1.weight.data * model.fc1.pruned.data
+    new_model.fc1.pruned.data = model.fc1.pruned.data
+    new_model.fc2.weight.data = model.fc2.weight.data * model.fc2.pruned.data
+    new_model.fc2.pruned.data = model.fc2.pruned.data
     
 
     if parser_args.optimizer == 'sgd':
@@ -656,8 +657,8 @@ def switch_to_wt(model, device):
                                      amsgrad=False,
                                      )
     else:
-        print("INVALID OPTIMIZER")
-        print("EXITING")
+        logging.info("INVALID OPTIMIZER")
+        logging.info("EXITING")
         raise ValueError
 
 
@@ -665,16 +666,16 @@ def switch_to_wt(model, device):
     for name, params in model.named_parameters():
         if ".weight" in name:
             params.requires_grad = True
-            print(name, ': update enabled')
+            logging.info(name, ': update enabled')
         if parser_args.bias and ".bias" in name:
             params.requires_grad = True
-            print(name, ': update enabled')
+            logging.info(name, ': update enabled')
         if ".scores" in name:
             params.requires_grad = False
-            print(name, ': update disabled')
+            logging.info(name, ': update disabled')
         if parser_args.bias and ".bias_scores" in name:
             params.requires_grad = False
-            print(name, ': update disabled')
+            logging.info(name, ': update disabled')
     
     '''
 
@@ -685,18 +686,18 @@ def switch_to_wt(model, device):
 def redraw(model, shuffle=False, mask=False):
     cp_model = copy.deepcopy(model)
     for layer in [cp_model.conv1, cp_model.conv2, cp_model.fc1, cp_model.fc2]:
-        #print(layer)
-        #print(layer.weight)
+        #logging.info(layer)
+        #logging.info(layer.weight)
         if shuffle:
             if mask:
-                idx = torch.randperm(layer.flag.data.nelement())
-                layer.flag.data = layer.flag.data.view(-1)[idx].view(layer.flag.data.size())
+                idx = torch.randperm(layer.pruned.data.nelement())
+                layer.pruned.data = layer.pruned.data.view(-1)[idx].view(layer.pruned.data.size())
             else:
                 idx = torch.randperm(layer.weight.data.nelement())
                 layer.weight.data = layer.weight.data.view(-1)[idx].view(layer.weight.data.size())
         else:
             nn.init.kaiming_normal_(layer.weight, mode="fan_in", nonlinearity="relu")
-        #print(layer.weight)
+        #logging.info(layer.weight)
     return cp_model
 
 
@@ -838,8 +839,8 @@ def main():
                                      amsgrad=False,
                                      )
     else:
-        print("INVALID OPTIMIZER")
-        print("EXITING")
+        logging.info("INVALID OPTIMIZER")
+        logging.info("EXITING")
         exit()
 
     criterion = nn.CrossEntropyLoss().to(device)
@@ -868,15 +869,15 @@ def main():
                     model_sparsity = 1 #(sum([p.numel() for p in model.parameters()]))
 
             model_sparsity_list.append(model_sparsity)
-            print("Test Acc: {:.2f}%\n".format(test_acc))
-            print("Sparsity: {:.2f}%\n".format(model_sparsity))
-            print("---------------------------------------------------------")
+            logging.info("Test Acc: {:.2f}%\n".format(test_acc))
+            logging.info("Sparsity: {:.2f}%\n".format(model_sparsity))
+            logging.info("---------------------------------------------------------")
             results_df = pd.DataFrame({'epoch': epoch_list, 'test_acc': test_acc_list, 'model_sparsity': model_sparsity_list})
             results_df.to_csv('results/MNIST/{}'.format(parser_args.results_filename), index=False)
 
             if parser_args.switch_to_wt and epoch==parser_args.switch_epoch:
                 model, optimizer = switch_to_wt(model, device)
-                print('epoch {}: switched to weight training'.format(epoch))
+                logging.info('epoch {}: switched to weight training'.format(epoch))
                 test(model, device, criterion, test_loader)
 
         #if parser_args.mode != "training":
@@ -897,30 +898,30 @@ def main():
         model = round_model(model, device, train_loader)
         #round_acc_list = round_and_evaluate(model, device, criterion, train_loader, test_loader)
         round_acc_list = test(model, device, criterion, test_loader)
-        print("Test Acc: {:.2f}%\n".format(round_acc_list))
+        logging.info("Test Acc: {:.2f}%\n".format(round_acc_list))
         sparsity = get_model_sparsity(model)
-        print("Sparsity: {:.2f}%\n".format(sparsity))
+        logging.info("Sparsity: {:.2f}%\n".format(sparsity))
 
         # test shuffling weights 
         model = redraw(model)#, device, criterion, test_loader)
         redraw_acc_list = test(model, device, criterion, test_loader)
-        print("After redrawing weights")
-        print("Test Acc: {:.2f}%\n".format(redraw_acc_list))
+        logging.info("After redrawing weights")
+        logging.info("Test Acc: {:.2f}%\n".format(redraw_acc_list))
         
         model = redraw(model, shuffle=True)#, device, criterion, test_loader)
         shuff_acc_list = test(model, device, criterion, test_loader)
-        print("After shuffling weights")
-        print("Test Acc: {:.2f}%\n".format(shuff_acc_list))
+        logging.info("After shuffling weights")
+        logging.info("Test Acc: {:.2f}%\n".format(shuff_acc_list))
 
         model = redraw(model, shuffle=True, mask=True)#, device, criterion, test_loader)
         shuff_acc_list = test(model, device, criterion, test_loader)
-        print("After shuffling masks")
-        print("Test Acc: {:.2f}%\n".format(shuff_acc_list))
+        logging.info("After shuffling masks")
+        logging.info("Test Acc: {:.2f}%\n".format(shuff_acc_list))
 
 
 
 
-    print("Experiment donezo")
+    logging.info("Experiment donezo")
 
 
 if __name__ == '__main__':
