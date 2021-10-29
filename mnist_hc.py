@@ -384,7 +384,7 @@ def prune(model, device, threshold=0.1):
         # if a weight was pruned or has (score < threshold and not fixed), prune it.
         layer.pruned.data = ((layer.pruned.data + torch.lt(layer.scores, torch.ones_like(layer.scores)*threshold).int() - layer.fixed.data) >= 1).int()
         # if a weight was fixed or has (score > threshold and not pruned), fix it.
-        layer.fixed.data = ((layer.fixed.data + torch.gt(layer.scores, torch.ones_like(layer.scores)*(1-threshold)).int() - layer.pruned.data) >= 1).int()
+        # layer.fixed.data = ((layer.fixed.data + torch.gt(layer.scores, torch.ones_like(layer.scores)*(1-threshold)).int() - layer.pruned.data) >= 1).int()
 
         num_weights_pruned += layer.pruned.data.sum().item()
         num_weights_fixed += layer.fixed.data.sum().item()
@@ -786,6 +786,8 @@ def main():
                         help="second exponent in regularizer",)
     parser.add_argument("--gpu-id", default=0, type=int,
                         help="which gpu to use",)
+    parser.add_argument("--prune-threshold", default=0.5, type=int,
+                        help="prune weights when score < threshold",)
 
     epoch_list = []
     test_acc_list = []
@@ -866,7 +868,7 @@ def main():
             test_acc = round_and_evaluate(model, device, criterion, train_loader, test_loader)
             num_weights_fixed = num_weights_pruned = 0
             if parser_args.algo == 'hc_iter' and epoch % (parser_args.iter_period) == 0:
-                num_weights_pruned, num_weights_fixed = prune(model, device)
+                num_weights_pruned, num_weights_fixed = prune(model, device, parser_args.prune_threshold)
             #test_acc = test(model, device, criterion, test_loader)
             #scheduler.step()
             epoch_list.append(epoch)
@@ -895,6 +897,7 @@ def main():
                 'num_weights_pruned': weights_pruned_list,
                 'num_weighst_fixed': weights_fixed_list,
                 },)
+            logging.info("Writing results to {}".format(parser_args.results_filename))
             results_df.to_csv('results/MNIST/{}'.format(parser_args.results_filename), index=False)
 
             if parser_args.switch_to_wt and epoch==parser_args.switch_epoch:

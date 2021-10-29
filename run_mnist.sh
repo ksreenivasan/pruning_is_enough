@@ -1,4 +1,5 @@
 # trying iterative thresholding
+:<<BLOCK
 python mnist_hc.py --algo hc_iter \
 --gpu 0 \
 --lr 0.01 \
@@ -7,6 +8,57 @@ python mnist_hc.py --algo hc_iter \
 --wd 0 \
 --iter_period 1 \
 --results-filename hc_iter_threshold.csv > kartik_log 2>&1
+BLOCK
+
+python mnist_hc.py --algo hc_iter \
+--gpu 0 \
+--lr 0.01 \
+--epochs 50 \
+--optimizer adam \
+--wd 0 \
+--iter_period 1 \
+--prune-threshold 0.2
+--results-filename hc_iter_threshold_0_2.csv > kartik_log_0_2 2>&1
+
+python mnist_hc.py --algo hc_iter \
+--gpu 0 \
+--lr 0.01 \
+--epochs 50 \
+--optimizer adam \
+--wd 0 \
+--iter_period 1 \
+--prune-threshold 0.3
+--results-filename hc_iter_threshold_0_3.csv > kartik_log_0_3 2>&1
+
+python mnist_hc.py --algo hc_iter \
+--gpu 0 \
+--lr 0.01 \
+--epochs 50 \
+--optimizer adam \
+--wd 0 \
+--iter_period 1 \
+--prune-threshold 0.4
+--results-filename hc_iter_threshold_0_4.csv > kartik_log_0_4 2>&1
+
+python mnist_hc.py --algo hc_iter \
+--gpu 0 \
+--lr 0.01 \
+--epochs 50 \
+--optimizer adam \
+--wd 0 \
+--iter_period 1 \
+--prune-threshold 0.5
+--results-filename hc_iter_threshold_0_5.csv > kartik_log_0_5 2>&1
+
+python mnist_hc.py --algo hc_iter \
+--gpu 0 \
+--lr 0.01 \
+--epochs 50 \
+--optimizer adam \
+--wd 0 \
+--iter_period 1 \
+--prune-threshold 0.75
+--results-filename hc_iter_threshold_0_75.csv > kartik_log_0_75 2>&1
 
 :<<BLOCK
 # Checking optimal sparsity
