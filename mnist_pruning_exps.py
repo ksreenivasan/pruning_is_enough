@@ -18,12 +18,16 @@ from torchvision import datasets, transforms
 from torch.optim.lr_scheduler import CosineAnnealingLR
 import torch.autograd as autograd
 
+import logging
+
 import pdb
 import time
 import copy
 plt.style.use('seaborn-whitegrid')
 
 parser_args = None
+
+logging.basicConfig()
 
 
 # set seed for experiment
@@ -37,7 +41,7 @@ def set_seed(seed):
     # making sure GPU runs are deterministic even if they are slower
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = True
-    print("Seeded everything: {}".format(seed))
+    logging.info("Seeded everything: {}".format(seed))
 
 
 class GetSubnet(autograd.Function):
@@ -97,8 +101,8 @@ class GetSubnet(autograd.Function):
             bias_out = torch.bernoulli(bias_scores)
 
         else:
-            print("INVALID PRUNING ALGO")
-            print("EXITING")
+            logging.info("INVALID PRUNING ALGO")
+            logging.info("EXITING")
             exit()
 
         return out, bias_out
@@ -282,12 +286,12 @@ def train(model, device, train_loader, optimizer, criterion, epoch):
                                         lmbda=parser_args.lmbda, alpha=parser_args.alpha,
                                         alpha_prime=parser_args.alpha_prime)
 
-        # print("LOSS (before): {}".format(loss))
+        # logging.info("LOSS (before): {}".format(loss))
         loss += regularization_loss
         loss.backward()
         optimizer.step()
         if batch_idx % parser_args.log_interval == 0:
-            print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
+            logging.info('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
                 epoch, batch_idx * len(data), len(train_loader.dataset),
                 100. * batch_idx / len(train_loader), loss.item()))
 
@@ -306,7 +310,7 @@ def test(model, device, criterion, test_loader):
 
     test_loss /= len(test_loader.dataset)
 
-    print('\nTest set: Average loss: {:.4f}, Accuracy: {}/{} ({:.0f}%)\n'.format(
+    logging.info('\nTest set: Average loss: {:.4f}, Accuracy: {}/{} ({:.0f}%)\n'.format(
         test_loss, correct, len(test_loader.dataset),
         100. * correct / len(test_loader.dataset)))
 
@@ -325,7 +329,7 @@ def get_layer_sparsity(layer, threshold=0):
                         torch.lt(layer.scores,
                         torch.ones_like(layer.scores.detach()*(1-threshold)).int()))
         if num_middle > 0:
-            print("WARNING: Model scores are not binary. Sparsity number is unreliable.")
+            logging.info("WARNING: Model scores are not binary. Sparsity number is unreliable.")
             raise ValueError
         w_numer, w_denom = layer.scores.detach().sum().item(), layer.scores.detach().flatten().numel()
 
@@ -369,7 +373,7 @@ def get_model_sparsity(model, threshold=0):
         if parser_args.bias:
             numer += b_numer
             denom += b_denom
-    # print('Overall sparsity: {}/{} ({:.2f} %)'.format((int)(numer), denom, 100*numer/denom))
+    # logging.info('Overall sparsity: {}/{} ({:.2f} %)'.format((int)(numer), denom, 100*numer/denom))
 
     return 100*numer/denom
 
@@ -400,7 +404,7 @@ def get_model_sparsity_hc(model):
             num_middle = torch.gt(params, torch.ones_like(params)*0.01) * torch.lt(params, torch.ones_like(params)*0.99).int() # 0.25 / 0.75
             curr_sparsity = 100*torch.sum(num_middle).item()/num_middle.numel()
             sparsity.append(curr_sparsity)
-            print(name, '{}/{} ({:.2f} %)'.format(torch.sum(num_middle).item(), num_middle.numel(), curr_sparsity))
+            logging.info(name, '{}/{} ({:.2f} %)'.format(torch.sum(num_middle).item(), num_middle.numel(), curr_sparsity))
 
     return sparsity
 """
@@ -412,7 +416,7 @@ def compute_loss(model, device, train_loader, criterion):
     '''
     for name, params in model.named_parameters():
         if ".score" in name:
-            print(params[0][0][0][0])
+            logging.info(params[0][0][0][0])
             break
     '''
 
@@ -447,31 +451,31 @@ def round_down(cp_model, params, device, train_loader, criterion):
 
         if (idx+1) % 100 == 0:
             end_time = time.time()
-            print(idx, end_time - start_time)
+            logging.info(idx, end_time - start_time)
 
         if flag_sc[idx] == 1:
             # temp = torch.clone(params.data.flatten()[idx])
-            # print(params.data[0][0][0][0])
+            # logging.info(params.data[0][0][0][0])
             params.data.flatten()[idx] = 1
-            # print(params.data[0][0][0][0])
+            # logging.info(params.data[0][0][0][0])
             set_seed(idx)
             loss1 = compute_loss(cp_model, device, train_loader, criterion)
 
             params.data.flatten()[idx] = 0
-            # print(params.data[0][0][0][0])
+            # logging.info(params.data[0][0][0][0])
             set_seed(idx)
             loss0 = compute_loss(cp_model, device, train_loader, criterion)
 
-            # print(loss1, loss0)
+            # logging.info(loss1, loss0)
 
             if loss1 > loss0:   sc2[idx] = 0
             else:   sc2[idx] = 1
 
             params.data.flatten()[idx] = temp[idx]
-            # print(params.data[0][0][0][0])
-            # print(sum(scores2.flatten()))
+            # logging.info(params.data[0][0][0][0])
+            # logging.info(sum(scores2.flatten()))
 
-    # print(scores2.flatten())
+    # logging.info(scores2.flatten())
 
     return scores2
 
@@ -518,13 +522,13 @@ def round_model(model, device, train_loader):
                 params.data = torch.bernoulli(params)
             elif parser_args.round == 'pb':
                 params.data = round_down(cp_model, params, device, train_loader, criterion)
-                print(name, ' ended')
+                logging.info(name, ' ended')
             else:
-                print("INVALID ROUNDING")
-                print("EXITING")
+                logging.info("INVALID ROUNDING")
+                logging.info("EXITING")
                 exit()
 
-    print("Rounding complete: Returning rounded model after {} rounding".format(parser_args.round))
+    logging.info("Rounding complete: Returning rounded model after {} rounding".format(parser_args.round))
     return cp_model
 
 
@@ -596,7 +600,7 @@ def round_and_evaluate(model, device, criterion, train_loader, test_loader):
     for itr in range(parser_args.num_test):
         cp_model = copy.deepcopy(model)
         # cp_model.load_state_dict(torch.load('model_checkpoints/mnist_pruned_model_{}_{}.pt'.format(parser_args.algo, parser_args.epochs)))
-        print('Testing rounding technique of {}'.format(parser_args.round))
+        logging.info('Testing rounding technique of {}'.format(parser_args.round))
         for name, params in cp_model.named_parameters():
             if ".score" in name:
                 if parser_args.round == 'naive':
@@ -605,17 +609,17 @@ def round_and_evaluate(model, device, criterion, train_loader, test_loader):
                     params.data = torch.bernoulli(params)
                 elif parser_args.round == 'pb':
                     params.data = round_down(cp_model, params, device, train_loader, criterion)
-                    print(name, ' ended')
+                    logging.info(name, ' ended')
                 else:
-                    print("INVALID ROUNDING")
-                    print("EXITING")
+                    logging.info("INVALID ROUNDING")
+                    logging.info("EXITING")
                     exit()
 
         acc = test(cp_model, device, criterion, test_loader)
         acc_list = np.append(acc_list, np.array([acc]))
 
-    print("Rounding results: ")
-    print('Mean Acc: {}, Std Dev: {}'.format(np.mean(acc_list), np.std(acc_list)))
+    logging.info("Rounding results: ")
+    logging.info('Mean Acc: {}, Std Dev: {}'.format(np.mean(acc_list), np.std(acc_list)))
 
     return np.mean(acc_list)
 
@@ -624,6 +628,8 @@ def main():
     global parser_args
     # Training settings
     parser = argparse.ArgumentParser(description='PyTorch MNIST Example')
+    parser.add_argument('--gpu', type=int, default=0, metavar='N',
+                        help='id of gpu to use')
     parser.add_argument('--batch-size', type=int, default=64, metavar='N',
                         help='input batch size for training (default: 64)')
     parser.add_argument('--test-batch-size', type=int, default=100, metavar='N',
@@ -694,7 +700,7 @@ def main():
 
     set_seed(parser_args.seed)
 
-    device = torch.device("cuda:0" if use_cuda else "cpu")
+    device = torch.device("cuda:{}".format(parser_args.gpu) if use_cuda else "cpu")
 
     kwargs = {'num_workers': 1, 'pin_memory': True} if use_cuda else {}
     train_loader = torch.utils.data.DataLoader(
@@ -733,8 +739,8 @@ def main():
                                      amsgrad=False,
                                      )
     else:
-        print("INVALID OPTIMIZER")
-        print("EXITING")
+        logging.info("INVALID OPTIMIZER")
+        logging.info("EXITING")
         exit()
 
     criterion = nn.CrossEntropyLoss().to(device)
@@ -763,9 +769,10 @@ def main():
                 model_sparsity = (sum([p.numel() for p in model.parameters()]))
 
             model_sparsity_list.append(model_sparsity)
-            print("Test Acc: {:.2f}%\n".format(test_acc))
-            print("---------------------------------------------------------")
+            logging.info("Test Acc: {:.2f}%\n".format(test_acc))
+            logging.info("---------------------------------------------------------")
             results_df = pd.DataFrame({'epoch': epoch_list, 'test_acc': test_acc_list, 'model_sparsity': model_sparsity_list})
+            logging.info("Writing results to {}".format(parser_args.results_filename))
             results_df.to_csv('results/MNIST/{}'.format(parser_args.results_filename), index=False)
 
         if parser_args.mode != "training":
@@ -784,9 +791,9 @@ def main():
         model.load_state_dict(torch.load('model_checkpoints/mnist_pruned_model_{}_{}.pt'.format(parser_args.algo, parser_args.epochs)))
         round_acc_list = round_and_evaluate(model, device, criterion, train_loader, test_loader)
 
-        print("Test Acc: {:.2f}%\n".format(test_acc))
+        logging.info("Test Acc: {:.2f}%\n".format(test_acc))
 
-    print("Experiment donezo")
+    logging.info("Experiment donezo")
 
 
 if __name__ == '__main__':
