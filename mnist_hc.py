@@ -56,7 +56,7 @@ class SupermaskConv(nn.Conv2d):
         self.fixed = nn.Parameter(torch.zeros(self.weight.size()))
         if parser_args.bias:
             self.bias_pruned = nn.Parameter(torch.zeros(self.bias.size()))
-            self.fixed = nn.Parameter(torch.zeros(self.weight.size()))
+            self.bias_fixed = nn.Parameter(torch.zeros(self.weight.size()))
         else:
             # dummy variable just so other things don't break
             self.bias_pruned = nn.Parameter(torch.Tensor(0))#.long().cuda()
@@ -118,7 +118,7 @@ class SupermaskLinear(nn.Linear):
         self.fixed = nn.Parameter(torch.zeros(self.weight.size()))
         if parser_args.bias:
             self.bias_pruned = nn.Parameter(torch.zeros(self.bias.size()))
-            self.fixed = nn.Parameter(torch.zeros(self.weight.size()))
+            self.bias_fixed = nn.Parameter(torch.zeros(self.weight.size()))
         else:
             # dummy variable just so other things don't break
             self.bias_pruned = nn.Parameter(torch.Tensor(0))
