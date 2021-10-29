@@ -16,6 +16,8 @@ import torch.utils.data
 import torch.utils.data.distributed
 import torch.multiprocessing as mp
 
+import sys
+
 from utils.conv_type import FixedSubnetConv, SampleSubnetConv
 from utils.logging import AverageMeter, ProgressMeter
 from utils.net_utils import (
@@ -52,6 +54,8 @@ def eval_and_print(validate, data_loader, model, criterion, parser_args, writer=
 def sanity_check(validate, data_loader, model, criterion, parser_args, writer=None, epoch=parser_args.start_epoch):
 
     print('Doing sanity check')
+
+    '''
     cp_model = redraw(model)
     acc1, acc5, acc10 = validate(data_loader, cp_model, criterion, parser_args, writer=None, epoch=parser_args.start_epoch)
     print("After redrawing weights")
@@ -66,6 +70,7 @@ def sanity_check(validate, data_loader, model, criterion, parser_args, writer=No
     acc1, acc5, acc10 = validate(data_loader, cp_model, criterion, parser_args, writer=None, epoch=parser_args.start_epoch)
     print("After shuffling masks")
     print('acc1: {}, acc5: {}, acc10: {}'.format(acc1, acc5, acc10))
+    '''
 
     return 
 
@@ -237,6 +242,84 @@ def main_worker(gpu, ngpus_per_node):
                 model = round_model(model, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio, rank=parser_args.gpu)
                 eval_and_print(validate, data.val_loader, model, criterion, parser_args, writer=None, epoch=parser_args.start_epoch, description='final model after rounding')
                 sanity_check(validate, data.val_loader, model, criterion, parser_args, writer=None, epoch=parser_args.start_epoch)
+
+                print('Added by Alliot')
+
+#                cp_model = redraw(model, shuffle=True)
+                cp_model = redraw(model, shuffle=True, mask=True)         # NOTE: uncomment to check the other case
+#                cp_model = copy.deepcopy(model)
+                for name, param in cp_model.named_parameters():
+                    if 'weight' in name:
+                        param.requires_grad = True
+                    else:
+                        param.requires_grad = False
+                optimizer = get_optimizer(parser_args, cp_model)
+
+                run_base_dir, ckpt_base_dir, log_base_dir = get_directories(parser_args)
+                parser_args.ckpt_base_dir = ckpt_base_dir
+                writer = SummaryWriter(log_dir=log_base_dir)
+                epoch_time = AverageMeter("epoch_time", ":.4f", write_avg=False)
+                validation_time = AverageMeter("validation_time", ":.4f", write_avg=False)
+                train_time = AverageMeter("train_time", ":.4f", write_avg=False)
+                progress_overall = ProgressMeter(
+                    1, [epoch_time, validation_time, train_time], prefix="Overall Timing"
+                )
+
+                end_epoch = time.time()
+                parser_args.start_epoch = parser_args.start_epoch or 1
+
+                results = {'epoch': [], 'test_acc': []}
+
+
+                cp_model.cuda(parser_args.gpu)
+                acc1, acc5, acc10 = validate(data.val_loader, cp_model, criterion, parser_args, writer=None, epoch=0)
+
+                results['epoch'].append(0)
+                results['test_acc'].append(acc1)
+
+                for epoch in range(parser_args.start_epoch, parser_args.epochs + 1):
+                    if parser_args.multiprocessing_distributed:
+                        data.train_loader.sampler.set_epoch(epoch)
+
+                    lr_policy(epoch, iteration=None)
+                    modifier(parser_args, epoch, cp_model)
+
+                    cur_lr = get_lr(optimizer)
+                    print('cur_lr: ', cur_lr)
+
+                    # train for one epoch
+                    start_train = time.time()
+                    train_acc1, train_acc5, train_acc10, reg_loss = train(
+                        data.train_loader, cp_model, criterion, optimizer, epoch, parser_args, writer=writer
+                    )
+                    train_time.update((time.time() - start_train) / 60)
+
+                    # evaluate on validation set
+                    start_validation = time.time()
+                    acc1, acc5, acc10 = validate(data.val_loader, cp_model, criterion, parser_args, writer, epoch)
+                    validation_time.update((time.time() - start_validation) / 60)
+
+                    results['epoch'].append(epoch)
+                    results['test_acc'].append(acc1)
+
+                    results_df = pd.DataFrame.from_dict(results).set_index('epoch')
+    #                results_df.to_csv('./results/shuffle_weights.csv')            # NOTE: be sure to update filename accordingly!
+                    results_df.to_csv('./results/shuffle_mask.csv')
+    #                results_df.to_csv('./results/orig_mask.csv')
+
+                sys.exit()
+
+
+
+
+
+
+
+
+
+
+
+
 
 
             # if parser_args.compare_rounding:
