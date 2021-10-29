@@ -99,12 +99,26 @@ class SubnetConv(nn.Conv2d):
             self.bias_scores = nn.Parameter(torch.Tensor(1))
 
         if parser_args.algo in ['hc', 'hc_iter']:
-            if parser_args.score_init in ['unif']:
-                nn.init.uniform_(self.scores, a=0.0, b=1.0)
-                nn.init.uniform_(self.bias_scores, a=0.0, b=1.0)
+            if parser_args.score_init in ['half']:
+                self.scores.data = 0.5 * torch.ones_like(self.scores.data)
+                self.bias_scores.data = 0.5 * torch.ones_like(self.bias_scores.data)
             elif parser_args.score_init in ['bern']:
                 self.scores.data = torch.bernoulli(0.5 * torch.ones_like(self.scores.data))                                                                                                                     
                 self.bias_scores.data = torch.bernoulli(0.5 * torch.ones_like(self.bias_scores.data))    
+            elif parser_args.score_init in ['unif']:
+                nn.init.uniform_(self.scores, a=0.0, b=1.0)
+                nn.init.uniform_(self.bias_scores, a=0.0, b=1.0)
+            elif parser_args.score_init in ['bimodal', 'skew']:
+                Beta = torch.distributions.beta.Beta
+                if parser_args.score_init == 'bimodal':
+                    alpha, beta = 0.1, 0.1
+                elif parser_args.score_init == 'skew':
+                    alpha, beta = 1, 5
+                m = Beta(torch.ones_like(self.scores.data)*alpha, torch.ones_like(self.scores.data)*beta)
+                self.scores.data = m.sample()
+                m = Beta(torch.ones_like(self.bias_scores.data)*alpha, torch.ones_like(self.bias_scores.data)*beta)
+                self.bias_scores.data = m.sample()
+            print(self.scores.data)
         else:
             nn.init.kaiming_uniform_(self.scores, a=math.sqrt(5))
             nn.init.uniform_(self.bias_scores, a=-1.0, b=1.0) # can't do kaiming here. picking U[-1, 1] for no real reason
