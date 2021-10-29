@@ -383,8 +383,10 @@ def prune(model, device, threshold=0.1):
         #pdb.set_trace()
         # if a weight was pruned or has (score < threshold and not fixed), prune it.
         layer.pruned.data = ((layer.pruned.data + torch.lt(layer.scores, torch.ones_like(layer.scores)*threshold).int() - layer.fixed.data) >= 1).int()
-        # if a weight was fixed or has (score > threshold and not pruned), fix it.
-        # layer.fixed.data = ((layer.fixed.data + torch.gt(layer.scores, torch.ones_like(layer.scores)*(1-threshold)).int() - layer.pruned.data) >= 1).int()
+        if parser_args.fix_weights:
+            # if a weight was fixed or has (score > threshold and not pruned), fix it.
+            # (iterative thresholding algorithm. But doesn't encourage sparsity explicitly)
+            layer.fixed.data = ((layer.fixed.data + torch.gt(layer.scores, torch.ones_like(layer.scores)*(1-threshold)).int() - layer.pruned.data) >= 1).int()
 
         num_weights_pruned += layer.pruned.data.sum().item()
         num_weights_fixed += layer.fixed.data.sum().item()
@@ -788,6 +790,8 @@ def main():
                         help="which gpu to use",)
     parser.add_argument("--prune-threshold", default=0.5, type=float,
                         help="prune weights when score < threshold",)
+    parser.add_argument('--fix-weights', action='store_true', default=False,
+                        help='fix weights when score > threshold')
 
     epoch_list = []
     test_acc_list = []
