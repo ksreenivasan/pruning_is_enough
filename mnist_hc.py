@@ -386,8 +386,8 @@ def prune(model, device, threshold=0.1):
         # if a weight was fixed or has score > threshold, fix it.
         layer.fixed.data = ((layer.fixed.data + torch.gt(layer.scores, torch.ones_like(layer.scores)*(1-threshold)).int()) >= 1).int()
 
-        num_weights_pruned += layer.pruned.data.sum()
-        num_weights_fixed += layer.fixed.data.sum()
+        num_weights_pruned += layer.pruned.data.sum().item()
+        num_weights_fixed += layer.fixed.data.sum().item()
 
         if parser_args.rewind:
             layer.scores.data = layer.initial_scores
@@ -453,7 +453,7 @@ def get_layer_sparsity(layer, threshold=0):
     return w_numer, w_denom, b_numer, b_denom
 
 
-# returns avg_sparsity = number of non-zero weights!
+# returns number of non-zero weights!
 def get_model_sparsity(model, threshold=0):
     numer = 0
     denom = 0
@@ -478,7 +478,7 @@ def get_model_sparsity(model, threshold=0):
             denom += b_denom
     # logging.info('Overall sparsity: {}/{} ({:.2f} %)'.format((int)(numer), denom, 100*numer/denom))
 
-    return 100*numer/denom
+    return 100.0*numer/denom
 
 
 def plot_histogram_scores(model, epoch=0):
@@ -864,6 +864,7 @@ def main():
         for epoch in range(1, parser_args.epochs + 1):
             train(model, device, train_loader, optimizer, criterion, epoch)
             test_acc = round_and_evaluate(model, device, criterion, train_loader, test_loader)
+            num_weights_fixed = num_weights_pruned = 0
             if parser_args.algo == 'hc_iter' and epoch % (parser_args.iter_period) == 0:
                 num_weights_pruned, num_weights_fixed = prune(model, device)
             #test_acc = test(model, device, criterion, test_loader)
@@ -888,7 +889,12 @@ def main():
             logging.info("Test Acc: {:.2f}%\n".format(test_acc))
             logging.info("Sparsity: {:.2f}%\n".format(model_sparsity))
             logging.info("---------------------------------------------------------")
-            results_df = pd.DataFrame({'epoch': epoch_list, 'test_acc': test_acc_list, 'model_sparsity': model_sparsity_list})
+            results_df = pd.DataFrame({'epoch': epoch_list,
+                'test_acc':  test_acc_list,
+                'model_sparsity': model_sparsity_list,
+                'num_weights_pruned': weights_pruned_list,
+                'num_weighst_fixed': weights_fixed_list,
+                },)
             results_df.to_csv('results/MNIST/{}'.format(parser_args.results_filename), index=False)
 
             if parser_args.switch_to_wt and epoch==parser_args.switch_epoch:

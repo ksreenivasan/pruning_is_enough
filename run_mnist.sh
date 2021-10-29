@@ -5,7 +5,8 @@ python mnist_hc.py --algo hc_iter \
 --epochs 50 \
 --optimizer adam \
 --wd 0 \
---results-filename hc_iter_threshold.csv
+--iter_period 1 \
+--results-filename hc_iter_threshold.csv > kartik_log 2>&1
 
 :<<BLOCK
 # Checking optimal sparsity
