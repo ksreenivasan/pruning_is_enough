@@ -1,7 +1,7 @@
 # Checking optimal sparsity
 python mnist_pruning_exps.py --algo hc \
 --lr 0.01 \
---epochs 100 \
+--epochs 10 \
 --optimizer adam \
 --wd 0 \
 --regularization var_red_1 \

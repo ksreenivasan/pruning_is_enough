@@ -28,7 +28,8 @@ plt.style.use('seaborn-whitegrid')
 parser_args = None
 
 logging.basicConfig()
-
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
 
 # set seed for experiment
 def set_seed(seed):
@@ -59,7 +60,8 @@ class SupermaskConv(nn.Conv2d):
             self.bias_fixed = nn.Parameter(torch.zeros(self.weight.size()))
         else:
             # dummy variable just so other things don't break
-            self.bias_pruned = nn.Parameter(torch.Tensor(0))#.long().cuda()
+            self.bias_pruned = nn.Parameter(torch.Tensor(0))
+            self.bias_fixed = nn.Parameter(torch.Tensor(0))
 
         # initialize the scores
         self.scores = nn.Parameter(torch.Tensor(self.weight.size()))
@@ -122,6 +124,7 @@ class SupermaskLinear(nn.Linear):
         else:
             # dummy variable just so other things don't break
             self.bias_pruned = nn.Parameter(torch.Tensor(0))
+            self.bias_fixed = nn.Parameter(torch.Tensor(0))
 
         # initialize the scores
         self.scores = nn.Parameter(torch.Tensor(self.weight.size()))
@@ -398,7 +401,7 @@ def get_layer_sparsity(layer, threshold=0):
         pattern = layer.pruned.data
         #pattern = layer.scores.data * layer.weight.data
         w_numer, w_denom = torch.sum((pattern == 1).int()).item(), pattern.flatten().numel()
-        logging.info(layer, w_numer, w_denom)
+        logging.info("{} {} {}".format(layer, w_numer, w_denom))
         if parser_args.bias:
             raise NotImplementedError
         else:
@@ -512,7 +515,7 @@ def round_model(model, device, train_loader):
                 params.data = torch.bernoulli(params)
             elif parser_args.round == 'pb':
                 params.data = round_down(cp_model, params, device, train_loader, criterion)
-                logging.info(name, ' ended')
+                logging.info("{} ended".format(name))
             else:
                 logging.info("INVALID ROUNDING")
                 logging.info("EXITING")
@@ -598,7 +601,7 @@ def round_and_evaluate(model, device, criterion, train_loader, test_loader):
                     params.data = torch.bernoulli(params)
                 elif parser_args.round == 'pb':
                     params.data = round_down(cp_model, params, device, train_loader, criterion)
-                    logging.info(name, ' ended')
+                    logging.info("{} ended".formaT(name))
                 else:
                     logging.info("INVALID ROUNDING")
                     logging.info("EXITING")
@@ -686,8 +689,8 @@ def switch_to_wt(model, device):
 def redraw(model, shuffle=False, mask=False):
     cp_model = copy.deepcopy(model)
     for layer in [cp_model.conv1, cp_model.conv2, cp_model.fc1, cp_model.fc2]:
-        #logging.info(layer)
-        #logging.info(layer.weight)
+        # print(layer)
+        # print(layer.weight)
         if shuffle:
             if mask:
                 idx = torch.randperm(layer.pruned.data.nelement())
@@ -697,7 +700,7 @@ def redraw(model, shuffle=False, mask=False):
                 layer.weight.data = layer.weight.data.view(-1)[idx].view(layer.weight.data.size())
         else:
             nn.init.kaiming_normal_(layer.weight, mode="fan_in", nonlinearity="relu")
-        #logging.info(layer.weight)
+        # print(layer.weight)
     return cp_model
 
 
