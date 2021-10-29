@@ -438,9 +438,11 @@ def main_worker(gpu, ngpus_per_node):
         validation_time.update((time.time() - start_validation) / 60)
 
         # save the histrogram of scores
+        '''
         if not parser_args.weight_training:
             if (epoch % 25 == 1) or epoch == (parser_args.epochs-1):
                 plot_histogram_scores(model, result_root+'Epoch_{}.pdf'.format(epoch), parser_args.arch)
+        '''
 
         # prune the model (for iterative HC)
         if parser_args.algo == 'hc_iter' and epoch % (parser_args.iter_period) == 0:
