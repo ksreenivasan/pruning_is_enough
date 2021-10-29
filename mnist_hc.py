@@ -377,6 +377,8 @@ def prune(model, device, threshold=0.1):
         logging.info('not appropriate to use prune() in the current parser_args.algo')
         raise ValueError
 
+    num_weights_fixed = 0
+    num_weights_pruned = 0
     for layer in [model.conv1, model.conv2, model.fc1, model.fc2]:
         #pdb.set_trace()
         # if a weight was pruned or has score < threshold, prune it.
@@ -384,10 +386,16 @@ def prune(model, device, threshold=0.1):
         # if a weight was fixed or has score > threshold, fix it.
         layer.fixed.data = ((layer.fixed.data + torch.gt(layer.scores, torch.ones_like(layer.scores)*(1-threshold)).int()) >= 1).int()
 
+        num_weights_pruned += layer.pruned.data.sum()
+        num_fixed_pruned += layer.fixed.data.sum()
+
         if parser_args.rewind:
             layer.scores.data = layer.initial_scores
 
-    return 
+    logging.info("Number of weights pruned={}".format(num_weights_pruned))
+    logging.info("Number of weights fixed={}".format(num_weights_fixed))
+    
+    return num_weights_pruned, num_weights_fixed
 
 
 
@@ -780,6 +788,8 @@ def main():
     epoch_list = []
     test_acc_list = []
     model_sparsity_list = []
+    weights_fixed_list = []
+    weights_pruned_list = []
 
     parser_args = parser.parse_args()
     use_cuda = not parser_args.no_cuda and torch.cuda.is_available()
@@ -854,17 +864,19 @@ def main():
             train(model, device, train_loader, optimizer, criterion, epoch)
             test_acc = round_and_evaluate(model, device, criterion, train_loader, test_loader)
             if parser_args.algo == 'hc_iter' and epoch % (parser_args.iter_period) == 0:
-                prune(model, device)
+                num_weights_pruned, num_weights_fixed = prune(model, device)
             #test_acc = test(model, device, criterion, test_loader)
             #scheduler.step()
             epoch_list.append(epoch)
             test_acc_list.append(test_acc)
+            weights_pruned_list.append(num_weights_pruned)
+            weights_fixed_list.append(num_weights_fixed)
             if parser_args.mode != "training":
                 cp_model = round_model(model, device, train_loader)
                 model_sparsity = get_model_sparsity(cp_model)
 
-                #if epoch % 10 == 1:
-                #    plot_histogram_scores(model, epoch)
+                if epoch % 10 == 1:
+                   plot_histogram_scores(model, epoch)
             else:
                 if parser_args.switch_to_wt:
                     model_sparsity = get_model_sparsity(cp_model)
@@ -883,9 +895,9 @@ def main():
                 logging.info('epoch {}: switched to weight training'.format(epoch))
                 test(model, device, criterion, test_loader)
 
-        #if parser_args.mode != "training":
-        #    # gotta plot the final histogram as well
-        #    plot_histogram_scores(model, epoch)
+        if parser_args.mode != "training":
+           # gotta plot the final histogram as well
+           plot_histogram_scores(model, epoch)
 
         if parser_args.save_model:
             if parser_args.mode != 'training':
@@ -894,6 +906,8 @@ def main():
                 model_filename = "model_checkpoints/mnist_trained_model_{}.pt".format(parser_args.epochs)
             torch.save(model.state_dict(), model_filename)
 
+    '''
+    # ksreenivasan: skip this for now
     if 'hc' in parser_args.algo:
         # irrespective of evaluate_only, add an evaluate_only step
         model.load_state_dict(torch.load('model_checkpoints/mnist_pruned_model_{}_{}.pt'.format(parser_args.algo, parser_args.epochs)))
@@ -920,9 +934,7 @@ def main():
         shuff_acc_list = test(model, device, criterion, test_loader)
         logging.info("After shuffling masks")
         logging.info("Test Acc: {:.2f}%\n".format(shuff_acc_list))
-
-
-
+    '''
 
     logging.info("Experiment donezo")
 
