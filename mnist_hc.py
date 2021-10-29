@@ -405,16 +405,16 @@ def get_layer_sparsity(layer, threshold=0):
     # for algos where the score IS the mask
     #pdb.set_trace()
     
-    if parser_args.algo in ['hc_iter']:
-        pattern = layer.pruned.data
-        #pattern = layer.scores.data * layer.weight.data
-        w_numer, w_denom = torch.sum((pattern == 1).int()).item(), pattern.flatten().numel()
-        logging.info("{} {} {}".format(layer, w_numer, w_denom))
-        if parser_args.bias:
-            raise NotImplementedError
-        else:
-            b_numer, b_denom = 0, 0
-    elif parser_args.algo in ['hc']:
+    # if parser_args.algo in ['hc_iter']:
+    #     pattern = layer.pruned.data
+    #     #pattern = layer.scores.data * layer.weight.data
+    #     w_numer, w_denom = torch.sum((pattern == 1).int()).item(), pattern.flatten().numel()
+    #     logging.info("{} {} {}".format(layer, w_numer, w_denom))
+    #     if parser_args.bias:
+    #         raise NotImplementedError
+    #     else:
+    #         b_numer, b_denom = 0, 0
+    if parser_args.algo in ['hc', 'hc_iter']:
         # assume the model is rounded
         #pdb.set_trace()
         num_middle = torch.sum(torch.gt(layer.scores,
