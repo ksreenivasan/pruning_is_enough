@@ -786,7 +786,7 @@ def main():
                         help="second exponent in regularizer",)
     parser.add_argument("--gpu-id", default=0, type=int,
                         help="which gpu to use",)
-    parser.add_argument("--prune-threshold", default=0.5, type=int,
+    parser.add_argument("--prune-threshold", default=0.5, type=float,
                         help="prune weights when score < threshold",)
 
     epoch_list = []
