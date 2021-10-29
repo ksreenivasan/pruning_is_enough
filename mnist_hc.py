@@ -381,10 +381,10 @@ def prune(model, device, threshold=0.1):
     num_weights_pruned = 0
     for layer in [model.conv1, model.conv2, model.fc1, model.fc2]:
         #pdb.set_trace()
-        # if a weight was pruned or has score < threshold, prune it.
-        layer.pruned.data = ((layer.pruned.data + torch.lt(layer.scores, torch.ones_like(layer.scores)*threshold).int()) >= 1).int()
-        # if a weight was fixed or has score > threshold, fix it.
-        layer.fixed.data = ((layer.fixed.data + torch.gt(layer.scores, torch.ones_like(layer.scores)*(1-threshold)).int()) >= 1).int()
+        # if a weight was pruned or has (score < threshold and not fixed), prune it.
+        layer.pruned.data = ((layer.pruned.data + torch.lt(layer.scores, torch.ones_like(layer.scores)*threshold).int() - layer.fixed.data) >= 1).int()
+        # if a weight was fixed or has (score > threshold and not pruned), fix it.
+        layer.fixed.data = ((layer.fixed.data + torch.gt(layer.scores, torch.ones_like(layer.scores)*(1-threshold)).int() - layer.pruned.data) >= 1).int()
 
         num_weights_pruned += layer.pruned.data.sum().item()
         num_weights_fixed += layer.fixed.data.sum().item()
