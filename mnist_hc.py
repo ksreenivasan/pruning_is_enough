@@ -387,7 +387,7 @@ def prune(model, device, threshold=0.1):
         layer.fixed.data = ((layer.fixed.data + torch.gt(layer.scores, torch.ones_like(layer.scores)*(1-threshold)).int()) >= 1).int()
 
         num_weights_pruned += layer.pruned.data.sum()
-        num_fixed_pruned += layer.fixed.data.sum()
+        num_weights_fixed += layer.fixed.data.sum()
 
         if parser_args.rewind:
             layer.scores.data = layer.initial_scores
@@ -784,6 +784,8 @@ def main():
                         help="first exponent in regularizer")
     parser.add_argument("--alpha_prime", default=1.0, type=float,
                         help="second exponent in regularizer",)
+    parser.add_argument("--gpu-id", default=0, type=int,
+                        help="which gpu to use",)
 
     epoch_list = []
     test_acc_list = []
@@ -794,14 +796,13 @@ def main():
     parser_args = parser.parse_args()
     use_cuda = not parser_args.no_cuda and torch.cuda.is_available()
 
-
     results_dir = 'results/MNIST/'
     if not os.path.isdir(results_dir):
         os.mkdir(results_dir)
 
     set_seed(parser_args.seed)
 
-    device = torch.device("cuda:3" if use_cuda else "cpu")
+    device = torch.device("cuda:{}".format(parser_args.gpu_id) if use_cuda else "cpu")
 
     kwargs = {'num_workers': 1, 'pin_memory': True} if use_cuda else {}
     train_loader = torch.utils.data.DataLoader(

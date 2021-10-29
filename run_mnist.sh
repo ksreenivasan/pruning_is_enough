@@ -1,3 +1,13 @@
+# trying iterative thresholding
+python mnist_hc.py --algo hc_iter \
+--gpu 0 \
+--lr 0.01 \
+--epochs 50 \
+--optimizer adam \
+--wd 0 \
+--results-filename hc_iter_threshold.csv
+
+:<<BLOCK
 # Checking optimal sparsity
 python mnist_pruning_exps.py --algo hc \
 --lr 0.01 \
@@ -9,6 +19,7 @@ python mnist_pruning_exps.py --algo hc \
 --alpha 9 \
 --alpha_prime 1 \
 --results-filename sparse_hc.csv
+BLOCK
 
 # Weight training
 :<<BLOCK
