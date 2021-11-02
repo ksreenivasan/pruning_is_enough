@@ -25,7 +25,7 @@ bn_type: NonAffineBatchNorm
 freeze_weights: True
 prune_rate: 0.0
 init: signed_constant
-score_init: unif
+score_init: bern #unif #half #bimodal #skew # bern
 scale_fan: False #True
 
 
@@ -36,11 +36,11 @@ noise_ratio: 0
 
 
 # ===== Regularization ===== #
-regularization: var_red_2
-lmbda: 0.001 #0.000001
+regularization: var_red_2 # var_red_2
+lmbda: 0 # 0.01 #0.0001 #0.000001
 
 
 # ===== Hardware setup ===== #
 workers: 4
-gpu: 3
+gpu: 2
 

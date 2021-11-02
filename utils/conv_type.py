@@ -118,7 +118,7 @@ class SubnetConv(nn.Conv2d):
                 self.scores.data = m.sample()
                 m = Beta(torch.ones_like(self.bias_scores.data)*alpha, torch.ones_like(self.bias_scores.data)*beta)
                 self.bias_scores.data = m.sample()
-            print(self.scores.data)
+            #print(self.scores.data)
         else:
             nn.init.kaiming_uniform_(self.scores, a=math.sqrt(5))
             nn.init.uniform_(self.bias_scores, a=-1.0, b=1.0) # can't do kaiming here. picking U[-1, 1] for no real reason

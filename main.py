@@ -117,6 +117,31 @@ def compare_rounding(validate, data_loader, model, criterion, parser_args, resul
     return
 
 
+def switch_to_wt(model):
+
+    print('We switched to weight training')
+
+    for name, params in model.named_parameters():
+        print(name)
+        if "weight" in name:
+            params.requires_grad = True
+        elif "score" in name:
+            params.requires_grad = False
+            params.data = torch.ones_like(params.data)
+        elif "bias" in name and parser_args.bias:
+            if "score" in name:
+                params.requires_grad = False
+                params.data = torch.ones_like(params.data)
+            elif "flag" in name:
+                params.requires_grad = False
+            else:
+                params.requires_grad = True
+        else:
+            params.requires_grad = False
+
+    return model
+
+
 def get_mask(model):
 
     flat_tensor = []
@@ -200,10 +225,11 @@ def main_worker(gpu, ngpus_per_node):
     result_root = 'results/results_' + idty_str + '/'
     if not os.path.isdir(result_root):
         os.mkdir(result_root)
-    
     for i in range(1):
         # create model and optimizer
         model = get_model(parser_args)
+        if parser_args.weight_training:
+            model = switch_to_wt(model) 
         model = set_gpu(parser_args, model)
 
         if parser_args.pretrained:
@@ -397,6 +423,8 @@ def main_worker(gpu, ngpus_per_node):
     # sanity check for 50% sparsity initialization
     ## if parser_args.score_init == 'bern':
        ## get_score_sparsity_hc(model)
+
+
 
     # Start training
     for epoch in range(parser_args.start_epoch, parser_args.epochs):
