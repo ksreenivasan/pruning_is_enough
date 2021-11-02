@@ -37,7 +37,7 @@ noise_ratio: 0
 
 # ===== Regularization ===== #
 regularization: var_red_2 # var_red_2
-lmbda: 0 # 0.01 #0.0001 #0.000001
+lmbda: 0.0001 # 0.01 #0.0001 #0.000001
 
 
 # ===== Hardware setup ===== #

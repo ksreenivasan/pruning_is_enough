@@ -378,7 +378,7 @@ def prune(model, device):
 
     for layer in [model.conv1, model.conv2, model.fc1, model.fc2]:
         #pdb.set_trace()
-        layer.flag.data = (layer.flag.data + torch.gt(layer.scores, torch.ones_like(layer.scores)*0.5).int() == 2).int()
+        layer.flag.data = (layer.flag.data + torch.gt(layer.scores, torch.ones_like(layer.scores)*0.5).int() == 2).int() #(  (layer.flag + torch.gt(layer.scores, torch.ones_like(layer.scores)*0.5).int()) == 2).int()
 
         if parser_args.rewind:
             layer.scores.data = layer.initial_scores
