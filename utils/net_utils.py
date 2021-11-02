@@ -59,22 +59,34 @@ def get_layers(arch='Conv4', model=None):
     return (conv_layers, linear_layers)
 
 
-def redraw(model, shuffle=False, mask=False):
+def redraw(model, shuffle=False, reinit=False, chg_mask=False, chg_weight=False):
     cp_model = copy.deepcopy(model)
     conv_layers, linear_layers = get_layers(parser_args.arch, cp_model)
     for layer in [*conv_layers, *linear_layers]:
-    #for layer in [model.conv1, model.conv2, model.fc1, model.fc2]:
-        print(layer)
+        #print(layer)
         #print(layer.weight)
         if shuffle:
-            if mask:
+            if chg_mask:
                 idx = torch.randperm(layer.flag.data.nelement())
                 layer.flag.data = layer.flag.data.view(-1)[idx].view(layer.flag.data.size())
-            else:
+                if parser_args.bias:
+                    idx = torch.randperm(layer.flag_bias.data.nelement())
+                    layer.flag_bias.data = layer.flag_bias.data.view(-1)[idx].view(layer.flag_bias.data.size())
+
+            if chg_weight:
                 idx = torch.randperm(layer.weight.data.nelement())
                 layer.weight.data = layer.weight.data.view(-1)[idx].view(layer.weight.data.size())
-        else:
-            nn.init.kaiming_normal_(layer.weight, mode="fan_in", nonlinearity="relu")
+                if parser_args.bias:
+                    idx = torch.randperm(layer.bias.data.nelement())
+                    layer.bias.data = layer.bias.data.view(-1)[idx].view(layer.bias.data.size())
+
+        if reinit:
+            if chg_weight:
+                nn.init.kaiming_normal_(layer.weight, mode="fan_in", nonlinearity="relu")
+                if parser_args.bias:
+                    nn.init.kaiming_normal_(layer.bias, mode="fan_in", nonlinearity="relu")
+            else:
+                raise NotImplementedError
         #print(layer.weight)
     return cp_model
 

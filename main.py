@@ -51,10 +51,18 @@ def eval_and_print(validate, data_loader, model, criterion, parser_args, writer=
 
     return acc1
 
-def finetune(model, parser_args, data, criterion, epoch_list, test_acc_before_round_list, test_acc_list, reg_loss_list, model_sparsity_list):
+def finetune(model, parser_args, data, criterion, old_epoch_list, old_test_acc_before_round_list, old_test_acc_list, old_reg_loss_list, old_model_sparsity_list, result_root, shuffle=False, reinit=False, chg_mask=False, chg_weight=False):
+
+    epoch_list = copy.deepcopy(old_epoch_list)
+    test_acc_before_round_list = copy.deepcopy(old_test_acc_before_round_list)
+    test_acc_list = copy.deepcopy(old_test_acc_list)
+    reg_loss_list = copy.deepcopy(old_reg_loss_list)
+    model_sparsity_list = copy.deepcopy(old_model_sparsity_list)
 
     # round the score (in the model itself)
-    model = round_model(model, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio, rank=parser_args.gpu)
+    model = round_model(model, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio, rank=parser_args.gpu)    
+    # apply reinit/shuffling masks/weights (if necessary)
+    model = redraw(model, shuffle=shuffle, reinit=reinit, chg_mask=chg_mask, chg_weight=chg_weight)
 
     # switch to weight training mode (turn on the requires_grad for weight/bias, and turn off the requires_grad for other parameters)
     for name, param in model.named_parameters():
@@ -67,18 +75,29 @@ def finetune(model, parser_args, data, criterion, epoch_list, test_acc_before_ro
 
     # set base_setting and evaluate 
     run_base_dir, ckpt_base_dir, log_base_dir, writer, epoch_time, validation_time, train_time, progress_overall = get_settings(parser_args)
-    parser_args.optimizer, parser_args.lr, arser_args.wd = 'sgd', 0.001, 0.0001
-    end_epoch = time.time()
+    parser_args.optimizer, parser_args.lr, parser_args.wd = 'sgd', 0.01, 0.0001
+    optimizer = get_optimizer(parser_args, model)
+    train, validate, modifier = get_trainer(parser_args)
 
-    # for epoch in range (E+1, 2*E):
+    # check the performance of loaded model (after rounding)
+    acc1, acc5, acc10 = validate(data.val_loader, model, criterion, parser_args, writer, parser_args.epochs-1)
+    avg_sparsity = model_sparsity_list[-1] # copy & paste the sparsity of prev. epoch
+    epoch_list.append(parser_args.epochs-1)
+    test_acc_before_round_list.append(-1)
+    test_acc_list.append(acc1)
+    reg_loss_list.append(0.0)
+    model_sparsity_list.append(avg_sparsity)
+    
+    end_epoch = time.time()
+    # for epoch in range (E+1, 2*E+1):
         # train the model weight
         # save the epoch & test accuracy in the list (add dummy values in other lists)
-    for epoch in range(parser_args.epochs+1, parser_args.epochs*2):
+    for epoch in range(parser_args.epochs, parser_args.epochs*2):
 
         if parser_args.multiprocessing_distributed:
             data.train_loader.sampler.set_epoch(epoch)
         #lr_policy(epoch, iteration=None)
-        modifier(parser_args, epoch, model)
+        #modifier(parser_args, epoch, model)
         cur_lr = get_lr(optimizer)
         print('epoch: {}, lr: {}'.format(epoch, cur_lr))
 
@@ -112,13 +131,22 @@ def finetune(model, parser_args, data, criterion, epoch_list, test_acc_before_ro
         end_epoch = time.time()
 
         results_df = pd.DataFrame({'epoch': epoch_list, 'test_acc_before_rounding': test_acc_before_round_list,'test_acc': test_acc_list, 'regularization_loss': reg_loss_list, 'model_sparsity': model_sparsity_list})
-        if parser_args.results_filename:
-            results_filename = parser_args.results_filename
-        else:
+        if not chg_mask and not chg_weight:
             results_filename = result_root + 'acc_and_sparsity.csv'    
+        elif chg_mask and shuffle:
+            results_filename = result_root + 'acc_and_sparsity_mask_shuffle.csv'    
+        elif chg_weight and shuffle:
+            results_filename = result_root + 'acc_and_sparsity_weight_shuffle.csv'    
+        elif chg_weight and reinit:
+            results_filename = result_root + 'acc_and_sparsity_weight_reinit.csv'    
+        else:
+            raise NotImplementedError
+
+
         print("Writing results into: {}".format(results_filename))
         results_df.to_csv(results_filename, index=False)
 
+    return model
 
 
 def sanity_check(model, parser_args, data, criterion):
@@ -618,13 +646,19 @@ def main_worker(gpu, ngpus_per_node):
     # check the performance of trained model
     if parser_args.algo in ['hc', 'hc_iter']:
         cp_model = copy.deepcopy(model)
-        finetune(cp_model, parser_args, data, criterion, epoch_list, test_acc_before_round_list, test_acc_list, reg_loss_list, model_sparsity_list)
+        cp_model = finetune(cp_model, parser_args, data, criterion, epoch_list, test_acc_before_round_list, test_acc_list, reg_loss_list, model_sparsity_list, result_root)
         # print out the final acc
-        eval_and_print(validate, data.val_loader, cp_model, criterion, parser_args, writer=None, epoch=parser_args.start_epoch, description='final model after finetuning')
+        eval_and_print(validate, data.val_loader, cp_model, criterion, parser_args, writer=None, description='final model after finetuning')
 
         # do the sanity check for shuffled mask/weights, reinit weights
+        cp_model = copy.deepcopy(model)
+        cp_model = finetune(cp_model, parser_args, data, criterion, epoch_list, test_acc_before_round_list, test_acc_list, reg_loss_list, model_sparsity_list, result_root, reinit=True, chg_weight=True)
 
+        cp_model = copy.deepcopy(model)
+        cp_model = finetune(cp_model, parser_args, data, criterion, epoch_list, test_acc_before_round_list, test_acc_list, reg_loss_list, model_sparsity_list, result_root, shuffle=True, chg_weight=True)
 
+        cp_model = copy.deepcopy(model)
+        cp_model = finetune(cp_model, parser_args, data, criterion, epoch_list, test_acc_before_round_list, test_acc_list, reg_loss_list, model_sparsity_list, result_root, shuffle=True, chg_mask=True)
 
 
 

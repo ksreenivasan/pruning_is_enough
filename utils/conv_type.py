@@ -128,9 +128,9 @@ class SubnetConv(nn.Conv2d):
             # NOTE: turn the gradient on the weights off
             self.weight.requires_grad = False
             self.flag.requires_grad = False
+            self.flag_bias.requires_grad = False
             if parser_args.bias:
                 self.bias.requires_grad = False
-                self.flag_bias.requires_grad = False
 
     def set_prune_rate(self, prune_rate):
         self.prune_rate = prune_rate

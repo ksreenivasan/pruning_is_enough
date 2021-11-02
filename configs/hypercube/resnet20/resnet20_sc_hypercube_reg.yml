@@ -1,5 +1,5 @@
 # Hypercube optimization
-algo: 'hc'
+algo: 'hc_iter'
 
 # Architecture
 arch: resnet20
@@ -14,7 +14,7 @@ lr: 0.01 #0.01
 lr_policy: cosine_lr
 
 # ===== Network training config ===== #
-epochs: 150
+epochs: 5 # 5 #150
 weight_decay: 0.0 #0.0001
 momentum: 0.9
 batch_size: 128
@@ -37,7 +37,7 @@ noise_ratio: 0
 
 # ===== Regularization ===== #
 regularization: var_red_2 # var_red_2
-lmbda: 0.0001 # 0.01 #0.0001 #0.000001
+lmbda: 0.01 # 0.01 #0.0001 #0.000001
 
 
 # ===== Hardware setup ===== #
