@@ -292,6 +292,7 @@ def get_score_sparsity_hc(model):
     return 100*numer/denom
 """
 
+"""
 def prune(model):
 
     if parser_args.algo != 'hc_iter':
@@ -305,6 +306,39 @@ def prune(model):
         layer.flag.data = (layer.flag.data + torch.gt(layer.scores, torch.ones_like(layer.scores)*0.5).int() == 2).int()
     return 
 
+"""
+
+def prune(model):  # update prune() for bottom K pruning
+
+    if parser_args.algo != 'hc_iter':
+        print('not appropriate to use prune() in the current parser_args.algo')
+        raise ValueError
+
+    print('We are in prune function')
+    conv_layers, linear_layers = get_layers(parser_args.arch, model)
+    if parser_args.prune_type == 'FixThresholding':
+        for layer in [*conv_layers, *linear_layers]:
+            #print(layer)
+            layer.flag.data = (layer.flag.data + torch.gt(layer.scores, torch.ones_like(layer.scores)*0.5).int() == 2).int()
+    
+    elif parser_args.prune_type == 'BottomK':
+        # print("hi!!!!!!!!!!!!!!!!!!!!")
+        import numpy as np
+        n_non_zeros = 0
+        for layer in [*conv_layers, *linear_layers]:
+            n_non_zeros += layer.flag.data.clone().detach().cpu().numpy().sum()
+
+        number_of_weights_to_prune = np.ceil(parser_args.prune_rate * n_non_zeros).astype(int)
+
+        scores_weights = [layer.scores.data.clone().cpu().detach().numpy()[layer.flag.data.clone().detach().cpu().numpy().astype(bool)]
+                   for layer in [*conv_layers, *linear_layers]]
+        weight_vector = np.concatenate(scores_weights)
+        threshold = np.sort(np.abs(weight_vector))[number_of_weights_to_prune]
+
+        for layer in [*conv_layers, *linear_layers]:
+            layer.flag.data = (layer.flag.data + torch.gt(layer.scores, torch.ones_like(layer.scores)*threshold).int() == 2).int()
+
+    return 
 
 
 # returns avg_sparsity = number of non-zero weights!
