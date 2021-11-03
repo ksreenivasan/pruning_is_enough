@@ -99,7 +99,10 @@ class SubnetConv(nn.Conv2d):
             self.scores_bias = nn.Parameter(torch.Tensor(1))
 
         if parser_args.algo in ['hc', 'hc_iter']:
-            if parser_args.score_init in ['half']:
+            if parser_args.random_subnet:
+                self.scores.data = torch.bernoulli(parser_args.prune_rate * torch.ones_like(self.scores.data))
+                self.scores_bias.data = torch.bernoulli(parser_args.prune_rate * torch.ones_like(self.scores_bias.data))
+            elif parser_args.score_init in ['half']:
                 self.scores.data = 0.5 * torch.ones_like(self.scores.data)
                 self.scores_bias.data = 0.5 * torch.ones_like(self.scores_bias.data)
             elif parser_args.score_init in ['bern']:

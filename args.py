@@ -654,6 +654,14 @@ def parse_arguments():
              "fastest way to use PyTorch for either single node or "
              "multi node data parallel training"
     )
+
+    parser.add_argument(
+        "--random-subnet",
+        action="store_true",
+        default=False,
+        help="Just initializes random subnetwork and then trains"
+    )
+
 #    parser.add_argument(
 #        "--multigpu",
 #        default=None,

@@ -399,6 +399,94 @@ def main_worker(gpu, ngpus_per_node):
         criterion = LabelSmoothing(smoothing=parser_args.label_smoothing)
 #        if isinstance(model, nn.parallel.DistributedDataParallel):
 #            model = model.module
+    
+
+    if parser_args.random_subnet:
+        # round the score (in the model itself)
+        model = round_model(model, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio, rank=parser_args.gpu)    
+
+        # switch to weight training mode (turn on the requires_grad for weight/bias, and turn off the requires_grad for other parameters)
+        for name, param in model.named_parameters():
+            if 'weight' in name:
+                param.requires_grad = True
+            elif parser_args.bias and '.bias' in name:
+                param.requires_grad = True
+            else:
+                param.requires_grad = False
+
+        # set base_setting and evaluate 
+        run_base_dir, ckpt_base_dir, log_base_dir, writer, epoch_time, validation_time, train_time, progress_overall = get_settings(parser_args)
+        parser_args.optimizer, parser_args.lr, parser_args.wd = 'sgd', 0.01, 0.0001
+        optimizer = get_optimizer(parser_args, model)
+        train, validate, modifier = get_trainer(parser_args)
+
+        # check the performance of loaded model (after rounding)
+        acc1, acc5, acc10 = validate(data.val_loader, model, criterion, parser_args, writer, parser_args.epochs-1)
+        epoch_list = []
+        test_acc_before_round_list = []
+        test_acc_list = []
+        reg_loss_list = []
+        model_sparsity_list = []
+        
+        # for epoch in range (E+1, 2*E+1):
+            # train the model weight
+            # save the epoch & test accuracy in the list (add dummy values in other lists)
+        for epoch in range(parser_args.epochs):
+
+            if parser_args.multiprocessing_distributed:
+                data.train_loader.sampler.set_epoch(epoch)
+            #lr_policy(epoch, iteration=None)
+            #modifier(parser_args, epoch, model)
+            cur_lr = get_lr(optimizer)
+            print('epoch: {}, lr: {}'.format(epoch, cur_lr))
+
+            # train for one epoch
+            start_train = time.time()
+            train_acc1, train_acc5, train_acc10, reg_loss = train(
+                data.train_loader, model, criterion, optimizer, epoch, parser_args, writer=writer
+            )
+            train_time.update((time.time() - start_train) / 60)
+
+            # evaluate on validation set
+            start_validation = time.time()
+            acc1, acc5, acc10 = validate(data.val_loader, model, criterion, parser_args, writer, epoch)
+            validation_time.update((time.time() - start_validation) / 60)
+            cp_model = round_model(model, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio, rank=parser_args.gpu)
+            avg_sparsity = get_model_sparsity(cp_model)
+            print('Model avg sparsity: {}'.format(avg_sparsity))
+
+            # update all results lists
+            epoch_list.append(epoch)
+            test_acc_before_round_list.append(-1)
+            test_acc_list.append(acc1)
+            reg_loss_list.append(reg_loss)
+            model_sparsity_list.append(avg_sparsity)
+
+            epoch_time.update((time.time() - end_epoch) / 60)
+            progress_overall.display(epoch)
+            progress_overall.write_to_tensorboard(
+                writer, prefix="diagnostics", global_step=epoch
+            )
+            writer.add_scalar("test/lr", cur_lr, epoch)
+            end_epoch = time.time()
+
+            results_df = pd.DataFrame({'epoch': epoch_list, 'test_acc_before_rounding': test_acc_before_round_list,'test_acc': test_acc_list, 'regularization_loss': reg_loss_list, 'model_sparsity': model_sparsity_list})
+            
+            results_filename = result_root + 'random_subnet_{}.csv'.format(parser_args.prune_rate)
+
+            print("Writing results into: {}".format(results_filename))
+            results_df.to_csv(results_filename, index=False)
+
+        if parser_args.multiprocessing_distributed:
+            cleanup_distributed()
+
+        # save checkpoint for later debug
+        model_filename = "random_subnet_finetuned_{}_ckpt.pt".format(parser_args.prune_rate)
+        print("Writing final model to {}".format(model_filename))
+        torch.save(model.state_dict(), model_filename)
+
+        return
+
 
     best_acc1, best_acc5, best_acc10, best_train_acc1, best_train_acc5, best_train_acc10 = 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
     # optionally resume from a checkpoint
@@ -659,10 +747,6 @@ def main_worker(gpu, ngpus_per_node):
 
         cp_model = copy.deepcopy(model)
         cp_model = finetune(cp_model, parser_args, data, criterion, epoch_list, test_acc_before_round_list, test_acc_list, reg_loss_list, model_sparsity_list, result_root, shuffle=True, chg_mask=True)
-
-
-
-
 
     if parser_args.multiprocessing_distributed:
         cleanup_distributed()

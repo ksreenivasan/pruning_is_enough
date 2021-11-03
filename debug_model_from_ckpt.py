@@ -94,6 +94,8 @@ def get_model_sparsity(model, threshold=0):
     # TODO: Update: can't use .children() or .named_modules() because of the way things are wrapped in builder
     for conv_layer in conv_layers:
         w_numer, w_denom, b_numer, b_denom = get_layer_sparsity(conv_layer, threshold)
+        print("Sparsity of layer {}={}%".format(conv_layer, 100.0*w_numer/w_denom))
+        print("Size of layer {}={}".format(conv_layer, w_denom))
         numer += w_numer
         denom += w_denom
         if args.bias:
@@ -102,6 +104,8 @@ def get_model_sparsity(model, threshold=0):
 
     for lin_layer in linear_layers:
         w_numer, w_denom, b_numer, b_denom = get_layer_sparsity(lin_layer, threshold)
+        print("Sparsity of layer {}={}%".format(lin_layer, 100.0*w_numer/w_denom))
+        print("Size of layer {}={}".format(lin_layer, w_denom))
         numer += w_numer
         denom += w_denom
         if args.bias:
@@ -110,4 +114,12 @@ def get_model_sparsity(model, threshold=0):
     # print('Overall sparsity: {}/{} ({:.2f} %)'.format((int)(numer), denom, 100*numer/denom))
     return 100*numer/denom
 
-get_model_sparsity(model)
+sparsity = get_model_sparsity(model)
+print("Sparsity of final model={}".format(sparsity))
+
+train, validate, modifier = get_trainer(args)
+criterion = nn.CrossEntropyLoss().cuda()
+data = get_dataset(args)
+acc1, acc5 = validate(data.val_loader, model, criterion, args, writer=None, epoch=-1)
+print("Accuracy of final model={}".format(acc1))
+
