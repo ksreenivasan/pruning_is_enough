@@ -1,0 +1,49 @@
+# trying random subnet with fine tuning
+
+# Hypercube optimization
+algo: 'hc'
+iter_period: 25
+
+# Architecture
+arch: resnet20
+
+# ===== Dataset ===== #
+dataset: CIFAR10
+name: resnet20_cifar10_sc_hypercube_reg
+
+# ===== Learning Rate Policy ======== #
+optimizer: adam
+lr: 0.01 #0.01
+lr_policy: cosine_lr
+
+# ===== Network training config ===== #
+epochs: 2
+weight_decay: 0.0001
+momentum: 0.9
+batch_size: 128
+
+# ===== Sparsity =========== #
+conv_type: SubnetConv
+bn_type: NonAffineBatchNorm
+freeze_weights: False
+prune_rate: 0.05
+init: signed_constant
+score_init: skew #unif #half #bimodal #skew # bern
+scale_fan: False #True
+
+# ===== Random subnet =========== #
+random_subnet: True
+
+# ===== Rounding ===== #
+round: naive 
+noise: True
+noise_ratio: 0 
+
+
+# ===== Regularization ===== #
+lmbda: 0.01 # 0.01 #0.0001 #0.000001
+
+# ===== Hardware setup ===== #
+workers: 4
+gpu: 2
+
