@@ -2,7 +2,7 @@
 
 # Hypercube optimization
 algo: 'hc_iter'
-iter_period: 75
+iter_period: 25
 
 # Architecture
 arch: resnet20
