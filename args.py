@@ -533,11 +533,14 @@ def parse_arguments():
         type=int,
         help="Save every ___ epochs"
     )
+    '''
+    # @ksreenivasan: commenting this for now. I think EP uses it.
     parser.add_argument(
         "--random-subnet",
         action="store_true",
         help="Whether or not to use a random subnet when fine tuning for lottery experiments",
     )
+    '''
     parser.add_argument(
         "-e",
         "--evaluate",

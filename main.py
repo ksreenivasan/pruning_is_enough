@@ -462,7 +462,7 @@ def main_worker(gpu, ngpus_per_node):
             reg_loss_list.append(reg_loss)
             model_sparsity_list.append(avg_sparsity)
 
-            epoch_time.update((time.time() - end_epoch) / 60)
+            epoch_time.update((time.time()) / 60)
             progress_overall.display(epoch)
             progress_overall.write_to_tensorboard(
                 writer, prefix="diagnostics", global_step=epoch
