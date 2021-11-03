@@ -1,5 +1,8 @@
+# 80% accuracy with 2.7% sparsty!!!
+
 # Hypercube optimization
 algo: 'hc_iter'
+iter_period: 25
 
 # Architecture
 arch: resnet20
@@ -25,7 +28,7 @@ bn_type: NonAffineBatchNorm
 freeze_weights: True
 prune_rate: 0.0
 init: signed_constant
-score_init: bern #unif #half #bimodal #skew # bern
+score_init: skew #unif #half #bimodal #skew # bern
 scale_fan: False #True
 
 
