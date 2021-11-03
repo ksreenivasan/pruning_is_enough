@@ -372,10 +372,11 @@ def parse_arguments():
         help="Sample Baseline Subnet Init",
     )
 
+    # this is an argument that is relevant mainly for EP.
     parser.add_argument(
         "--prune-rate",
         default=0.5,
-        help="Amount of pruning to do during sparse training",
+        help="Decides number of weights that REMAIN after sparse training.",
         type=float,
     )
     parser.add_argument(  # add for bottom K iterative pruning
