@@ -22,6 +22,18 @@ def get_layers(arch='Conv4', model=None):
     if arch == 'Conv4':
         conv_layers = [model.convs[0], model.convs[2], model.convs[5], model.convs[7]]
         linear_layers = [model.linear[0], model.linear[2], model.linear[4]]
+    elif arch == 'resnet20':
+        conv_layers = [model.conv1]
+        for layer in [model.layer1, model.layer2, model.layer3]:
+            for basic_block_id in [0, 1]:
+                conv_layers.append(layer[basic_block_id].conv1)
+                conv_layers.append(layer[basic_block_id].conv2)
+                '''
+                # handle shortcut
+                if len(layer[basic_block_id].shortcut) > 0:
+                    conv_layers.append(layer[basic_block_id].shortcut[0])
+                '''
+        linear_layers = [model.fc]
     elif arch == 'cResNet18':
         conv_layers = [model.conv1]
         for layer in [model.layer1, model.layer2, model.layer3, model.layer4]:
@@ -47,22 +59,34 @@ def get_layers(arch='Conv4', model=None):
     return (conv_layers, linear_layers)
 
 
-def redraw(model, shuffle=False, mask=False):
+def redraw(model, shuffle=False, reinit=False, chg_mask=False, chg_weight=False):
     cp_model = copy.deepcopy(model)
     conv_layers, linear_layers = get_layers(parser_args.arch, cp_model)
     for layer in [*conv_layers, *linear_layers]:
-    #for layer in [model.conv1, model.conv2, model.fc1, model.fc2]:
-        print(layer)
+        #print(layer)
         #print(layer.weight)
         if shuffle:
-            if mask:
+            if chg_mask:
                 idx = torch.randperm(layer.flag.data.nelement())
                 layer.flag.data = layer.flag.data.view(-1)[idx].view(layer.flag.data.size())
-            else:
+                if parser_args.bias:
+                    idx = torch.randperm(layer.flag_bias.data.nelement())
+                    layer.flag_bias.data = layer.flag_bias.data.view(-1)[idx].view(layer.flag_bias.data.size())
+
+            if chg_weight:
                 idx = torch.randperm(layer.weight.data.nelement())
                 layer.weight.data = layer.weight.data.view(-1)[idx].view(layer.weight.data.size())
-        else:
-            nn.init.kaiming_normal_(layer.weight, mode="fan_in", nonlinearity="relu")
+                if parser_args.bias:
+                    idx = torch.randperm(layer.bias.data.nelement())
+                    layer.bias.data = layer.bias.data.view(-1)[idx].view(layer.bias.data.size())
+
+        if reinit:
+            if chg_weight:
+                nn.init.kaiming_normal_(layer.weight, mode="fan_in", nonlinearity="relu")
+                if parser_args.bias:
+                    nn.init.kaiming_normal_(layer.bias, mode="fan_in", nonlinearity="relu")
+            else:
+                raise NotImplementedError
         #print(layer.weight)
     return cp_model
 
@@ -268,6 +292,7 @@ def get_score_sparsity_hc(model):
     return 100*numer/denom
 """
 
+"""
 def prune(model):
 
     if parser_args.algo != 'hc_iter':
@@ -281,6 +306,39 @@ def prune(model):
         layer.flag.data = (layer.flag.data + torch.gt(layer.scores, torch.ones_like(layer.scores)*0.5).int() == 2).int()
     return 
 
+"""
+
+def prune(model):  # update prune() for bottom K pruning
+
+    if parser_args.algo != 'hc_iter':
+        print('not appropriate to use prune() in the current parser_args.algo')
+        raise ValueError
+
+    print('We are in prune function')
+    conv_layers, linear_layers = get_layers(parser_args.arch, model)
+    if parser_args.prune_type == 'FixThresholding':
+        for layer in [*conv_layers, *linear_layers]:
+            #print(layer)
+            layer.flag.data = (layer.flag.data + torch.gt(layer.scores, torch.ones_like(layer.scores)*0.5).int() == 2).int()
+    
+    elif parser_args.prune_type == 'BottomK':
+        # print("hi!!!!!!!!!!!!!!!!!!!!")
+        import numpy as np
+        n_non_zeros = 0
+        for layer in [*conv_layers, *linear_layers]:
+            n_non_zeros += layer.flag.data.clone().detach().cpu().numpy().sum()
+
+        number_of_weights_to_prune = np.ceil(parser_args.prune_rate * n_non_zeros).astype(int)
+
+        scores_weights = [layer.scores.data.clone().cpu().detach().numpy()[layer.flag.data.clone().detach().cpu().numpy().astype(bool)]
+                   for layer in [*conv_layers, *linear_layers]]
+        weight_vector = np.concatenate(scores_weights)
+        threshold = np.sort(np.abs(weight_vector))[number_of_weights_to_prune]
+
+        for layer in [*conv_layers, *linear_layers]:
+            layer.flag.data = (layer.flag.data + torch.gt(layer.scores, torch.ones_like(layer.scores)*threshold).int() == 2).int()
+
+    return 
 
 
 # returns avg_sparsity = number of non-zero weights!

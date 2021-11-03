@@ -85,38 +85,52 @@ class SubnetConv(nn.Conv2d):
         # initialize flag (representing the pruned weights)
         self.flag = nn.Parameter(torch.ones(self.weight.size()))#.long())#.cuda() # 
         if parser_args.bias:
-            self.bias_flag = nn.Parameter(torch.ones(self.bias.size()))#.long())#.cuda()
+            self.flag_bias = nn.Parameter(torch.ones(self.bias.size()))#.long())#.cuda()
         else:
             # dummy variable just so other things don't break
-            self.bias_flag = nn.Parameter(torch.Tensor(1))#.long())#.cuda()
+            self.flag_bias = nn.Parameter(torch.Tensor(1))#.long())#.cuda()
         
         # initialize the scores
         self.scores = nn.Parameter(torch.Tensor(self.weight.size()))
         if parser_args.bias:
-            self.bias_scores = nn.Parameter(torch.Tensor(self.bias.size()))
+            self.scores_bias = nn.Parameter(torch.Tensor(self.bias.size()))
         else:
             # dummy variable just so other things don't break
-            self.bias_scores = nn.Parameter(torch.Tensor(1))
+            self.scores_bias = nn.Parameter(torch.Tensor(1))
 
         if parser_args.algo in ['hc', 'hc_iter']:
-            if parser_args.score_init in ['unif']:
-                nn.init.uniform_(self.scores, a=0.0, b=1.0)
-                nn.init.uniform_(self.bias_scores, a=0.0, b=1.0)
+            if parser_args.score_init in ['half']:
+                self.scores.data = 0.5 * torch.ones_like(self.scores.data)
+                self.scores_bias.data = 0.5 * torch.ones_like(self.scores_bias.data)
             elif parser_args.score_init in ['bern']:
                 self.scores.data = torch.bernoulli(0.5 * torch.ones_like(self.scores.data))                                                                                                                     
-                self.bias_scores.data = torch.bernoulli(0.5 * torch.ones_like(self.bias_scores.data))    
+                self.scores_bias.data = torch.bernoulli(0.5 * torch.ones_like(self.scores_bias.data))    
+            elif parser_args.score_init in ['unif']:
+                nn.init.uniform_(self.scores, a=0.0, b=1.0)
+                nn.init.uniform_(self.scores_bias, a=0.0, b=1.0)
+            elif parser_args.score_init in ['bimodal', 'skew']:
+                Beta = torch.distributions.beta.Beta
+                if parser_args.score_init == 'bimodal':
+                    alpha, beta = 0.1, 0.1
+                elif parser_args.score_init == 'skew':
+                    alpha, beta = 1, 5
+                m = Beta(torch.ones_like(self.scores.data)*alpha, torch.ones_like(self.scores.data)*beta)
+                self.scores.data = m.sample()
+                m = Beta(torch.ones_like(self.scores_bias.data)*alpha, torch.ones_like(self.scores_bias.data)*beta)
+                self.scores_bias.data = m.sample()
+            #print(self.scores.data)
         else:
             nn.init.kaiming_uniform_(self.scores, a=math.sqrt(5))
-            nn.init.uniform_(self.bias_scores, a=-1.0, b=1.0) # can't do kaiming here. picking U[-1, 1] for no real reason
+            nn.init.uniform_(self.scores_bias, a=-1.0, b=1.0) # can't do kaiming here. picking U[-1, 1] for no real reason
 
         # True by default
         if parser_args.freeze_weights:
             # NOTE: turn the gradient on the weights off
             self.weight.requires_grad = False
             self.flag.requires_grad = False
+            self.flag_bias.requires_grad = False
             if parser_args.bias:
                 self.bias.requires_grad = False
-                self.bias_flag.requires_grad = False
 
     def set_prune_rate(self, prune_rate):
         self.prune_rate = prune_rate
@@ -129,17 +143,17 @@ class SubnetConv(nn.Conv2d):
         if parser_args.algo in ('hc', 'hc_iter'):
             # don't need a mask here. the scores are directly multiplied with weights
             self.scores.data = torch.clamp(self.scores.data, 0.0, 1.0)
-            self.bias_scores.data = torch.clamp(self.bias_scores.data, 0.0, 1.0)
+            self.scores_bias.data = torch.clamp(self.scores_bias.data, 0.0, 1.0)
             #pdb.set_trace()
             subnet = self.scores * self.flag.data.float()
-            bias_subnet = self.bias_scores * self.bias_flag.data.float()
+            subnet_bias = self.scores_bias * self.flag_bias.data.float()
 
         else:
-            subnet, bias_subnet = GetSubnet.apply(self.scores.abs(), self.bias_scores.abs(), parser_args.prune_rate)
+            subnet, subnet_bias = GetSubnet.apply(self.scores.abs(), self.scores_bias.abs(), parser_args.prune_rate)
 
         w = self.weight * subnet
         if parser_args.bias:
-            b = self.bias * bias_subnet
+            b = self.bias * subnet_bias
         else:
             b = self.bias
         x = F.conv2d(

@@ -16,6 +16,8 @@ import torch.utils.data
 import torch.utils.data.distributed
 import torch.multiprocessing as mp
 
+import sys
+
 from utils.conv_type import FixedSubnetConv, SampleSubnetConv
 from utils.logging import AverageMeter, ProgressMeter
 from utils.net_utils import (
@@ -49,27 +51,208 @@ def eval_and_print(validate, data_loader, model, criterion, parser_args, writer=
 
     return acc1
 
-def sanity_check(validate, data_loader, model, criterion, parser_args, writer=None, epoch=parser_args.start_epoch):
+def finetune(model, parser_args, data, criterion, old_epoch_list, old_test_acc_before_round_list, old_test_acc_list, old_reg_loss_list, old_model_sparsity_list, result_root, shuffle=False, reinit=False, chg_mask=False, chg_weight=False):
 
-    print('Doing sanity check')
-    cp_model = redraw(model)
-    acc1, acc5, acc10 = validate(data_loader, cp_model, criterion, parser_args, writer=None, epoch=parser_args.start_epoch)
-    print("After redrawing weights")
-    print('acc1: {}, acc5: {}, acc10: {}'.format(acc1, acc5, acc10))
+    epoch_list = copy.deepcopy(old_epoch_list)
+    test_acc_before_round_list = copy.deepcopy(old_test_acc_before_round_list)
+    test_acc_list = copy.deepcopy(old_test_acc_list)
+    reg_loss_list = copy.deepcopy(old_reg_loss_list)
+    model_sparsity_list = copy.deepcopy(old_model_sparsity_list)
 
-    cp_model = redraw(model, shuffle=True)
-    acc1, acc5, acc10 = validate(data_loader, cp_model, criterion, parser_args, writer=None, epoch=parser_args.start_epoch)
-    print("After shuffling weights")
-    print('acc1: {}, acc5: {}, acc10: {}'.format(acc1, acc5, acc10))
+    # round the score (in the model itself)
+    model = round_model(model, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio, rank=parser_args.gpu)    
+    # apply reinit/shuffling masks/weights (if necessary)
+    model = redraw(model, shuffle=shuffle, reinit=reinit, chg_mask=chg_mask, chg_weight=chg_weight)
 
-    cp_model = redraw(model, shuffle=True, mask=True)
-    acc1, acc5, acc10 = validate(data_loader, cp_model, criterion, parser_args, writer=None, epoch=parser_args.start_epoch)
-    print("After shuffling masks")
-    print('acc1: {}, acc5: {}, acc10: {}'.format(acc1, acc5, acc10))
+    # switch to weight training mode (turn on the requires_grad for weight/bias, and turn off the requires_grad for other parameters)
+    for name, param in model.named_parameters():
+        if 'weight' in name:
+            param.requires_grad = True
+        elif parser_args.bias and '.bias' in name:
+            param.requires_grad = True
+        else:
+            param.requires_grad = False
 
-    return 
+    # set base_setting and evaluate 
+    run_base_dir, ckpt_base_dir, log_base_dir, writer, epoch_time, validation_time, train_time, progress_overall = get_settings(parser_args)
+    parser_args.optimizer, parser_args.lr, parser_args.wd = 'sgd', 0.01, 0.0001
+    optimizer = get_optimizer(parser_args, model)
+    train, validate, modifier = get_trainer(parser_args)
+
+    # check the performance of loaded model (after rounding)
+    acc1, acc5, acc10 = validate(data.val_loader, model, criterion, parser_args, writer, parser_args.epochs-1)
+    avg_sparsity = model_sparsity_list[-1] # copy & paste the sparsity of prev. epoch
+    epoch_list.append(parser_args.epochs-1)
+    test_acc_before_round_list.append(-1)
+    test_acc_list.append(acc1)
+    reg_loss_list.append(0.0)
+    model_sparsity_list.append(avg_sparsity)
+    
+    end_epoch = time.time()
+    # for epoch in range (E+1, 2*E+1):
+        # train the model weight
+        # save the epoch & test accuracy in the list (add dummy values in other lists)
+    for epoch in range(parser_args.epochs, parser_args.epochs*2):
+
+        if parser_args.multiprocessing_distributed:
+            data.train_loader.sampler.set_epoch(epoch)
+        #lr_policy(epoch, iteration=None)
+        #modifier(parser_args, epoch, model)
+        cur_lr = get_lr(optimizer)
+        print('epoch: {}, lr: {}'.format(epoch, cur_lr))
+
+        # train for one epoch
+        start_train = time.time()
+        train_acc1, train_acc5, train_acc10, reg_loss = train(
+            data.train_loader, model, criterion, optimizer, epoch, parser_args, writer=writer
+        )
+        train_time.update((time.time() - start_train) / 60)
+
+        # evaluate on validation set
+        start_validation = time.time()
+        acc1, acc5, acc10 = validate(data.val_loader, model, criterion, parser_args, writer, epoch)
+        validation_time.update((time.time() - start_validation) / 60)
+        avg_sparsity = model_sparsity_list[-1] # copy & paste the sparsity of prev. epoch
+
+        # update all results lists
+        epoch_list.append(epoch)
+        test_acc_before_round_list.append(-1)
+        test_acc_list.append(acc1)
+        reg_loss_list.append(reg_loss)
+        model_sparsity_list.append(avg_sparsity)
 
 
+        epoch_time.update((time.time() - end_epoch) / 60)
+        progress_overall.display(epoch)
+        progress_overall.write_to_tensorboard(
+            writer, prefix="diagnostics", global_step=epoch
+        )
+        writer.add_scalar("test/lr", cur_lr, epoch)
+        end_epoch = time.time()
+
+        results_df = pd.DataFrame({'epoch': epoch_list, 'test_acc_before_rounding': test_acc_before_round_list,'test_acc': test_acc_list, 'regularization_loss': reg_loss_list, 'model_sparsity': model_sparsity_list})
+        if not chg_mask and not chg_weight:
+            results_filename = result_root + 'acc_and_sparsity.csv'    
+        elif chg_mask and shuffle:
+            results_filename = result_root + 'acc_and_sparsity_mask_shuffle.csv'    
+        elif chg_weight and shuffle:
+            results_filename = result_root + 'acc_and_sparsity_weight_shuffle.csv'    
+        elif chg_weight and reinit:
+            results_filename = result_root + 'acc_and_sparsity_weight_reinit.csv'    
+        else:
+            raise NotImplementedError
+
+
+        print("Writing results into: {}".format(results_filename))
+        results_df.to_csv(results_filename, index=False)
+
+    return model
+
+
+def sanity_check(model, parser_args, data, criterion):
+
+    #cp_model = redraw(model, shuffle=True)
+    cp_model = redraw(model, shuffle=True, mask=True)         # NOTE: uncomment to check the other case
+    #cp_model = copy.deepcopy(model)
+    for name, param in cp_model.named_parameters():
+        if 'weight' in name:
+            param.requires_grad = True
+        else:
+            param.requires_grad = False
+    optimizer = get_optimizer(parser_args, cp_model)
+
+    run_base_dir, ckpt_base_dir, log_base_dir = get_directories(parser_args)
+    parser_args.ckpt_base_dir = ckpt_base_dir
+    writer = SummaryWriter(log_dir=log_base_dir)
+    epoch_time = AverageMeter("epoch_time", ":.4f", write_avg=False)
+    validation_time = AverageMeter("validation_time", ":.4f", write_avg=False)
+    train_time = AverageMeter("train_time", ":.4f", write_avg=False)
+    progress_overall = ProgressMeter(
+        1, [epoch_time, validation_time, train_time], prefix="Overall Timing"
+    )
+
+    end_epoch = time.time()
+    parser_args.start_epoch = parser_args.start_epoch or 1
+
+    results = {'epoch': [], 'test_acc': []}
+
+
+    cp_model.cuda(parser_args.gpu)
+    acc1, acc5, acc10 = validate(data.val_loader, cp_model, criterion, parser_args, writer=None, epoch=0)
+
+    results['epoch'].append(0)
+    results['test_acc'].append(acc1)
+
+    for epoch in range(parser_args.start_epoch, parser_args.epochs + 1):
+        if parser_args.multiprocessing_distributed:
+            data.train_loader.sampler.set_epoch(epoch)
+
+        lr_policy(epoch, iteration=None)
+        modifier(parser_args, epoch, cp_model)
+
+        cur_lr = get_lr(optimizer)
+        print('cur_lr: ', cur_lr)
+
+        # train for one epoch
+        start_train = time.time()
+        train_acc1, train_acc5, train_acc10, reg_loss = train(
+            data.train_loader, cp_model, criterion, optimizer, epoch, parser_args, writer=writer
+        )
+        train_time.update((time.time() - start_train) / 60)
+
+        # evaluate on validation set
+        start_validation = time.time()
+        acc1, acc5, acc10 = validate(data.val_loader, cp_model, criterion, parser_args, writer, epoch)
+        validation_time.update((time.time() - start_validation) / 60)
+
+        results['epoch'].append(epoch)
+        results['test_acc'].append(acc1)
+
+        results_df = pd.DataFrame.from_dict(results).set_index('epoch')
+        #results_df.to_csv('./results/shuffle_weights.csv')            # NOTE: be sure to update filename accordingly!
+        results_df.to_csv('./results/shuffle_mask.csv')
+        #results_df.to_csv('./results/orig_mask.csv')
+
+    sys.exit()
+
+def get_idty_str(parser_args):
+    train_mode_str = 'weight_training' if parser_args.weight_training else 'pruning'
+    dataset_str = parser_args.dataset
+    model_str = parser_args.arch
+    algo_str = parser_args.algo
+    period_str = parser_args.iter_period
+    reg_str = 'reg_{}'.format(parser_args.regularization)
+    reg_lmbda = parser_args.lmbda if parser_args.regularization else ''
+    opt_str = parser_args.optimizer
+    policy_str = parser_args.lr_policy
+    lr_str = parser_args.lr
+    lr_gamma = parser_args.lr_gamma
+    lr_adj = parser_args.lr_adjust
+    fan_str = parser_args.scale_fan
+    w_str = parser_args.init
+    s_str = parser_args.score_init
+    width_str = parser_args.width
+    seed_str = parser_args.seed + parser_args.trial_num - 1
+    idty_str = "{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_fan_{}_{}_{}_width_{}_seed_{}".\
+        format(train_mode_str, dataset_str, model_str, algo_str, period_str, reg_str, reg_lmbda,
+        opt_str, policy_str, lr_str, lr_gamma, lr_adj, fan_str, w_str, s_str,
+        width_str, seed_str).replace(".", "_")
+
+    return idty_str
+
+def get_settings(parser_args):
+
+    run_base_dir, ckpt_base_dir, log_base_dir = get_directories(parser_args)
+    parser_args.ckpt_base_dir = ckpt_base_dir
+    writer = SummaryWriter(log_dir=log_base_dir)
+    epoch_time = AverageMeter("epoch_time", ":.4f", write_avg=False)
+    validation_time = AverageMeter("validation_time", ":.4f", write_avg=False)
+    train_time = AverageMeter("train_time", ":.4f", write_avg=False)
+    progress_overall = ProgressMeter(
+        1, [epoch_time, validation_time, train_time], prefix="Overall Timing"
+    )
+
+    return run_base_dir, ckpt_base_dir, log_base_dir, writer, epoch_time, validation_time, train_time, progress_overall
 
 def compare_rounding(validate, data_loader, model, criterion, parser_args, result_root):
 
@@ -111,6 +294,31 @@ def compare_rounding(validate, data_loader, model, criterion, parser_args, resul
 
     return
 
+def switch_to_wt(model):
+
+    raise NotImplementedError
+
+    print('We switched to weight training')
+
+    for name, params in model.named_parameters():
+        print(name)
+        if "weight" in name or ".bias" in name:
+            params.requires_grad = True
+        elif "score" in name:
+            params.requires_grad = False
+            params.data = torch.ones_like(params.data)
+        elif "bias" in name and parser_args.bias:
+            if "score" in name:
+                params.requires_grad = False
+                params.data = torch.ones_like(params.data)
+            elif "flag" in name:
+                params.requires_grad = False
+            else:
+                params.requires_grad = True
+        else:
+            params.requires_grad = False
+
+    return model
 
 def get_mask(model):
 
@@ -123,20 +331,17 @@ def get_mask(model):
 
     return mask, flat_tensor
 
-
 def setup_distributed(ngpus_per_node):
     # for debugging
-#    os.environ['NCCL_DEBUG'] = 'INFO'
-#    os.environ['TORCH_DISTRIBUTED_DEBUG'] = 'INFO'
+    #    os.environ['NCCL_DEBUG'] = 'INFO'
+    #    os.environ['TORCH_DISTRIBUTED_DEBUG'] = 'INFO'
 
     # setup environment
     os.environ['MASTER_ADDR'] = '127.0.0.1'
     os.environ['MASTER_PORT'] = '29500'
 
-
 def cleanup_distributed():
     torch.distributed.destroy_process_group()
-
 
 def main():
     print(parser_args)
@@ -169,122 +374,78 @@ def main_worker(gpu, ngpus_per_node):
         # Since we have ngpus_per_node processes per node, the total world_size
         # needs to be adjusted accordingly
         parser_args.world_size = ngpus_per_node * parser_args.world_size
-
-    train_mode_str = 'weight_training' if parser_args.weight_training else 'pruning'
-    dataset_str = parser_args.dataset
-    model_str = parser_args.arch
-    algo_str = parser_args.algo
-    period_str = parser_args.iter_period
-    reg_str = 'reg_{}'.format(parser_args.regularization)
-    reg_lmbda = parser_args.lmbda if parser_args.regularization else ''
-    opt_str = parser_args.optimizer
-    policy_str = parser_args.lr_policy
-    lr_str = parser_args.lr
-    lr_gamma = parser_args.lr_gamma
-    lr_adj = parser_args.lr_adjust
-    fan_str = parser_args.scale_fan
-    w_str = parser_args.init
-    s_str = parser_args.score_init
-    width_str = parser_args.width
-    seed_str = parser_args.seed + parser_args.trial_num - 1
-    idty_str = "{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_fan_{}_{}_{}_width_{}_seed_{}".\
-        format(train_mode_str, dataset_str, model_str, algo_str, period_str, reg_str, reg_lmbda,
-        opt_str, policy_str, lr_str, lr_gamma, lr_adj, fan_str, w_str, s_str,
-        width_str, seed_str).replace(".", "_")
-
+    idty_str = get_idty_str(parser_args)
     result_root = 'results/results_' + idty_str + '/'
     if not os.path.isdir(result_root):
         os.mkdir(result_root)
-    
-    for i in range(1):
-        # create model and optimizer
-        model = get_model(parser_args)
-        model = set_gpu(parser_args, model)
 
-        if parser_args.pretrained:
-            pretrained(parser_args.pretrained, model)
-        if parser_args.pretrained2:
-            model2 = copy.deepcopy(model)  # model2.load_state_dict(torch.load(parser_args.pretrained2)['state_dict'])
-            pretrained(parser_args.pretrained2, model2)
+    # create model and optimizer
+    model = get_model(parser_args)
+    if parser_args.weight_training:
+        model = switch_to_wt(model) 
+    model = set_gpu(parser_args, model)
+    if parser_args.pretrained:
+        pretrained(parser_args.pretrained, model)
+    if parser_args.pretrained2:
+        model2 = copy.deepcopy(model)  # model2.load_state_dict(torch.load(parser_args.pretrained2)['state_dict'])
+        pretrained(parser_args.pretrained2, model2)
+    optimizer = get_optimizer(parser_args, model)
+    data = get_dataset(parser_args)
+    lr_policy = get_policy(parser_args.lr_policy)(optimizer, parser_args)
 
-        optimizer = get_optimizer(parser_args, model)
-        data = get_dataset(parser_args)
-        lr_policy = get_policy(parser_args.lr_policy)(optimizer, parser_args)
-
-        if parser_args.label_smoothing is None:
-            criterion = nn.CrossEntropyLoss().cuda()
-        else:
-            criterion = LabelSmoothing(smoothing=parser_args.label_smoothing)
-
+    if parser_args.label_smoothing is None:
+        criterion = nn.CrossEntropyLoss().cuda()
+    else:
+        criterion = LabelSmoothing(smoothing=parser_args.label_smoothing)
 #        if isinstance(model, nn.parallel.DistributedDataParallel):
 #            model = model.module
 
-        # optionally resume from a checkpoint
-        best_acc1 = 0.0
-        best_acc5 = 0.0
-        best_acc10 = 0.0
-        best_train_acc1 = 0.0
-        best_train_acc5 = 0.0
-        best_train_acc10 = 0.0
+    best_acc1, best_acc5, best_acc10, best_train_acc1, best_train_acc5, best_train_acc10 = 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
+    # optionally resume from a checkpoint
+    if parser_args.resume:
+        best_acc1 = resume(parser_args, model, optimizer)
+    # when we only evaluate a pretrained model
+    if parser_args.evaluate:
+        #eval_and_print(validate, data.val_loader, model, criterion, parser_args, writer=None, epoch=parser_args.start_epoch, description='model')
+        if parser_args.algo in ['hc_iter']:
 
-        if parser_args.resume:
-            best_acc1 = resume(parser_args, model, optimizer)
+            model = round_model(model, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio, rank=parser_args.gpu)
+            eval_and_print(validate, data.val_loader, model, criterion, parser_args, writer=None, epoch=parser_args.start_epoch, description='final model after rounding')
+            #sanity_check(model, parser_args, data, criterion)
 
-        if parser_args.evaluate:
-            #eval_and_print(validate, data.val_loader, model, criterion, parser_args, writer=None, epoch=parser_args.start_epoch, description='model')
-            if parser_args.algo in ['hc_iter']:
+        for trial in range(parser_args.num_test):
+            if parser_args.algo in ['hc']:
+                if parser_args.how_to_connect == "prob":
+                    cp_model = round_model(model, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio, rank=parser_args.gpu)
+                else:
+                    cp_model = copy.deepcopy(model)
+                eval_and_print(validate, data.val_loader, cp_model, criterion, parser_args, writer=None, epoch=parser_args.start_epoch, description='model after pruning')
 
-                model = round_model(model, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio, rank=parser_args.gpu)
-                eval_and_print(validate, data.val_loader, model, criterion, parser_args, writer=None, epoch=parser_args.start_epoch, description='final model after rounding')
-                sanity_check(validate, data.val_loader, model, criterion, parser_args, writer=None, epoch=parser_args.start_epoch)
+        if parser_args.pretrained2:
+            eval_and_print(validate, data.val_loader, model2, criterion, parser_args, writer=None, epoch=parser_args.start_epoch, description='model2')
+            if parser_args.algo in ['hc']:
+                if parser_args.how_to_connect == "prob":
+                    cp_model2 = round_model(model2, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio, rank=parser_args.gpu)
+                else:
+                    cp_model2 = copy.deepcopy(model2)
+                eval_and_print(validate, data.val_loader, cp_model2, criterion, parser_args, writer=None, epoch=parser_args.start_epoch, description='model2 after pruning')
 
+        if parser_args.pretrained and parser_args.pretrained2 and parser_args.mode_connect:
+            if parser_args.weight_training:
+                print('We are connecting weights')
+                connect_weight(cp_model, criterion, data, validate, cp_model2)
+            elif parser_args.algo in ['hc', 'ep']:
+                print('We are connecting masks')
+                connect_mask(cp_model, criterion, data, validate, cp_model2)
+            # visualize_mask_2D(cp_model, criterion, data, validate)
 
-            # if parser_args.compare_rounding:
-            #    compare_rounding(validate, data.val_loader, model, criterion, parser_args, result_root)
+        return
 
-            for trial in range(parser_args.num_test):
-                if parser_args.algo in ['hc']:
-                    if parser_args.how_to_connect == "prob":
-                        cp_model = round_model(model, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio, rank=parser_args.gpu)
-                    else:
-                        cp_model = copy.deepcopy(model)
-                    eval_and_print(validate, data.val_loader, cp_model, criterion, parser_args, writer=None, epoch=parser_args.start_epoch, description='model after pruning')
-
-            if parser_args.pretrained2:
-                eval_and_print(validate, data.val_loader, model2, criterion, parser_args, writer=None, epoch=parser_args.start_epoch, description='model2')
-                if parser_args.algo in ['hc']:
-                    if parser_args.how_to_connect == "prob":
-                        cp_model2 = round_model(model2, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio, rank=parser_args.gpu)
-                    else:
-                        cp_model2 = copy.deepcopy(model2)
-                    eval_and_print(validate, data.val_loader, cp_model2, criterion, parser_args, writer=None, epoch=parser_args.start_epoch, description='model2 after pruning')
- 
-            if parser_args.pretrained and parser_args.pretrained2 and parser_args.mode_connect:
-                if parser_args.weight_training:
-                    print('We are connecting weights')
-                    connect_weight(cp_model, criterion, data, validate, cp_model2)
-                elif parser_args.algo in ['hc', 'ep']:
-                    print('We are connecting masks')
-                    connect_mask(cp_model, criterion, data, validate, cp_model2)
-                # visualize_mask_2D(cp_model, criterion, data, validate)
-
-            return
-
-    # Set up directories
-    run_base_dir, ckpt_base_dir, log_base_dir = get_directories(parser_args)
-    parser_args.ckpt_base_dir = ckpt_base_dir
-    writer = SummaryWriter(log_dir=log_base_dir)
-    epoch_time = AverageMeter("epoch_time", ":.4f", write_avg=False)
-    validation_time = AverageMeter("validation_time", ":.4f", write_avg=False)
-    train_time = AverageMeter("train_time", ":.4f", write_avg=False)
-    progress_overall = ProgressMeter(
-        1, [epoch_time, validation_time, train_time], prefix="Overall Timing"
-    )
-
+    # Set up directories & setting
+    run_base_dir, ckpt_base_dir, log_base_dir, writer, epoch_time, validation_time, train_time, progress_overall = get_settings(parser_args)
     end_epoch = time.time()
     parser_args.start_epoch = parser_args.start_epoch or 0
     acc1 = None
-
     epoch_list = []
     test_acc_before_round_list = []
     test_acc_list = []
@@ -311,18 +472,12 @@ def main_worker(gpu, ngpus_per_node):
         save=False,
     )
 
-    # sanity check for 50% sparsity initialization
-    ## if parser_args.score_init == 'bern':
-       ## get_score_sparsity_hc(model)
-
     # Start training
     for epoch in range(parser_args.start_epoch, parser_args.epochs):
         if parser_args.multiprocessing_distributed:
             data.train_loader.sampler.set_epoch(epoch)
-
         lr_policy(epoch, iteration=None)
         modifier(parser_args, epoch, model)
-
         cur_lr = get_lr(optimizer)
 
         # train for one epoch
@@ -332,10 +487,10 @@ def main_worker(gpu, ngpus_per_node):
         )
         train_time.update((time.time() - start_train) / 60)
 
-        # apply round for every T epochs (after E warm-up epoch)
-        if parser_args.algo in ['hc', 'hc_iter'] and epoch >= parser_args.hc_warmup and epoch % parser_args.hc_period == 0:
-            print('Apply rounding: {}'.format(parser_args.round))
-            model = round_model(model, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio, rank=parser_args.gpu)
+        # apply round for every T_{round} epochs (after E warm-up epoch)
+        # if parser_args.algo in ['hc', 'hc_iter'] and epoch >= parser_args.hc_warmup and epoch % parser_args.hc_period == 0:
+        #     print('Apply rounding: {}'.format(parser_args.round))
+        #     model = round_model(model, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio, rank=parser_args.gpu)
 
         # evaluate on validation set
         start_validation = time.time()
@@ -349,17 +504,19 @@ def main_worker(gpu, ngpus_per_node):
                 acc_avg += acc1
             acc_avg /= parser_args.num_test
             acc1 = acc_avg
-            print('Avg acc after rounding: {}'.format(acc1))
+            print('Acc after rounding: {}'.format(acc1))
         else:
             acc1, acc5, acc10 = validate(data.val_loader, model, criterion, parser_args, writer, epoch)
         validation_time.update((time.time() - start_validation) / 60)
 
         # save the histrogram of scores
+        '''
         if not parser_args.weight_training:
             if (epoch % 25 == 1) or epoch == (parser_args.epochs-1):
                 plot_histogram_scores(model, result_root+'Epoch_{}.pdf'.format(epoch), parser_args.arch)
+        '''
 
-        # prune the model (for iterative HC)
+        # prune the model every T_{prune} epochs
         if parser_args.algo == 'hc_iter' and epoch % (parser_args.iter_period) == 0:
             prune(model)
 
@@ -374,7 +531,7 @@ def main_worker(gpu, ngpus_per_node):
                 avg_sparsity = get_model_sparsity(model)
         else:
             # haven't written a weight sparsity function yet
-            avg_sparsity = -1
+            avg_sparsity = 1
 
         # update all results lists
         epoch_list.append(epoch)
@@ -463,8 +620,6 @@ def main_worker(gpu, ngpus_per_node):
         if parser_args.results_filename:
             results_filename = parser_args.results_filename
         else:
-            # TODO: move this to utils
-            # results_filename = "results/results_acc_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}.csv".format(train_mode_str, parser_args.dataset, parser_args.algo, reg_str, reg_lmbda, opt_str, policy_str, lr_str, lr_gamma, lr_adj)
             results_filename = result_root + 'acc_and_sparsity.csv'    
         print("Writing results into: {}".format(results_filename))
         results_df.to_csv(results_filename, index=False)
@@ -484,19 +639,30 @@ def main_worker(gpu, ngpus_per_node):
         name=parser_args.name,
     )
 
-
     # sanity check whether the weight values did not change
-    for name, params in model.named_parameters():
-        if ".weight" in name:
-            print(torch.sum(params.data))
-
+    # for name, params in model.named_parameters():
+    #     if ".weight" in name:
+    #         print(torch.sum(params.data))
     # check the performance of trained model
     if parser_args.algo in ['hc', 'hc_iter']:
-        for trial in range(parser_args.num_round):
+        cp_model = copy.deepcopy(model)
+        cp_model = finetune(cp_model, parser_args, data, criterion, epoch_list, test_acc_before_round_list, test_acc_list, reg_loss_list, model_sparsity_list, result_root)
+        # print out the final acc
+        eval_and_print(validate, data.val_loader, cp_model, criterion, parser_args, writer=None, description='final model after finetuning')
 
-            eval_and_print(validate, data.val_loader, model, criterion, parser_args, writer=None, epoch=parser_args.start_epoch, description='final model before rounding')
-            cp_model = round_model(model, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio, rank=parser_args.gpu)
-            eval_and_print(validate, data.val_loader, cp_model, criterion, parser_args, writer=None, epoch=parser_args.start_epoch, description='final model after rounding')
+        # do the sanity check for shuffled mask/weights, reinit weights
+        cp_model = copy.deepcopy(model)
+        cp_model = finetune(cp_model, parser_args, data, criterion, epoch_list, test_acc_before_round_list, test_acc_list, reg_loss_list, model_sparsity_list, result_root, reinit=True, chg_weight=True)
+
+        cp_model = copy.deepcopy(model)
+        cp_model = finetune(cp_model, parser_args, data, criterion, epoch_list, test_acc_before_round_list, test_acc_list, reg_loss_list, model_sparsity_list, result_root, shuffle=True, chg_weight=True)
+
+        cp_model = copy.deepcopy(model)
+        cp_model = finetune(cp_model, parser_args, data, criterion, epoch_list, test_acc_before_round_list, test_acc_list, reg_loss_list, model_sparsity_list, result_root, shuffle=True, chg_mask=True)
+
+
+
+
 
     if parser_args.multiprocessing_distributed:
         cleanup_distributed()

@@ -378,6 +378,12 @@ def parse_arguments():
         help="Amount of pruning to do during sparse training",
         type=float,
     )
+    parser.add_argument(  # add for bottom K iterative pruning
+        "--prune-type",
+        default="FixThresholding",
+        help="Type of prune - fix thresholding (FixTHresholding), or prune bottem k percent (BottomK)",
+        type=str,
+    )
     parser.add_argument(
         "--dataset",
         type=str,

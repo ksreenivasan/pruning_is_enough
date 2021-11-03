@@ -391,22 +391,23 @@ def prune(model, device, threshold=0.1):
         num_weights_pruned += layer.pruned.data.sum().item()
         num_weights_fixed += layer.fixed.data.sum().item()
 
+        # layer.flag.data = (layer.flag.data + torch.gt(layer.scores, torch.ones_like(layer.scores)*0.5).int() == 2).int()
+
         if parser_args.rewind:
             layer.scores.data = layer.initial_scores
 
     logging.info("Number of weights pruned={}".format(num_weights_pruned))
     logging.info("Number of weights fixed={}".format(num_weights_fixed))
-    
-    return num_weights_pruned, num_weights_fixed
 
+    return num_weights_pruned, num_weights_fixed
 
 
 # returns num_nonzero elements, total_num_elements so that it is easier to compute
 # average sparsity in the end
 def get_layer_sparsity(layer, threshold=0):
     # for algos where the score IS the mask
-    #pdb.set_trace()
-    
+    # pdb.set_trace()
+
     # if parser_args.algo in ['hc_iter']:
     #     pattern = layer.pruned.data
     #     #pattern = layer.scores.data * layer.weight.data

@@ -6,12 +6,12 @@
 #python main.py --config configs/hypercube/resnet18/resnet18_sc_hypercube_iter_reg_v2.yml 
 #python main.py --config configs/hypercube/resnet18/resnet18_sc_hypercube_noreg.yml 
 #python main.py --config configs/ep/resnet18/resnet18_sc_ep.yml
-
-python main.py --config configs/hypercube/resnet18/resnet18_sc_hypercube_iter_reg_evaluate.yml 
-
+#python main.py --config configs/hypercube/resnet18/resnet18_sc_hypercube_iter_reg_evaluate.yml 
 
 
-
+### ResNet-20
+python main.py --config configs/hypercube/resnet20/resnet20_sc_hypercube_reg.yml
+#python main.py --config configs/hypercube/resnet20/resnet20_wt.yml
 
 
 
