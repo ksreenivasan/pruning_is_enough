@@ -220,12 +220,12 @@ class NonAffineBatchNorm(nn.BatchNorm2d):
 class Net(nn.Module):
     def __init__(self):
         super(Net, self).__init__()
-        self.conv1 = SupermaskConv(1, 32, 3, 1, bias=parser_args.bias)
-        self.conv2 = SupermaskConv(32, 64, 3, 1, bias=parser_args.bias)
+        self.conv1 = SupermaskConv(1, 64, 3, 1, bias=parser_args.bias)
+        self.conv2 = SupermaskConv(64, 128, 3, 1, bias=parser_args.bias)
         self.dropout1 = nn.Dropout2d(0.25)
         self.dropout2 = nn.Dropout2d(0.5)
-        self.fc1 = SupermaskLinear(9216, 128, bias=parser_args.bias)
-        self.fc2 = SupermaskLinear(128, 10, bias=parser_args.bias)
+        self.fc1 = SupermaskLinear(18432, 256, bias=parser_args.bias)
+        self.fc2 = SupermaskLinear(256, 10, bias=parser_args.bias)
 
     def forward(self, x):
         x = self.conv1(x)

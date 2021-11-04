@@ -786,7 +786,7 @@ def main():
 
     set_seed(parser_args.seed)
 
-    device = torch.device("cuda:3" if use_cuda else "cpu")
+    device = torch.device("cuda:0" if use_cuda else "cpu")
 
     kwargs = {'num_workers': 1, 'pin_memory': True} if use_cuda else {}
     train_loader = torch.utils.data.DataLoader(
@@ -877,7 +877,7 @@ def main():
                 model, optimizer = switch_to_wt(model, device)
                 print('epoch {}: switched to weight training'.format(epoch))
                 test(model, device, criterion, test_loader)
-
+        import ipdb; ipdb.set_trace()
         #if parser_args.mode != "training":
         #    # gotta plot the final histogram as well
         #    plot_histogram_scores(model, epoch)

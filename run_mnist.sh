@@ -3,7 +3,8 @@ python mnist_pruning_exps.py --algo ep \
 --lr 0.1 \
 --epochs 5 \
 --optimizer sgd \
---results-filename vanilla_ep.csv
+--sparsity 0.25 \
+--results-filename double_wide_ep_0.25_sparsity.csv
 
 # Weight training
 :<<BLOCK
