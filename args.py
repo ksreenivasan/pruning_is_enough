@@ -657,14 +657,24 @@ def parse_arguments():
              "fastest way to use PyTorch for either single node or "
              "multi node data parallel training"
     )
-
     parser.add_argument(
         "--random-subnet",
         action="store_true",
         default=False,
         help="Just initializes random subnetwork and then trains"
     )
-
+    parser.add_argument(
+        "--hc-quantized",
+        action="store_true",
+        default=False,
+        help="round probablities in every iteration"
+    )
+    parser.add_argument(
+        "--quantize-threshold",
+        default=0.5,
+        type=float,
+        help="threhsold to use while quantizing scores in HC",
+    )
 #    parser.add_argument(
 #        "--multigpu",
 #        default=None,
