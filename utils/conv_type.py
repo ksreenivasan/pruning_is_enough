@@ -152,6 +152,8 @@ class SubnetConv(nn.Conv2d):
             self.scores.data = torch.clamp(self.scores.data, 0.0, 1.0)
             self.scores_bias.data = torch.clamp(self.scores_bias.data, 0.0, 1.0)
             #pdb.set_trace()
+            # check if args is quantization/rounding
+            # then compute subnet like "else"
             subnet = self.scores * self.flag.data.float()
             subnet_bias = self.scores_bias * self.flag_bias.data.float()
 
