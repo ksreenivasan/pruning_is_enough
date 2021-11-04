@@ -65,11 +65,14 @@ class SupermaskConv(nn.Conv2d):
 
         # initialize the scores
         self.scores = nn.Parameter(torch.Tensor(self.weight.size()))
+        self.unproj_scores = nn.Parameter(torch.Tensor(self.weight.size()))
         if parser_args.bias:
             self.bias_scores = nn.Parameter(torch.Tensor(self.bias.size()))
+            self.unproj_bias_scores = nn.Parameter(torch.Tensor(self.bias.size()))
         else:
             # dummy variable just so other things don't break
             self.bias_scores = nn.Parameter(torch.Tensor(1))
+            self.unproj_bias_scores = nn.Parameter(torch.Tensor(1))
         nn.init.uniform_(self.scores, a=0.0, b=1.0)
         nn.init.uniform_(self.bias_scores, a=0.0, b=1.0)
 
@@ -80,19 +83,22 @@ class SupermaskConv(nn.Conv2d):
         nn.init.kaiming_normal_(self.weight, mode="fan_in", nonlinearity="relu")
         # self.weight.data = 2*torch.bernoulli(0.5*torch.ones_like(self.weight)) - 1
 
-        # NOTE: turn the gradient on the weights off
+        # NOTE: turn the gradient on the weights off (and scores! Gradients are only for unproj scores)
         self.weight.requires_grad = False
         self.pruned.requires_grad = False
         self.fixed.requires_grad = False
+        self.unproj_scores.requires_grad = False
         if parser_args.bias:
             self.bias.requires_grad = False
+            self.unproj_bias_scores.requires_grad = False
             self.bias_pruned.requires_grad = False
             self.bias_fixed.requires_grad = False
 
     def forward(self, x):
         # don't need a mask here. the scores are directly multiplied with weights
-        self.scores.data = torch.clamp(self.scores.data, 0.0, 1.0)
-        self.bias_scores.data = torch.clamp(self.bias_scores.data, 0.0, 1.0)
+        # do the projections on a separate set of iterates
+        self.scores.data = torch.clamp(self.unproj_scores.data, 0.0, 1.0)
+        self.bias_scores.data = torch.clamp(self.unproj_bias_scores.data, 0.0, 1.0)
         # only keep scores which are neither fixed nor pruned
         subnet = self.scores * (1-self.pruned.data).float() * (1-self.fixed.data).float() + self.fixed.data.float()
         bias_subnet = self.bias_scores * (1-self.bias_pruned.data).float() * (1-self.bias_fixed.data).float() + self.bias_fixed.data.float()
@@ -128,11 +134,14 @@ class SupermaskLinear(nn.Linear):
 
         # initialize the scores
         self.scores = nn.Parameter(torch.Tensor(self.weight.size()))
+        self.unproj_scores = nn.Parameter(torch.Tensor(self.weight.size()))
         if parser_args.bias:
             self.bias_scores = nn.Parameter(torch.Tensor(self.bias.size()))
+            self.unproj_bias_scores = nn.Parameter(torch.Tensor(self.bias.size()))
         else:
             # dummy variable just so other things don't break
             self.bias_scores = nn.Parameter(torch.Tensor(1))
+            self.unproj_bias_scores = nn.Parameter(torch.Tensor(self.bias.size()))
         nn.init.uniform_(self.scores, a=0.0, b=1.0)
         nn.init.uniform_(self.bias_scores, a=0.0, b=1.0)
 
@@ -147,15 +156,18 @@ class SupermaskLinear(nn.Linear):
         self.weight.requires_grad = False
         self.pruned.requires_grad = False
         self.fixed.requires_grad = False
+        self.unproj_scores.requires_grad = False
         if parser_args.bias:
             self.bias.requires_grad = False
+            self.unproj_bias_scores.requires_grad = False
             self.bias_pruned.requires_grad = False
             self.bias_fixed.requires_grad = False          
 
     def forward(self, x):
         # don't need a mask here. the scores are directly multiplied with weights
-        self.scores.data = torch.clamp(self.scores.data, 0.0, 1.0)
-        self.bias_scores.data = torch.clamp(self.bias_scores.data, 0.0, 1.0)
+        # do the projections on a separate set of iterates
+        self.scores.data = torch.clamp(self.unproj_scores.data, 0.0, 1.0)
+        self.bias_scores.data = torch.clamp(self.unproj_bias_scores.data, 0.0, 1.0)
         # only keep scores which are neither fixed nor pruned
         subnet = self.scores * (1-self.pruned.data).float() * (1-self.fixed.data).float() + self.fixed.data.float()
         bias_subnet = self.bias_scores * (1-self.bias_pruned.data).float() * (1-self.bias_fixed.data).float() + self.bias_fixed.data.float()
@@ -343,7 +355,13 @@ def train(model, device, train_loader, optimizer, criterion, epoch):
         # logging.info("LOSS (before): {}".format(loss))
         loss += regularization_loss
         loss.backward()
-        optimizer.step()
+        # instead of this, shift unproj_scores
+        if parser_args.lazy_pgd:
+            for layer in [model.conv1, model.conv2, model.fc1, model.fc2]:
+                layer.unproj_scores.data = layer.unproj_scores.data - parser_args.lr * layer.scores.grad.data
+                layer.unproj_bias_scores.data = layer.unproj_bias_scores.data - parser_args.lr * layer.bias_scores.grad.data
+        else:
+            optimizer.step()
         if batch_idx % parser_args.log_interval == 0:
             logging.info('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
                 epoch, batch_idx * len(data), len(train_loader.dataset),
@@ -793,6 +811,8 @@ def main():
                         help="prune weights when score < threshold",)
     parser.add_argument('--fix-weights', action='store_true', default=False,
                         help='fix weights when score > threshold')
+    parser.add_argument('--lazy-pgd', action='store_true', default=False,
+                        help='use the lazy pgd algorithm')
 
     epoch_list = []
     test_acc_list = []
