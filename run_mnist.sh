@@ -1,14 +1,15 @@
 # trying iterative thresholding
 #:<<BLOCK
 python mnist_hc.py --algo hc_iter \
---gpu 0 \
+--gpu 2 \
 --lr 0.01 \
 --epochs 50 \
 --optimizer adam \
 --wd 0 \
 --iter_period 1 \
 --prune-threshold 0.1 \
---results-filename hc_iter_threshold_sym.csv > kartik_log_sym 2>&1
+--lazy-pgd \
+--results-filename hc_iter_lazy_pgd.csv > kartik_log_lazy_pgd 2>&1
 #BLOCK
 
 :<<BLOCK

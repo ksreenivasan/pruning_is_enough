@@ -73,8 +73,8 @@ class SupermaskConv(nn.Conv2d):
             # dummy variable just so other things don't break
             self.bias_scores = nn.Parameter(torch.Tensor(1))
             self.unproj_bias_scores = nn.Parameter(torch.Tensor(1))
-        nn.init.uniform_(self.scores, a=0.0, b=1.0)
-        nn.init.uniform_(self.bias_scores, a=0.0, b=1.0)
+        nn.init.uniform_(self.unproj_scores, a=0.0, b=1.0)
+        nn.init.uniform_(self.unproj_bias_scores, a=0.0, b=1.0)
 
         if parser_args.rewind:
             self.initial_scores = self.scores.data.cuda()
@@ -114,7 +114,6 @@ class SupermaskConv(nn.Conv2d):
         return x
 
 
-
 class SupermaskLinear(nn.Linear):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -141,9 +140,9 @@ class SupermaskLinear(nn.Linear):
         else:
             # dummy variable just so other things don't break
             self.bias_scores = nn.Parameter(torch.Tensor(1))
-            self.unproj_bias_scores = nn.Parameter(torch.Tensor(self.bias.size()))
-        nn.init.uniform_(self.scores, a=0.0, b=1.0)
-        nn.init.uniform_(self.bias_scores, a=0.0, b=1.0)
+            self.unproj_bias_scores = nn.Parameter(torch.Tensor(1))
+        nn.init.uniform_(self.unproj_scores, a=0.0, b=1.0)
+        nn.init.uniform_(self.unproj_bias_scores, a=0.0, b=1.0)
 
         if parser_args.rewind:
             self.initial_scores = self.scores.data.cuda()
@@ -359,7 +358,11 @@ def train(model, device, train_loader, optimizer, criterion, epoch):
         if parser_args.lazy_pgd:
             for layer in [model.conv1, model.conv2, model.fc1, model.fc2]:
                 layer.unproj_scores.data = layer.unproj_scores.data - parser_args.lr * layer.scores.grad.data
-                layer.unproj_bias_scores.data = layer.unproj_bias_scores.data - parser_args.lr * layer.bias_scores.grad.data
+                if layer.bias_scores.grad == None:
+                    bias_grad = torch.zeros_like(layer.bias_scores)
+                else:
+                    bias_grad = layer.bias_scores.grad.data
+                layer.unproj_bias_scores.data = layer.unproj_bias_scores.data - parser_args.lr * bias_grad
         else:
             optimizer.step()
         if batch_idx % parser_args.log_interval == 0:
