@@ -156,7 +156,7 @@ class SubnetConv(nn.Conv2d):
             # check if args is quantization/rounding
             # then compute subnet like "else"
             if parser_args.hc_quantized:
-                subnet, subnet_bias = GetSubnet.apply(self.scores, self.scores_bias, parser_args.threshold)
+                subnet, subnet_bias = GetSubnet.apply(self.scores, self.scores_bias, parser_args.prune_rate)
             else:
                 subnet = self.scores * self.flag.data.float()
                 subnet_bias = self.scores_bias * self.flag_bias.data.float()
