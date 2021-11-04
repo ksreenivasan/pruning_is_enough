@@ -64,6 +64,10 @@ class GetSubnet(autograd.Function):
             out = torch.bernoulli(scores)
             bias_out = torch.bernoulli(bias_scores)
 
+        elif parser_args.algo == 'hc':
+            # add some logic here @liu
+            # round scores to {0, 1}
+
         else:
             print("INVALID PRUNING ALGO")
             print("EXITING")
