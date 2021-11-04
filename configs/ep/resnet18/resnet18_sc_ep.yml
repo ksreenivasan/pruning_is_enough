@@ -13,7 +13,7 @@ lr: 0.1
 lr_policy: cosine_lr
 
 # ===== Network training config ===== #
-epochs: 150
+epochs: 100
 weight_decay: 0.0005
 momentum: 0.9
 batch_size: 256
@@ -24,10 +24,10 @@ bn_type: NonAffineBatchNorm
 init: signed_constant
 mode: fan_in
 nonlinearity: relu
-prune_rate: 0.5
-scale_fan: True
+prune_rate: 0.05
+scale_fan: False
 freeze_weights: True
 
 # ===== Hardware setup ===== #
 workers: 4
-gpu: 2
+gpu: 1

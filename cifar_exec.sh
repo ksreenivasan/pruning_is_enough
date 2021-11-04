@@ -10,11 +10,14 @@
 
 
 ### ResNet-20
+:<<BLOCK
 python main.py \
     --config configs/hypercube/resnet20/resnet20_random_subnet.yaml > kartik_log 2>&1
 #python main.py --config configs/hypercube/resnet20/resnet20_wt.yml
+BLOCK
 
-
+python main.py \
+    --config configs/ep/resnet18/resnet18_sc_ep.yml > kartik_log 2>&1
 
 #### Conv4
 
