@@ -378,7 +378,7 @@ def prune(model, device):
 
     for layer in [model.conv1, model.conv2, model.fc1, model.fc2]:
         #pdb.set_trace()
-        layer.flag.data = (layer.flag.data + torch.gt(layer.scores, torch.ones_like(layer.scores)*0.5).int() == 2).int()
+        layer.flag.data = (layer.flag.data + torch.gt(layer.scores, torch.ones_like(layer.scores)*0.5).int() == 2).int() #(  (layer.flag + torch.gt(layer.scores, torch.ones_like(layer.scores)*0.5).int()) == 2).int()
 
         if parser_args.rewind:
             layer.scores.data = layer.initial_scores
@@ -683,7 +683,8 @@ def switch_to_wt(model, device):
 
 
 def redraw(model, shuffle=False, mask=False):
-    for layer in [model.conv1, model.conv2, model.fc1, model.fc2]:
+    cp_model = copy.deepcopy(model)
+    for layer in [cp_model.conv1, cp_model.conv2, cp_model.fc1, cp_model.fc2]:
         #print(layer)
         #print(layer.weight)
         if shuffle:
@@ -696,7 +697,7 @@ def redraw(model, shuffle=False, mask=False):
         else:
             nn.init.kaiming_normal_(layer.weight, mode="fan_in", nonlinearity="relu")
         #print(layer.weight)
-    return
+    return cp_model
 
 
 def main():
@@ -901,17 +902,17 @@ def main():
         print("Sparsity: {:.2f}%\n".format(sparsity))
 
         # test shuffling weights 
-        redraw(model)#, device, criterion, test_loader)
+        model = redraw(model)#, device, criterion, test_loader)
         redraw_acc_list = test(model, device, criterion, test_loader)
         print("After redrawing weights")
         print("Test Acc: {:.2f}%\n".format(redraw_acc_list))
         
-        redraw(model, shuffle=True)#, device, criterion, test_loader)
+        model = redraw(model, shuffle=True)#, device, criterion, test_loader)
         shuff_acc_list = test(model, device, criterion, test_loader)
         print("After shuffling weights")
         print("Test Acc: {:.2f}%\n".format(shuff_acc_list))
 
-        redraw(model, shuffle=True, mask=True)#, device, criterion, test_loader)
+        model = redraw(model, shuffle=True, mask=True)#, device, criterion, test_loader)
         shuff_acc_list = test(model, device, criterion, test_loader)
         print("After shuffling masks")
         print("Test Acc: {:.2f}%\n".format(shuff_acc_list))

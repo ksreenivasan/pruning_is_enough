@@ -372,11 +372,18 @@ def parse_arguments():
         help="Sample Baseline Subnet Init",
     )
 
+    # this is an argument that is relevant mainly for EP.
     parser.add_argument(
         "--prune-rate",
         default=0.5,
-        help="Amount of pruning to do during sparse training",
+        help="Decides number of weights that REMAIN after sparse training.",
         type=float,
+    )
+    parser.add_argument(  # add for bottom K iterative pruning
+        "--prune-type",
+        default="FixThresholding",
+        help="Type of prune - fix thresholding (FixTHresholding), or prune bottem k percent (BottomK)",
+        type=str,
     )
     parser.add_argument(
         "--dataset",
@@ -526,11 +533,14 @@ def parse_arguments():
         type=int,
         help="Save every ___ epochs"
     )
+    '''
+    # @ksreenivasan: commenting this for now. I think EP uses it.
     parser.add_argument(
         "--random-subnet",
         action="store_true",
         help="Whether or not to use a random subnet when fine tuning for lottery experiments",
     )
+    '''
     parser.add_argument(
         "-e",
         "--evaluate",
@@ -647,6 +657,14 @@ def parse_arguments():
              "fastest way to use PyTorch for either single node or "
              "multi node data parallel training"
     )
+
+    parser.add_argument(
+        "--random-subnet",
+        action="store_true",
+        default=False,
+        help="Just initializes random subnetwork and then trains"
+    )
+
 #    parser.add_argument(
 #        "--multigpu",
 #        default=None,
