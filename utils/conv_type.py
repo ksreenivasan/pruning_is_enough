@@ -64,9 +64,10 @@ class GetSubnet(autograd.Function):
             out = torch.bernoulli(scores)
             bias_out = torch.bernoulli(bias_scores)
 
-        elif parser_args.algo == 'hc':
-            # add some logic here @liu
+        elif parser_args.algo in ['hc', 'hc_iter']:
             # round scores to {0, 1}
+            scores = torch.gt(scores, torch.ones_like(scores)*parser_args.quantize_threshold).int().float()
+            bias_scores = torch.gt(bias_scores, torch.ones_like(bias_scores)*parser_args.quantize_threshold).int().float()
 
         else:
             print("INVALID PRUNING ALGO")
@@ -151,11 +152,14 @@ class SubnetConv(nn.Conv2d):
             # don't need a mask here. the scores are directly multiplied with weights
             self.scores.data = torch.clamp(self.scores.data, 0.0, 1.0)
             self.scores_bias.data = torch.clamp(self.scores_bias.data, 0.0, 1.0)
-            #pdb.set_trace()
+
             # check if args is quantization/rounding
             # then compute subnet like "else"
-            subnet = self.scores * self.flag.data.float()
-            subnet_bias = self.scores_bias * self.flag_bias.data.float()
+            if parser_args.hc_quantized:
+                subnet, subnet_bias = GetSubnet.apply(self.scores, self.scores_bias, parser_args.threshold)
+            else:
+                subnet = self.scores * self.flag.data.float()
+                subnet_bias = self.scores_bias * self.flag_bias.data.float()
 
         else:
             subnet, subnet_bias = GetSubnet.apply(self.scores.abs(), self.scores_bias.abs(), parser_args.prune_rate)
