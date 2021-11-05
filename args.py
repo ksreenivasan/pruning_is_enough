@@ -184,7 +184,7 @@ def parse_arguments():
     parser.add_argument(
         "--iter_period", 
         type=int, 
-        default=20,
+        default=2000,
         help="period [epochs] for iterative pruning"
     )
     parser.add_argument(

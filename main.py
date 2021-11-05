@@ -221,6 +221,7 @@ def get_idty_str(parser_args):
     model_str = parser_args.arch
     algo_str = parser_args.algo
     period_str = parser_args.iter_period
+    hc_period_str = parser_args.hc_period
     reg_str = 'reg_{}'.format(parser_args.regularization)
     reg_lmbda = parser_args.lmbda if parser_args.regularization else ''
     opt_str = parser_args.optimizer
@@ -233,8 +234,8 @@ def get_idty_str(parser_args):
     s_str = parser_args.score_init
     width_str = parser_args.width
     seed_str = parser_args.seed + parser_args.trial_num - 1
-    idty_str = "{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_fan_{}_{}_{}_width_{}_seed_{}".\
-        format(train_mode_str, dataset_str, model_str, algo_str, period_str, reg_str, reg_lmbda,
+    idty_str = "{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_fan_{}_{}_{}_width_{}_seed_{}".\
+        format(train_mode_str, dataset_str, model_str, algo_str, period_str, hc_period_str, reg_str, reg_lmbda,
         opt_str, policy_str, lr_str, lr_gamma, lr_adj, fan_str, w_str, s_str,
         width_str, seed_str).replace(".", "_")
 
@@ -576,9 +577,9 @@ def main_worker(gpu, ngpus_per_node):
         train_time.update((time.time() - start_train) / 60)
 
         # apply round for every T_{round} epochs (after E warm-up epoch)
-        # if parser_args.algo in ['hc', 'hc_iter'] and epoch >= parser_args.hc_warmup and epoch % parser_args.hc_period == 0:
-        #     print('Apply rounding: {}'.format(parser_args.round))
-        #     model = round_model(model, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio, rank=parser_args.gpu)
+        if parser_args.algo in ['hc', 'hc_iter'] and epoch >= parser_args.hc_warmup and epoch % parser_args.hc_period == 0 and epoch > 0:
+            print('Apply rounding to the score: {}'.format(parser_args.round))
+            model = round_model(model, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio, rank=parser_args.gpu)
 
         # evaluate on validation set
         start_validation = time.time()
