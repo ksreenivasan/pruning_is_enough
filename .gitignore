@@ -145,3 +145,4 @@ results/
 model_checkpoints/
 plots/
 runs/
+*.pt

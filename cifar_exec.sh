@@ -14,10 +14,6 @@
 #     --config configs/hypercube/resnet20/resnet20_random_subnet.yaml > kartik_log 2>&1
 # python main.py --config configs/hypercube/resnet20/resnet20_random_subnet.yaml
 #python main.py --config configs/hypercube/resnet20/resnet20_wt.yml
-python main.py --config configs/hypercube/resnet20/tmp8.yml
-python main.py --config configs/hypercube/resnet20/tmp7.yml
-python main.py --config configs/hypercube/resnet20/tmp9.yml
-python main.py --config configs/hypercube/resnet20/tmp12.yml
 
 
 #### Conv4
