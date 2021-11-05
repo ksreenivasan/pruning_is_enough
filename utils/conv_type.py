@@ -28,9 +28,9 @@ class GetSubnet(autograd.Function):
                 max_score = bias_scores.max().item()
                 bias_scores = (bias_scores - min_score)/(max_score - min_score)
 
-            ## sample using scores as probability
-            ## by default the probabilities are too small. artificially
-            ## pushing them towards 1 helps!
+            # sample using scores as probability
+            # by default the probabilities are too small. artificially
+            # pushing them towards 1 helps!
             MULTIPLIER = 10
             scores = torch.clamp(MULTIPLIER*scores, 0, 1)
             bias_scores = torch.clamp(MULTIPLIER*bias_scores, 0, 1)
@@ -66,8 +66,10 @@ class GetSubnet(autograd.Function):
 
         elif parser_args.algo in ['hc', 'hc_iter']:
             # round scores to {0, 1}
-            scores = torch.gt(scores, torch.ones_like(scores)*parser_args.quantize_threshold).int().float()
-            bias_scores = torch.gt(bias_scores, torch.ones_like(bias_scores)*parser_args.quantize_threshold).int().float()
+            # NOTE: doing this EP style where the scores are unchanged, but mask is computed
+            # can also try a variant where we actually round the scores
+            out = torch.gt(scores, torch.ones_like(scores)*parser_args.quantize_threshold).int().float()
+            bias_out = torch.gt(bias_scores, torch.ones_like(bias_scores)*parser_args.quantize_threshold).int().float()
 
         else:
             print("INVALID PRUNING ALGO")
@@ -94,7 +96,7 @@ class SubnetConv(nn.Conv2d):
         else:
             # dummy variable just so other things don't break
             self.flag_bias = nn.Parameter(torch.Tensor(1))#.long())#.cuda()
-        
+
         # initialize the scores
         self.scores = nn.Parameter(torch.Tensor(self.weight.size()))
         if parser_args.bias:
@@ -126,7 +128,7 @@ class SubnetConv(nn.Conv2d):
                 self.scores.data = m.sample()
                 m = Beta(torch.ones_like(self.scores_bias.data)*alpha, torch.ones_like(self.scores_bias.data)*beta)
                 self.scores_bias.data = m.sample()
-            #print(self.scores.data)
+                # print(self.scores.data)
         else:
             nn.init.kaiming_uniform_(self.scores, a=math.sqrt(5))
             nn.init.uniform_(self.scores_bias, a=-1.0, b=1.0) # can't do kaiming here. picking U[-1, 1] for no real reason
@@ -157,6 +159,8 @@ class SubnetConv(nn.Conv2d):
             # then compute subnet like "else"
             if parser_args.hc_quantized:
                 subnet, subnet_bias = GetSubnet.apply(self.scores, self.scores_bias, parser_args.prune_rate)
+                subnet = subnet * self.flag.data.float()
+                subnet_bias = subnet * self.flag_bias.data.float()
             else:
                 subnet = self.scores * self.flag.data.float()
                 subnet_bias = self.scores_bias * self.flag_bias.data.float()
