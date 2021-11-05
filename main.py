@@ -576,6 +576,7 @@ def main_worker(gpu, ngpus_per_node):
         )
         train_time.update((time.time() - start_train) / 60)
 
+        #pdb.set_trace()
         # apply round for every T_{round} epochs (after E warm-up epoch)
         if parser_args.algo in ['hc', 'hc_iter'] and epoch >= parser_args.hc_warmup and epoch % parser_args.hc_period == 0 and epoch > 0:
             print('Apply rounding to the score: {}'.format(parser_args.round))

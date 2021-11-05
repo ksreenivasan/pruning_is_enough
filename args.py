@@ -238,7 +238,7 @@ def parse_arguments():
     )
     parser.add_argument(
         "--hc-warmup",
-        default=9999,
+        default=0,
         type=int,
         help="warmup epochs for hypercube"
     )

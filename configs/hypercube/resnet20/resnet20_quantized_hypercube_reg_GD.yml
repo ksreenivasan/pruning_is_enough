@@ -3,8 +3,8 @@
 
 # Hypercube optimization
 algo: 'hc_iter'
-iter_period: 25
-hc-period: 10
+iter_period: 50
+hc_period: 20
 
 # Architecture
 arch: resnet20
@@ -46,7 +46,7 @@ quantize_threshold: 0.5
 
 # ===== Regularization ===== #
 regularization: var_red_2 # var_red_2
-lmbda: 0.01 # 0.01 #0.0001 #0.000001
+lmbda: 0.0001  # 0.01 # 0.01 #0.0001 #0.000001
 
 
 # ===== Hardware setup ===== #
