@@ -1,4 +1,4 @@
-#export cuda_visible_devices=2
+#export cuda_visible_devices=3
 
 #### ResNet-18
 #python main.py --config configs/hypercube/resnet18/resnet18_sc_hypercube_reg.yml # 93.17% at 150 epoch
@@ -10,8 +10,9 @@
 
 
 ### ResNet-20
-python main.py \
-    --config configs/hypercube/resnet20/resnet20_random_subnet.yaml > kartik_log 2>&1
+#python main.py \
+#    --config configs/hypercube/resnet20/resnet20_random_subnet.yaml > kartik_log 2>&1
+python main.py --config configs/hypercube/resnet20/resnet20_sc_hypercube_reg_GD.yml
 #python main.py --config configs/hypercube/resnet20/resnet20_wt.yml
 
 
