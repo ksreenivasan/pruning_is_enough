@@ -1,4 +1,4 @@
-export cuda_visible_devices=1
+export cuda_visible_devices=2
 
 ####################### Basic schemes
 
