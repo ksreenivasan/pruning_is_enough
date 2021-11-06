@@ -17,7 +17,7 @@ lr: 0.01 #0.01
 lr_policy: cosine_lr
 
 # ===== Network training config ===== #
-epochs: 2
+epochs: 150
 weight_decay: 0.0001
 momentum: 0.9
 batch_size: 128
@@ -26,7 +26,7 @@ batch_size: 128
 conv_type: SubnetConv
 bn_type: NonAffineBatchNorm
 freeze_weights: False
-prune_rate: 0.05
+prune_rate: 0.027
 init: signed_constant
 score_init: skew #unif #half #bimodal #skew # bern
 scale_fan: False #True
@@ -45,5 +45,5 @@ lmbda: 0.01 # 0.01 #0.0001 #0.000001
 
 # ===== Hardware setup ===== #
 workers: 4
-gpu: 2
+gpu: 3
 

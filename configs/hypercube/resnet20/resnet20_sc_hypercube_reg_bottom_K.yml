@@ -11,7 +11,7 @@ name: resnet20_cifar10_sc_hypercube_reg_bottom_K
 
 # ===== Learning Rate Policy ======== #
 optimizer: adam
-lr: 0.01 #0.01
+lr: 0.05 #0.01
 lr_policy: cosine_lr
 
 # ===== Network training config ===== #
@@ -24,9 +24,10 @@ batch_size: 128
 conv_type: SubnetConv
 bn_type: NonAffineBatchNorm
 freeze_weights: True
+prune_type: BottomK
 prune_rate: 0.2
 init: signed_constant
-score_init: bern #unif #half #bimodal #skew # bern
+score_init: unif #half #bimodal #skew # bern
 scale_fan: False #True
 
 
@@ -38,7 +39,7 @@ noise_ratio: 0
 
 # ===== Regularization ===== #
 regularization: var_red_2 # var_red_2
-lmbda: 0.01 # 0.01 #0.0001 #0.000001
+lmbda: 0.000001 # 0.01 #0.0001 #0.000001
 
 
 # ===== Hardware setup ===== #
