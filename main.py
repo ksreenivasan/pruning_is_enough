@@ -616,8 +616,8 @@ def main_worker(gpu, ngpus_per_node):
                 idty_str = get_idty_str(parser_args)
                 ckpt_root = 'model_checkpoints/ckpts_' + idty_str + '/'
                 if not os.path.isdir(result_root):
-                    os.mkdir(result_root)
-                model_filename = ckpt_root  + "hc_ckpt_at_sparsity_{}.pt".format(int(avg_sparsity))
+                    os.mkdir(ckpt_root)
+                model_filename = ckpt_root + "hc_ckpt_at_sparsity_{}.pt".format(int(avg_sparsity))
                 print("Checkpointing model to {}".format(model_filename))
                 torch.save(model.state_dict(), model_filename)
 
