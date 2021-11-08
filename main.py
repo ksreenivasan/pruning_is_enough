@@ -607,6 +607,19 @@ def main_worker(gpu, ngpus_per_node):
         # prune the model every T_{prune} epochs
         if parser_args.algo == 'hc_iter' and epoch % (parser_args.iter_period) == 0:
             prune(model)
+            if parser_args.checkpoint_at_prune:
+                # let's see if we can get all sparsity plots with one run
+                # save checkpoints at every pruned model so that we can finetune later
+                # save checkpoint for later debug
+                cp_model = round_model(model, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio, rank=parser_args.gpu)
+                avg_sparsity = get_model_sparsity(cp_model)
+                idty_str = get_idty_str(parser_args)
+                ckpt_root = 'model_checkpoints/ckpts_' + idty_str + '/'
+                if not os.path.isdir(result_root):
+                    os.mkdir(result_root)
+                model_filename = ckpt_root  + "hc_ckpt_at_sparsity_{}.pt".format(int(avg_sparsity))
+                print("Checkpointing model to {}".format(model_filename))
+                torch.save(model.state_dict(), model_filename)
 
         # get model sparsity
         if not parser_args.weight_training:

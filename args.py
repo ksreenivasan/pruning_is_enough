@@ -675,6 +675,12 @@ def parse_arguments():
         type=float,
         help="threhsold to use while quantizing scores in HC",
     )
+    parser.add_argument(
+        "--checkpoint-at-prune",
+        action="store_true",
+        default=False,
+        help="save checkpoints every time we prune"
+    )
 #    parser.add_argument(
 #        "--multigpu",
 #        default=None,
