@@ -19,7 +19,7 @@ BLOCK
 
 # attempt at getting 1.4% sparsity with 80% acc
 python main.py \
-    --config configs/hypercube/resnet20/resnet20_sc_hypercube_reg_bottom_K_periodic_rounding.yml > kartik_log 2>& 1
+    --config configs/hypercube/resnet20/resnet20_sc_hypercube_reg_bottom_K_periodic_rounding.yml > cifar_log 2>& 1
 
 # python main.py --config configs/hypercube/resnet20/resnet20_wt.yml
 

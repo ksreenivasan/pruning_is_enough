@@ -615,7 +615,7 @@ def main_worker(gpu, ngpus_per_node):
                 avg_sparsity = get_model_sparsity(cp_model)
                 idty_str = get_idty_str(parser_args)
                 ckpt_root = 'model_checkpoints/ckpts_' + idty_str + '/'
-                if not os.path.isdir(result_root):
+                if not os.path.isdir(ckpt_root):
                     os.mkdir(ckpt_root)
                 model_filename = ckpt_root + "hc_ckpt_at_sparsity_{}.pt".format(int(avg_sparsity))
                 print("Checkpointing model to {}".format(model_filename))
