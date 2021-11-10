@@ -325,6 +325,9 @@ def main_worker(gpu, ngpus_per_node):
     if parser_args.random_subnet:
         # round the score (in the model itself)
         model = round_model(model, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio, rank=parser_args.gpu)    
+        # NOTE: this part is hard coded
+        model = redraw(model, shuffle=parser_args.shuffle, reinit=parser_args.reinit, chg_mask=parser_args.chg_mask, chg_weight=parser_args.chg_weight)  
+
 
         # switch to weight training mode (turn on the requires_grad for weight/bias, and turn off the requires_grad for other parameters)
         model = switch_to_wt(model)
@@ -384,9 +387,11 @@ def main_worker(gpu, ngpus_per_node):
             end_epoch = time.time()
 
             results_df = pd.DataFrame({'epoch': epoch_list, 'test_acc_before_rounding': test_acc_before_round_list,'test_acc': test_acc_list, 'regularization_loss': reg_loss_list, 'model_sparsity': model_sparsity_list})
-            
-            results_filename = result_root + 'random_subnet_{}.csv'.format(parser_args.prune_rate)
 
+            if parser_args.results_filename:
+                results_filename = parser_args.results_filename
+            else:
+                results_filename = result_root + 'random_subnet_{}.csv'.format(parser_args.prune_rate)
             print("Writing results into: {}".format(results_filename))
             results_df.to_csv(results_filename, index=False)
 
@@ -1072,6 +1077,9 @@ def resume(parser_args, model, optimizer):
 def pretrained(path, model):
     if os.path.isfile(path):
         print("=> loading pretrained weights from '{}'".format(path))
+        model.load_state_dict(torch.load(path, map_location=torch.device("cuda:{}".format(parser_args.gpu))))
+        model.eval()
+        '''
         pretrained = torch.load(path, map_location=torch.device("cuda:0"))["state_dict"]                 #map_location=torch.device("cuda:{}".format(parser_args.multigpu[0])),
 
         model_state_dict = model.state_dict()
@@ -1085,6 +1093,7 @@ def pretrained(path, model):
         }
         model_state_dict.update(pretrained)
         model.load_state_dict(model_state_dict)
+        '''
 
     else:
         print("=> no pretrained weights found at '{}'".format(path))
