@@ -31,7 +31,7 @@ def set_seed(seed):
 set_seed(seed)
 
 # run GD and return results
-def subset_sum(num_samples=10, lmbda=0, lr=0.0001, p_init='uniform', optim_algo='SGD'):
+def subset_sum(num_samples=10, lmbda=0, lr=0.0001, p_init='uniform', optim_algo='Adam'):
     a = torch.zeros(num_samples)
     p = nn.Parameter(torch.Tensor(a.size()))
     a.requires_grad = False
@@ -108,6 +108,7 @@ def get_dist_to_vertex(x):
 
 if __name__ == "__main__":
     avg_error_ratios = []
+    NUM_LMBDAS = 20
     for num_samples in [10, 1e2, 1e3, 1e4, 1e5, 1e6, 1e7]:
         print("Num Samples = {}".format(num_samples))
         error_ratio_list = []
@@ -119,7 +120,7 @@ if __name__ == "__main__":
         converged_flag_list = []
         min_lmbda = 1/(num_samples**math.log(num_samples))
         max_lmbda = 1.0
-        lmbda_range = np.linspace(min_lmbda, max_lmbda, 2, endpoint=True)
+        lmbda_range = np.linspace(min_lmbda, max_lmbda, NUM_LMBDAS, endpoint=True)
 
         for lmbda in lmbda_range:
             num_samples = int(num_samples)
@@ -157,14 +158,14 @@ if __name__ == "__main__":
                                                               title="Num samples={}".format(num_samples))
         results_df[results_df['converged'] == False].plot(ax=ax, x="lambda", y="num_frac", kind="scatter", color='red',
                                                           title="Num samples={}".format(num_samples))
-        plt.savefig("lambda_vs_num_frac_num_samples_{}".format(num_samples),format='pdf', dpi=600, bbox_inches='tight', pad_inches=0.05)
+        plt.savefig("lambda_vs_num_frac_num_samples_{}.pdf".format(num_samples),format='pdf', dpi=600, bbox_inches='tight', pad_inches=0.05)
         # plot for each lambda the distance from the vertex for the minimum
         plt.figure()
         ax = results_df[results_df['converged'] == True].plot(x="lambda", y="dist_to_vertex", kind="scatter", color="blue",
                                                               title="Num samples={}".format(num_samples))
         results_df[results_df['converged'] == False].plot(ax=ax, x="lambda", y="dist_to_vertex", kind="scatter", color="red",
                                                           title="Num samples={}".format(num_samples))
-        plt.savefig("lambda_vs_dist_to_vertex_num_samples_{}".format(num_samples), format='pdf', dpi=600, bbox_inches='tight', pad_inches=0.05)
+        plt.savefig("lambda_vs_dist_to_vertex_num_samples_{}.pdf".format(num_samples), format='pdf', dpi=600, bbox_inches='tight', pad_inches=0.05)
         plt.figure()
         ax = results_df[results_df['converged'] == True].plot(x="lambda", y="error", kind='scatter', color="blue",
                                                               title="Num samples={}".format(num_samples))
@@ -172,4 +173,4 @@ if __name__ == "__main__":
                                                           title="Num samples={}".format(num_samples))
         # plot the minimum error for different lambdas for each number of samples
         results_df.plot(x="lambda", y="min_error", ax=ax)
-        plt.savefig("lambda_vs_error_num_samples_{}".format(num_samples), format='pdf', dpi=600, bbox_inches='tight', pad_inches=0.05)
+        plt.savefig("lambda_vs_error_num_samples_{}.pdf".format(num_samples), format='pdf', dpi=600, bbox_inches='tight', pad_inches=0.05)
