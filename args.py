@@ -681,6 +681,12 @@ def parse_arguments():
         default=False,
         help="save checkpoints every time we prune"
     )
+    parser.add_argument(
+        "--skip-sanity-checks",
+        action="store_true",
+        default=False,
+        help="Enable this to skip sanity checks (save time)"
+    )
 #    parser.add_argument(
 #        "--multigpu",
 #        default=None,

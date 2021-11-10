@@ -52,7 +52,8 @@ def eval_and_print(validate, data_loader, model, criterion, parser_args, writer=
 
     return acc1
 
-def finetune(model, parser_args, data, criterion, old_epoch_list, old_test_acc_before_round_list, old_test_acc_list, old_reg_loss_list, old_model_sparsity_list, result_root, shuffle=False, reinit=False, chg_mask=False, chg_weight=False):
+def finetune(model, parser_args, data, criterion, old_epoch_list, old_test_acc_before_round_list, old_test_acc_list, old_reg_loss_list, old_model_sparsity_list,
+             result_root, shuffle=False, reinit=False, chg_mask=False, chg_weight=False):
 
     epoch_list = copy.deepcopy(old_epoch_list)
     test_acc_before_round_list = copy.deepcopy(old_test_acc_before_round_list)
@@ -70,6 +71,7 @@ def finetune(model, parser_args, data, criterion, old_epoch_list, old_test_acc_b
 
     # set base_setting and evaluate 
     run_base_dir, ckpt_base_dir, log_base_dir, writer, epoch_time, validation_time, train_time, progress_overall = get_settings(parser_args)
+    # TODO: this is hard-coded. Need to change this
     parser_args.optimizer, parser_args.lr, parser_args.wd = 'sgd', 0.01, 0.0001
     optimizer = get_optimizer(parser_args, model)
     train, validate, modifier = get_trainer(parser_args)
@@ -84,15 +86,12 @@ def finetune(model, parser_args, data, criterion, old_epoch_list, old_test_acc_b
     model_sparsity_list.append(avg_sparsity)
     
     end_epoch = time.time()
-    # for epoch in range (E+1, 2*E+1):
-        # train the model weight
-        # save the epoch & test accuracy in the list (add dummy values in other lists)
     for epoch in range(parser_args.epochs, parser_args.epochs*2):
 
         if parser_args.multiprocessing_distributed:
             data.train_loader.sampler.set_epoch(epoch)
-        #lr_policy(epoch, iteration=None)
-        #modifier(parser_args, epoch, model)
+        # lr_policy(epoch, iteration=None)
+        # modifier(parser_args, epoch, model)
         cur_lr = get_lr(optimizer)
         print('epoch: {}, lr: {}'.format(epoch, cur_lr))
 
@@ -125,7 +124,8 @@ def finetune(model, parser_args, data, criterion, old_epoch_list, old_test_acc_b
         writer.add_scalar("test/lr", cur_lr, epoch)
         end_epoch = time.time()
 
-        results_df = pd.DataFrame({'epoch': epoch_list, 'test_acc_before_rounding': test_acc_before_round_list,'test_acc': test_acc_list, 'regularization_loss': reg_loss_list, 'model_sparsity': model_sparsity_list})
+        results_df = pd.DataFrame({'epoch': epoch_list, 'test_acc_before_rounding': test_acc_before_round_list,'test_acc': test_acc_list,
+                                   'regularization_loss': reg_loss_list, 'model_sparsity': model_sparsity_list})
         if not chg_mask and not chg_weight:
             results_filename = result_root + 'acc_and_sparsity.csv'    
         elif chg_mask and shuffle:
@@ -137,13 +137,13 @@ def finetune(model, parser_args, data, criterion, old_epoch_list, old_test_acc_b
         else:
             raise NotImplementedError
 
-
         print("Writing results into: {}".format(results_filename))
         results_df.to_csv(results_filename, index=False)
 
     return model
 
 
+# TODO: This function is not used! Will either delete or repurpose 
 def sanity_check(model, parser_args, data, criterion):
 
     # cp_model = redraw(model, shuffle=True)
@@ -332,7 +332,7 @@ def main():
     print(parser_args)
     set_seed(parser_args.seed + parser_args.trial_num - 1)
 
-#    parser_args.distributed = parser_args.world_size > 1 or parser_args.multiprocessing_distributed
+    # parser_args.distributed = parser_args.world_size > 1 or parser_args.multiprocessing_distributed
     ngpus_per_node = torch.cuda.device_count()
     
     if parser_args.multiprocessing_distributed:
@@ -382,8 +382,8 @@ def main_worker(gpu, ngpus_per_node):
         criterion = nn.CrossEntropyLoss().cuda()
     else:
         criterion = LabelSmoothing(smoothing=parser_args.label_smoothing)
-#        if isinstance(model, nn.parallel.DistributedDataParallel):
-#            model = model.module
+        # if isinstance(model, nn.parallel.DistributedDataParallel):
+        #     model = model.module
     
 
     if parser_args.random_subnet:
@@ -395,6 +395,7 @@ def main_worker(gpu, ngpus_per_node):
 
         # set base_setting and evaluate 
         run_base_dir, ckpt_base_dir, log_base_dir, writer, epoch_time, validation_time, train_time, progress_overall = get_settings(parser_args)
+        # TODO: This is hardcoded. Change this. (Also, can use finetune())
         parser_args.optimizer, parser_args.lr, parser_args.wd = 'sgd', 0.01, 0.0001
         optimizer = get_optimizer(parser_args, model)
         train, validate, modifier = get_trainer(parser_args)
@@ -406,10 +407,7 @@ def main_worker(gpu, ngpus_per_node):
         test_acc_list = []
         reg_loss_list = []
         model_sparsity_list = []
-        
-        # for epoch in range (E+1, 2*E+1):
-            # train the model weight
-            # save the epoch & test accuracy in the list (add dummy values in other lists)
+
         for epoch in range(parser_args.epochs):
 
             if parser_args.multiprocessing_distributed:
@@ -478,7 +476,7 @@ def main_worker(gpu, ngpus_per_node):
 
             model = round_model(model, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio, rank=parser_args.gpu)
             eval_and_print(validate, data.val_loader, model, criterion, parser_args, writer=None, epoch=parser_args.start_epoch, description='final model after rounding')
-            #sanity_check(model, parser_args, data, criterion)
+            # sanity_check(model, parser_args, data, criterion)
 
         for trial in range(parser_args.num_test):
             if parser_args.algo in ['hc']:
@@ -726,15 +724,23 @@ def main_worker(gpu, ngpus_per_node):
         # print out the final acc
         eval_and_print(validate, data.val_loader, cp_model, criterion, parser_args, writer=None, description='final model after finetuning')
 
-        # do the sanity check for shuffled mask/weights, reinit weights
-        cp_model = copy.deepcopy(model)
-        cp_model = finetune(cp_model, parser_args, data, criterion, epoch_list, test_acc_before_round_list, test_acc_list, reg_loss_list, model_sparsity_list, result_root, reinit=True, chg_weight=True)
+        if not parser_args.skip_sanity_checks:
+            print("Beginning Sanity Checks:")
+            # do the sanity check for shuffled mask/weights, reinit weights
+            print("Sanity Check 1: Weight Reinit")
+            cp_model = copy.deepcopy(model)
+            cp_model = finetune(cp_model, parser_args, data, criterion, epoch_list, test_acc_before_round_list, test_acc_list,
+                                reg_loss_list, model_sparsity_list, result_root, reinit=True, chg_weight=True)
 
-        cp_model = copy.deepcopy(model)
-        cp_model = finetune(cp_model, parser_args, data, criterion, epoch_list, test_acc_before_round_list, test_acc_list, reg_loss_list, model_sparsity_list, result_root, shuffle=True, chg_weight=True)
+            print("Sanity Check 2: Weight Reshuffle")
+            cp_model = copy.deepcopy(model)
+            cp_model = finetune(cp_model, parser_args, data, criterion, epoch_list, test_acc_before_round_list, test_acc_list,
+                                reg_loss_list, model_sparsity_list, result_root, shuffle=True, chg_weight=True)
 
-        cp_model = copy.deepcopy(model)
-        cp_model = finetune(cp_model, parser_args, data, criterion, epoch_list, test_acc_before_round_list, test_acc_list, reg_loss_list, model_sparsity_list, result_root, shuffle=True, chg_mask=True)
+            print("Sanity Check 2: Mask Reshuffle")
+            cp_model = copy.deepcopy(model)
+            cp_model = finetune(cp_model, parser_args, data, criterion, epoch_list, test_acc_before_round_list, test_acc_list,
+                                reg_loss_list, model_sparsity_list, result_root, shuffle=True, chg_mask=True)
 
     if parser_args.multiprocessing_distributed:
         cleanup_distributed()
