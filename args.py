@@ -681,6 +681,30 @@ def parse_arguments():
         default=False,
         help="save checkpoints every time we prune"
     )
+    parser.add_argument(
+        "--shuffle",
+        action="store_true",
+        default=False,
+        help="shuffle weights/masks before sanity check"
+    )
+    parser.add_argument(
+        "--reinit",
+        action="store_true",
+        default=False,
+        help="reinit weights/masks before sanity check"
+    )
+    parser.add_argument(
+        "--chg_mask",
+        action="store_true",
+        default=False,
+        help="chg masks before sanity check"
+    )
+    parser.add_argument(
+        "--chg_weight",
+        action="store_true",
+        default=False,
+        help="chg weights before sanity check"
+    )
 #    parser.add_argument(
 #        "--multigpu",
 #        default=None,

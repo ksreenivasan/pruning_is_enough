@@ -18,10 +18,23 @@
 #python main.py \
 #    --config configs/hypercube/resnet20/resnet20_quantized_hypercube_reg.yml #> cifar_run_log 2>&1
 
-python main.py \
-    --config configs/hypercube/resnet20/resnet20_sc_hypercube_reg_bottom_K_periodic_rounding.yml
+
+#python main.py \
+#    --config configs/hypercube/resnet20/resnet20_sc_hypercube_reg_bottom_K_periodic_rounding.yml
 
 
+sp_list=(1 2 3 4 5 6 8 10 13 16 20 26 32 40 51 63 79)
+
+for sp in ${sp_list[@]}
+do
+	python main.py \
+   	--config configs/hypercube/resnet20/resnet20_sc_hypercube_reg_bottom_K_periodic_rounding.yml \
+   	--random-subnet \
+   	--pretrained model_checkpoints/resnet20/hc_ckpt_at_sparsity_$sp.pt \
+	--shuffle \
+	--chg_mask \
+   	--results-filename results/finetune_shuffle_mask_$sp.csv
+done
 #python main.py --config configs/hypercube/resnet20/resnet20_wt.yml
 
 
