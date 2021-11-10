@@ -184,7 +184,6 @@ def get_settings(parser_args):
 
 def compare_rounding(validate, data_loader, model, criterion, parser_args, result_root):
 
-
     # generate supermask from naive rounding
     naive_model = round_model(model, 'naive')
     naive_mask, _ = get_mask(naive_model)
