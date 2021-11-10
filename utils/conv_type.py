@@ -92,10 +92,10 @@ class SubnetConv(nn.Conv2d):
         # initialize flag (representing the pruned weights)
         self.flag = nn.Parameter(torch.ones(self.weight.size()))#.long())#.cuda() # 
         if parser_args.bias:
-            self.flag_bias = nn.Parameter(torch.ones(self.bias.size()))#.long())#.cuda()
+            self.bias_flag = nn.Parameter(torch.ones(self.bias.size()))#.long())#.cuda()
         else:
             # dummy variable just so other things don't break
-            self.flag_bias = nn.Parameter(torch.Tensor(1))#.long())#.cuda()
+            self.bias_flag = nn.Parameter(torch.Tensor(1))#.long())#.cuda()
 
         # initialize the scores
         self.scores = nn.Parameter(torch.Tensor(self.weight.size()))
@@ -137,7 +137,7 @@ class SubnetConv(nn.Conv2d):
             # NOTE: turn the gradient on the weights off
             self.weight.requires_grad = False
             self.flag.requires_grad = False
-            self.flag_bias.requires_grad = False
+            self.bias_flag.requires_grad = False
             if parser_args.bias:
                 self.bias.requires_grad = False
 
@@ -159,10 +159,10 @@ class SubnetConv(nn.Conv2d):
             if parser_args.hc_quantized:
                 subnet, subnet_bias = GetSubnet.apply(self.scores, self.bias_scores, parser_args.prune_rate)
                 subnet = subnet * self.flag.data.float()
-                subnet_bias = subnet * self.flag_bias.data.float()
+                subnet_bias = subnet * self.bias_flag.data.float()
             else:
                 subnet = self.scores * self.flag.data.float()
-                subnet_bias = self.bias_scores * self.flag_bias.data.float()
+                subnet_bias = self.bias_scores * self.bias_flag.data.float()
 
         else:
             subnet, bias_subnet = GetSubnet.apply(self.scores.abs(), self.bias_scores.abs(), parser_args.prune_rate)

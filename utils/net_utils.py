@@ -70,8 +70,8 @@ def redraw(model, shuffle=False, reinit=False, chg_mask=False, chg_weight=False)
                 idx = torch.randperm(layer.flag.data.nelement())
                 layer.flag.data = layer.flag.data.view(-1)[idx].view(layer.flag.data.size())
                 if parser_args.bias:
-                    idx = torch.randperm(layer.flag_bias.data.nelement())
-                    layer.flag_bias.data = layer.flag_bias.data.view(-1)[idx].view(layer.flag_bias.data.size())
+                    idx = torch.randperm(layer.bias_flag.data.nelement())
+                    layer.bias_flag.data = layer.bias_flag.data.view(-1)[idx].view(layer.bias_flag.data.size())
 
             if chg_weight:
                 idx = torch.randperm(layer.weight.data.nelement())

@@ -17,6 +17,7 @@ import torch.utils.data.distributed
 import torch.multiprocessing as mp
 
 import sys
+import re
 
 from utils.conv_type import FixedSubnetConv, SampleSubnetConv
 from utils.logging import AverageMeter, ProgressMeter
@@ -66,10 +67,13 @@ def finetune(model, parser_args, data, criterion, old_epoch_list, old_test_acc_b
 
     # switch to weight training mode (turn on the requires_grad for weight/bias, and turn off the requires_grad for other parameters)
     for name, param in model.named_parameters():
-        if 'weight' in name:
+        # make sure param_name ends with .weight
+        if re.match('.*\.weight', name):
             param.requires_grad = True
-        elif parser_args.bias and '.bias' in name:
+        # make sure param_name ends with .bias
+        elif parser_args.bias and re.match('.*\.bias$', name):
             param.requires_grad = True
+        # catch scores, flags etc
         else:
             param.requires_grad = False
 
@@ -295,27 +299,20 @@ def compare_rounding(validate, data_loader, model, criterion, parser_args, resul
     return
 
 def switch_to_wt(model):
-
-    raise NotImplementedError
-
-    print('We switched to weight training')
+    print('Switching to weight training by switching off requires_grad for scores and switching it on for weights.')
 
     for name, params in model.named_parameters():
         print(name)
-        if "weight" in name or ".bias" in name:
+        # make sure param_name ends with .weight or .bias
+        if re.match('.*\.weight', name):
+            params.requires_grad = True
+        elif parser_args.bias and re.match('.*\.bias$', name):
             params.requires_grad = True
         elif "score" in name:
             params.requires_grad = False
             params.data = torch.ones_like(params.data)
-        elif "bias" in name and parser_args.bias:
-            if "score" in name:
-                params.requires_grad = False
-                params.data = torch.ones_like(params.data)
-            elif "flag" in name:
-                params.requires_grad = False
-            else:
-                params.requires_grad = True
         else:
+            # flags and everything else
             params.requires_grad = False
 
     return model
@@ -405,6 +402,7 @@ def main_worker(gpu, ngpus_per_node):
         # round the score (in the model itself)
         model = round_model(model, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio, rank=parser_args.gpu)    
 
+        # KARTIK TODO:
         # switch to weight training mode (turn on the requires_grad for weight/bias, and turn off the requires_grad for other parameters)
         for name, param in model.named_parameters():
             if 'weight' in name:
