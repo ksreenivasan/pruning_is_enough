@@ -66,16 +66,7 @@ def finetune(model, parser_args, data, criterion, old_epoch_list, old_test_acc_b
     model = redraw(model, shuffle=shuffle, reinit=reinit, chg_mask=chg_mask, chg_weight=chg_weight)
 
     # switch to weight training mode (turn on the requires_grad for weight/bias, and turn off the requires_grad for other parameters)
-    for name, param in model.named_parameters():
-        # make sure param_name ends with .weight
-        if re.match('.*\.weight', name):
-            param.requires_grad = True
-        # make sure param_name ends with .bias
-        elif parser_args.bias and re.match('.*\.bias$', name):
-            param.requires_grad = True
-        # catch scores, flags etc
-        else:
-            param.requires_grad = False
+    model = switch_to_wt(model)
 
     # set base_setting and evaluate 
     run_base_dir, ckpt_base_dir, log_base_dir, writer, epoch_time, validation_time, train_time, progress_overall = get_settings(parser_args)
@@ -155,14 +146,10 @@ def finetune(model, parser_args, data, criterion, old_epoch_list, old_test_acc_b
 
 def sanity_check(model, parser_args, data, criterion):
 
-    #cp_model = redraw(model, shuffle=True)
+    # cp_model = redraw(model, shuffle=True)
     cp_model = redraw(model, shuffle=True, mask=True)         # NOTE: uncomment to check the other case
-    #cp_model = copy.deepcopy(model)
-    for name, param in cp_model.named_parameters():
-        if 'weight' in name:
-            param.requires_grad = True
-        else:
-            param.requires_grad = False
+    # cp_model = copy.deepcopy(model)
+    cp_model = switch_to_wt(cp_model)
     optimizer = get_optimizer(parser_args, cp_model)
 
     run_base_dir, ckpt_base_dir, log_base_dir = get_directories(parser_args)
@@ -298,11 +285,12 @@ def compare_rounding(validate, data_loader, model, criterion, parser_args, resul
 
     return
 
+
+# switches off gradients for scores and flags and switches it on for weights and biases
 def switch_to_wt(model):
     print('Switching to weight training by switching off requires_grad for scores and switching it on for weights.')
 
     for name, params in model.named_parameters():
-        print(name)
         # make sure param_name ends with .weight or .bias
         if re.match('.*\.weight', name):
             params.requires_grad = True
@@ -402,15 +390,8 @@ def main_worker(gpu, ngpus_per_node):
         # round the score (in the model itself)
         model = round_model(model, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio, rank=parser_args.gpu)    
 
-        # KARTIK TODO:
         # switch to weight training mode (turn on the requires_grad for weight/bias, and turn off the requires_grad for other parameters)
-        for name, param in model.named_parameters():
-            if 'weight' in name:
-                param.requires_grad = True
-            elif parser_args.bias and '.bias' in name:
-                param.requires_grad = True
-            else:
-                param.requires_grad = False
+        model = switch_to_wt(model)
 
         # set base_setting and evaluate 
         run_base_dir, ckpt_base_dir, log_base_dir, writer, epoch_time, validation_time, train_time, progress_overall = get_settings(parser_args)
@@ -738,10 +719,6 @@ def main_worker(gpu, ngpus_per_node):
         name=parser_args.name,
     )
 
-    # sanity check whether the weight values did not change
-    # for name, params in model.named_parameters():
-    #     if ".weight" in name:
-    #         print(torch.sum(params.data))
     # check the performance of trained model
     if parser_args.algo in ['hc', 'hc_iter']:
         cp_model = copy.deepcopy(model)

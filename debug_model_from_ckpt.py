@@ -28,9 +28,12 @@ yaml_txt = open("configs/hypercube/resnet20/resnet20_quantized_hypercube_reg.yml
 # override args
 loaded_yaml = yaml.load(yaml_txt, Loader=yaml.FullLoader)
 args.__dict__.update(loaded_yaml)
+args.bias = True
 
 model = get_model(args)
 model = set_gpu(args, model)
+
+# model = switch_to_wt(model)
 
 weight_params = []
 bias_params = []
@@ -38,15 +41,16 @@ other_params = []
 for name, param in model.named_parameters():
     # make sure param_name ends with .weight
     if re.match('.*\.weight', name):
-        weight_params.append(name)
+        weight_params.append(param)
         # param.requires_grad = True
     # make sure param_name ends with .bias
     elif args.bias and re.match('.*\.bias$', name):
-        bias_params.append(name)
+        bias_params.append(param)
         # param.requires_grad = True
     else:
-        other_params.append(name)
+        other_params.append(param)
         # param.requires_grad = False
+
 
 # ckpt = torch.load("kartik_ep_final_model.pt")
 # model.load_state_dict(ckpt)
