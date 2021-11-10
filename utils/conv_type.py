@@ -28,9 +28,9 @@ class GetSubnet(autograd.Function):
                 max_score = bias_scores.max().item()
                 bias_scores = (bias_scores - min_score)/(max_score - min_score)
 
-            ## sample using scores as probability
-            ## by default the probabilities are too small. artificially
-            ## pushing them towards 1 helps!
+            # sample using scores as probability
+            # by default the probabilities are too small. artificially
+            # pushing them towards 1 helps!
             MULTIPLIER = 10
             scores = torch.clamp(MULTIPLIER*scores, 0, 1)
             bias_scores = torch.clamp(MULTIPLIER*bias_scores, 0, 1)
@@ -63,6 +63,13 @@ class GetSubnet(autograd.Function):
             bias_scores = torch.clamp(MULTIPLIER*bias_scores, 0, 1)
             out = torch.bernoulli(scores)
             bias_out = torch.bernoulli(bias_scores)
+
+        elif parser_args.algo in ['hc', 'hc_iter']:
+            # round scores to {0, 1}
+            # NOTE: doing this EP style where the scores are unchanged, but mask is computed
+            # can also try a variant where we actually round the scores
+            out = torch.gt(scores, torch.ones_like(scores)*parser_args.quantize_threshold).int().float()
+            bias_out = torch.gt(bias_scores, torch.ones_like(bias_scores)*parser_args.quantize_threshold).int().float()
 
         else:
             print("INVALID PRUNING ALGO")
@@ -121,7 +128,6 @@ class SubnetConv(nn.Conv2d):
                 self.scores.data = m.sample()
                 m = Beta(torch.ones_like(self.bias_scores.data)*alpha, torch.ones_like(self.bias_scores.data)*beta)
                 self.bias_scores.data = m.sample()
-            # print(self.scores.data)
         else:
             nn.init.kaiming_uniform_(self.scores, a=math.sqrt(5))
             nn.init.uniform_(self.bias_scores, a=-1.0, b=1.0) # can't do kaiming here. picking U[-1, 1] for no real reason
@@ -147,8 +153,16 @@ class SubnetConv(nn.Conv2d):
             # don't need a mask here. the scores are directly multiplied with weights
             self.scores.data = torch.clamp(self.scores.data, 0.0, 1.0)
             self.bias_scores.data = torch.clamp(self.bias_scores.data, 0.0, 1.0)
-            subnet = self.scores * self.flag.data.float()
-            bias_subnet = self.bias_scores * self.flag_bias.data.float()
+
+            # check if args is quantization/rounding
+            # then compute subnet like "else"
+            if parser_args.hc_quantized:
+                subnet, subnet_bias = GetSubnet.apply(self.scores, self.bias_scores, parser_args.prune_rate)
+                subnet = subnet * self.flag.data.float()
+                subnet_bias = subnet * self.flag_bias.data.float()
+            else:
+                subnet = self.scores * self.flag.data.float()
+                subnet_bias = self.bias_scores * self.flag_bias.data.float()
 
         else:
             subnet, bias_subnet = GetSubnet.apply(self.scores.abs(), self.bias_scores.abs(), parser_args.prune_rate)
