@@ -656,9 +656,13 @@ def main_worker(gpu, ngpus_per_node):
     # check the performance of trained model
     if parser_args.algo in ['hc', 'hc_iter']:
         cp_model = copy.deepcopy(model)
-        cp_model = finetune(cp_model, parser_args, data, criterion, epoch_list, test_acc_before_round_list, test_acc_list, reg_loss_list, model_sparsity_list, result_root)
-        # print out the final acc
-        eval_and_print(validate, data.val_loader, cp_model, criterion, parser_args, writer=None, description='final model after finetuning')
+        if not parser_args.skip_fine_tune:
+            print("Beginning fine-tuning")
+            cp_model = finetune(cp_model, parser_args, data, criterion, epoch_list, test_acc_before_round_list, test_acc_list, reg_loss_list, model_sparsity_list, result_root)
+            # print out the final acc
+            eval_and_print(validate, data.val_loader, cp_model, criterion, parser_args, writer=None, description='final model after finetuning')
+        else:
+            print("Skipping finetuning!!!")
 
         if not parser_args.skip_sanity_checks:
             print("Beginning Sanity Checks:")
@@ -677,6 +681,8 @@ def main_worker(gpu, ngpus_per_node):
             cp_model = copy.deepcopy(model)
             cp_model = finetune(cp_model, parser_args, data, criterion, epoch_list, test_acc_before_round_list, test_acc_list,
                                 reg_loss_list, model_sparsity_list, result_root, shuffle=True, chg_mask=True)
+        else:
+            print("Skipping sanity checks!!!")
 
     if parser_args.multiprocessing_distributed:
         cleanup_distributed()

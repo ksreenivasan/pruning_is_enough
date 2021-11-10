@@ -687,6 +687,18 @@ def parse_arguments():
         default=False,
         help="Enable this to skip sanity checks (save time)"
     )
+    parser.add_argument(
+        "--skip-sanity-checks",
+        action="store_true",
+        default=False,
+        help="Enable this to skip sanity checks (save time)"
+    )
+    parser.add_argument(
+        "--skip-fine-tune",
+        action="store_true",
+        default=False,
+        help="Enable this to skip fine tuning (get pure pruned network)"
+    )
 #    parser.add_argument(
 #        "--multigpu",
 #        default=None,
