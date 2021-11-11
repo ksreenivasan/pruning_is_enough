@@ -108,8 +108,9 @@ def get_dist_to_vertex(x):
 
 if __name__ == "__main__":
     avg_error_ratios = []
-    NUM_LMBDAS = 20
-    for num_samples in [10, 1e2, 1e3, 1e4, 1e5, 1e6, 1e7]:
+    NUM_LMBDAS = 10
+    NUM_RANGE = [10, 1e2, 1e3]
+    for num_samples in NUM_RANGE:
         print("Num Samples = {}".format(num_samples))
         error_ratio_list = []
         min_error_list = []
@@ -158,14 +159,14 @@ if __name__ == "__main__":
                                                               title="Num samples={}".format(num_samples))
         results_df[results_df['converged'] == False].plot(ax=ax, x="lambda", y="num_frac", kind="scatter", color='red',
                                                           title="Num samples={}".format(num_samples))
-        plt.savefig("lambda_vs_num_frac_num_samples_{}.pdf".format(num_samples),format='pdf', dpi=600, bbox_inches='tight', pad_inches=0.05)
+        plt.savefig("results/lambda_vs_num_frac_num_samples_{}.pdf".format(num_samples),format='pdf', dpi=600, bbox_inches='tight', pad_inches=0.05)
         # plot for each lambda the distance from the vertex for the minimum
         plt.figure()
         ax = results_df[results_df['converged'] == True].plot(x="lambda", y="dist_to_vertex", kind="scatter", color="blue",
                                                               title="Num samples={}".format(num_samples))
         results_df[results_df['converged'] == False].plot(ax=ax, x="lambda", y="dist_to_vertex", kind="scatter", color="red",
                                                           title="Num samples={}".format(num_samples))
-        plt.savefig("lambda_vs_dist_to_vertex_num_samples_{}.pdf".format(num_samples), format='pdf', dpi=600, bbox_inches='tight', pad_inches=0.05)
+        plt.savefig("results/lambda_vs_dist_to_vertex_num_samples_{}.pdf".format(num_samples), format='pdf', dpi=600, bbox_inches='tight', pad_inches=0.05)
         plt.figure()
         ax = results_df[results_df['converged'] == True].plot(x="lambda", y="error", kind='scatter', color="blue",
                                                               title="Num samples={}".format(num_samples))
@@ -173,4 +174,4 @@ if __name__ == "__main__":
                                                           title="Num samples={}".format(num_samples))
         # plot the minimum error for different lambdas for each number of samples
         results_df.plot(x="lambda", y="min_error", ax=ax)
-        plt.savefig("lambda_vs_error_num_samples_{}.pdf".format(num_samples), format='pdf', dpi=600, bbox_inches='tight', pad_inches=0.05)
+        plt.savefig("results/lambda_vs_error_num_samples_{}.pdf".format(num_samples), format='pdf', dpi=600, bbox_inches='tight', pad_inches=0.05)
