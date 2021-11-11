@@ -15,7 +15,7 @@ lr_policy: multistep_lr #cosine_lr
 
 # ===== Network training config ===== #
 epochs: 150  #300
-weight_decay: 0.0001 # 0
+wd: 0.0001 # 0
 momentum: 0.9
 batch_size: 128
 bias: True 

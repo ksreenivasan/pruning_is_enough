@@ -71,9 +71,8 @@ def finetune(model, parser_args, data, criterion, old_epoch_list, old_test_acc_b
 
     # set base_setting and evaluate 
     run_base_dir, ckpt_base_dir, log_base_dir, writer, epoch_time, validation_time, train_time, progress_overall = get_settings(parser_args)
-    # TODO: this is hard-coded. Need to change this
-    parser_args.optimizer, parser_args.lr, parser_args.wd = 'sgd', 0.01, 0.0001
-    optimizer = get_optimizer(parser_args, model)
+    
+    optimizer = get_optimizer(parser_args, model, finetune_flag=True)
     train, validate, modifier = get_trainer(parser_args)
 
     # check the performance of loaded model (after rounding)
@@ -1150,7 +1149,6 @@ def get_model(parser_args):
 
 
 def get_optimizer(optimizer_args, model, finetune_flag=False):
-    # TODO: figure out where weight_decay is coming from!
     for n, v in model.named_parameters():
         if v.requires_grad:
             print("<DEBUG> gradient to", n)
@@ -1174,19 +1172,19 @@ def get_optimizer(optimizer_args, model, finetune_flag=False):
             [
                 {
                     "params": bn_params,
-                    "weight_decay": 0 if optimizer_args.no_bn_decay else optimizer_args.weight_decay,
+                    "weight_decay": 0 if optimizer_args.no_bn_decay else opt_wd,
                 },
-                {"params": rest_params, "weight_decay": optimizer_args.weight_decay},
+                {"params": rest_params, "weight_decay": opt_wd},
             ],
-            optimizer_args.lr,
+            opt_lr,
             momentum=optimizer_args.momentum,
-            weight_decay=optimizer_args.weight_decay,
+            weight_decay=opt_wd,
             nesterov=optimizer_args.nesterov,
         )
     elif opt_algo == "adam":
         optimizer = torch.optim.Adam(
-            filter(lambda p: p.requires_grad, model.parameters()), lr=optimizer_args.lr,
-            weight_decay=optimizer_args.weight_decay
+            filter(lambda p: p.requires_grad, model.parameters()), lr=opt_lr,
+            weight_decay=opt_wd
         )
 
     return optimizer
