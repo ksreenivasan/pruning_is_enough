@@ -92,7 +92,6 @@ def parse_arguments():
         metavar="LR",
         help="Learning rate (default: 0.001)"
     )
-
     parser.add_argument(
         "--lr-policy",
         type=str,
@@ -716,6 +715,26 @@ def parse_arguments():
         action="store_true",
         default=False,
         help="chg weights before sanity check"
+    )
+    parser.add_argument(
+        "--fine-tune-optimizer",
+        type=str,
+        default='sgd',
+        help="optimizer option to use |sgd|adam| for fine-tuning weights"
+    )
+    parser.add_argument(
+        "--fine-tune-lr",
+        type=float,
+        default=0.01,
+        metavar="LR",
+        help="Learning rate for fine-tuning weights"
+    )
+    parser.add_argument(
+        "--fine-tune-wd",
+        type=float,
+        default=0.0001,
+        metavar="WD",
+        help="Weight decay for fine-tuning weights"
     )
 #    parser.add_argument(
 #        "--multigpu",

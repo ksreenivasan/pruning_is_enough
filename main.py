@@ -325,18 +325,18 @@ def main_worker(gpu, ngpus_per_node):
     if parser_args.random_subnet:
         # round the score (in the model itself)
         model = round_model(model, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio, rank=parser_args.gpu)    
+        
+        # TODO: CHANGE THIS BACK once the finetune from checkpoints code is fixed
         # NOTE: this part is hard coded
         model = redraw(model, shuffle=parser_args.shuffle, reinit=parser_args.reinit, chg_mask=parser_args.chg_mask, chg_weight=parser_args.chg_weight)  
-
 
         # switch to weight training mode (turn on the requires_grad for weight/bias, and turn off the requires_grad for other parameters)
         model = switch_to_wt(model)
 
         # set base_setting and evaluate 
         run_base_dir, ckpt_base_dir, log_base_dir, writer, epoch_time, validation_time, train_time, progress_overall = get_settings(parser_args)
-        # TODO: This is hardcoded. Change this. (Also, can use finetune())
-        parser_args.optimizer, parser_args.lr, parser_args.wd = 'sgd', 0.01, 0.0001
-        optimizer = get_optimizer(parser_args, model)
+        # TODO: Change this to use finetune() (I think this is possible)
+        optimizer = get_optimizer(parser_args, model, finetune_flag=True)
         train, validate, modifier = get_trainer(parser_args)
 
         # check the performance of loaded model (after rounding)
@@ -1149,7 +1149,8 @@ def get_model(parser_args):
     return model
 
 
-def get_optimizer(parser_args, model):
+def get_optimizer(optimizer_args, model, finetune_flag=False):
+    # TODO: figure out where weight_decay is coming from!
     for n, v in model.named_parameters():
         if v.requires_grad:
             print("<DEBUG> gradient to", n)
@@ -1157,7 +1158,15 @@ def get_optimizer(parser_args, model):
         if not v.requires_grad:
             print("<DEBUG> no gradient to", n)
 
-    if parser_args.optimizer == "sgd":
+    if finetune_flag:
+        opt_algo = optimizer_args.fine_tune_optimizer
+        opt_lr = optimizer_args.fine_tune_lr
+        opt_wd = optimizer_args.fine_tune_wd
+    else:
+        opt_algo = optimizer_args.optimizer
+        opt_lr = optimizer_args.lr
+        opt_wd = optimizer_args.wd
+    if opt_algo == "sgd":
         parameters = list(model.named_parameters())
         bn_params = [v for n, v in parameters if ("bn" in n) and v.requires_grad]
         rest_params = [v for n, v in parameters if ("bn" not in n) and v.requires_grad]
@@ -1165,19 +1174,19 @@ def get_optimizer(parser_args, model):
             [
                 {
                     "params": bn_params,
-                    "weight_decay": 0 if parser_args.no_bn_decay else parser_args.weight_decay,
+                    "weight_decay": 0 if optimizer_args.no_bn_decay else optimizer_args.weight_decay,
                 },
-                {"params": rest_params, "weight_decay": parser_args.weight_decay},
+                {"params": rest_params, "weight_decay": optimizer_args.weight_decay},
             ],
-            parser_args.lr,
-            momentum=parser_args.momentum,
-            weight_decay=parser_args.weight_decay,
-            nesterov=parser_args.nesterov,
+            optimizer_args.lr,
+            momentum=optimizer_args.momentum,
+            weight_decay=optimizer_args.weight_decay,
+            nesterov=optimizer_args.nesterov,
         )
-    elif parser_args.optimizer == "adam":
+    elif opt_algo == "adam":
         optimizer = torch.optim.Adam(
-            filter(lambda p: p.requires_grad, model.parameters()), lr=parser_args.lr,
-            weight_decay=parser_args.weight_decay
+            filter(lambda p: p.requires_grad, model.parameters()), lr=optimizer_args.lr,
+            weight_decay=optimizer_args.weight_decay
         )
 
     return optimizer
