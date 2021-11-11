@@ -27,7 +27,7 @@ def parse_arguments():
     )
     parser.add_argument(
         "--config",
-        default='configs/hypercube/conv4/conv4_kn_ep.yml',
+        default='configs/hypercube/resnet20/resnet20_quantized_hypercube_reg.yml',
         help="Config file to use"
     )
     parser.add_argument(
@@ -674,6 +674,36 @@ def parse_arguments():
         default=0.5,
         type=float,
         help="threhsold to use while quantizing scores in HC",
+    )
+    parser.add_argument(
+        "--checkpoint-at-prune",
+        action="store_true",
+        default=False,
+        help="save checkpoints every time we prune"
+    )
+    parser.add_argument(
+        "--shuffle",
+        action="store_true",
+        default=False,
+        help="shuffle weights/masks before sanity check"
+    )
+    parser.add_argument(
+        "--reinit",
+        action="store_true",
+        default=False,
+        help="reinit weights/masks before sanity check"
+    )
+    parser.add_argument(
+        "--chg_mask",
+        action="store_true",
+        default=False,
+        help="chg masks before sanity check"
+    )
+    parser.add_argument(
+        "--chg_weight",
+        action="store_true",
+        default=False,
+        help="chg weights before sanity check"
     )
 #    parser.add_argument(
 #        "--multigpu",

@@ -404,6 +404,9 @@ def main_worker(gpu, ngpus_per_node):
     if parser_args.random_subnet:
         # round the score (in the model itself)
         model = round_model(model, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio, rank=parser_args.gpu)    
+        # NOTE: this part is hard coded
+        model = redraw(model, shuffle=parser_args.shuffle, reinit=parser_args.reinit, chg_mask=parser_args.chg_mask, chg_weight=parser_args.chg_weight)  
+
 
         # switch to weight training mode (turn on the requires_grad for weight/bias, and turn off the requires_grad for other parameters)
         for name, param in model.named_parameters():
@@ -471,9 +474,11 @@ def main_worker(gpu, ngpus_per_node):
             end_epoch = time.time()
 
             results_df = pd.DataFrame({'epoch': epoch_list, 'test_acc_before_rounding': test_acc_before_round_list,'test_acc': test_acc_list, 'regularization_loss': reg_loss_list, 'model_sparsity': model_sparsity_list})
-            
-            results_filename = result_root + 'random_subnet_{}.csv'.format(parser_args.prune_rate)
 
+            if parser_args.results_filename:
+                results_filename = parser_args.results_filename
+            else:
+                results_filename = result_root + 'random_subnet_{}.csv'.format(parser_args.prune_rate)
             print("Writing results into: {}".format(results_filename))
             results_df.to_csv(results_filename, index=False)
 
@@ -607,6 +612,19 @@ def main_worker(gpu, ngpus_per_node):
         # prune the model every T_{prune} epochs
         if parser_args.algo == 'hc_iter' and epoch % (parser_args.iter_period) == 0:
             prune(model)
+            if parser_args.checkpoint_at_prune:
+                # let's see if we can get all sparsity plots with one run
+                # save checkpoints at every pruned model so that we can finetune later
+                # save checkpoint for later debug
+                cp_model = round_model(model, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio, rank=parser_args.gpu)
+                avg_sparsity = get_model_sparsity(cp_model)
+                idty_str = get_idty_str(parser_args)
+                ckpt_root = 'model_checkpoints/ckpts_' + idty_str + '/'
+                if not os.path.isdir(ckpt_root):
+                    os.mkdir(ckpt_root)
+                model_filename = ckpt_root + "hc_ckpt_at_sparsity_{}.pt".format(int(avg_sparsity))
+                print("Checkpointing model to {}".format(model_filename))
+                torch.save(model.state_dict(), model_filename)
 
         # get model sparsity
         if not parser_args.weight_training:
@@ -1136,6 +1154,9 @@ def resume(parser_args, model, optimizer):
 def pretrained(path, model):
     if os.path.isfile(path):
         print("=> loading pretrained weights from '{}'".format(path))
+        model.load_state_dict(torch.load(path, map_location=torch.device("cuda:{}".format(parser_args.gpu))))
+        model.eval()
+        '''
         pretrained = torch.load(path, map_location=torch.device("cuda:0"))["state_dict"]                 #map_location=torch.device("cuda:{}".format(parser_args.multigpu[0])),
 
         model_state_dict = model.state_dict()
@@ -1149,6 +1170,7 @@ def pretrained(path, model):
         }
         model_state_dict.update(pretrained)
         model.load_state_dict(model_state_dict)
+        '''
 
     else:
         print("=> no pretrained weights found at '{}'".format(path))
