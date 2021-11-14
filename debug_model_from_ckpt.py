@@ -3,42 +3,14 @@
  and then reads a model from a checkpoint so that we can inspect it.
  Sometimes this is preferable to throwing in an ipdb.set_trace() debug point.
 
- Note that this WILL NOT work out of the box. I wrote this for Edge-Popup
- and therefore imports certain pieces that do not exist in our codebase.
-
+ Note that this won't do what you want out of the box. I've been hacking
+ it together to do whatever I want.
  But I'm still putting it in here since it should be quite easy to modify
  and use.
 
  As a courtesy to others, if you were to make a change/addition that may
  be useful to others, please add a few comments and push the code.
 """
-
-
-import os
-import pathlib
-import random
-import time
-
-from torch.utils.tensorboard import SummaryWriter
-import torch
-import torch.nn as nn
-import torch.nn.parallel
-import torch.backends.cudnn as cudnn
-import torch.optim
-import torch.utils.data
-import torch.utils.data.distributed
-
-from utils.conv_type import FixedSubnetConv, SampleSubnetConv
-from utils.logging import AverageMeter, ProgressMeter
-from utils.net_utils import (
-    set_model_prune_rate,
-    freeze_model_weights,
-    save_checkpoint,
-    get_lr,
-    LabelSmoothing,
-)
-from utils.schedulers import get_policy
-
 
 from args import *
 import importlib
@@ -47,21 +19,41 @@ import data
 import models
 
 from main import *
-from utils.conv_type import GetSubnet as GetSubnetConv
+from utils.conv_type import GetSubnet
+
+import re
 
 # load this guy: resnet18-sc-unsigned.yaml
-yaml_txt = open("configs/smallscale/resnet18/resnet18-sc-unsigned.yaml").read()
+yaml_txt = open("configs/hypercube/resnet20/resnet20_quantized_hypercube_reg.yml").read()
 # override args
 loaded_yaml = yaml.load(yaml_txt, Loader=yaml.FullLoader)
 args.__dict__.update(loaded_yaml)
-# this is EP. no bias
-args.bias=False
+args.bias = True
 
 model = get_model(args)
 model = set_gpu(args, model)
 
-ckpt = torch.load("kartik_ep_final_model.pt")
-model.load_state_dict(ckpt)
+# model = switch_to_wt(model)
+
+weight_params = []
+bias_params = []
+other_params = []
+for name, param in model.named_parameters():
+    # make sure param_name ends with .weight
+    if re.match('.*\.weight', name):
+        weight_params.append(param)
+        # param.requires_grad = True
+    # make sure param_name ends with .bias
+    elif args.bias and re.match('.*\.bias$', name):
+        bias_params.append(param)
+        # param.requires_grad = True
+    else:
+        other_params.append(param)
+        # param.requires_grad = False
+
+
+# ckpt = torch.load("kartik_ep_final_model.pt")
+# model.load_state_dict(ckpt)
 
 # arch == 'cResNet18':
 def get_layers(model):
@@ -78,7 +70,7 @@ def get_layers(model):
 
 # get layer sparsity
 def get_layer_sparsity(layer, threshold=0):
-    weight_mask= GetSubnetConv.apply(layer.scores.abs(), args.prune_rate)
+    weight_mask= GetSubnet.apply(layer.scores.abs(), args.prune_rate)
     w_numer, w_denom = weight_mask.sum().item(), weight_mask.flatten().numel()
     b_numer, b_denom = 0, 0
     return w_numer, w_denom, b_numer, b_denom

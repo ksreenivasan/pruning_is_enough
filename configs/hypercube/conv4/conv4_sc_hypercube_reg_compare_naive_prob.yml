@@ -20,7 +20,7 @@ lr: 0.01 #0.01
 
 # ===== Network training config ===== #
 epochs: 150
-weight_decay: 0.0 #0.0001
+wd: 0.0 #0.0001
 momentum: 0.9
 batch_size: 128
 
