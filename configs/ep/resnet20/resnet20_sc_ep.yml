@@ -1,0 +1,33 @@
+algo: 'ep'
+
+# Architecture
+arch: resnet20
+
+# ===== Dataset ===== #
+dataset: CIFAR10
+name: resnet20_cifar10_sc
+
+# ===== Learning Rate Policy ======== #
+optimizer: sgd
+lr: 0.1
+lr_policy: cosine_lr
+
+# ===== Network training config ===== #
+epochs: 150 #150
+weight_decay: 0.0005
+momentum: 0.9
+batch_size: 256
+
+# ===== Sparsity =========== #
+conv_type: SubnetConv
+bn_type: NonAffineBatchNorm
+init: signed_constant
+mode: fan_in
+nonlinearity: relu
+#prune_rate: 0.5
+scale_fan: True
+freeze_weights: True
+
+# ===== Hardware setup ===== #
+workers: 4
+gpu: 2

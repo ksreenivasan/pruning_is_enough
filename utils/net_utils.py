@@ -59,7 +59,7 @@ def get_layers(arch='Conv4', model=None):
     return (conv_layers, linear_layers)
 
 
-def redraw(model, shuffle=False, reinit=False, chg_mask=False, chg_weight=False):
+def redraw(model, shuffle=False, reinit=False, invert=False, chg_mask=False, chg_weight=False):
     cp_model = copy.deepcopy(model)
     conv_layers, linear_layers = get_layers(parser_args.arch, cp_model)
     for layer in [*conv_layers, *linear_layers]:
@@ -74,12 +74,14 @@ def redraw(model, shuffle=False, reinit=False, chg_mask=False, chg_weight=False)
                     layer.flag_bias.data = layer.flag_bias.data.view(-1)[idx].view(layer.flag_bias.data.size())
 
             if chg_weight:
+                raise NotImplementedError
+                '''
                 idx = torch.randperm(layer.weight.data.nelement())
                 layer.weight.data = layer.weight.data.view(-1)[idx].view(layer.weight.data.size())
                 if parser_args.bias:
                     idx = torch.randperm(layer.bias.data.nelement())
                     layer.bias.data = layer.bias.data.view(-1)[idx].view(layer.bias.data.size())
-
+                '''
         if reinit:
             if chg_weight:
                 nn.init.kaiming_normal_(layer.weight, mode="fan_in", nonlinearity="relu")
@@ -87,7 +89,18 @@ def redraw(model, shuffle=False, reinit=False, chg_mask=False, chg_weight=False)
                     nn.init.kaiming_normal_(layer.bias, mode="fan_in", nonlinearity="relu")
             else:
                 raise NotImplementedError
+        
+        if invert:
+            if chg_mask:
+                layer.flag.data = 1 - layer.flag.data
+                if parser_args.bias:
+                    layer.flag_bias.data = 1 - layer.flag_bias.data
+            else:
+                raise NotImplementedError
+
         #print(layer.weight)
+
+
     return cp_model
 
 
@@ -400,7 +413,7 @@ def get_layer_sparsity(layer, threshold=0):
             b_numer, b_denom = 0, 0
     else:
         # traditional pruning where we just check non-zero values in mask
-        weight_mask, bias_mask = GetSubnetConv.apply(layer.scores.abs(), layer.bias_scores.abs(), parser_args.prune_rate)
+        weight_mask, bias_mask = GetSubnetConv.apply(layer.scores.abs(), layer.scores_bias.abs(), parser_args.prune_rate)
         #weight_mask, bias_mask = GetSubnetConv.apply(layer.scores.abs(), layer.bias_scores.abs(), parser_args.sparsity)
         w_numer, w_denom = weight_mask.sum().item(), weight_mask.flatten().numel()
 

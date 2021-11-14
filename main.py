@@ -51,7 +51,7 @@ def eval_and_print(validate, data_loader, model, criterion, parser_args, writer=
 
     return acc1
 
-def finetune(model, parser_args, data, criterion, old_epoch_list, old_test_acc_before_round_list, old_test_acc_list, old_reg_loss_list, old_model_sparsity_list, result_root, shuffle=False, reinit=False, chg_mask=False, chg_weight=False):
+def finetune(model, parser_args, data, criterion, old_epoch_list, old_test_acc_before_round_list, old_test_acc_list, old_reg_loss_list, old_model_sparsity_list, result_root, shuffle=False, reinit=False, invert=False, chg_mask=False, chg_weight=False):
 
     epoch_list = copy.deepcopy(old_epoch_list)
     test_acc_before_round_list = copy.deepcopy(old_test_acc_before_round_list)
@@ -62,7 +62,7 @@ def finetune(model, parser_args, data, criterion, old_epoch_list, old_test_acc_b
     # round the score (in the model itself)
     model = round_model(model, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio, rank=parser_args.gpu)    
     # apply reinit/shuffling masks/weights (if necessary)
-    model = redraw(model, shuffle=shuffle, reinit=reinit, chg_mask=chg_mask, chg_weight=chg_weight)
+    model = redraw(model, shuffle=shuffle, reinit=reinit, invert=invert, chg_mask=chg_mask, chg_weight=chg_weight)
 
     # switch to weight training mode (turn on the requires_grad for weight/bias, and turn off the requires_grad for other parameters)
     for name, param in model.named_parameters():
@@ -133,10 +133,12 @@ def finetune(model, parser_args, data, criterion, old_epoch_list, old_test_acc_b
         results_df = pd.DataFrame({'epoch': epoch_list, 'test_acc_before_rounding': test_acc_before_round_list,'test_acc': test_acc_list, 'regularization_loss': reg_loss_list, 'model_sparsity': model_sparsity_list})
         if not chg_mask and not chg_weight:
             results_filename = result_root + 'acc_and_sparsity.csv'    
+        #elif chg_weight and shuffle:
+        #    results_filename = result_root + 'acc_and_sparsity_weight_shuffle.csv'    
         elif chg_mask and shuffle:
             results_filename = result_root + 'acc_and_sparsity_mask_shuffle.csv'    
-        elif chg_weight and shuffle:
-            results_filename = result_root + 'acc_and_sparsity_weight_shuffle.csv'    
+        elif chg_mask and invert:
+            results_filename = result_root + 'acc_and_sparsity_mask_invert.csv'    
         elif chg_weight and reinit:
             results_filename = result_root + 'acc_and_sparsity_weight_reinit.csv'    
         else:
@@ -220,6 +222,7 @@ def get_idty_str(parser_args):
     dataset_str = parser_args.dataset
     model_str = parser_args.arch
     algo_str = parser_args.algo
+    rate_str = parser_args.prune_rate
     period_str = parser_args.iter_period
     reg_str = 'reg_{}'.format(parser_args.regularization)
     reg_lmbda = parser_args.lmbda if parser_args.regularization else ''
@@ -234,9 +237,10 @@ def get_idty_str(parser_args):
     width_str = parser_args.width
     seed_str = parser_args.seed + parser_args.trial_num - 1
     idty_str = "{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_fan_{}_{}_{}_width_{}_seed_{}".\
-        format(train_mode_str, dataset_str, model_str, algo_str, period_str, reg_str, reg_lmbda,
+        format(train_mode_str, dataset_str, model_str, algo_str, rate_str, period_str, reg_str, reg_lmbda,
         opt_str, policy_str, lr_str, lr_gamma, lr_adj, fan_str, w_str, s_str,
         width_str, seed_str).replace(".", "_")
+
 
     return idty_str
 
@@ -610,7 +614,7 @@ def main_worker(gpu, ngpus_per_node):
         '''
 
         # prune the model every T_{prune} epochs
-        if parser_args.algo == 'hc_iter' and epoch % (parser_args.iter_period) == 0:
+        if parser_args.algo == 'hc_iter' and epoch % (parser_args.iter_period) == 0 and epoch != 0:
             prune(model)
             if parser_args.checkpoint_at_prune:
                 # let's see if we can get all sparsity plots with one run
@@ -750,21 +754,26 @@ def main_worker(gpu, ngpus_per_node):
     #     if ".weight" in name:
     #         print(torch.sum(params.data))
     # check the performance of trained model
-    if parser_args.algo in ['hc', 'hc_iter']:
+    if parser_args.algo in ['hc', 'hc_iter', 'ep']:
         cp_model = copy.deepcopy(model)
         cp_model = finetune(cp_model, parser_args, data, criterion, epoch_list, test_acc_before_round_list, test_acc_list, reg_loss_list, model_sparsity_list, result_root)
         # print out the final acc
         eval_and_print(validate, data.val_loader, cp_model, criterion, parser_args, writer=None, description='final model after finetuning')
 
-        # do the sanity check for shuffled mask/weights, reinit weights
+        # do the sanity check for shuffled/inverted mask, reinit weights
+        cp_model = copy.deepcopy(model)
+        cp_model = finetune(cp_model, parser_args, data, criterion, epoch_list, test_acc_before_round_list, test_acc_list, reg_loss_list, model_sparsity_list, result_root, shuffle=True, chg_mask=True)
+        
+        cp_model = copy.deepcopy(model)
+        cp_model = finetune(cp_model, parser_args, data, criterion, epoch_list, test_acc_before_round_list, test_acc_list, reg_loss_list, model_sparsity_list, result_root, invert=True, chg_mask=True)
+        
         cp_model = copy.deepcopy(model)
         cp_model = finetune(cp_model, parser_args, data, criterion, epoch_list, test_acc_before_round_list, test_acc_list, reg_loss_list, model_sparsity_list, result_root, reinit=True, chg_weight=True)
 
+        '''
         cp_model = copy.deepcopy(model)
         cp_model = finetune(cp_model, parser_args, data, criterion, epoch_list, test_acc_before_round_list, test_acc_list, reg_loss_list, model_sparsity_list, result_root, shuffle=True, chg_weight=True)
-
-        cp_model = copy.deepcopy(model)
-        cp_model = finetune(cp_model, parser_args, data, criterion, epoch_list, test_acc_before_round_list, test_acc_list, reg_loss_list, model_sparsity_list, result_root, shuffle=True, chg_mask=True)
+        '''
 
     if parser_args.multiprocessing_distributed:
         cleanup_distributed()
