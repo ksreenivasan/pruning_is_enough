@@ -70,8 +70,8 @@ def redraw(model, shuffle=False, reinit=False, chg_mask=False, chg_weight=False)
                 idx = torch.randperm(layer.flag.data.nelement())
                 layer.flag.data = layer.flag.data.view(-1)[idx].view(layer.flag.data.size())
                 if parser_args.bias:
-                    idx = torch.randperm(layer.flag_bias.data.nelement())
-                    layer.flag_bias.data = layer.flag_bias.data.view(-1)[idx].view(layer.flag_bias.data.size())
+                    idx = torch.randperm(layer.bias_flag.data.nelement())
+                    layer.bias_flag.data = layer.bias_flag.data.view(-1)[idx].view(layer.bias_flag.data.size())
 
             if chg_weight:
                 idx = torch.randperm(layer.weight.data.nelement())
@@ -338,7 +338,7 @@ def prune(model):  # update prune() for bottom K pruning
         for layer in [*conv_layers, *linear_layers]:
             layer.flag.data = (layer.flag.data + torch.gt(layer.scores, torch.ones_like(layer.scores)*threshold).int() == 2).int()
 
-    return 
+    return
 
 
 # returns avg_sparsity = number of non-zero weights!
@@ -376,7 +376,7 @@ def get_layer_sparsity(layer, threshold=0):
     # for algos where the score IS the mask
     if parser_args.algo in ['hc_iter']:
         pattern = layer.flag.data
-        #pattern = layer.scores.data * layer.weight.data
+        # pattern = layer.scores.data * layer.weight.data
         w_numer, w_denom = torch.sum((pattern == 1).int()).item(), pattern.flatten().numel()
         print(layer, w_numer, w_denom)
         if parser_args.bias:
@@ -401,12 +401,12 @@ def get_layer_sparsity(layer, threshold=0):
     else:
         # traditional pruning where we just check non-zero values in mask
         weight_mask, bias_mask = GetSubnetConv.apply(layer.scores.abs(), layer.bias_scores.abs(), parser_args.prune_rate)
-        #weight_mask, bias_mask = GetSubnetConv.apply(layer.scores.abs(), layer.bias_scores.abs(), parser_args.sparsity)
+        # weight_mask, bias_mask = GetSubnetConv.apply(layer.scores.abs(), layer.bias_scores.abs(), parser_args.sparsity)
         w_numer, w_denom = weight_mask.sum().item(), weight_mask.flatten().numel()
 
         if parser_args.bias:
             b_numer, b_denom = bias_mask.sum().item(), bias_mask.flatten().numel()
-            #bias_sparsity = 100.0 * bias_mask.sum().item() / bias_mask.flatten().numel()
+            # bias_sparsity = 100.0 * bias_mask.sum().item() / bias_mask.flatten().numel()
         else:
             b_numer, b_denom = 0, 0
     return w_numer, w_denom, b_numer, b_denom
