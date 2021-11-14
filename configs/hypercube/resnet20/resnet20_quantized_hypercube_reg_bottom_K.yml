@@ -8,7 +8,7 @@ arch: resnet20
 
 # ===== Dataset ===== #
 dataset: CIFAR10
-name: resnet20_cifar10_sc_hypercube_reg_bottom_K_periodic_rounding
+name: resnet20_cifar10_sc_hypercube_reg_bottom_K
 
 # ===== Learning Rate Policy ======== #
 optimizer: adam
