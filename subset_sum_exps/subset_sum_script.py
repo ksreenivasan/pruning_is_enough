@@ -90,8 +90,12 @@ def subset_sum(num_samples=10, lmbda=0, lr=0.0001, p_init='uniform', optim_algo=
     # by the recent paper, error should be O(1/n^logn)
     min_error = 1.0/(num_samples**np.log(num_samples))
     # print("Minimum Error = {}".format(min_error))
-    # results_df = pd.DataFrame({'epoch': epoch_list, 'loss': subset_loss_list})
-    results_df = pd.DataFrame()
+
+    tot_loss_list.append(loss.item())
+    epoch_list.append(num_iter)
+    p_list.append(p.data)
+    subset_loss_list.append(((t - torch.sum(p*a))**2).item())
+    results_df = pd.DataFrame({'epoch': epoch_list, 'loss': subset_loss_list})
 
     return min_error, p, results_df, CONVERGED_FLAG
 
