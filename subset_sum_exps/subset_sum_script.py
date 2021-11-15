@@ -109,7 +109,8 @@ def get_dist_to_vertex(x):
 if __name__ == "__main__":
     avg_error_ratios = []
     NUM_LMBDAS = 10
-    NUM_RANGE = [10, 1e2, 1e3]
+    NUM_RANGE = [10, 1e2, 1e3, 5e3, 1e4, 1e5]
+    df_list = []
     for num_samples in NUM_RANGE:
         print("Num Samples = {}".format(num_samples))
         error_ratio_list = []
@@ -144,7 +145,8 @@ if __name__ == "__main__":
                   format(lmbda, CONVERGED_FLAG, error_ratio, final_error, min_error, num_frac, dist_to_vertex))
             print("-------------------------------------------------------------------------------------------------------------------\n\n\n")
 
-        results_df = pd.DataFrame({"lambda": lmbda_list, "error": error_list,
+        num_samples_list = [num_samples for x in range(len(lmbda_list))]
+        results_df = pd.DataFrame({"num_samples": num_samples_list, "lambda": lmbda_list, "error": error_list,
                                    "num_frac": num_frac_list, "dist_to_vertex": dist_to_vertex_list,
                                    "min_error": min_error_list, "error_ratio": error_ratio_list,
                                    "converged": converged_flag_list})
@@ -153,6 +155,7 @@ if __name__ == "__main__":
         results_df['error'] = results_df['error'].to_numpy()
         results_df['num_frac'] = results_df['num_frac'].to_numpy()
         results_df['min_error'] = results_df['min_error'].to_numpy()
+        df_list.append(results_df)
         # print for each lambda the non 0-1 for each number of samples
         plt.figure()
         ax = results_df[results_df['converged'] == True].plot(x="lambda", y="num_frac", kind="scatter", color='blue',
@@ -175,3 +178,6 @@ if __name__ == "__main__":
         # plot the minimum error for different lambdas for each number of samples
         results_df.plot(x="lambda", y="min_error", ax=ax)
         plt.savefig("results/lambda_vs_error_num_samples_{}.pdf".format(num_samples), format='pdf', dpi=600, bbox_inches='tight', pad_inches=0.05)
+
+    combined_results_df = pd.concat(df_list)
+    combined_results_df.to_csv("results/combined_results.csv", index=False)
