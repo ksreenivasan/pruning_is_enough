@@ -62,32 +62,36 @@ def subset_sum(num_samples=10, lmbda=0, lr=0.0001, p_init='uniform', optim_algo=
     # need to increase T for each n
     MAX_EPOCHS = int(1e6*math.log(num_samples,10))
     CONVERGED_FLAG = False
-
+    prev_loss = np.inf
     for num_iter in range(MAX_EPOCHS):
         optimizer.zero_grad()
         loss = (t - torch.sum(p*a))**2 + get_regularization(num_samples, p, a, lmbda=lmbda)
         loss.backward()
         optimizer.step()
+        # commenting out the part where we remember iterates. These can be far too many.
         # loss we care out is not the total loss. Just the subset sum loss
-        subset_loss_list.append(((t - torch.sum(p*a))**2).item())
+        ## subset_loss_list.append(((t - torch.sum(p*a))**2).item())
         # also remember total loss for stopping criterion
-        tot_loss_list.append(loss.item())
-        epoch_list.append(num_iter)
-        p_list.append(p.data)
+        ## tot_loss_list.append(loss.item())
+        ## epoch_list.append(num_iter)
+        ## p_list.append(p.data)
 
         if num_iter % 1000 == 0 and num_iter != 0:
             print("Iteration={} | Loss={}".format(num_iter, loss))
         p.data = torch.clamp(p.data, 0.0, 1.0)
 
-        if num_iter > 5 and loss.item() == tot_loss_list[-2]:
+        if num_iter > 5 and loss.item() == prev_loss:
             print("Iteration={} | Converged".format(num_iter))
             CONVERGED_FLAG = True
             break
 
+        prev_loss = loss.item()
+
     # by the recent paper, error should be O(1/n^logn)
     min_error = 1.0/(num_samples**np.log(num_samples))
     # print("Minimum Error = {}".format(min_error))
-    results_df = pd.DataFrame({'epoch': epoch_list, 'loss': subset_loss_list})
+    # results_df = pd.DataFrame({'epoch': epoch_list, 'loss': subset_loss_list})
+    results_df = pd.DataFrame()
 
     return min_error, p, results_df, CONVERGED_FLAG
 
