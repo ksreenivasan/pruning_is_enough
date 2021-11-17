@@ -351,6 +351,15 @@ def prune(model):  # update prune() for bottom K pruning
         for layer in [*conv_layers, *linear_layers]:
             layer.flag.data = (layer.flag.data + torch.gt(layer.scores, torch.ones_like(layer.scores)*threshold).int() == 2).int()
 
+        if parser_args.rewind_score and layer.saved_score is not None:
+            # if we go into this branch, we will load the rewinded states of the scores
+            with torch.no_grad():
+                layer.score.data = copy.deepcopy(layer.saved_score.data)
+                # for sanity check: the score rewind back
+                print(layer.score.data)
+        else:  # if we do not explicitly specify rewind_score, we will keep the score same
+            pass
+
     return
 
 

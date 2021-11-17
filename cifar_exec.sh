@@ -18,8 +18,13 @@ BLOCK
 #BLOCK
 
 # attempt at getting 1.4% sparsity with 80% acc
+# python main.py \
+#     --config configs/hypercube/resnet20/resnet20_quantized_hypercube_reg_bottom_K.yml
+
+# add score rewinding
 python main.py \
-    --config configs/hypercube/resnet20/resnet20_quantized_hypercube_reg_bottom_K.yml
+    --config configs/hypercube/resnet20/resnet20_quantized_hypercube_reg_bottom_K_rewind.yml
+
 
 # python main.py --config configs/hypercube/resnet20/resnet20_wt.yml
 
