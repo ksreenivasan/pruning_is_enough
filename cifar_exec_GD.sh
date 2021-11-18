@@ -25,27 +25,31 @@ done
 #python main.py --config configs/hypercube/resnet20/resnet20_wt.yml
 BLOCK
 
-#:<<BLOCK
-pr_list=(7 8 9 10 11 13 15 19 25 38 75)
+:<<BLOCK
+pr_list=(7)
+#pr_list=(7 8 9 10 11 13 15 19 25 38 75)
 
 for pr in ${pr_list[@]}
 do
-	python main.py --config configs/hypercube/resnet20/resnet20_quantized_hypercube_reg_bottom_K.yml \
-		--iter_period $pr
+	python main.py --config configs/hypercube/resnet20/resnet20_quantized_hypercube_reg_bottom_K_GD.yml \
+		--iter_period $pr \
+		--skip-sanity-checks
 done
-#BLOCK
+BLOCK
 
 
-:<<BLOCK
-rate_list=(0.01 0.02 0.03 0.05 0.08 0.13 0.20 0.32 0.51 0.80)
+#:<<BLOCK
+rate_list=(0.01)
+#rate_list=(0.01 0.02 0.03 0.05 0.08 0.13 0.20 0.32 0.51 0.80)
 
 for rate in ${rate_list[@]}
 do
 	python main.py --config configs/ep/resnet20/resnet20_sc_ep.yml \
 		--prune-rate $rate \
-        	--skip-fine-tune
+        	--skip-sanity-checks
+        	#--skip-fine-tune
 done
-BLOCK
+#BLOCK
 
 #python main.py --config configs/hypercube/resnet20/resnet20_quantized_hypercube_reg_bottom_K_tinyImageNet.yml
 
