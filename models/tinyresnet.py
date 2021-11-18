@@ -105,11 +105,11 @@ class ResNet(nn.Module):
                 3, self.inplanes, kernel_size=7, stride=2, padding=3, bias=False
             )
         else:
-            self.conv1 = builder.conv7x7(3, 64, stride=2, first_layer=True)
+            self.conv1 = builder.conv3x3(3, 64, stride=2, first_layer=True)
 
         self.bn1 = builder.batchnorm(64)
         self.relu = builder.activation()
-        self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
+       
         self.layer1 = self._make_layer(builder, block, 64, layers[0])
         self.layer2 = self._make_layer(builder, block, 128, layers[1], stride=2)
         self.layer3 = self._make_layer(builder, block, 256, layers[2], stride=2)
@@ -148,7 +148,6 @@ class ResNet(nn.Module):
         if self.bn1 is not None:
             x = self.bn1(x)
         x = self.relu(x)
-        x = self.maxpool(x)
 
         x = self.layer1(x)
         x = self.layer2(x)
@@ -164,8 +163,9 @@ class ResNet(nn.Module):
 
 
 # ResNet }}}
-def ResNet18(pretrained=False):
-    return ResNet(get_builder(), BasicBlock, [2, 2, 2, 2], 1000)
+
+def TinyResNet18(pretrained=False):
+    return ResNet(get_builder(), BasicBlock, [2, 2, 2, 2], 200)
 
 def ResNet50(pretrained=False):
     return ResNet(get_builder(), Bottleneck, [3, 4, 6, 3], 1000)
