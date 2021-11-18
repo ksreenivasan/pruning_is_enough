@@ -13,7 +13,7 @@ lr: 0.1
 lr_policy: cosine_lr
 
 # ===== Network training config ===== #
-epochs: 1 #150 #150
+epochs: 150 #150 #150
 weight_decay: 0.0005
 momentum: 0.9
 batch_size: 256

@@ -59,6 +59,7 @@ def finetune(model, parser_args, data, criterion, old_epoch_list, old_test_acc_b
     reg_loss_list = copy.deepcopy(old_reg_loss_list)
     model_sparsity_list = copy.deepcopy(old_model_sparsity_list)
 
+    '''
     # round the score (in the model itself)
     model = round_model(model, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio, rank=parser_args.gpu)    
     # apply reinit/shuffling masks/weights (if necessary)
@@ -66,12 +67,31 @@ def finetune(model, parser_args, data, criterion, old_epoch_list, old_test_acc_b
 
     # switch to weight training mode (turn on the requires_grad for weight/bias, and turn off the requires_grad for other parameters)
     model = switch_to_wt(model)
+    '''    
 
     # set base_setting and evaluate 
     run_base_dir, ckpt_base_dir, log_base_dir, writer, epoch_time, validation_time, train_time, progress_overall = get_settings(parser_args)
-    
     optimizer = get_optimizer(parser_args, model, finetune_flag=True)
     train, validate, modifier = get_trainer(parser_args)
+
+    # print the accuracy right after beginning finetune function
+    acc1, acc5, acc10 = validate(data.val_loader, model, criterion, parser_args, writer, parser_args.epochs-1)
+    print('accuracy right after beginning finetune function: ', acc1)
+
+
+    if parser_args.algo in ['hc', 'hc_iter']:
+        # round the score (in the model itself)
+        model = round_model(model, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio, rank=parser_args.gpu)    
+        acc1, acc5, acc10 = validate(data.val_loader, model, criterion, parser_args, writer, parser_args.epochs-1)
+        print('accuracy after rounding scores: ', acc1)
+
+        # apply reinit/shuffling masks/weights (if necessary)
+        model = redraw(model, shuffle=shuffle, reinit=reinit, invert=invert, chg_mask=chg_mask, chg_weight=chg_weight)
+        acc1, acc5, acc10 = validate(data.val_loader, model, criterion, parser_args, writer, parser_args.epochs-1)
+        print('accuracy after redrawing masks/weights: ', acc1)
+
+    # switch to weight training mode (turn on the requires_grad for weight/bias, and turn off the requires_grad for other parameters)
+    model = switch_to_wt(model)
 
     # check the performance of loaded model (after rounding)
     acc1, acc5, acc10 = validate(data.val_loader, model, criterion, parser_args, writer, parser_args.epochs-1)
@@ -81,7 +101,11 @@ def finetune(model, parser_args, data, criterion, old_epoch_list, old_test_acc_b
     test_acc_list.append(acc1)
     reg_loss_list.append(0.0)
     model_sparsity_list.append(avg_sparsity)
-    
+
+    print('accuracy after switching to weight training: ', acc1)
+    #pdb.set_trace()
+
+
     end_epoch = time.time()
     for epoch in range(parser_args.epochs, parser_args.epochs*2):
 
