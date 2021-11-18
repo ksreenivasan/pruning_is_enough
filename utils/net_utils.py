@@ -398,7 +398,8 @@ def get_layer_sparsity(layer, threshold=0):
     if parser_args.algo in ['hc', 'hc_iter']:
         # assume the model is rounded, compute effective scores
         eff_scores = layer.scores * layer.flag
-        eff_bias = layer.bias * layer.bias_flag
+        if parser_args.bias:
+            eff_bias = layer.bias_scores * layer.bias_flag
         num_middle = torch.sum(torch.gt(eff_scores,
                                torch.ones_like(eff_scores)*threshold) *
                                torch.lt(eff_scores,
