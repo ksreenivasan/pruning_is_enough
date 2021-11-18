@@ -386,29 +386,21 @@ def get_model_sparsity(model, threshold=0):
 # returns num_nonzero elements, total_num_elements so that it is easier to compute
 # average sparsity in the end
 def get_layer_sparsity(layer, threshold=0):
-    # for algos where the score IS the mask
-    if parser_args.algo in ['hc_iter']:
-        pattern = layer.flag.data
-        # pattern = layer.scores.data * layer.weight.data
-        w_numer, w_denom = torch.sum((pattern == 1).int()).item(), pattern.flatten().numel()
-        print(layer, w_numer, w_denom)
-        if parser_args.bias:
-            raise NotImplementedError
-        else:
-            b_numer, b_denom = 0, 0
-    elif parser_args.algo in ['hc']:
-        # assume the model is rounded
-        num_middle = torch.sum(torch.gt(layer.scores,
-                               torch.ones_like(layer.scores)*threshold) *
-                               torch.lt(layer.scores,
-                               torch.ones_like(layer.scores.detach()*(1-threshold)).int()))
+    if parser_args.algo in ['hc', 'hc_iter']:
+        # assume the model is rounded, compute effective scores
+        eff_scores = layer.scores * layer.flag
+        eff_bias = layer.bias * layer.bias_flag
+        num_middle = torch.sum(torch.gt(eff_scores,
+                               torch.ones_like(eff_scores)*threshold) *
+                               torch.lt(eff_scores,
+                               torch.ones_like(eff_scores.detach()*(1-threshold)).int()))
         if num_middle > 0:
             print("WARNING: Model scores are not binary. Sparsity number is unreliable.")
             raise ValueError
-        w_numer, w_denom = layer.scores.detach().sum().item(), layer.scores.detach().flatten().numel()
+        w_numer, w_denom = eff_scores.detach().sum().item(), eff_scores.detach().flatten().numel()
 
         if parser_args.bias:
-            b_numer, b_denom = layer.bias_scores.detach().sum().item(), layer.bias_scores.detach().flatten().numel()
+            b_numer, b_denom = eff_bias_scores.detach().sum().item(), eff_bias_scores.detach().flatten().numel()
         else:
             b_numer, b_denom = 0, 0
 
@@ -418,8 +410,7 @@ def get_layer_sparsity(layer, threshold=0):
         b_numer, b_denom = 0, 0
     else:
         # traditional pruning where we just check non-zero values in mask
-        #weight_mask, bias_mask = GetSubnetConv.apply(layer.scores.abs(), layer.scores_bias.abs(), parser_args.prune_rate)
-        weight_mask, bias_mask = GetSubnetConv.apply(layer.scores.abs(), layer.bias_scores.abs(), parser_args.sparsity)
+        weight_mask, bias_mask = GetSubnetConv.apply(layer.scores.abs(), layer.scores_bias.abs(), parser_args.prune_rate)
         w_numer, w_denom = weight_mask.sum().item(), weight_mask.flatten().numel()
 
         if parser_args.bias:
