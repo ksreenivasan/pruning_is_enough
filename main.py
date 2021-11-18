@@ -235,7 +235,6 @@ def switch_to_wt(model):
             params.requires_grad = True
         elif "score" in name:
             params.requires_grad = False
-            params.data = torch.ones_like(params.data)
         else:
             # flags and everything else
             params.requires_grad = False
