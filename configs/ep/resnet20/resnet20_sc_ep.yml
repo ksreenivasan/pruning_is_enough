@@ -1,31 +1,33 @@
-# Hypercube optimization
-algo: 'hc'
+algo: 'ep'
 
 # Architecture
-arch: Conv4
+arch: resnet20
 
 # ===== Dataset ===== #
 dataset: CIFAR10
-name: conv4_kn_unsigned
+name: resnet20_cifar10_sc
 
 # ===== Learning Rate Policy ======== #
-optimizer: adam
-lr: 0.01
+optimizer: sgd
+lr: 0.1
 lr_policy: cosine_lr
 
 # ===== Network training config ===== #
-epochs: 150
-wd: 0.0 #0.0001
+epochs: 1 #150 #150
+weight_decay: 0.0005
 momentum: 0.9
-batch_size: 128
+batch_size: 256
 
 # ===== Sparsity =========== #
 conv_type: SubnetConv
 bn_type: NonAffineBatchNorm
+init: signed_constant
+mode: fan_in
+nonlinearity: relu
+#prune_rate: 0.5
+scale_fan: True
 freeze_weights: True
-prune_rate: -1
-init: kaiming_normal
-scale_fan: False #True
 
 # ===== Hardware setup ===== #
 workers: 4
+gpu: 1

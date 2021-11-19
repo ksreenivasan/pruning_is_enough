@@ -62,31 +62,39 @@ def subset_sum(num_samples=10, lmbda=0, lr=0.0001, p_init='uniform', optim_algo=
     # need to increase T for each n
     MAX_EPOCHS = int(1e6*math.log(num_samples,10))
     CONVERGED_FLAG = False
-
+    prev_loss = np.inf
     for num_iter in range(MAX_EPOCHS):
         optimizer.zero_grad()
         loss = (t - torch.sum(p*a))**2 + get_regularization(num_samples, p, a, lmbda=lmbda)
         loss.backward()
         optimizer.step()
+        # commenting out the part where we remember iterates. These can be far too many.
         # loss we care out is not the total loss. Just the subset sum loss
-        subset_loss_list.append(((t - torch.sum(p*a))**2).item())
+        ## subset_loss_list.append(((t - torch.sum(p*a))**2).item())
         # also remember total loss for stopping criterion
-        tot_loss_list.append(loss.item())
-        epoch_list.append(num_iter)
-        p_list.append(p.data)
+        ## tot_loss_list.append(loss.item())
+        ## epoch_list.append(num_iter)
+        ## p_list.append(p.data)
 
         if num_iter % 1000 == 0 and num_iter != 0:
             print("Iteration={} | Loss={}".format(num_iter, loss))
         p.data = torch.clamp(p.data, 0.0, 1.0)
 
-        if num_iter > 5 and loss.item() == tot_loss_list[-2]:
+        if num_iter > 5 and loss.item() == prev_loss:
             print("Iteration={} | Converged".format(num_iter))
             CONVERGED_FLAG = True
             break
 
+        prev_loss = loss.item()
+
     # by the recent paper, error should be O(1/n^logn)
     min_error = 1.0/(num_samples**np.log(num_samples))
     # print("Minimum Error = {}".format(min_error))
+
+    tot_loss_list.append(loss.item())
+    epoch_list.append(num_iter)
+    p_list.append(p.data)
+    subset_loss_list.append(((t - torch.sum(p*a))**2).item())
     results_df = pd.DataFrame({'epoch': epoch_list, 'loss': subset_loss_list})
 
     return min_error, p, results_df, CONVERGED_FLAG
@@ -109,7 +117,8 @@ def get_dist_to_vertex(x):
 if __name__ == "__main__":
     avg_error_ratios = []
     NUM_LMBDAS = 10
-    NUM_RANGE = [10, 1e2, 1e3]
+    NUM_RANGE = [10, 1e2, 1e3, 5e3, 1e4, 1e5]
+    df_list = []
     for num_samples in NUM_RANGE:
         print("Num Samples = {}".format(num_samples))
         error_ratio_list = []
@@ -144,7 +153,8 @@ if __name__ == "__main__":
                   format(lmbda, CONVERGED_FLAG, error_ratio, final_error, min_error, num_frac, dist_to_vertex))
             print("-------------------------------------------------------------------------------------------------------------------\n\n\n")
 
-        results_df = pd.DataFrame({"lambda": lmbda_list, "error": error_list,
+        num_samples_list = [num_samples for x in range(len(lmbda_list))]
+        results_df = pd.DataFrame({"num_samples": num_samples_list, "lambda": lmbda_list, "error": error_list,
                                    "num_frac": num_frac_list, "dist_to_vertex": dist_to_vertex_list,
                                    "min_error": min_error_list, "error_ratio": error_ratio_list,
                                    "converged": converged_flag_list})
@@ -153,6 +163,7 @@ if __name__ == "__main__":
         results_df['error'] = results_df['error'].to_numpy()
         results_df['num_frac'] = results_df['num_frac'].to_numpy()
         results_df['min_error'] = results_df['min_error'].to_numpy()
+        df_list.append(results_df)
         # print for each lambda the non 0-1 for each number of samples
         plt.figure()
         ax = results_df[results_df['converged'] == True].plot(x="lambda", y="num_frac", kind="scatter", color='blue',
@@ -175,3 +186,6 @@ if __name__ == "__main__":
         # plot the minimum error for different lambdas for each number of samples
         results_df.plot(x="lambda", y="min_error", ax=ax)
         plt.savefig("results/lambda_vs_error_num_samples_{}.pdf".format(num_samples), format='pdf', dpi=600, bbox_inches='tight', pad_inches=0.05)
+
+    combined_results_df = pd.concat(df_list)
+    combined_results_df.to_csv("results/combined_results.csv", index=False)

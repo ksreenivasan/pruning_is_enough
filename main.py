@@ -17,6 +17,7 @@ import torch.utils.data.distributed
 import torch.multiprocessing as mp
 
 import sys
+import re
 
 from utils.conv_type import FixedSubnetConv, SampleSubnetConv
 from utils.logging import AverageMeter, ProgressMeter
@@ -51,8 +52,7 @@ def eval_and_print(validate, data_loader, model, criterion, parser_args, writer=
 
     return acc1
 
-def finetune(model, parser_args, data, criterion, old_epoch_list, old_test_acc_before_round_list, old_test_acc_list, old_reg_loss_list, old_model_sparsity_list, result_root, shuffle=False, reinit=False, chg_mask=False, chg_weight=False):
-
+def finetune(model, parser_args, data, criterion, old_epoch_list, old_test_acc_before_round_list, old_test_acc_list, old_reg_loss_list, old_model_sparsity_list, result_root, shuffle=False, reinit=False, invert=False, chg_mask=False, chg_weight=False):
     epoch_list = copy.deepcopy(old_epoch_list)
     test_acc_before_round_list = copy.deepcopy(old_test_acc_before_round_list)
     test_acc_list = copy.deepcopy(old_test_acc_list)
@@ -62,21 +62,17 @@ def finetune(model, parser_args, data, criterion, old_epoch_list, old_test_acc_b
     # round the score (in the model itself)
     model = round_model(model, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio, rank=parser_args.gpu)    
     # apply reinit/shuffling masks/weights (if necessary)
-    model = redraw(model, shuffle=shuffle, reinit=reinit, chg_mask=chg_mask, chg_weight=chg_weight)
+    model = redraw(model, shuffle=shuffle, reinit=reinit, invert=invert, chg_mask=chg_mask, chg_weight=chg_weight)
 
     # switch to weight training mode (turn on the requires_grad for weight/bias, and turn off the requires_grad for other parameters)
-    for name, param in model.named_parameters():
-        if 'weight' in name:
-            param.requires_grad = True
-        elif parser_args.bias and '.bias' in name:
-            param.requires_grad = True
-        else:
-            param.requires_grad = False
+    model = switch_to_wt(model)
 
     # set base_setting and evaluate 
     run_base_dir, ckpt_base_dir, log_base_dir, writer, epoch_time, validation_time, train_time, progress_overall = get_settings(parser_args)
-    parser_args.optimizer, parser_args.lr, parser_args.wd = 'sgd', 0.01, 0.0001
-    optimizer = get_optimizer(parser_args, model)
+    
+    optimizer = get_optimizer(parser_args, model, finetune_flag=True)
+    #scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[80, 120], gamma=0.1) # NOTE: hard-coded
+    scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[2, 4], gamma=0.1) # NOTE: hard-coded
     train, validate, modifier = get_trainer(parser_args)
 
     # check the performance of loaded model (after rounding)
@@ -89,15 +85,12 @@ def finetune(model, parser_args, data, criterion, old_epoch_list, old_test_acc_b
     model_sparsity_list.append(avg_sparsity)
     
     end_epoch = time.time()
-    # for epoch in range (E+1, 2*E+1):
-        # train the model weight
-        # save the epoch & test accuracy in the list (add dummy values in other lists)
     for epoch in range(parser_args.epochs, parser_args.epochs*2):
 
         if parser_args.multiprocessing_distributed:
             data.train_loader.sampler.set_epoch(epoch)
-        #lr_policy(epoch, iteration=None)
-        #modifier(parser_args, epoch, model)
+        # lr_policy(epoch, iteration=None)
+        # modifier(parser_args, epoch, model)
         cur_lr = get_lr(optimizer)
         print('epoch: {}, lr: {}'.format(epoch, cur_lr))
 
@@ -130,96 +123,34 @@ def finetune(model, parser_args, data, criterion, old_epoch_list, old_test_acc_b
         writer.add_scalar("test/lr", cur_lr, epoch)
         end_epoch = time.time()
 
-        results_df = pd.DataFrame({'epoch': epoch_list, 'test_acc_before_rounding': test_acc_before_round_list,'test_acc': test_acc_list, 'regularization_loss': reg_loss_list, 'model_sparsity': model_sparsity_list})
+        results_df = pd.DataFrame({'epoch': epoch_list, 'test_acc_before_rounding': test_acc_before_round_list,'test_acc': test_acc_list,
+                                   'regularization_loss': reg_loss_list, 'model_sparsity': model_sparsity_list})
         if not chg_mask and not chg_weight:
             results_filename = result_root + 'acc_and_sparsity.csv'    
+        #elif chg_weight and shuffle:
+        #    results_filename = result_root + 'acc_and_sparsity_weight_shuffle.csv'    
         elif chg_mask and shuffle:
             results_filename = result_root + 'acc_and_sparsity_mask_shuffle.csv'    
-        elif chg_weight and shuffle:
-            results_filename = result_root + 'acc_and_sparsity_weight_shuffle.csv'    
+        elif chg_mask and invert:
+            results_filename = result_root + 'acc_and_sparsity_mask_invert.csv'    
         elif chg_weight and reinit:
             results_filename = result_root + 'acc_and_sparsity_weight_reinit.csv'    
         else:
             raise NotImplementedError
 
-
         print("Writing results into: {}".format(results_filename))
         results_df.to_csv(results_filename, index=False)
+        scheduler.step() 
 
     return model
 
-
-def sanity_check(model, parser_args, data, criterion):
-
-    #cp_model = redraw(model, shuffle=True)
-    cp_model = redraw(model, shuffle=True, mask=True)         # NOTE: uncomment to check the other case
-    #cp_model = copy.deepcopy(model)
-    for name, param in cp_model.named_parameters():
-        if 'weight' in name:
-            param.requires_grad = True
-        else:
-            param.requires_grad = False
-    optimizer = get_optimizer(parser_args, cp_model)
-
-    run_base_dir, ckpt_base_dir, log_base_dir = get_directories(parser_args)
-    parser_args.ckpt_base_dir = ckpt_base_dir
-    writer = SummaryWriter(log_dir=log_base_dir)
-    epoch_time = AverageMeter("epoch_time", ":.4f", write_avg=False)
-    validation_time = AverageMeter("validation_time", ":.4f", write_avg=False)
-    train_time = AverageMeter("train_time", ":.4f", write_avg=False)
-    progress_overall = ProgressMeter(
-        1, [epoch_time, validation_time, train_time], prefix="Overall Timing"
-    )
-
-    end_epoch = time.time()
-    parser_args.start_epoch = parser_args.start_epoch or 1
-
-    results = {'epoch': [], 'test_acc': []}
-
-
-    cp_model.cuda(parser_args.gpu)
-    acc1, acc5, acc10 = validate(data.val_loader, cp_model, criterion, parser_args, writer=None, epoch=0)
-
-    results['epoch'].append(0)
-    results['test_acc'].append(acc1)
-
-    for epoch in range(parser_args.start_epoch, parser_args.epochs + 1):
-        if parser_args.multiprocessing_distributed:
-            data.train_loader.sampler.set_epoch(epoch)
-
-        lr_policy(epoch, iteration=None)
-        modifier(parser_args, epoch, cp_model)
-
-        cur_lr = get_lr(optimizer)
-        print('cur_lr: ', cur_lr)
-
-        # train for one epoch
-        start_train = time.time()
-        train_acc1, train_acc5, train_acc10, reg_loss = train(
-            data.train_loader, cp_model, criterion, optimizer, epoch, parser_args, writer=writer
-        )
-        train_time.update((time.time() - start_train) / 60)
-
-        # evaluate on validation set
-        start_validation = time.time()
-        acc1, acc5, acc10 = validate(data.val_loader, cp_model, criterion, parser_args, writer, epoch)
-        validation_time.update((time.time() - start_validation) / 60)
-
-        results['epoch'].append(epoch)
-        results['test_acc'].append(acc1)
-
-        results_df = pd.DataFrame.from_dict(results).set_index('epoch')
-        #results_df.to_csv('./results/shuffle_weights.csv')            # NOTE: be sure to update filename accordingly!
-        results_df.to_csv('./results/shuffle_mask.csv')
-        #results_df.to_csv('./results/orig_mask.csv')
-
-    sys.exit()
 
 def get_idty_str(parser_args):
     train_mode_str = 'weight_training' if parser_args.weight_training else 'pruning'
     dataset_str = parser_args.dataset
     model_str = parser_args.arch
     algo_str = parser_args.algo
+    rate_str = parser_args.prune_rate
     period_str = parser_args.iter_period
     reg_str = 'reg_{}'.format(parser_args.regularization)
     reg_lmbda = parser_args.lmbda if parser_args.regularization else ''
@@ -234,9 +165,10 @@ def get_idty_str(parser_args):
     width_str = parser_args.width
     seed_str = parser_args.seed + parser_args.trial_num - 1
     idty_str = "{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_fan_{}_{}_{}_width_{}_seed_{}".\
-        format(train_mode_str, dataset_str, model_str, algo_str, period_str, reg_str, reg_lmbda,
+        format(train_mode_str, dataset_str, model_str, algo_str, rate_str, period_str, reg_str, reg_lmbda,
         opt_str, policy_str, lr_str, lr_gamma, lr_adj, fan_str, w_str, s_str,
         width_str, seed_str).replace(".", "_")
+
 
     return idty_str
 
@@ -255,7 +187,6 @@ def get_settings(parser_args):
     return run_base_dir, ckpt_base_dir, log_base_dir, writer, epoch_time, validation_time, train_time, progress_overall
 
 def compare_rounding(validate, data_loader, model, criterion, parser_args, result_root):
-
 
     # generate supermask from naive rounding
     naive_model = round_model(model, 'naive')
@@ -294,28 +225,21 @@ def compare_rounding(validate, data_loader, model, criterion, parser_args, resul
 
     return
 
+
+# switches off gradients for scores and flags and switches it on for weights and biases
 def switch_to_wt(model):
-
-    raise NotImplementedError
-
-    print('We switched to weight training')
+    print('Switching to weight training by switching off requires_grad for scores and switching it on for weights.')
 
     for name, params in model.named_parameters():
-        print(name)
-        if "weight" in name or ".bias" in name:
+        # make sure param_name ends with .weight or .bias
+        if re.match('.*\.weight', name):
+            params.requires_grad = True
+        elif parser_args.bias and re.match('.*\.bias$', name):
             params.requires_grad = True
         elif "score" in name:
             params.requires_grad = False
-            params.data = torch.ones_like(params.data)
-        elif "bias" in name and parser_args.bias:
-            if "score" in name:
-                params.requires_grad = False
-                params.data = torch.ones_like(params.data)
-            elif "flag" in name:
-                params.requires_grad = False
-            else:
-                params.requires_grad = True
         else:
+            # flags and everything else
             params.requires_grad = False
 
     return model
@@ -347,7 +271,7 @@ def main():
     print(parser_args)
     set_seed(parser_args.seed + parser_args.trial_num - 1)
 
-#    parser_args.distributed = parser_args.world_size > 1 or parser_args.multiprocessing_distributed
+    # parser_args.distributed = parser_args.world_size > 1 or parser_args.multiprocessing_distributed
     ngpus_per_node = torch.cuda.device_count()
     
     if parser_args.multiprocessing_distributed:
@@ -397,30 +321,25 @@ def main_worker(gpu, ngpus_per_node):
         criterion = nn.CrossEntropyLoss().cuda()
     else:
         criterion = LabelSmoothing(smoothing=parser_args.label_smoothing)
-#        if isinstance(model, nn.parallel.DistributedDataParallel):
-#            model = model.module
+        # if isinstance(model, nn.parallel.DistributedDataParallel):
+        #     model = model.module
     
 
     if parser_args.random_subnet:
         # round the score (in the model itself)
         model = round_model(model, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio, rank=parser_args.gpu)    
+        
+        # TODO: CHANGE THIS BACK once the finetune from checkpoints code is fixed
         # NOTE: this part is hard coded
         model = redraw(model, shuffle=parser_args.shuffle, reinit=parser_args.reinit, chg_mask=parser_args.chg_mask, chg_weight=parser_args.chg_weight)  
 
-
         # switch to weight training mode (turn on the requires_grad for weight/bias, and turn off the requires_grad for other parameters)
-        for name, param in model.named_parameters():
-            if 'weight' in name:
-                param.requires_grad = True
-            elif parser_args.bias and '.bias' in name:
-                param.requires_grad = True
-            else:
-                param.requires_grad = False
+        model = switch_to_wt(model)
 
         # set base_setting and evaluate 
         run_base_dir, ckpt_base_dir, log_base_dir, writer, epoch_time, validation_time, train_time, progress_overall = get_settings(parser_args)
-        parser_args.optimizer, parser_args.lr, parser_args.wd = 'sgd', 0.01, 0.0001
-        optimizer = get_optimizer(parser_args, model)
+        # TODO: Change this to use finetune() (I think this is possible)
+        optimizer = get_optimizer(parser_args, model, finetune_flag=True)
         train, validate, modifier = get_trainer(parser_args)
 
         # check the performance of loaded model (after rounding)
@@ -430,10 +349,7 @@ def main_worker(gpu, ngpus_per_node):
         test_acc_list = []
         reg_loss_list = []
         model_sparsity_list = []
-        
-        # for epoch in range (E+1, 2*E+1):
-            # train the model weight
-            # save the epoch & test accuracy in the list (add dummy values in other lists)
+
         for epoch in range(parser_args.epochs):
 
             if parser_args.multiprocessing_distributed:
@@ -442,6 +358,7 @@ def main_worker(gpu, ngpus_per_node):
             #modifier(parser_args, epoch, model)
             cur_lr = get_lr(optimizer)
             print('epoch: {}, lr: {}'.format(epoch, cur_lr))
+            print("="*60)
 
             # train for one epoch
             start_train = time.time()
@@ -504,7 +421,7 @@ def main_worker(gpu, ngpus_per_node):
 
             model = round_model(model, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio, rank=parser_args.gpu)
             eval_and_print(validate, data.val_loader, model, criterion, parser_args, writer=None, epoch=parser_args.start_epoch, description='final model after rounding')
-            #sanity_check(model, parser_args, data, criterion)
+            # sanity_check(model, parser_args, data, criterion)
 
         for trial in range(parser_args.num_test):
             if parser_args.algo in ['hc']:
@@ -572,7 +489,8 @@ def main_worker(gpu, ngpus_per_node):
         lr_policy(epoch, iteration=None)
         modifier(parser_args, epoch, model)
         cur_lr = get_lr(optimizer)
-
+        print('epoch: {}, lr: {}'.format(epoch, cur_lr))
+        print("="*60)
         # train for one epoch
         start_train = time.time()
         train_acc1, train_acc5, train_acc10, reg_loss = train(
@@ -610,7 +528,7 @@ def main_worker(gpu, ngpus_per_node):
         '''
 
         # prune the model every T_{prune} epochs
-        if parser_args.algo == 'hc_iter' and epoch % (parser_args.iter_period) == 0:
+        if parser_args.algo == 'hc_iter' and epoch % (parser_args.iter_period) == 0 and epoch != 0:
             prune(model)
             if parser_args.checkpoint_at_prune:
                 # let's see if we can get all sparsity plots with one run
@@ -745,26 +663,43 @@ def main_worker(gpu, ngpus_per_node):
         name=parser_args.name,
     )
 
-    # sanity check whether the weight values did not change
-    # for name, params in model.named_parameters():
-    #     if ".weight" in name:
-    #         print(torch.sum(params.data))
     # check the performance of trained model
-    if parser_args.algo in ['hc', 'hc_iter']:
+    if parser_args.algo in ['hc', 'hc_iter', 'ep']:
         cp_model = copy.deepcopy(model)
-        cp_model = finetune(cp_model, parser_args, data, criterion, epoch_list, test_acc_before_round_list, test_acc_list, reg_loss_list, model_sparsity_list, result_root)
-        # print out the final acc
-        eval_and_print(validate, data.val_loader, cp_model, criterion, parser_args, writer=None, description='final model after finetuning')
+        if not parser_args.skip_fine_tune:
+            print("Beginning fine-tuning")
+            cp_model = finetune(cp_model, parser_args, data, criterion, epoch_list, test_acc_before_round_list, test_acc_list, reg_loss_list, model_sparsity_list, result_root)
+            # print out the final acc
+            eval_and_print(validate, data.val_loader, cp_model, criterion, parser_args, writer=None, description='final model after finetuning')
+        else:
+            print("Skipping finetuning!!!")
 
-        # do the sanity check for shuffled mask/weights, reinit weights
-        cp_model = copy.deepcopy(model)
-        cp_model = finetune(cp_model, parser_args, data, criterion, epoch_list, test_acc_before_round_list, test_acc_list, reg_loss_list, model_sparsity_list, result_root, reinit=True, chg_weight=True)
+        if not parser_args.skip_sanity_checks:
+            print("Beginning Sanity Checks:")
+            # do the sanity check for shuffled mask/weights, reinit weights
+            print("Sanity Check 1: Weight Reinit")
+            cp_model = copy.deepcopy(model)
+            cp_model = finetune(cp_model, parser_args, data, criterion, epoch_list, test_acc_before_round_list, test_acc_list,
+                                reg_loss_list, model_sparsity_list, result_root, reinit=True, chg_weight=True)
 
-        cp_model = copy.deepcopy(model)
-        cp_model = finetune(cp_model, parser_args, data, criterion, epoch_list, test_acc_before_round_list, test_acc_list, reg_loss_list, model_sparsity_list, result_root, shuffle=True, chg_weight=True)
-
-        cp_model = copy.deepcopy(model)
-        cp_model = finetune(cp_model, parser_args, data, criterion, epoch_list, test_acc_before_round_list, test_acc_list, reg_loss_list, model_sparsity_list, result_root, shuffle=True, chg_mask=True)
+            '''
+            print("Sanity Check 2: Weight Reshuffle")
+            cp_model = copy.deepcopy(model)
+            cp_model = finetune(cp_model, parser_args, data, criterion, epoch_list, test_acc_before_round_list, test_acc_list,
+                                reg_loss_list, model_sparsity_list, result_root, shuffle=True, chg_weight=True)
+            '''
+            print("Sanity Check 2: Mask Reshuffle")
+            cp_model = copy.deepcopy(model)
+            cp_model = finetune(cp_model, parser_args, data, criterion, epoch_list, test_acc_before_round_list, test_acc_list,
+                                reg_loss_list, model_sparsity_list, result_root, shuffle=True, chg_mask=True)
+            
+            print("Sanity Check 3: Mask Invert")
+            cp_model = copy.deepcopy(model)
+            cp_model = finetune(cp_model, parser_args, data, criterion, epoch_list, test_acc_before_round_list, test_acc_list, 
+                                reg_loss_list, model_sparsity_list, result_root, invert=True, chg_mask=True)
+        
+        else:
+            print("Skipping sanity checks!!!")
 
     if parser_args.multiprocessing_distributed:
         cleanup_distributed()
@@ -1226,7 +1161,7 @@ def get_model(parser_args):
     return model
 
 
-def get_optimizer(parser_args, model):
+def get_optimizer(optimizer_args, model, finetune_flag=False):
     for n, v in model.named_parameters():
         if v.requires_grad:
             print("<DEBUG> gradient to", n)
@@ -1234,7 +1169,15 @@ def get_optimizer(parser_args, model):
         if not v.requires_grad:
             print("<DEBUG> no gradient to", n)
 
-    if parser_args.optimizer == "sgd":
+    if finetune_flag:
+        opt_algo = optimizer_args.fine_tune_optimizer
+        opt_lr = optimizer_args.fine_tune_lr
+        opt_wd = optimizer_args.fine_tune_wd
+    else:
+        opt_algo = optimizer_args.optimizer
+        opt_lr = optimizer_args.lr
+        opt_wd = optimizer_args.wd
+    if opt_algo == "sgd":
         parameters = list(model.named_parameters())
         bn_params = [v for n, v in parameters if ("bn" in n) and v.requires_grad]
         rest_params = [v for n, v in parameters if ("bn" not in n) and v.requires_grad]
@@ -1242,19 +1185,19 @@ def get_optimizer(parser_args, model):
             [
                 {
                     "params": bn_params,
-                    "weight_decay": 0 if parser_args.no_bn_decay else parser_args.weight_decay,
+                    "weight_decay": 0 if optimizer_args.no_bn_decay else opt_wd,
                 },
-                {"params": rest_params, "weight_decay": parser_args.weight_decay},
+                {"params": rest_params, "weight_decay": opt_wd},
             ],
-            parser_args.lr,
-            momentum=parser_args.momentum,
-            weight_decay=parser_args.weight_decay,
-            nesterov=parser_args.nesterov,
+            opt_lr,
+            momentum=optimizer_args.momentum,
+            weight_decay=opt_wd,
+            nesterov=optimizer_args.nesterov,
         )
-    elif parser_args.optimizer == "adam":
+    elif opt_algo == "adam":
         optimizer = torch.optim.Adam(
-            filter(lambda p: p.requires_grad, model.parameters()), lr=parser_args.lr,
-            weight_decay=parser_args.weight_decay
+            filter(lambda p: p.requires_grad, model.parameters()), lr=opt_lr,
+            weight_decay=opt_wd
         )
 
     return optimizer

@@ -59,7 +59,7 @@ def get_layers(arch='Conv4', model=None):
     return (conv_layers, linear_layers)
 
 
-def redraw(model, shuffle=False, reinit=False, chg_mask=False, chg_weight=False):
+def redraw(model, shuffle=False, reinit=False, invert=False, chg_mask=False, chg_weight=False):
     cp_model = copy.deepcopy(model)
     conv_layers, linear_layers = get_layers(parser_args.arch, cp_model)
     for layer in [*conv_layers, *linear_layers]:
@@ -70,16 +70,18 @@ def redraw(model, shuffle=False, reinit=False, chg_mask=False, chg_weight=False)
                 idx = torch.randperm(layer.flag.data.nelement())
                 layer.flag.data = layer.flag.data.view(-1)[idx].view(layer.flag.data.size())
                 if parser_args.bias:
-                    idx = torch.randperm(layer.flag_bias.data.nelement())
-                    layer.flag_bias.data = layer.flag_bias.data.view(-1)[idx].view(layer.flag_bias.data.size())
+                    idx = torch.randperm(layer.bias_flag.data.nelement())
+                    layer.bias_flag.data = layer.bias_flag.data.view(-1)[idx].view(layer.bias_flag.data.size())
 
             if chg_weight:
+                raise NotImplementedError
+                '''
                 idx = torch.randperm(layer.weight.data.nelement())
                 layer.weight.data = layer.weight.data.view(-1)[idx].view(layer.weight.data.size())
                 if parser_args.bias:
                     idx = torch.randperm(layer.bias.data.nelement())
                     layer.bias.data = layer.bias.data.view(-1)[idx].view(layer.bias.data.size())
-
+                '''
         if reinit:
             if chg_weight:
                 nn.init.kaiming_normal_(layer.weight, mode="fan_in", nonlinearity="relu")
@@ -87,7 +89,18 @@ def redraw(model, shuffle=False, reinit=False, chg_mask=False, chg_weight=False)
                     nn.init.kaiming_normal_(layer.bias, mode="fan_in", nonlinearity="relu")
             else:
                 raise NotImplementedError
+        
+        if invert:
+            if chg_mask:
+                layer.flag.data = 1 - layer.flag.data
+                if parser_args.bias:
+                    layer.flag_bias.data = 1 - layer.flag_bias.data
+            else:
+                raise NotImplementedError
+
         #print(layer.weight)
+
+
     return cp_model
 
 
@@ -338,7 +351,7 @@ def prune(model):  # update prune() for bottom K pruning
         for layer in [*conv_layers, *linear_layers]:
             layer.flag.data = (layer.flag.data + torch.gt(layer.scores, torch.ones_like(layer.scores)*threshold).int() == 2).int()
 
-    return 
+    return
 
 
 # returns avg_sparsity = number of non-zero weights!
@@ -373,40 +386,37 @@ def get_model_sparsity(model, threshold=0):
 # returns num_nonzero elements, total_num_elements so that it is easier to compute
 # average sparsity in the end
 def get_layer_sparsity(layer, threshold=0):
-    # for algos where the score IS the mask
-    if parser_args.algo in ['hc_iter']:
-        pattern = layer.flag.data
-        #pattern = layer.scores.data * layer.weight.data
-        w_numer, w_denom = torch.sum((pattern == 1).int()).item(), pattern.flatten().numel()
-        print(layer, w_numer, w_denom)
+    if parser_args.algo in ['hc', 'hc_iter']:
+        # assume the model is rounded, compute effective scores
+        eff_scores = layer.scores * layer.flag
         if parser_args.bias:
-            raise NotImplementedError
-        else:
-            b_numer, b_denom = 0, 0
-    elif parser_args.algo in ['hc']:
-        # assume the model is rounded
-        num_middle = torch.sum(torch.gt(layer.scores,
-                               torch.ones_like(layer.scores)*threshold) *
-                               torch.lt(layer.scores,
-                               torch.ones_like(layer.scores.detach()*(1-threshold)).int()))
+            eff_bias = layer.bias_scores * layer.bias_flag
+        num_middle = torch.sum(torch.gt(eff_scores,
+                               torch.ones_like(eff_scores)*threshold) *
+                               torch.lt(eff_scores,
+                               torch.ones_like(eff_scores.detach()*(1-threshold)).int()))
         if num_middle > 0:
             print("WARNING: Model scores are not binary. Sparsity number is unreliable.")
             raise ValueError
-        w_numer, w_denom = layer.scores.detach().sum().item(), layer.scores.detach().flatten().numel()
+        w_numer, w_denom = eff_scores.detach().sum().item(), eff_scores.detach().flatten().numel()
 
         if parser_args.bias:
-            b_numer, b_denom = layer.bias_scores.detach().sum().item(), layer.bias_scores.detach().flatten().numel()
+            b_numer, b_denom = eff_bias_scores.detach().sum().item(), eff_bias_scores.detach().flatten().numel()
         else:
             b_numer, b_denom = 0, 0
+
+    elif parser_args.algo in ['ep']:
+        # NOTE: hard-coded
+        w_numer, w_denom = parser_args.prune_rate * 100, 100
+        b_numer, b_denom = 0, 0
     else:
         # traditional pruning where we just check non-zero values in mask
-        weight_mask, bias_mask = GetSubnetConv.apply(layer.scores.abs(), layer.bias_scores.abs(), parser_args.prune_rate)
-        #weight_mask, bias_mask = GetSubnetConv.apply(layer.scores.abs(), layer.bias_scores.abs(), parser_args.sparsity)
+        weight_mask, bias_mask = GetSubnetConv.apply(layer.scores.abs(), layer.scores_bias.abs(), parser_args.prune_rate)
         w_numer, w_denom = weight_mask.sum().item(), weight_mask.flatten().numel()
 
         if parser_args.bias:
             b_numer, b_denom = bias_mask.sum().item(), bias_mask.flatten().numel()
-            #bias_sparsity = 100.0 * bias_mask.sum().item() / bias_mask.flatten().numel()
+            # bias_sparsity = 100.0 * bias_mask.sum().item() / bias_mask.flatten().numel()
         else:
             b_numer, b_denom = 0, 0
     return w_numer, w_denom, b_numer, b_denom
