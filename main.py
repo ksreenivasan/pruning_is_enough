@@ -71,6 +71,8 @@ def finetune(model, parser_args, data, criterion, old_epoch_list, old_test_acc_b
     run_base_dir, ckpt_base_dir, log_base_dir, writer, epoch_time, validation_time, train_time, progress_overall = get_settings(parser_args)
     
     optimizer = get_optimizer(parser_args, model, finetune_flag=True)
+    #scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[80, 120], gamma=0.1) # NOTE: hard-coded
+    scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[2, 4], gamma=0.1) # NOTE: hard-coded
     train, validate, modifier = get_trainer(parser_args)
 
     # check the performance of loaded model (after rounding)
@@ -138,6 +140,7 @@ def finetune(model, parser_args, data, criterion, old_epoch_list, old_test_acc_b
 
         print("Writing results into: {}".format(results_filename))
         results_df.to_csv(results_filename, index=False)
+        scheduler.step() 
 
     return model
 
@@ -355,6 +358,7 @@ def main_worker(gpu, ngpus_per_node):
             #modifier(parser_args, epoch, model)
             cur_lr = get_lr(optimizer)
             print('epoch: {}, lr: {}'.format(epoch, cur_lr))
+            print("="*60)
 
             # train for one epoch
             start_train = time.time()
@@ -485,7 +489,8 @@ def main_worker(gpu, ngpus_per_node):
         lr_policy(epoch, iteration=None)
         modifier(parser_args, epoch, model)
         cur_lr = get_lr(optimizer)
-
+        print('epoch: {}, lr: {}'.format(epoch, cur_lr))
+        print("="*60)
         # train for one epoch
         start_train = time.time()
         train_acc1, train_acc5, train_acc10, reg_loss = train(
