@@ -10,6 +10,10 @@
 
 
 ### ResNet-20
+#python main.py --config configs/hypercube/resnet20/resnet20_hypercube_bottom_K_Nov19.yml --fine-tune-lr 0.01 --results-filename finetune_001.csv
+python main.py --config configs/hypercube/resnet20/resnet20_hypercube_bottom_K_Nov19.yml --fine-tune-lr 0.1 --results-filename finetune_01.csv
+
+
 :<<BLOCK
 sp_list=(1 2 3 4 5 6 8 10 13 16 20 26 32 40 51 63 79)
 
@@ -25,9 +29,10 @@ done
 #python main.py --config configs/hypercube/resnet20/resnet20_wt.yml
 BLOCK
 
-#:<<BLOCK
+:<<BLOCK
 pr_list=(8)
 #pr_list=(7 8 9 10 11 13 15 19 25 38 75)
+
 
 for pr in ${pr_list[@]}
 do
@@ -35,7 +40,7 @@ do
 		--iter_period $pr \
 		--skip-sanity-checks
 done
-#BLOCK
+BLOCK
 
 
 :<<BLOCK
