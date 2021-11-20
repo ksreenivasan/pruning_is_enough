@@ -147,6 +147,16 @@ def main_worker(gpu, ngpus_per_node):
         lr_policy(epoch, iteration=None)
         modifier(parser_args, epoch, model)
         cur_lr = get_lr(optimizer)
+
+        # save the score at the beginning of training epoch, so if we set parser.args.rewind_to_epoch to 0
+        # that means we save the initialization of score
+        if parser_args.rewind_score and parser_args.rewind_to_epoch == epoch:
+            # if rewind the score, checkpoint the score when reach the desired epoch (rewind to iteration not yet implemented)
+            with torch.no_grad():
+                conv_layers, linear_layers = get_layers(parser_args.arch, model)
+                for layer in [*conv_layers, *linear_layers]:
+                    layer.saved_score.data = layer.score.data
+
         print('epoch: {}, lr: {}'.format(epoch, cur_lr))
         print("="*60)
         # train for one epoch
