@@ -743,6 +743,20 @@ def parse_arguments():
 #        help="Which GPUs to use for multigpu training, comma separated"
 #    )
 
+    parser.add_argument(
+        "--rewind-score",
+        action="store_true",
+        default=False,
+        help="if set True, every time when we prune, we set the score back to the initial state"
+    )
+
+    parser.add_argument(
+        "--rewind-to-epoch",
+        default=-1,
+        type=int,
+        help="to rewind to some epoch, you have to explicitly set the argument. Otherwise the code will never cache the rewinded score"
+    )
+
     args = parser.parse_args()
     get_config(args)
 
