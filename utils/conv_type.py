@@ -143,7 +143,7 @@ class SubnetConv(nn.Conv2d):
 
         # set a storage for layer score 
         if parser_args.rewind_score:
-            self.saved_score = None
+            self.saved_scores = None
 
     def set_prune_rate(self, prune_rate):
         self.prune_rate = prune_rate
