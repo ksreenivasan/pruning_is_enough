@@ -9,7 +9,7 @@ torch.multiprocessing.set_sharing_strategy("file_system")
 
 class TinyImageNet:
     def __init__(self, args):
-        super(ImageNet, self).__init__()
+        super(TinyImageNet, self).__init__()
 
         data_root = os.path.join(args.data, "tinyimagenet")
 
