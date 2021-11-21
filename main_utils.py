@@ -33,6 +33,7 @@ from utils.net_utils import (
     get_model_sparsity,
     prune,
     redraw,
+    get_layers
 )
 from utils.schedulers import get_policy
 from utils.utils import set_seed, plot_histogram_scores
@@ -218,6 +219,9 @@ def finetune(model, parser_args, data, criterion, old_epoch_list, old_test_acc_b
     reg_loss_list = copy.deepcopy(old_reg_loss_list)
     model_sparsity_list = copy.deepcopy(old_model_sparsity_list)
 
+    if parser_args.results_filename:
+        result_root = parser_args.results_filename + '_'
+
     # round the score (in the model itself)
     model = round_model(model, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio, rank=parser_args.gpu)    
     # apply reinit/shuffling masks/weights (if necessary)
@@ -230,8 +234,7 @@ def finetune(model, parser_args, data, criterion, old_epoch_list, old_test_acc_b
     run_base_dir, ckpt_base_dir, log_base_dir, writer, epoch_time, validation_time, train_time, progress_overall = get_settings(parser_args)
     
     optimizer = get_optimizer(parser_args, model, finetune_flag=True)
-    #scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[80, 120], gamma=0.1) # NOTE: hard-coded
-    scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[2, 4], gamma=0.1) # NOTE: hard-coded
+    scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[80, 120], gamma=0.1) # NOTE: hard-coded
     train, validate, modifier = get_trainer(parser_args)
 
     # check the performance of loaded model (after rounding)
@@ -318,14 +321,15 @@ def get_idty_str(parser_args):
     lr_str = parser_args.lr
     lr_gamma = parser_args.lr_gamma
     lr_adj = parser_args.lr_adjust
+    finetune_lr_str = parser_args.fine_tune_lr
     fan_str = parser_args.scale_fan
     w_str = parser_args.init
     s_str = parser_args.score_init
     width_str = parser_args.width
     seed_str = parser_args.seed + parser_args.trial_num - 1
-    idty_str = "{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_fan_{}_{}_{}_width_{}_seed_{}".\
+    idty_str = "{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_fan_{}_{}_{}_width_{}_seed_{}".\
         format(train_mode_str, dataset_str, model_str, algo_str, rate_str, period_str, reg_str, reg_lmbda,
-        opt_str, policy_str, lr_str, lr_gamma, lr_adj, fan_str, w_str, s_str,
+        opt_str, policy_str, lr_str, lr_gamma, lr_adj, finetune_lr_str, fan_str, w_str, s_str,
         width_str, seed_str).replace(".", "_")
 
 
