@@ -1,0 +1,55 @@
+# Trying quantization algorithm
+# round every forward pass
+
+# Hypercube optimization
+algo: 'hc_iter'
+iter_period: 15
+
+# Architecture
+arch: resnet20
+
+# ===== Dataset ===== #
+dataset: CIFAR10
+name: resnet20_cifar10_quantized_skew_bottomK_hypercube_reg
+
+# ===== Learning Rate Policy ======== #
+optimizer: adam
+lr: 0.01 #0.01
+lr_policy: cosine_lr
+
+# ===== Network training config ===== #
+epochs: 150
+weight_decay: 0.0 #0.0001
+momentum: 0.9
+batch_size: 128
+
+# ===== Sparsity =========== #
+conv_type: SubnetConv
+bn_type: NonAffineBatchNorm
+freeze_weights: True
+prune_type: BottomK
+prune_rate: 0.2
+init: signed_constant
+score_init: skew #unif #half #bimodal #skew # bern
+scale_fan: False #True
+
+
+# ===== Rounding ===== #
+round: naive 
+noise: True
+noise_ratio: 0 
+
+
+# ===== Quantization ===== #
+hc_quantized: True
+quantize_threshold: 0.5
+
+# ===== Regularization ===== #
+regularization: var_red_2 # var_red_2
+lmbda: 0.000001 # 0.01 #0.0001 #0.000001
+
+
+# ===== Hardware setup ===== #
+workers: 4
+gpu: 0
+
