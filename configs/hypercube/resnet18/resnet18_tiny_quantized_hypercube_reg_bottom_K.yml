@@ -45,8 +45,8 @@ regularization: var_red_1 # var_red_2
 lmbda: 0.000001 # 0.01 #0.0001 #0.000001
 
 # ===== Hardware setup ===== #
-workers: 4
-gpu: 1
+workers: 4 
+gpu: 0
 
 # ===== Checkpointing ===== #
 #checkpoint_at_prune: True
