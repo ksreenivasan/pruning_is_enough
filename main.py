@@ -80,6 +80,14 @@ def main_worker(gpu, ngpus_per_node):
     if not os.path.isdir(result_root):
         os.mkdir(result_root)
     model = get_model(parser_args)
+
+    # check the model architecture
+    for name, param in model.named_parameters():
+        print(name)
+    conv_layers, linear_layers = get_layers(parser_args.arch, model)
+    for layer in [*conv_layers, *linear_layers]:
+        print(layer)
+
     if parser_args.weight_training:
         model = switch_to_wt(model) 
     model = set_gpu(parser_args, model)

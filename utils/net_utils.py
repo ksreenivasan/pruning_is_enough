@@ -431,7 +431,7 @@ def get_layer_sparsity(layer, threshold=0):
     return w_numer, w_denom, b_numer, b_denom
 
 
-def get_regularization_loss(model, regularizer='var_red_1', lmbda=1, alpha=1, alpha_prime=1):
+def get_regularization_loss(model, regularizer='L2', lmbda=1, alpha=1, alpha_prime=1):
     if isinstance(model, nn.parallel.DistributedDataParallel):
         model = model.module
     conv_layers, linear_layers = get_layers(parser_args.arch, model)
@@ -449,7 +449,29 @@ def get_regularization_loss(model, regularizer='var_red_1', lmbda=1, alpha=1, al
         return reg_sum
 
     regularization_loss = torch.tensor(0.).cuda()
-    if regularizer == 'var_red_1':
+    if regularizer == 'L2':
+        # reg_loss =  ||p||_2^2
+        for name, params in model.named_parameters():
+            if ".bias_score" in name:
+                if parser_args.bias:
+                    regularization_loss += torch.norm(params, p=2)**2
+
+            elif ".score" in name:
+                regularization_loss += torch.norm(params, p=2)**2
+        regularization_loss = lmbda * regularization_loss
+
+    elif regularizer == 'L1':
+        # reg_loss =  ||p||_1
+        for name, params in model.named_parameters():
+            if ".bias_score" in name:
+                if parser_args.bias:
+                    regularization_loss += torch.norm(params, p=1)
+
+            elif ".score" in name:
+                regularization_loss += torch.norm(params, p=1)
+        regularization_loss = lmbda * regularization_loss
+
+    elif regularizer == 'var_red_1':
         # reg_loss = lambda * p^{alpha} (1-p)^{alpha'}
         for name, params in model.named_parameters():
             if ".bias_score" in name:
@@ -490,6 +512,8 @@ def get_regularization_loss(model, regularizer='var_red_1', lmbda=1, alpha=1, al
                             - (1-params_filt) * torch.log(1-params_filt))
 
         regularization_loss = lmbda * regularization_loss
+
+    #print('red loss: ', regularization_loss)
 
     return regularization_loss
 

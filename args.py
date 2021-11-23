@@ -27,7 +27,7 @@ def parse_arguments():
     )
     parser.add_argument(
         "--config",
-        default='configs/hypercube/resnet20/resnet20_quantized_hypercube_reg.yml',
+        default='configs/hypercube/resnet20/resnet20_quantized_hypercube_reg_bottom_K_GD.yml',
         help="Config file to use"
     )
     parser.add_argument(

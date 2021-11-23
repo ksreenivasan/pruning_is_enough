@@ -23,11 +23,12 @@ from utils.conv_type import GetSubnet
 
 import re
 
+
 # load this guy: resnet18-sc-unsigned.yaml
-yaml_txt = open("configs/hypercube/resnet20/resnet20_quantized_hypercube_reg_bottom_K.yml").read()
+#yaml_txt = open("configs/hypercube/resnet20/resnet20_quantized_hypercube_reg_bottom_K.yml").read()
 # override args
-loaded_yaml = yaml.load(yaml_txt, Loader=yaml.FullLoader)
-args.__dict__.update(loaded_yaml)
+#loaded_yaml = yaml.load(yaml_txt, Loader=yaml.FullLoader)
+#args.__dict__.update(loaded_yaml)
 args.bias = False
 
 model = get_model(args)

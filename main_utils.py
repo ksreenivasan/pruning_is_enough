@@ -230,6 +230,9 @@ def finetune(model, parser_args, data, criterion, old_epoch_list, old_test_acc_b
     # switch to weight training mode (turn on the requires_grad for weight/bias, and turn off the requires_grad for other parameters)
     model = switch_to_wt(model)
 
+    # not to use score regulaization during the weight training
+    parser_args.regularization = False
+    
     # set base_setting and evaluate 
     run_base_dir, ckpt_base_dir, log_base_dir, writer, epoch_time, validation_time, train_time, progress_overall = get_settings(parser_args)
     
