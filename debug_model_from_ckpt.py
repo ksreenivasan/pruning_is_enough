@@ -36,9 +36,12 @@ model = get_model(args)
 model = set_gpu(args, model)
 
 # enter checkpoint here
-#ckpt = torch.load("model_checkpoints/best_models/iter_hc_acc_83.pth")
-ckpt = torch.load("results/results_pruning_CIFAR10_resnet20_hc_iter_0_2_20_reg_L2_0_0_sgd_constant_lr_0_1_0_1_50_fan_0_1_False_signed_constant_width_unif_seed_1_0/model_before_finetune.pth")
-#ckpt = torch.load("results/results_pruning_CIFAR10_resnet20_hc_iter_0_2_20_reg_L2_0_0_sgd_constant_lr_0_1_0_1_50_fan_0_1_False_signed_constant_width_unif_seed_1_0/model_after_finetune.pth")
+#ckpt = torch.load("results/SGD_finetune/results_pruning_CIFAR10_resnet20_hc_iter_0_2_8_reg_L1_0_0001_sgd_constant_lr_0_1_0_1_50_fan_0_1_False_signed_constant_width_unif_seed_1_0/model_before_finetune.pth")
+#ckpt = torch.load("results/SGD_finetune/results_pruning_CIFAR10_resnet20_hc_iter_0_2_8_reg_L1_0_0001_sgd_constant_lr_0_1_0_1_50_fan_0_1_False_signed_constant_width_unif_seed_1_0/model_after_finetune.pth")
+
+
+#ckpt = torch.load("results/SGD_finetune/results_pruning_CIFAR10_resnet20_hc_iter_0_2_8_reg_L1_5e-05_sgd_cosine_lr_0_1_0_1_50_fan_0_01_False_signed_constant_width_unif_seed_1_0/model_before_finetune.pth")
+ckpt = torch.load("results/SGD_finetune/results_pruning_CIFAR10_resnet20_hc_iter_0_2_8_reg_L1_5e-05_sgd_cosine_lr_0_1_0_1_50_fan_0_01_False_signed_constant_width_unif_seed_1_0/model_after_finetune.pth")
 
 # note that if you are loading ckpt from the ramanujan-style savepoints, you need to add ckpt['state_dict']
 # otherwise, we typically save the state dict directly, so you can just use ckpt
