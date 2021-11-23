@@ -1,0 +1,55 @@
+# Hypercube optimization
+algo: 'hc_iter'
+#iter_period: 8 #15
+
+# Architecture
+arch: resnet20
+
+# ===== Dataset ===== #
+dataset: CIFAR10
+name: resnet20_cifar10_hypercube_bottom_K_SGD
+
+# ===== Learning Rate Policy ======== #
+optimizer: sgd
+lr: 0.1 #0.01
+#lr_policy: cosine_lr #constant_lr #multistep_lr # cosine_lr
+
+# ===== Network training config ===== #
+epochs: 50 #150 
+wd: 0.0 
+momentum: 0.9
+batch_size: 128
+
+# ===== Sparsity =========== #
+conv_type: SubnetConv
+bn_type: NonAffineBatchNorm
+freeze_weights: True
+prune_type: BottomK
+#prune_rate: 0.2
+init: signed_constant
+#score_init: skew #half #bimodal #skew # bern
+scale_fan: False #True
+
+# ===== Rounding ===== #
+round: naive 
+noise: True
+noise_ratio: 0 
+
+# ===== Quantization ===== #
+hc_quantized: True
+quantize_threshold: 0.5
+
+# ===== Regularization ===== #
+#regularization: L2
+#lmbda: 0.000001 # 0.01 #0.0001 #0.000001
+
+# ===== Hardware setup ===== #
+workers: 4
+#gpu: 1
+
+# ===== Checkpointing ===== #
+checkpoint_at_prune: True
+
+# ==== sanity check ==== #
+skip_sanity_checks: True
+
