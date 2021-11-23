@@ -20,6 +20,7 @@ import models
 
 from main import *
 from utils.conv_type import GetSubnet
+from utils.net_utils import get_model_sparsity, get_layer_sparsity
 
 import re
 
@@ -35,10 +36,14 @@ model = get_model(args)
 model = set_gpu(args, model)
 
 # enter checkpoint here
-ckpt = torch.load("model_checkpoints/best_models/iter_hc_acc_83.pth")
+#ckpt = torch.load("model_checkpoints/best_models/iter_hc_acc_83.pth")
+ckpt = torch.load("results/results_pruning_CIFAR10_resnet20_hc_iter_0_2_20_reg_L2_0_0_sgd_constant_lr_0_1_0_1_50_fan_0_1_False_signed_constant_width_unif_seed_1_0/model_before_finetune.pth")
+#ckpt = torch.load("results/results_pruning_CIFAR10_resnet20_hc_iter_0_2_20_reg_L2_0_0_sgd_constant_lr_0_1_0_1_50_fan_0_1_False_signed_constant_width_unif_seed_1_0/model_after_finetune.pth")
+
 # note that if you are loading ckpt from the ramanujan-style savepoints, you need to add ckpt['state_dict']
 # otherwise, we typically save the state dict directly, so you can just use ckpt
-model.load_state_dict(ckpt['state_dict'])
+#model.load_state_dict(ckpt['state_dict'])
+model.load_state_dict(ckpt)
 
 cp_model = round_model(model, 'naive')
 conv_layers, lin_layers = get_layers(arch='resnet20', model=cp_model)
@@ -75,6 +80,6 @@ print("Sparsity of final model={}".format(sparsity))
 train, validate, modifier = get_trainer(args)
 criterion = nn.CrossEntropyLoss().cuda()
 data = get_dataset(args)
-acc1, acc5 = validate(data.val_loader, model, criterion, args, writer=None, epoch=-1)
+acc1, acc5, acc10 = validate(data.val_loader, model, criterion, args, writer=None, epoch=-1)
 print("Accuracy of final model={}".format(acc1))
 
