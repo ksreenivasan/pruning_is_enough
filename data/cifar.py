@@ -4,7 +4,7 @@ import torchvision
 from torchvision import transforms
 import random
 from torch.utils.data.sampler import SubsetRandomSampler
-from args import args as parser_args
+from args_helper import parser_args
 
 
 class CIFAR10:
