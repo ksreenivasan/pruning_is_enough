@@ -771,7 +771,6 @@ class ArgsHelper:
 
         if jupyter_mode:
             args = parser.parse_args("")
-            print("It worked!:")
         else:
             args = parser.parse_args()
         self.get_config(args)
