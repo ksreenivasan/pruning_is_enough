@@ -75,9 +75,9 @@ for name, param in model.named_parameters():
     else:
         other_params.append(param)
         # param.requires_grad = False
+"""
 
-
-sparsity = get_model_sparsity(model)
+sparsity = get_model_sparsity(cp_model)
 print("Sparsity of final model={}".format(sparsity))
 
 train, validate, modifier = get_trainer(args)

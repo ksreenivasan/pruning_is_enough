@@ -148,6 +148,8 @@ def main_worker(gpu, ngpus_per_node):
         save=False,
     )
 
+    torch.save(model.state_dict(), result_root + 'init_model.pth')
+
     # Start training
     for epoch in range(parser_args.start_epoch, parser_args.epochs):
         if parser_args.multiprocessing_distributed:
