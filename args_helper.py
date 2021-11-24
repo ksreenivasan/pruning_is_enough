@@ -7,7 +7,7 @@ from configs import parser as _parser
 global parser_args
 
 class ArgsHelper:
-    def parse_arguments(jupyter_mode=False):
+    def parse_arguments(self, jupyter_mode=False):
         parser = argparse.ArgumentParser(description="Pruning random networks")
 
         # Config/Hyperparameters
@@ -774,12 +774,12 @@ class ArgsHelper:
             print("It worked!:")
         else:
             args = parser.parse_args()
-        get_config(args)
+        self.get_config(args)
 
         return args
 
 
-    def get_config(parser_args):
+    def get_config(self, parser_args):
         # get commands from command line
         override_args = _parser.argv_to_vars(sys.argv)
 
@@ -795,7 +795,7 @@ class ArgsHelper:
         parser_args.__dict__.update(loaded_yaml)
 
 
-    def isNotebook():
+    def isNotebook(self):
         try:
             shell = get_ipython().__class__.__name__
             if shell == 'ZMQInteractiveShell':
@@ -807,10 +807,10 @@ class ArgsHelper:
         except NameError:
             return False      # Probably standard Python interpreter
 
-    def get_args(jupyter_mode=False):
+    def get_args(self, jupyter_mode=False):
         global parser_args
-        jupyter_mode = isNotebook()
-        parser_args = parse_arguments(jupyter_mode)
+        jupyter_mode = self.isNotebook()
+        parser_args = self.parse_arguments(jupyter_mode)
 
 argshelper = ArgsHelper()
 argshelper.get_args()
