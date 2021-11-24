@@ -3,7 +3,6 @@
 ### put every long functions in main.py into here
 """
 
-import args as args_helper
 from args import args as parser_args
 import pdb
 import numpy as np
@@ -49,8 +48,6 @@ import models
 
 import copy
 from torch._utils import _flatten_dense_tensors, _unflatten_dense_tensors
-
-args_helper.get_args(parser_args['jupyter_mode'])
 
 def do_sanity_checks(model, parser_args, data, criterion, epoch_list, test_acc_before_round_list, test_acc_list,
                     reg_loss_list, model_sparsity_list, result_root):

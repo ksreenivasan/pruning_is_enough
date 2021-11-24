@@ -4,8 +4,6 @@ import yaml
 
 from configs import parser as _parser
 
-args = {'jupyter_mode': False}
-
 def parse_arguments(jupyter_mode=False):
     parser = argparse.ArgumentParser(description="Pruning random networks")
 
@@ -770,6 +768,7 @@ def parse_arguments(jupyter_mode=False):
 
     if jupyter_mode:
         args = parser.parse_args("")
+        print("It worked!:")
     else:
         args = parser.parse_args()
     get_config(args)
@@ -796,3 +795,5 @@ def get_config(args):
 def get_args(jupyter_mode=False):
     global args
     args = parse_arguments(jupyter_mode)
+
+get_args(jupyter_mode=False)
