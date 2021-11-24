@@ -44,12 +44,12 @@ def train(train_loader, model, criterion, optimizer, epoch, args, writer):
         # compute output
         output = model(images)
 
-        if i % args.project_freq == 0 and not args.differentiate_clamp and args.algo in ['hc', 'hc_iter', 'pt']:
+        if args.algo in ['hc', 'hc_iter', 'pt'] and i % args.project_freq == 0 and not args.differentiate_clamp:
             for name, params in model.named_parameters():
                 if "score" in name:
                     scores = params
                     with torch.no_grad():
-                        scores.data = torch.clamp(self.scores.data, 0.0, 1.0)
+                        scores.data = torch.clamp(scores.data, 0.0, 1.0)
 
         loss = criterion(output, target)
         regularization_loss = torch.tensor(0)
