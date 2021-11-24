@@ -773,12 +773,12 @@ class ArgsHelper:
             args = parser.parse_args("")
         else:
             args = parser.parse_args()
-        self.get_config(args)
+        self.get_config(args, jupyter_mode)
 
         return args
 
 
-    def get_config(self, parser_args):
+    def get_config(self, parser_args, jupyter_mode=False):
         # get commands from command line
         override_args = _parser.argv_to_vars(sys.argv)
 
@@ -787,8 +787,9 @@ class ArgsHelper:
 
         # override args
         loaded_yaml = yaml.load(yaml_txt, Loader=yaml.FullLoader)
-        for v in override_args:
-            loaded_yaml[v] = getattr(parser_args, v)
+        if not jupyter_mode:
+            for v in override_args:
+                loaded_yaml[v] = getattr(parser_args, v)
 
         print(f"=> Reading YAML config from {parser_args.config}")
         parser_args.__dict__.update(loaded_yaml)
