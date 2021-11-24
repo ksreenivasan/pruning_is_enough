@@ -9,7 +9,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from utils.builder import get_builder
-from args import args
+from args_helper import parser_args
 
 
 class BasicBlock(nn.Module):

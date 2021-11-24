@@ -12,7 +12,7 @@
  be useful to others, please add a few comments and push the code.
 """
 
-from args import *
+from args_helper import ArgsHelper
 import importlib
 
 import data
@@ -24,16 +24,18 @@ from utils.net_utils import get_model_sparsity, get_layer_sparsity
 
 import re
 
+parser_args = ArgsHelper().get_args()
+
 
 # load this guy: resnet18-sc-unsigned.yaml
 #yaml_txt = open("configs/hypercube/resnet20/resnet20_quantized_hypercube_reg_bottom_K.yml").read()
 # override args
 #loaded_yaml = yaml.load(yaml_txt, Loader=yaml.FullLoader)
 #args.__dict__.update(loaded_yaml)
-args.bias = False
+parser_args.bias = False
 
-model = get_model(args)
-model = set_gpu(args, model)
+model = get_model(parser_args)
+model = set_gpu(parser_args, model)
 
 # enter checkpoint here
 #ckpt = torch.load("results/SGD_finetune/results_pruning_CIFAR10_resnet20_hc_iter_0_2_8_reg_L1_0_0001_sgd_constant_lr_0_1_0_1_50_fan_0_1_False_signed_constant_width_unif_seed_1_0/model_before_finetune.pth")
@@ -69,7 +71,7 @@ for name, param in model.named_parameters():
         weight_params.append(param)
         # param.requires_grad = True
     # make sure param_name ends with .bias
-    elif args.bias and re.match('.*\.bias$', name):
+    elif parser_args.bias and re.match('.*\.bias$', name):
         bias_params.append(param)
         # param.requires_grad = True
     else:
