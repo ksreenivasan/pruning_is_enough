@@ -1,6 +1,6 @@
 # Hypercube optimization
 algo: 'hc_iter'
-#iter_period: 8 #15
+iter_period: 8
 # hc_period: 25
 
 # Architecture

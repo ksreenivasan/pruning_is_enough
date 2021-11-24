@@ -38,7 +38,7 @@ def parse_arguments():
         help="Input batch size for training (default: 64)"
     )
     parser.add_argument(
-        "--num-epochs",
+        "--epochs",
         type=int,
         default=10,
         metavar="N",
@@ -761,7 +761,7 @@ def parse_arguments():
         help="if set True, we project to [0, 1] in forward and therefore differentiate clamp "
     )
     parser.add_argument(
-        "--project-frequency",
+        "--project-freq",
         default=1,
         type=int,
         help="project scores to [0, 1] every k gradient steps"
