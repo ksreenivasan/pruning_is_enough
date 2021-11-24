@@ -136,18 +136,18 @@ def freeze_model_weights(model):
 
     for n, m in model.named_modules():
         if hasattr(m, "weight") and m.weight is not None:
-            print(f"==> No gradient to {n}.weight")
+            # print(f"==> No gradient to {n}.weight")
             m.weight.requires_grad = False
             if m.weight.grad is not None:
-                print(f"==> Setting gradient of {n}.weight to None")
+                # print(f"==> Setting gradient of {n}.weight to None")
                 m.weight.grad = None
 
             if hasattr(m, "bias") and m.bias is not None:
-                print(f"==> No gradient to {n}.bias")
+                # print(f"==> No gradient to {n}.bias")
                 m.bias.requires_grad = False
 
                 if m.bias.grad is not None:
-                    print(f"==> Setting gradient of {n}.bias to None")
+                    # print(f"==> Setting gradient of {n}.bias to None")
                     m.bias.grad = None
 
 
@@ -157,9 +157,9 @@ def freeze_model_subnet(model):
     for n, m in model.named_modules():
         if hasattr(m, "scores"):
             m.scores.requires_grad = False
-            print(f"==> No gradient to {n}.scores")
+            # print(f"==> No gradient to {n}.scores")
             if m.scores.grad is not None:
-                print(f"==> Setting gradient of {n}.scores to None")
+                # print(f"==> Setting gradient of {n}.scores to None")
                 m.scores.grad = None
 
 
@@ -168,10 +168,10 @@ def unfreeze_model_weights(model):
 
     for n, m in model.named_modules():
         if hasattr(m, "weight") and m.weight is not None:
-            print(f"==> Gradient to {n}.weight")
+            # print(f"==> Gradient to {n}.weight")
             m.weight.requires_grad = True
             if hasattr(m, "bias") and m.bias is not None:
-                print(f"==> Gradient to {n}.bias")
+                # print(f"==> Gradient to {n}.bias")
                 m.bias.requires_grad = True
 
 
@@ -180,7 +180,7 @@ def unfreeze_model_subnet(model):
 
     for n, m in model.named_modules():
         if hasattr(m, "scores"):
-            print(f"==> Gradient to {n}.scores")
+            # print(f"==> Gradient to {n}.scores")
             m.scores.requires_grad = True
 
 
@@ -190,7 +190,7 @@ def set_model_prune_rate(model, prune_rate):
     for n, m in model.named_modules():
         if hasattr(m, "set_prune_rate"):
             m.set_prune_rate(prune_rate)
-            print(f"==> Setting prune rate of {n} to {prune_rate}")
+            # print(f"==> Setting prune rate of {n} to {prune_rate}")
 
 
 def accumulate(model, f):
@@ -258,19 +258,17 @@ def round_model(model, round_scheme, noise=False, ratio=0.0, rank=None):
 
             if round_scheme == 'naive':
                 params.data = torch.gt(params.data, torch.ones_like(params.data)*0.5).int().float()
-                #params.data = torch.gt(params.detach(), torch.ones_like(params.data)*0.5).int().float()
             elif round_scheme == 'prob':
                 params.data = torch.clamp(params.data, 0.0, 1.0)
                 params.data = torch.bernoulli(params.data).float()
             elif round_scheme == 'naive_prob':
                 if name == 'linear.0.scores':
-                    print("I am applying prob. rounding to {}".format(name))
+                    # print("Applying prob. rounding to {}".format(name))
                     params.data = torch.clamp(params.data, 0.0, 1.0)
                     params.data = torch.bernoulli(params.data).float()
                 else:
-                    print("I am applying naive rounding to {}".format(name))
+                    # print("Applying naive rounding to {}".format(name))
                     params.data = torch.gt(params.data, torch.ones_like(params.data)*0.5).int().float()
-
             else:
                 print("INVALID ROUNDING")
                 print("EXITING")  
@@ -305,22 +303,6 @@ def get_score_sparsity_hc(model):
     return 100*numer/denom
 """
 
-"""
-def prune(model):
-
-    if parser_args.algo != 'hc_iter':
-        print('not appropriate to use prune() in the current parser_args.algo')
-        raise ValueError
-
-    print('We are in prune function')
-    conv_layers, linear_layers = get_layers(parser_args.arch, model)
-    for layer in [*conv_layers, *linear_layers]:
-        #print(layer)
-        layer.flag.data = (layer.flag.data + torch.gt(layer.scores, torch.ones_like(layer.scores)*0.5).int() == 2).int()
-    return 
-
-"""
-
 def prune(model):  # update prune() for bottom K pruning
 
     if parser_args.algo != 'hc_iter':
@@ -335,7 +317,6 @@ def prune(model):  # update prune() for bottom K pruning
             layer.flag.data = (layer.flag.data + torch.gt(layer.scores, torch.ones_like(layer.scores)*0.5).int() == 2).int()
     
     elif parser_args.prune_type == 'BottomK':
-        # print("hi!!!!!!!!!!!!!!!!!!!!")
         import numpy as np
         n_non_zeros = 0
         for layer in [*conv_layers, *linear_layers]:
@@ -558,7 +539,7 @@ def flip(model):
 
 
 def step(x):
-#    return 2 * (x >= 0).float() - 1
+    # return 2 * (x >= 0).float() - 1
     return (x >= 0).float()
 
 

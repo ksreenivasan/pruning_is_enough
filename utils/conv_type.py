@@ -155,8 +155,9 @@ class SubnetConv(nn.Conv2d):
     def forward(self, x):
         if parser_args.algo in ('hc', 'hc_iter'):
             # don't need a mask here. the scores are directly multiplied with weights
-            self.scores.data = torch.clamp(self.scores.data, 0.0, 1.0)
-            self.bias_scores.data = torch.clamp(self.bias_scores.data, 0.0, 1.0)
+            if parser_args.differentiate_clamp:
+                self.scores.data = torch.clamp(self.scores.data, 0.0, 1.0)
+                self.bias_scores.data = torch.clamp(self.bias_scores.data, 0.0, 1.0)
 
             # check if args is quantization/rounding
             # then compute subnet like "else"

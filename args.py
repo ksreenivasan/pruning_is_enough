@@ -38,7 +38,7 @@ def parse_arguments():
         help="Input batch size for training (default: 64)"
     )
     parser.add_argument(
-        "--num-epochs",
+        "--epochs",
         type=int,
         default=10,
         metavar="N",
@@ -742,20 +742,31 @@ def parse_arguments():
 #        type=str,
 #        help="Which GPUs to use for multigpu training, comma separated"
 #    )
-
     parser.add_argument(
         "--rewind-score",
         action="store_true",
         default=False,
         help="if set True, every time when we prune, we set the score back to the initial state"
     )
-
     parser.add_argument(
         "--rewind-to-epoch",
         default=-1,
         type=int,
         help="to rewind to some epoch, you have to explicitly set the argument. Otherwise the code will never cache the rewinded score"
     )
+    parser.add_argument(
+        "--differentiate-clamp",
+        action="store_true",
+        default=False,
+        help="if set True, we project to [0, 1] in forward and therefore differentiate clamp "
+    )
+    parser.add_argument(
+        "--project-freq",
+        default=1,
+        type=int,
+        help="project scores to [0, 1] every k gradient steps"
+    )
+
 
     args = parser.parse_args()
     get_config(args)

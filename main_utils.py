@@ -1,5 +1,8 @@
-# main_utils.py 
-# put every long functions in main.py into here
+"""
+### main_utils.py
+### put every long functions in main.py into here
+"""
+
 from args import args as parser_args
 import pdb
 import numpy as np
@@ -241,6 +244,8 @@ def finetune(model, parser_args, data, criterion, old_epoch_list, old_test_acc_b
         scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[80, 120], gamma=0.1) # NOTE: hard-coded
     elif parser_args.epochs == 50:
         scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[20, 40], gamma=0.1) # NOTE: hard-coded
+    else:
+        scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[20, 40], gamma=0.1) # NOTE: hard-coded
     train, validate, modifier = get_trainer(parser_args)
 
     # check the performance of loaded model (after rounding)
@@ -295,7 +300,7 @@ def finetune(model, parser_args, data, criterion, old_epoch_list, old_test_acc_b
                                    'regularization_loss': reg_loss_list, 'model_sparsity': model_sparsity_list})
         if not chg_mask and not chg_weight:
             results_filename = result_root + 'acc_and_sparsity.csv'    
-        #elif chg_weight and shuffle:
+        # elif chg_weight and shuffle:
         #    results_filename = result_root + 'acc_and_sparsity_weight_shuffle.csv'    
         elif chg_mask and shuffle:
             results_filename = result_root + 'acc_and_sparsity_mask_shuffle.csv'    
