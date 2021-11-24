@@ -4,8 +4,9 @@ import yaml
 
 from configs import parser as _parser
 
+args = {'jupyter_mode': False}
 
-def parse_arguments():
+def parse_arguments(jupyter_mode=False):
     parser = argparse.ArgumentParser(description="Pruning random networks")
 
     # Config/Hyperparameters
@@ -767,8 +768,10 @@ def parse_arguments():
         help="project scores to [0, 1] every k gradient steps"
     )
 
-
-    args = parser.parse_args()
+    if jupyter_mode:
+        args = parser.parse_args("")
+    else:
+        args = parser.parse_args()
     get_config(args)
 
     return args
@@ -790,10 +793,6 @@ def get_config(args):
     args.__dict__.update(loaded_yaml)
 
 
-def run_args():
+def get_args(jupyter_mode=False):
     global args
-    args = parse_arguments()
-
-
-run_args()
-
+    args = parse_arguments(jupyter_mode)
