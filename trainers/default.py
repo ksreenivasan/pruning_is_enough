@@ -44,14 +44,12 @@ def train(train_loader, model, criterion, optimizer, epoch, args, writer):
         # compute output
         output = model(images)
 
-        # TODO: if we wanted to stick with DataParallel and fix the bug, this is
-        # how to do it
-        # TODO: clamp scores. this might be a way to handle data
-        # parallel issues
-        # if parser_args.algo in ['hc', 'pt', 'blah']:
-        #    for name, params in
-        #    model.named_parameters():
-        #        # clamp params if name has ".scores"
+        if i % args.project_freq == 0 and not args.differentiate_clamp and args.algo in ['hc', 'hc_iter', 'pt']:
+            for name, params in model.named_parameters():
+                if "score" in name:
+                    scores = params
+                    with torch.no_grad():
+                        scores.data = torch.clamp(self.scores.data, 0.0, 1.0)
 
         loss = criterion(output, target)
         regularization_loss = torch.tensor(0)
