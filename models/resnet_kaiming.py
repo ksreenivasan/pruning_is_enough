@@ -60,7 +60,8 @@ class ResNet(nn.Module):
         # self.avgpool = nn.AdaptiveAvgPool2d(1)
         self.fc = builder.conv1x1(64 * block.expansion, 10) # 10 = num_classes for cifar10
 
-        self.prunable_layer_names = self.get_prunable_param_names()
+        self.prunable_layer_names, self.prunable_biases = self.get_prunable_param_names()
+
 
     def _make_layer(self, block, planes, num_blocks, stride):
         strides = [stride] + [1] * (num_blocks - 1)
@@ -72,9 +73,17 @@ class ResNet(nn.Module):
         return nn.Sequential(*layers)
 
     def get_prunable_param_names(model):
-        return [name + '.weight' for name, module in model.named_modules() if
+        prunable_weights = [name + '.weight' for name, module in model.named_modules() if
                 isinstance(module, torch.nn.modules.conv.Conv2d) or
                 isinstance(module, torch.nn.modules.linear.Linear)]
+        if parser_args.bias:
+            prunable_biases = [name + '.bias' for name, module in model.named_modules() if
+                isinstance(module, torch.nn.modules.conv.Conv2d) or
+                isinstance(module, torch.nn.modules.linear.Linear)]
+        else:
+            prunable_biases = [""]
+
+        return prunable_weights, prunable_biases
 
     def forward(self, x):
         #import pdb; pdb.set_trace()

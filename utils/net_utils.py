@@ -6,6 +6,7 @@ import pathlib
 import shutil
 import math
 import copy
+import numpy as np
 
 import torch
 import torch.nn as nn
@@ -309,33 +310,51 @@ def prune(model):  # update prune() for bottom K pruning
         print('not appropriate to use prune() in the current parser_args.algo')
         raise ValueError
 
-    print('We are in prune function')
+    print('Pruning Model:')
     conv_layers, linear_layers = get_layers(parser_args.arch, model)
     if parser_args.prune_type == 'FixThresholding':
-        for layer in [*conv_layers, *linear_layers]:
-            #print(layer)
+        # prune weights that would be rounded to 0
+        for layer in (conv_layers + linear_layers):
             layer.flag.data = (layer.flag.data + torch.gt(layer.scores, torch.ones_like(layer.scores)*0.5).int() == 2).int()
     
     elif parser_args.prune_type == 'BottomK':
-        import numpy as np
-        n_non_zeros = 0
-        for layer in [*conv_layers, *linear_layers]:
-            n_non_zeros += layer.flag.data.clone().detach().cpu().numpy().sum()
+        num_active_weights = 0
+        num_active_biases = 0
+        active_scores_list = []
+        active_bias_scores_list = []
+        for layer in (conv_layers+ linear_layers):
+            num_active_weights += layer.flag.data.sum().item()
+            active_scores = (layer.scores.data[layer.flag.data == 1]).clone()
+            active_scores_list.append(active_scores)
+            if parser_args.bias:
+                num_active_biases += layer.bias_flag.data.sum().item()
+                active_biases = (layer.bias_scores.data[layer.bias_flag.data == 1]).clone()
+                active_bias_scores_list.append(active_biases)
 
-        number_of_weights_to_prune = np.ceil(parser_args.prune_rate * n_non_zeros).astype(int)
+        number_of_weights_to_prune = np.ceil(parser_args.prune_rate * num_active_weights).astype(int)
+        number_of_biases_to_prune = np.ceil(parser_args.prune_rate * num_active_biases).astype(int)
 
-        scores_weights = [layer.scores.data.clone().cpu().detach().numpy()[layer.flag.data.clone().detach().cpu().numpy().astype(bool)]
-                   for layer in [*conv_layers, *linear_layers]]
-        weight_vector = np.concatenate(scores_weights)
-        threshold = np.sort(np.abs(weight_vector))[number_of_weights_to_prune]
+        agg_scores = torch.cat(active_scores_list)
+        agg_bias_scores = torch.cat(active_bias_scores_list) if parser_args.bias else torch.tensor([])
 
-        for layer in [*conv_layers, *linear_layers]:
-            layer.flag.data = (layer.flag.data + torch.gt(layer.scores, torch.ones_like(layer.scores)*threshold).int() == 2).int()
+        scores_threshold = torch.sort(torch.abs(agg_scores)).values[number_of_weights_to_prune-1]
+        if parser_args.bias:
+            bias_scores_threshold = torch.sort(torch.abs(agg_bias_scores)).values[number_of_biases_to_prune-1]
+        else:
+            bias_scores_threshold = -1
+
+        for layer in (conv_layers + linear_layers):
+            layer.flag.data = (layer.flag.data + torch.gt(layer.scores, torch.ones_like(layer.scores)*scores_threshold).int() == 2).int()
+            if parser_args.bias:
+                layer.bias_flag.data = (layer.bias_flag.data + torch.gt(layer.bias_scores, torch.ones_like(layer.bias_scores)*bias_scores_threshold).int() == 2).int()
 
         if parser_args.rewind_score and layer.saved_scores is not None:
             # if we go into this branch, we will load the rewinded states of the scores
             with torch.no_grad():
                 layer.scores.data = copy.deepcopy(layer.saved_scores.data)
+                if parser_args.bias:
+                    # TODO: this will probably break
+                    layer.bias_scores.data = copy.deepcopy(layer.saved_bias_scores.data)
                 # for sanity check: the score rewind back
                 # print(layer.scores.data)  # yes, it always rewind back to the same score, the saved score does not change
         else:  # if we do not explicitly specify rewind_score, we will keep the score same
