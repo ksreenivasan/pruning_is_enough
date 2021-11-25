@@ -900,7 +900,7 @@ def get_model(parser_args):
 
 
 def get_optimizer(optimizer_args, model, finetune_flag=False):
-   '''
+    '''
     for n, v in model.named_parameters():
         if v.requires_grad:
             print("<DEBUG> gradient to", n)
@@ -908,7 +908,6 @@ def get_optimizer(optimizer_args, model, finetune_flag=False):
         if not v.requires_grad:
             print("<DEBUG> no gradient to", n)
     '''
-
     if finetune_flag:
         opt_algo = optimizer_args.fine_tune_optimizer
         opt_lr = optimizer_args.fine_tune_lr
