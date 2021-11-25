@@ -31,17 +31,26 @@ def main_worker(gpu, ngpus_per_node):
         # needs to be adjusted accordingly
         parser_args.world_size = ngpus_per_node * parser_args.world_size
     idty_str = get_idty_str(parser_args)
-    result_root = 'results/results_' + idty_str + '/'
+    if parser_args.subfolder is not None:
+        result_subroot = 'results/' + parser_args.subfolder + '/'
+        if not os.path.isdir(result_subroot):
+            os.mkdir(result_subroot)
+        result_root = result_subroot + '/results_' + idty_str + '/'
+    else:
+        result_root = 'results/results_' + idty_str + '/'
+
     if not os.path.isdir(result_root):
         os.mkdir(result_root)
     model = get_model(parser_args)
 
+    '''
     # check the model architecture
     for name, param in model.named_parameters():
         print(name)
     conv_layers, linear_layers = get_layers(parser_args.arch, model)
     for layer in [*conv_layers, *linear_layers]:
         print(layer)
+    '''
 
     if parser_args.weight_training:
         model = switch_to_wt(model) 

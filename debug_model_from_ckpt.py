@@ -40,8 +40,8 @@ model = set_gpu(args, model)
 #ckpt = torch.load("results/SGD_finetune/results_pruning_CIFAR10_resnet20_hc_iter_0_2_8_reg_L1_0_0001_sgd_constant_lr_0_1_0_1_50_fan_0_1_False_signed_constant_width_unif_seed_1_0/model_after_finetune.pth")
 
 
-#ckpt = torch.load("results/SGD_finetune/results_pruning_CIFAR10_resnet20_hc_iter_0_2_8_reg_L1_5e-05_sgd_cosine_lr_0_1_0_1_50_fan_0_01_False_signed_constant_width_unif_seed_1_0/model_before_finetune.pth")
-ckpt = torch.load("results/SGD_finetune/results_pruning_CIFAR10_resnet20_hc_iter_0_2_8_reg_L1_5e-05_sgd_cosine_lr_0_1_0_1_50_fan_0_01_False_signed_constant_width_unif_seed_1_0/model_after_finetune.pth")
+ckpt = torch.load("results/SGD_finetune/results_pruning_CIFAR10_resnet20_hc_iter_0_2_8_reg_L1_5e-05_sgd_cosine_lr_0_1_0_1_50_fan_0_01_False_signed_constant_width_unif_seed_1_0/model_before_finetune.pth")
+#ckpt = torch.load("results/SGD_finetune/results_pruning_CIFAR10_resnet20_hc_iter_0_2_8_reg_L1_5e-05_sgd_cosine_lr_0_1_0_1_50_fan_0_01_False_signed_constant_width_unif_seed_1_0/model_after_finetune.pth")
 
 # note that if you are loading ckpt from the ramanujan-style savepoints, you need to add ckpt['state_dict']
 # otherwise, we typically save the state dict directly, so you can just use ckpt
@@ -59,7 +59,9 @@ for lin_layer in lin_layers:
     w_numer, w_denom, b_numer, b_denom = get_layer_sparsity(lin_layer)
     print("Layer: {} | {}/{} weights | Sparsity = {}".format(lin_layer, w_numer, w_denom, 100.0*w_numer/w_denom))
 
+print(args.arch)
 
+"""
 weight_params = []
 bias_params = []
 other_params = []

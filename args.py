@@ -20,6 +20,16 @@ def parse_arguments():
         help="Where to save the runs. If None use ./runs"   
         )
     parser.add_argument(
+        "--run_idx",
+        default=None,
+        help="index of run used for counting yml/log/save_folder"
+        )
+    parser.add_argument(
+        "--subfolder",
+        default=None,
+        help="subfolder within the location for saving the results"
+        )
+    parser.add_argument(
         "--name",
         default=None,
         type=str,
