@@ -58,6 +58,10 @@ class GetSubnet(autograd.Function):
             bias_flat_out[idx[:j]] = 0
             bias_flat_out[idx[j:]] = 1
 
+        elif parser_args.algo == 'global_ep':
+
+            raise NotImplementedError  
+
         elif parser_args.algo == 'pt':
             scores = torch.clamp(MULTIPLIER*scores, 0, 1)
             bias_scores = torch.clamp(MULTIPLIER*bias_scores, 0, 1)
