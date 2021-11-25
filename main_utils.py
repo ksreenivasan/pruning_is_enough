@@ -337,10 +337,11 @@ def get_idty_str(parser_args):
     s_str = parser_args.score_init
     width_str = parser_args.width
     seed_str = parser_args.seed + parser_args.trial_num - 1
-    idty_str = "{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_fan_{}_{}_{}_width_{}_seed_{}".\
+    run_idx_str = parser_args.run_idx
+    idty_str = "{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_finetune_{}_fan_{}_{}_{}_width_{}_seed_{}_idx_{}".\
         format(train_mode_str, dataset_str, model_str, algo_str, rate_str, period_str, reg_str, reg_lmbda,
         opt_str, policy_str, lr_str, lr_gamma, lr_adj, finetune_lr_str, fan_str, w_str, s_str,
-        width_str, seed_str).replace(".", "_")
+        width_str, seed_str, run_idx_str).replace(".", "_")
 
 
     return idty_str
