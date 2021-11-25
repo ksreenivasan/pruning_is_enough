@@ -6,7 +6,7 @@ import torch.nn.functional as F
 import pdb
 import math
 
-from args import args as parser_args
+from args_helper import parser_args
 
 
 DenseConv = nn.Conv2d
@@ -141,6 +141,10 @@ class SubnetConv(nn.Conv2d):
             if parser_args.bias:
                 self.bias.requires_grad = False
 
+        # set a storage for layer score 
+        if parser_args.rewind_score:
+            self.saved_scores = None
+
     def set_prune_rate(self, prune_rate):
         self.prune_rate = prune_rate
 
@@ -151,8 +155,9 @@ class SubnetConv(nn.Conv2d):
     def forward(self, x):
         if parser_args.algo in ('hc', 'hc_iter'):
             # don't need a mask here. the scores are directly multiplied with weights
-            self.scores.data = torch.clamp(self.scores.data, 0.0, 1.0)
-            self.bias_scores.data = torch.clamp(self.bias_scores.data, 0.0, 1.0)
+            if parser_args.differentiate_clamp:
+                self.scores.data = torch.clamp(self.scores.data, 0.0, 1.0)
+                self.bias_scores.data = torch.clamp(self.bias_scores.data, 0.0, 1.0)
 
             # check if args is quantization/rounding
             # then compute subnet like "else"

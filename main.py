@@ -1,48 +1,3 @@
-# from args import args as parser_args
-# import pdb
-# import numpy as np
-# import os
-# import pathlib
-# import random
-# import time
-# import pandas as pd
-# from torch.utils.tensorboard import SummaryWriter
-# import torch
-# import torch.nn as nn
-# import torch.nn.parallel
-# import torch.backends.cudnn as cudnn
-# import torch.optim
-# import torch.utils.data
-# import torch.utils.data.distributed
-# import torch.multiprocessing as mp
-
-# import sys
-# import re
-
-# from utils.conv_type import FixedSubnetConv, SampleSubnetConv
-# from utils.logging import AverageMeter, ProgressMeter
-# from utils.net_utils import (
-#     set_model_prune_rate,
-#     freeze_model_weights,
-#     save_checkpoint,
-#     get_lr,
-#     LabelSmoothing,
-#     round_model,
-#     get_model_sparsity,
-#     prune,
-#     redraw,
-# )
-# from utils.schedulers import get_policy
-# from utils.utils import set_seed, plot_histogram_scores
-
-# import importlib
-
-# import data
-# import models
-
-# import copy
-# from torch._utils import _flatten_dense_tensors, _unflatten_dense_tensors
-
 from main_utils import *
 
 
@@ -76,10 +31,27 @@ def main_worker(gpu, ngpus_per_node):
         # needs to be adjusted accordingly
         parser_args.world_size = ngpus_per_node * parser_args.world_size
     idty_str = get_idty_str(parser_args)
-    result_root = 'results/results_' + idty_str + '/'
+    if parser_args.subfolder is not None:
+        result_subroot = 'results/' + parser_args.subfolder + '/'
+        if not os.path.isdir(result_subroot):
+            os.mkdir(result_subroot)
+        result_root = result_subroot + '/results_' + idty_str + '/'
+    else:
+        result_root = 'results/results_' + idty_str + '/'
+
     if not os.path.isdir(result_root):
         os.mkdir(result_root)
     model = get_model(parser_args)
+
+    '''
+    # check the model architecture
+    for name, param in model.named_parameters():
+        print(name)
+    conv_layers, linear_layers = get_layers(parser_args.arch, model)
+    for layer in [*conv_layers, *linear_layers]:
+        print(layer)
+    '''
+
     if parser_args.weight_training:
         model = switch_to_wt(model) 
     model = set_gpu(parser_args, model)
@@ -92,7 +64,8 @@ def main_worker(gpu, ngpus_per_node):
         model2 = None
     optimizer = get_optimizer(parser_args, model)
     data = get_dataset(parser_args)
-    lr_policy = get_policy(parser_args.lr_policy)(optimizer, parser_args)
+    scheduler = get_scheduler(optimizer, parser_args.lr_policy) 
+    #lr_policy = get_policy(parser_args.lr_policy)(optimizer, parser_args)
     if parser_args.label_smoothing is None:
         criterion = nn.CrossEntropyLoss().cuda()
     else:
@@ -120,33 +93,26 @@ def main_worker(gpu, ngpus_per_node):
     acc1 = None
     epoch_list, test_acc_before_round_list, test_acc_list, reg_loss_list, model_sparsity_list = [], [], [], [], []
 
-    # Save the initial state
-    save_checkpoint(
-        {
-            "epoch": 0, 
-            "arch": parser_args.arch,
-            "state_dict": model.state_dict(),
-            "best_acc1": best_acc1,
-            "best_acc5": best_acc5,
-            "best_acc10": best_acc10,
-            "best_train_acc1": best_train_acc1,
-            "best_train_acc5": best_train_acc5,
-            "best_train_acc10": best_train_acc10,
-            "optimizer": optimizer.state_dict(),
-            "curr_acc1": acc1 if acc1 else "Not evaluated",
-        },
-        False,
-        filename=ckpt_base_dir / f"initial.state",
-        save=False,
-    )
+    # Save the initial model
+    torch.save(model.state_dict(), result_root + 'init_model.pth')
 
     # Start training
     for epoch in range(parser_args.start_epoch, parser_args.epochs):
         if parser_args.multiprocessing_distributed:
             data.train_loader.sampler.set_epoch(epoch)
-        lr_policy(epoch, iteration=None)
+        #lr_policy(epoch, iteration=None)
         modifier(parser_args, epoch, model)
         cur_lr = get_lr(optimizer)
+
+        # save the score at the beginning of training epoch, so if we set parser.args.rewind_to_epoch to 0
+        # that means we save the initialization of score
+        if parser_args.rewind_score and parser_args.rewind_to_epoch == epoch:
+            # if rewind the score, checkpoint the score when reach the desired epoch (rewind to iteration not yet implemented)
+            with torch.no_grad():
+                conv_layers, linear_layers = get_layers(parser_args.arch, model)
+                for layer in [*conv_layers, *linear_layers]:
+                    layer.saved_score.data = layer.score.data
+
         print('epoch: {}, lr: {}'.format(epoch, cur_lr))
         print("="*60)
         # train for one epoch
@@ -155,6 +121,7 @@ def main_worker(gpu, ngpus_per_node):
             data.train_loader, model, criterion, optimizer, epoch, parser_args, writer=writer
         )
         train_time.update((time.time() - start_train) / 60)
+        scheduler.step()
 
         # evaluate on validation set
         start_validation = time.time()
@@ -203,43 +170,6 @@ def main_worker(gpu, ngpus_per_node):
         reg_loss_list.append(reg_loss)
         model_sparsity_list.append(avg_sparsity)
 
-        # remember best acc@1 and save checkpoint
-        is_best = acc1 > best_acc1
-        best_acc1 = max(acc1, best_acc1)
-        best_acc5 = max(acc5, best_acc5)
-        best_acc10 = max(acc10, best_acc10)
-        best_train_acc1 = max(train_acc1, best_train_acc1)
-        best_train_acc5 = max(train_acc5, best_train_acc5)
-        best_train_acc10 = max(train_acc10, best_train_acc10)
-
-        save = ((epoch % parser_args.save_every) == 0) and parser_args.save_every > 0
-        if is_best or save or epoch == parser_args.epochs - 1:
-            if is_best:
-                print(f"==> New best, saving at {ckpt_base_dir / 'model_best.pth'}")
-
-            save_checkpoint(
-                {
-                    "epoch": epoch + 1,
-                    "arch": parser_args.arch,
-                    "state_dict": model.state_dict(),
-                    "best_acc1": best_acc1,
-                    "best_acc5": best_acc5,
-                    "best_acc10": best_acc10,
-                    "best_train_acc1": best_train_acc1,
-                    "best_train_acc5": best_train_acc5,
-                    "best_train_acc10": best_train_acc10,
-                    "optimizer": optimizer.state_dict(),
-                    "curr_acc1": acc1,
-                    "curr_acc5": acc5,
-                    "curr_acc10": acc10,
-                },
-                is_best,
-                filename=ckpt_base_dir / f"epoch_{epoch}.state",
-                save=save,
-                parser_args=parser_args,
-            )
-
-
         epoch_time.update((time.time() - end_epoch) / 60)
         progress_overall.display(epoch)
         progress_overall.write_to_tensorboard(
@@ -283,20 +213,8 @@ def main_worker(gpu, ngpus_per_node):
         print("Writing results into: {}".format(results_filename))
         results_df.to_csv(results_filename, index=False)
 
-    write_result_to_csv(
-        best_acc1=best_acc1,
-        best_acc5=best_acc5,
-        best_acc10=best_acc10,
-        best_train_acc1=best_train_acc1,
-        best_train_acc5=best_train_acc5,
-        best_train_acc10=best_train_acc10,
-        prune_rate=parser_args.prune_rate,
-        curr_acc1=acc1,
-        curr_acc5=acc5,
-        curr_acc10=acc10,
-        base_config=parser_args.config,
-        name=parser_args.name,
-    )
+    # save checkpoint before fine-tuning
+    torch.save(model.state_dict(), result_root + 'model_before_finetune.pth')
 
     # check the performance of trained model
     if parser_args.algo in ['hc', 'hc_iter', 'ep']:
@@ -306,6 +224,8 @@ def main_worker(gpu, ngpus_per_node):
             cp_model = finetune(cp_model, parser_args, data, criterion, epoch_list, test_acc_before_round_list, test_acc_list, reg_loss_list, model_sparsity_list, result_root)
             # print out the final acc
             eval_and_print(validate, data.val_loader, cp_model, criterion, parser_args, writer=None, description='final model after finetuning')
+            # save checkpoint after fine-tuning
+            torch.save(cp_model.state_dict(), result_root + 'model_after_finetune.pth')
         else:
             print("Skipping finetuning!!!")
 
@@ -314,12 +234,10 @@ def main_worker(gpu, ngpus_per_node):
         
         else:
             print("Skipping sanity checks!!!")
+    
 
     if parser_args.multiprocessing_distributed:
         cleanup_distributed()
-
-
-
 
 if __name__ == "__main__":
     main()

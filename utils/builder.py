@@ -1,4 +1,4 @@
-from args import args as parser_args
+from args_helper import parser_args
 import math
 
 import torch
@@ -18,7 +18,7 @@ class Builder(object):
         conv_layer = self.first_layer if first_layer else self.conv_layer
 
         if first_layer:
-            print(f"==> Building first layer with {str(self.first_layer)}")
+            print(f"==> Building first layer")
 
         if kernel_size == 3:
             conv = conv_layer(

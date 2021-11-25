@@ -146,3 +146,4 @@ model_checkpoints/
 plots/
 runs/
 *.pt
+cifar_log

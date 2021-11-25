@@ -1,6 +1,9 @@
-# main_utils.py 
-# put every long functions in main.py into here
-from args import args as parser_args
+"""
+### main_utils.py
+### put every long functions in main.py into here
+"""
+
+from args_helper import parser_args
 import pdb
 import numpy as np
 import os
@@ -33,8 +36,9 @@ from utils.net_utils import (
     get_model_sparsity,
     prune,
     redraw,
+    get_layers
 )
-from utils.schedulers import get_policy
+from utils.schedulers import get_scheduler
 from utils.utils import set_seed, plot_histogram_scores
 
 import importlib
@@ -44,7 +48,6 @@ import models
 
 import copy
 from torch._utils import _flatten_dense_tensors, _unflatten_dense_tensors
-
 
 def do_sanity_checks(model, parser_args, data, criterion, epoch_list, test_acc_before_round_list, test_acc_list,
                     reg_loss_list, model_sparsity_list, result_root):
@@ -218,6 +221,9 @@ def finetune(model, parser_args, data, criterion, old_epoch_list, old_test_acc_b
     reg_loss_list = copy.deepcopy(old_reg_loss_list)
     model_sparsity_list = copy.deepcopy(old_model_sparsity_list)
 
+    if parser_args.results_filename:
+        result_root = parser_args.results_filename + '_'
+
     # round the score (in the model itself)
     model = round_model(model, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio, rank=parser_args.gpu)    
     # apply reinit/shuffling masks/weights (if necessary)
@@ -226,11 +232,19 @@ def finetune(model, parser_args, data, criterion, old_epoch_list, old_test_acc_b
     # switch to weight training mode (turn on the requires_grad for weight/bias, and turn off the requires_grad for other parameters)
     model = switch_to_wt(model)
 
+    # not to use score regulaization during the weight training
+    parser_args.regularization = False
+    
     # set base_setting and evaluate 
     run_base_dir, ckpt_base_dir, log_base_dir, writer, epoch_time, validation_time, train_time, progress_overall = get_settings(parser_args)
     
     optimizer = get_optimizer(parser_args, model, finetune_flag=True)
-    scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[80, 120], gamma=0.1) # NOTE: hard-coded
+    if parser_args.epochs == 150:
+        scheduler = get_scheduler(optimizer, parser_args.fine_tune_lr_policy, milestones=[80, 120], gamma=0.1) # NOTE: hard-coded
+    elif parser_args.epochs == 50:
+        scheduler = get_scheduler(optimizer, parser_args.fine_tune_lr_policy, milestones=[20, 40], gamma=0.1) # NOTE: hard-coded
+    else:
+        scheduler = get_scheduler(optimizer, parser_args.fine_tune_lr_policy, milestones=[20, 40], gamma=0.1) # NOTE: hard-coded
     train, validate, modifier = get_trainer(parser_args)
 
     # check the performance of loaded model (after rounding)
@@ -285,7 +299,7 @@ def finetune(model, parser_args, data, criterion, old_epoch_list, old_test_acc_b
                                    'regularization_loss': reg_loss_list, 'model_sparsity': model_sparsity_list})
         if not chg_mask and not chg_weight:
             results_filename = result_root + 'acc_and_sparsity.csv'    
-        #elif chg_weight and shuffle:
+        # elif chg_weight and shuffle:
         #    results_filename = result_root + 'acc_and_sparsity_weight_shuffle.csv'    
         elif chg_mask and shuffle:
             results_filename = result_root + 'acc_and_sparsity_mask_shuffle.csv'    
@@ -317,15 +331,17 @@ def get_idty_str(parser_args):
     lr_str = parser_args.lr
     lr_gamma = parser_args.lr_gamma
     lr_adj = parser_args.lr_adjust
+    finetune_lr_str = parser_args.fine_tune_lr
     fan_str = parser_args.scale_fan
     w_str = parser_args.init
     s_str = parser_args.score_init
     width_str = parser_args.width
     seed_str = parser_args.seed + parser_args.trial_num - 1
-    idty_str = "{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_fan_{}_{}_{}_width_{}_seed_{}".\
+    run_idx_str = parser_args.run_idx
+    idty_str = "{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_finetune_{}_fan_{}_{}_{}_width_{}_seed_{}_idx_{}".\
         format(train_mode_str, dataset_str, model_str, algo_str, rate_str, period_str, reg_str, reg_lmbda,
-        opt_str, policy_str, lr_str, lr_gamma, lr_adj, fan_str, w_str, s_str,
-        width_str, seed_str).replace(".", "_")
+        opt_str, policy_str, lr_str, lr_gamma, lr_adj, finetune_lr_str, fan_str, w_str, s_str,
+        width_str, seed_str, run_idx_str).replace(".", "_")
 
 
     return idty_str
@@ -884,13 +900,14 @@ def get_model(parser_args):
 
 
 def get_optimizer(optimizer_args, model, finetune_flag=False):
+    '''
     for n, v in model.named_parameters():
         if v.requires_grad:
             print("<DEBUG> gradient to", n)
 
         if not v.requires_grad:
             print("<DEBUG> no gradient to", n)
-
+    '''
     if finetune_flag:
         opt_algo = optimizer_args.fine_tune_optimizer
         opt_lr = optimizer_args.fine_tune_lr

@@ -1,4 +1,4 @@
-from args import args as parser_args
+from args_helper import parser_args
 from functools import partial
 import os
 import pdb
@@ -6,6 +6,7 @@ import pathlib
 import shutil
 import math
 import copy
+import numpy as np
 
 import torch
 import torch.nn as nn
@@ -25,7 +26,7 @@ def get_layers(arch='Conv4', model=None):
     elif arch == 'resnet20':
         conv_layers = [model.conv1]
         for layer in [model.layer1, model.layer2, model.layer3]:
-            for basic_block_id in [0, 1]:
+            for basic_block_id in [0, 1, 2]:
                 conv_layers.append(layer[basic_block_id].conv1)
                 conv_layers.append(layer[basic_block_id].conv2)
                 '''
@@ -52,8 +53,8 @@ def get_layers(arch='Conv4', model=None):
                 conv_layers.append(layer[basic_block_id].conv2)
                 conv_layers.append(layer[basic_block_id].conv3)
                 # handle shortcut
-#                if len(layer[basic_block_id].shortcut) > 0:
-#                    conv_layers.append(layer[basic_block_id].shortcut[0])
+                # if len(layer[basic_block_id].shortcut) > 0:
+                #     conv_layers.append(layer[basic_block_id].shortcut[0])
 
         linear_layers = [model.fc]
     return (conv_layers, linear_layers)
@@ -136,18 +137,18 @@ def freeze_model_weights(model):
 
     for n, m in model.named_modules():
         if hasattr(m, "weight") and m.weight is not None:
-            print(f"==> No gradient to {n}.weight")
+            # print(f"==> No gradient to {n}.weight")
             m.weight.requires_grad = False
             if m.weight.grad is not None:
-                print(f"==> Setting gradient of {n}.weight to None")
+                # print(f"==> Setting gradient of {n}.weight to None")
                 m.weight.grad = None
 
             if hasattr(m, "bias") and m.bias is not None:
-                print(f"==> No gradient to {n}.bias")
+                # print(f"==> No gradient to {n}.bias")
                 m.bias.requires_grad = False
 
                 if m.bias.grad is not None:
-                    print(f"==> Setting gradient of {n}.bias to None")
+                    # print(f"==> Setting gradient of {n}.bias to None")
                     m.bias.grad = None
 
 
@@ -157,9 +158,9 @@ def freeze_model_subnet(model):
     for n, m in model.named_modules():
         if hasattr(m, "scores"):
             m.scores.requires_grad = False
-            print(f"==> No gradient to {n}.scores")
+            # print(f"==> No gradient to {n}.scores")
             if m.scores.grad is not None:
-                print(f"==> Setting gradient of {n}.scores to None")
+                # print(f"==> Setting gradient of {n}.scores to None")
                 m.scores.grad = None
 
 
@@ -168,10 +169,10 @@ def unfreeze_model_weights(model):
 
     for n, m in model.named_modules():
         if hasattr(m, "weight") and m.weight is not None:
-            print(f"==> Gradient to {n}.weight")
+            # print(f"==> Gradient to {n}.weight")
             m.weight.requires_grad = True
             if hasattr(m, "bias") and m.bias is not None:
-                print(f"==> Gradient to {n}.bias")
+                # print(f"==> Gradient to {n}.bias")
                 m.bias.requires_grad = True
 
 
@@ -180,7 +181,7 @@ def unfreeze_model_subnet(model):
 
     for n, m in model.named_modules():
         if hasattr(m, "scores"):
-            print(f"==> Gradient to {n}.scores")
+            # print(f"==> Gradient to {n}.scores")
             m.scores.requires_grad = True
 
 
@@ -190,7 +191,7 @@ def set_model_prune_rate(model, prune_rate):
     for n, m in model.named_modules():
         if hasattr(m, "set_prune_rate"):
             m.set_prune_rate(prune_rate)
-            print(f"==> Setting prune rate of {n} to {prune_rate}")
+            # print(f"==> Setting prune rate of {n} to {prune_rate}")
 
 
 def accumulate(model, f):
@@ -258,19 +259,17 @@ def round_model(model, round_scheme, noise=False, ratio=0.0, rank=None):
 
             if round_scheme == 'naive':
                 params.data = torch.gt(params.data, torch.ones_like(params.data)*0.5).int().float()
-                #params.data = torch.gt(params.detach(), torch.ones_like(params.data)*0.5).int().float()
             elif round_scheme == 'prob':
                 params.data = torch.clamp(params.data, 0.0, 1.0)
                 params.data = torch.bernoulli(params.data).float()
             elif round_scheme == 'naive_prob':
                 if name == 'linear.0.scores':
-                    print("I am applying prob. rounding to {}".format(name))
+                    # print("Applying prob. rounding to {}".format(name))
                     params.data = torch.clamp(params.data, 0.0, 1.0)
                     params.data = torch.bernoulli(params.data).float()
                 else:
-                    print("I am applying naive rounding to {}".format(name))
+                    # print("Applying naive rounding to {}".format(name))
                     params.data = torch.gt(params.data, torch.ones_like(params.data)*0.5).int().float()
-
             else:
                 print("INVALID ROUNDING")
                 print("EXITING")  
@@ -305,51 +304,61 @@ def get_score_sparsity_hc(model):
     return 100*numer/denom
 """
 
-"""
-def prune(model):
-
-    if parser_args.algo != 'hc_iter':
-        print('not appropriate to use prune() in the current parser_args.algo')
-        raise ValueError
-
-    print('We are in prune function')
-    conv_layers, linear_layers = get_layers(parser_args.arch, model)
-    for layer in [*conv_layers, *linear_layers]:
-        #print(layer)
-        layer.flag.data = (layer.flag.data + torch.gt(layer.scores, torch.ones_like(layer.scores)*0.5).int() == 2).int()
-    return 
-
-"""
-
 def prune(model):  # update prune() for bottom K pruning
 
     if parser_args.algo != 'hc_iter':
         print('not appropriate to use prune() in the current parser_args.algo')
         raise ValueError
 
-    print('We are in prune function')
+    print('Pruning Model:')
     conv_layers, linear_layers = get_layers(parser_args.arch, model)
     if parser_args.prune_type == 'FixThresholding':
-        for layer in [*conv_layers, *linear_layers]:
-            #print(layer)
+        # prune weights that would be rounded to 0
+        for layer in (conv_layers + linear_layers):
             layer.flag.data = (layer.flag.data + torch.gt(layer.scores, torch.ones_like(layer.scores)*0.5).int() == 2).int()
     
     elif parser_args.prune_type == 'BottomK':
-        # print("hi!!!!!!!!!!!!!!!!!!!!")
-        import numpy as np
-        n_non_zeros = 0
-        for layer in [*conv_layers, *linear_layers]:
-            n_non_zeros += layer.flag.data.clone().detach().cpu().numpy().sum()
+        num_active_weights = 0
+        num_active_biases = 0
+        active_scores_list = []
+        active_bias_scores_list = []
+        for layer in (conv_layers+ linear_layers):
+            num_active_weights += layer.flag.data.sum().item()
+            active_scores = (layer.scores.data[layer.flag.data == 1]).clone()
+            active_scores_list.append(active_scores)
+            if parser_args.bias:
+                num_active_biases += layer.bias_flag.data.sum().item()
+                active_biases = (layer.bias_scores.data[layer.bias_flag.data == 1]).clone()
+                active_bias_scores_list.append(active_biases)
 
-        number_of_weights_to_prune = np.ceil(parser_args.prune_rate * n_non_zeros).astype(int)
+        number_of_weights_to_prune = np.ceil(parser_args.prune_rate * num_active_weights).astype(int)
+        number_of_biases_to_prune = np.ceil(parser_args.prune_rate * num_active_biases).astype(int)
 
-        scores_weights = [layer.scores.data.clone().cpu().detach().numpy()[layer.flag.data.clone().detach().cpu().numpy().astype(bool)]
-                   for layer in [*conv_layers, *linear_layers]]
-        weight_vector = np.concatenate(scores_weights)
-        threshold = np.sort(np.abs(weight_vector))[number_of_weights_to_prune]
+        agg_scores = torch.cat(active_scores_list)
+        agg_bias_scores = torch.cat(active_bias_scores_list) if parser_args.bias else torch.tensor([])
 
-        for layer in [*conv_layers, *linear_layers]:
-            layer.flag.data = (layer.flag.data + torch.gt(layer.scores, torch.ones_like(layer.scores)*threshold).int() == 2).int()
+        scores_threshold = torch.sort(torch.abs(agg_scores)).values[number_of_weights_to_prune-1]
+        if parser_args.bias:
+            bias_scores_threshold = torch.sort(torch.abs(agg_bias_scores)).values[number_of_biases_to_prune-1]
+        else:
+            bias_scores_threshold = -1
+
+        for layer in (conv_layers + linear_layers):
+            layer.flag.data = (layer.flag.data + torch.gt(layer.scores, torch.ones_like(layer.scores)*scores_threshold).int() == 2).int()
+            if parser_args.bias:
+                layer.bias_flag.data = (layer.bias_flag.data + torch.gt(layer.bias_scores, torch.ones_like(layer.bias_scores)*bias_scores_threshold).int() == 2).int()
+
+        if parser_args.rewind_score and layer.saved_scores is not None:
+            # if we go into this branch, we will load the rewinded states of the scores
+            with torch.no_grad():
+                layer.scores.data = copy.deepcopy(layer.saved_scores.data)
+                if parser_args.bias:
+                    # TODO: this will probably break
+                    layer.bias_scores.data = copy.deepcopy(layer.saved_bias_scores.data)
+                # for sanity check: the score rewind back
+                # print(layer.scores.data)  # yes, it always rewind back to the same score, the saved score does not change
+        else:  # if we do not explicitly specify rewind_score, we will keep the score same
+            pass
 
     return
 
@@ -422,7 +431,7 @@ def get_layer_sparsity(layer, threshold=0):
     return w_numer, w_denom, b_numer, b_denom
 
 
-def get_regularization_loss(model, regularizer='var_red_1', lmbda=1, alpha=1, alpha_prime=1):
+def get_regularization_loss(model, regularizer='L2', lmbda=1, alpha=1, alpha_prime=1):
     if isinstance(model, nn.parallel.DistributedDataParallel):
         model = model.module
     conv_layers, linear_layers = get_layers(parser_args.arch, model)
@@ -440,7 +449,29 @@ def get_regularization_loss(model, regularizer='var_red_1', lmbda=1, alpha=1, al
         return reg_sum
 
     regularization_loss = torch.tensor(0.).cuda()
-    if regularizer == 'var_red_1':
+    if regularizer == 'L2':
+        # reg_loss =  ||p||_2^2
+        for name, params in model.named_parameters():
+            if ".bias_score" in name:
+                if parser_args.bias:
+                    regularization_loss += torch.norm(params, p=2)**2
+
+            elif ".score" in name:
+                regularization_loss += torch.norm(params, p=2)**2
+        regularization_loss = lmbda * regularization_loss
+
+    elif regularizer == 'L1':
+        # reg_loss =  ||p||_1
+        for name, params in model.named_parameters():
+            if ".bias_score" in name:
+                if parser_args.bias:
+                    regularization_loss += torch.norm(params, p=1)
+
+            elif ".score" in name:
+                regularization_loss += torch.norm(params, p=1)
+        regularization_loss = lmbda * regularization_loss
+
+    elif regularizer == 'var_red_1':
         # reg_loss = lambda * p^{alpha} (1-p)^{alpha'}
         for name, params in model.named_parameters():
             if ".bias_score" in name:
@@ -481,6 +512,8 @@ def get_regularization_loss(model, regularizer='var_red_1', lmbda=1, alpha=1, al
                             - (1-params_filt) * torch.log(1-params_filt))
 
         regularization_loss = lmbda * regularization_loss
+
+    #print('red loss: ', regularization_loss)
 
     return regularization_loss
 
@@ -525,7 +558,7 @@ def flip(model):
 
 
 def step(x):
-#    return 2 * (x >= 0).float() - 1
+    # return 2 * (x >= 0).float() - 1
     return (x >= 0).float()
 
 
