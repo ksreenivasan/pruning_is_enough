@@ -3,7 +3,7 @@
 ### put every long functions in main.py into here
 """
 
-from args import args as parser_args
+from args_helper import parser_args
 import pdb
 import numpy as np
 import os
@@ -48,7 +48,6 @@ import models
 
 import copy
 from torch._utils import _flatten_dense_tensors, _unflatten_dense_tensors
-
 
 def do_sanity_checks(model, parser_args, data, criterion, epoch_list, test_acc_before_round_list, test_acc_list,
                     reg_loss_list, model_sparsity_list, result_root):

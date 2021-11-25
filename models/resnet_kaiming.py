@@ -7,7 +7,7 @@ import torch.nn.functional as F
 import torch.nn.init as init
 
 from utils.builder import get_builder
-from args import args
+from args_helper import parser_args
 
 # def _weights_init(m):
 #     classname = m.__class__.__name__

@@ -6,7 +6,7 @@ import torch
 import torch.nn as nn
 from utils.builder import get_builder
 
-from args import args
+from args_helper import parser_args
 
 
 class Conv2(nn.Module):
