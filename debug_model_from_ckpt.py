@@ -12,7 +12,6 @@
  be useful to others, please add a few comments and push the code.
 """
 
-from args_helper import ArgsHelper
 import importlib
 
 import data
@@ -23,8 +22,6 @@ from utils.conv_type import GetSubnet
 from utils.net_utils import get_model_sparsity, get_layer_sparsity
 
 import re
-
-parser_args = ArgsHelper().get_args()
 
 
 # load this guy: resnet18-sc-unsigned.yaml
