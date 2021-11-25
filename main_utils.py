@@ -38,7 +38,7 @@ from utils.net_utils import (
     redraw,
     get_layers
 )
-from utils.schedulers import get_policy
+from utils.schedulers import get_scheduler
 from utils.utils import set_seed, plot_histogram_scores
 
 import importlib
@@ -240,11 +240,11 @@ def finetune(model, parser_args, data, criterion, old_epoch_list, old_test_acc_b
     
     optimizer = get_optimizer(parser_args, model, finetune_flag=True)
     if parser_args.epochs == 150:
-        scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[80, 120], gamma=0.1) # NOTE: hard-coded
+        scheduler = get_scheduler(optimizer, parser_args.fine_tune_lr_policy, milestones=[80, 120], gamma=0.1) # NOTE: hard-coded
     elif parser_args.epochs == 50:
-        scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[20, 40], gamma=0.1) # NOTE: hard-coded
+        scheduler = get_scheduler(optimizer, parser_args.fine_tune_lr_policy, milestones=[20, 40], gamma=0.1) # NOTE: hard-coded
     else:
-        scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[20, 40], gamma=0.1) # NOTE: hard-coded
+        scheduler = get_scheduler(optimizer, parser_args.fine_tune_lr_policy, milestones=[20, 40], gamma=0.1) # NOTE: hard-coded
     train, validate, modifier = get_trainer(parser_args)
 
     # check the performance of loaded model (after rounding)

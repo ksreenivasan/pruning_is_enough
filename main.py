@@ -64,7 +64,8 @@ def main_worker(gpu, ngpus_per_node):
         model2 = None
     optimizer = get_optimizer(parser_args, model)
     data = get_dataset(parser_args)
-    lr_policy = get_policy(parser_args.lr_policy)(optimizer, parser_args)
+    scheduler = get_scheduler(optimizer, parser_args.lr_policy) 
+    #lr_policy = get_policy(parser_args.lr_policy)(optimizer, parser_args)
     if parser_args.label_smoothing is None:
         criterion = nn.CrossEntropyLoss().cuda()
     else:
@@ -99,7 +100,7 @@ def main_worker(gpu, ngpus_per_node):
     for epoch in range(parser_args.start_epoch, parser_args.epochs):
         if parser_args.multiprocessing_distributed:
             data.train_loader.sampler.set_epoch(epoch)
-        lr_policy(epoch, iteration=None)
+        #lr_policy(epoch, iteration=None)
         modifier(parser_args, epoch, model)
         cur_lr = get_lr(optimizer)
 
@@ -120,6 +121,7 @@ def main_worker(gpu, ngpus_per_node):
             data.train_loader, model, criterion, optimizer, epoch, parser_args, writer=writer
         )
         train_time.update((time.time() - start_train) / 60)
+        scheduler.step()
 
         # evaluate on validation set
         start_validation = time.time()

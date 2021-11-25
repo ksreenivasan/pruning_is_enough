@@ -10,6 +10,8 @@ class ArgsHelper:
     def parse_arguments(self, jupyter_mode=False):
         parser = argparse.ArgumentParser(description="Pruning random networks")
 
+
+
         # Config/Hyperparameters
         parser.add_argument(
             "--data",
@@ -725,6 +727,12 @@ class ArgsHelper:
             help="optimizer option to use |sgd|adam| for fine-tuning weights"
         )
         parser.add_argument(
+            "--fine-tune-lr-policy",
+            type=str,
+            default=None,
+            help="Learning rate scheduler (for finetune)"
+        )
+        parser.add_argument(
             "--fine-tune-lr",
             type=float,
             default=0.01,
@@ -768,6 +776,18 @@ class ArgsHelper:
             type=int,
             help="project scores to [0, 1] every k gradient steps"
         )
+        parser.add_argument(
+             "--run_idx",
+             default=None,
+             help="index of run used for counting yml/log/save_folder"
+             )
+        parser.add_argument(
+             "--subfolder",
+             default=None,
+             help="subfolder within the location for saving the results"
+             )
+
+
 
         if jupyter_mode:
             args = parser.parse_args("")
