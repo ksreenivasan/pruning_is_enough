@@ -6,10 +6,13 @@
 #python main.py --config configs/hypercube/resnet18/resnet18_sc_hypercube_iter_reg_v2.yml 
 #python main.py --config configs/hypercube/resnet18/resnet18_sc_hypercube_noreg.yml 
 #python main.py --config configs/ep/resnet18/resnet18_sc_ep.yml
-#python iiiiiiiiiiiiiVVVVVVVVVVVVVVVVVVVVVimain.py --config configs/hypercube/resnet18/resnet18_sc_hypercube_iter_reg_evaluate.yml 
+#python main.py --config configs/hypercube/resnet18/resnet18_sc_hypercube_iter_reg_evaluate.yml 
 
 
 ### ResNet-20
+#python main.py --config configs/ep/resnet20/resnet20_sc_ep.yml 
+python main.py --config configs/ep/resnet20/resnet20_sc_global_ep.yml 
+
 :<<BLOCK
 run_list=(3 4)
 for r in ${run_list[@]}
@@ -34,13 +37,13 @@ do
 done
 BLOCK
 
-#:<<BLOCK
+:<<BLOCK
 run_list=(1)
 for r in ${run_list[@]}
 do
 	python main.py --config config$r.yml --run_idx $r #> log_config$r 2>&1	
 done
-#BLOCK
+BLOCK
 
 # To run: nohup bash cifar_exec_GD.sh &
 # To view log: tail -f log_config_i
@@ -101,18 +104,6 @@ done
 BLOCK
 
 
-:<<BLOCK
-rate_list=(0.01)
-#rate_list=(0.01 0.02 0.03 0.05 0.08 0.13 0.20 0.32 0.51 0.80)
-
-for rate in ${rate_list[@]}
-do
-	python main.py --config configs/ep/resnet20/resnet20_sc_ep.yml \
-		--prune-rate $rate \
-        	--skip-sanity-checks
-        	#--skip-fine-tune
-done
-BLOCK
 
 #python main.py --config configs/hypercube/resnet20/resnet20_quantized_hypercube_reg_bottom_K_tinyImageNet.yml
 

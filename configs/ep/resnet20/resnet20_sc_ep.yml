@@ -1,3 +1,4 @@
+subfolder: EP
 algo: 'ep'
 
 # Architecture
@@ -11,6 +12,8 @@ name: resnet20_cifar10_sc
 optimizer: sgd
 lr: 0.1
 lr_policy: cosine_lr
+fine_tune_lr: 0.1
+fine_tune_lr_policy: cosine_lr
 
 # ===== Network training config ===== #
 epochs: 1 #150 #150
@@ -24,10 +27,13 @@ bn_type: NonAffineBatchNorm
 init: signed_constant
 mode: fan_in
 nonlinearity: relu
-#prune_rate: 0.5
+prune_rate: 0.5
 scale_fan: True
 freeze_weights: True
 
 # ===== Hardware setup ===== #
 workers: 4
 gpu: 1
+
+# ==== sanity check ==== #
+skip_sanity_checks: True
