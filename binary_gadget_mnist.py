@@ -228,7 +228,7 @@ class FCBinaryGadgetNet(nn.Module):
         for i in range(l-1):
             self.layers.append(SupermaskLinear(d, 2*prec*d, bias=False))
             self.layers.append(SupermaskLinear(2*prec*d, 2*prec*d, bias=False))
-            if i == l-1:
+            if i == l-2:
                 self.layers.append(SupermaskLinear(2*prec*d, 10, bias=False))
             else:
                 self.layers.append(SupermaskLinear(2*prec*d, d, bias=False))
@@ -263,8 +263,8 @@ class FCBinaryGadgetNet(nn.Module):
         for layer in self.layers:
             out = layer(out)
             out = F.relu(out)
-        output = F.log_softmax(x, dim=1)
-        return output
+        out = F.log_softmax(out, dim=1)
+        return out
 
 
 
@@ -520,9 +520,9 @@ def main():
     global parser_args
     # Training settings
     parser = argparse.ArgumentParser(description='PyTorch MNIST Example')
-    parser.add_argument('--gpu', type=int, default=0, metavar='N',
+    parser.add_argument('--gpu', type=int, default=3, metavar='N',
                         help='id of gpu to use')
-    parser.add_argument('--batch-size', type=int, default=64, metavar='N',
+    parser.add_argument('--batch-size', type=int, default=128, metavar='N',
                         help='input batch size for training (default: 64)')
     parser.add_argument('--test-batch-size', type=int, default=100, metavar='N',
                         help='input batch size for testing (default: 1000)')
@@ -538,7 +538,7 @@ def main():
                         help='disables CUDA training')
     parser.add_argument('--seed', type=int, default=42, metavar='S',
                         help='random seed (default: 42)')
-    parser.add_argument('--log-interval', type=int, default=10, metavar='N',
+    parser.add_argument('--log-interval', type=int, default=1, metavar='N',
                         help='how many batches to wait before logging training status')
     parser.add_argument('--save-model', action='store_true', default=True,
                         help='For Saving the current Model')
