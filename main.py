@@ -113,7 +113,7 @@ def main_worker(gpu, ngpus_per_node):
                 for layer in [*conv_layers, *linear_layers]:
                     layer.saved_score.data = layer.score.data
 
-        print('epoch: {}, lr: {}'.format(epoch, cur_lr))
+        print('epoch: {}, lr: {}, ep_threshold: {}'.format(epoch, cur_lr, parser_args.ep_threshold))
         print("="*60)
         # train for one epoch
         start_train = time.time()
@@ -138,6 +138,7 @@ def main_worker(gpu, ngpus_per_node):
             print('Acc after rounding: {}'.format(acc1))
         else:
             acc1, acc5, acc10 = validate(data.val_loader, model, criterion, parser_args, writer, epoch)
+            print('Acc: {}'.format(acc1))
         validation_time.update((time.time() - start_validation) / 60)
 
         # prune the model every T_{prune} epochs
@@ -152,12 +153,12 @@ def main_worker(gpu, ngpus_per_node):
                 # Round before checking sparsity
                 cp_model = round_model(model, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio, rank=parser_args.gpu)
                 avg_sparsity = get_model_sparsity(cp_model)
-                print('Model avg sparsity: {}'.format(avg_sparsity))
             else:
                 avg_sparsity = get_model_sparsity(model)
         else:
             # haven't written a weight sparsity function yet
             avg_sparsity = 1
+        print('Model avg sparsity: {}'.format(avg_sparsity))
 
         # update all results lists
         epoch_list.append(epoch)
@@ -217,7 +218,7 @@ def main_worker(gpu, ngpus_per_node):
     torch.save(model.state_dict(), result_root + 'model_before_finetune.pth')
 
     # check the performance of trained model
-    if parser_args.algo in ['hc', 'hc_iter', 'ep']:
+    if parser_args.algo in ['hc', 'hc_iter', 'ep', 'global_ep']:
         cp_model = copy.deepcopy(model)
         if not parser_args.skip_fine_tune:
             print("Beginning fine-tuning")

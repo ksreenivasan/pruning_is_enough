@@ -14,7 +14,7 @@ DenseConv = nn.Conv2d
 
 class GetSubnet(autograd.Function):
     @staticmethod
-    def forward(ctx, scores, bias_scores, k) #forward(ctx, scores, bias_scores, threshold, bias_threshold, k):
+    def forward(ctx, scores, bias_scores, k): #forward(ctx, scores, bias_scores, threshold, bias_threshold, k):
         if parser_args.algo == 'pt_hack':
             # Get the supermask by normalizing scores and "sampling" by probability
             if parser_args.normalize_scores:

@@ -310,14 +310,20 @@ def prune(model, update_thresholds_only=False):  # update prune() for bottom K p
         print('not appropriate to use prune() in the current parser_args.algo')
         raise ValueError
 
-    #print('Pruning Model:')
     conv_layers, linear_layers = get_layers(parser_args.arch, model)
+    if parser_args.algo in ['hc_iter']:
+        if update_threshold_only:
+            raise NotImplementedError
+        print('Pruning Model:')
+
     if parser_args.prune_type == 'FixThresholding':
-        if update_thresholds_only == False:
+        if parser_args.algo == 'hc_iter': # and update_thresholds_only == False:
             # prune weights that would be rounded to 0
             for layer in (conv_layers + linear_layers):
                 layer.flag.data = (layer.flag.data + torch.gt(layer.scores, torch.ones_like(layer.scores)*0.5).int() == 2).int()
-    
+        else:
+            raise NotImplementedError
+
     elif parser_args.prune_type == 'BottomK':
         num_active_weights = 0
         num_active_biases = 0
@@ -339,6 +345,7 @@ def prune(model, update_thresholds_only=False):  # update prune() for bottom K p
         agg_bias_scores = torch.cat(active_bias_scores_list) if parser_args.bias else torch.tensor([])
 
         scores_threshold = torch.sort(torch.abs(agg_scores)).values[number_of_weights_to_prune-1]
+        #import pdb; pdb.set_trace()
         if parser_args.bias:
             bias_scores_threshold = torch.sort(torch.abs(agg_bias_scores)).values[number_of_biases_to_prune-1]
         else:
@@ -364,10 +371,11 @@ def prune(model, update_thresholds_only=False):  # update prune() for bottom K p
                 pass
 
         else:
-            for layer in (conv_layers + linear_layers):
-                parser_args.ep_threshold = scores_threshold #layer.threshold.data = scores_threshold
-                if parser_args.bias:
-                    parser_args.ep_bias_threshold = bias_scores_threshold  #layer.bias_threshold.data = bias_scores_threshold
+            #for layer in (conv_layers + linear_layers):
+            parser_args.ep_threshold = scores_threshold #layer.threshold.data = scores_threshold
+            #print(parser_args.ep_threshold)
+            if parser_args.bias:
+                parser_args.ep_bias_threshold = bias_scores_threshold  #layer.bias_threshold.data = bias_scores_threshold
 
     return
 
@@ -427,6 +435,14 @@ def get_layer_sparsity(layer, threshold=0):
         # NOTE: hard-coded
         w_numer, w_denom = parser_args.prune_rate * 100, 100
         b_numer, b_denom = 0, 0
+    elif parser_args.algo in ['global_ep']:
+        weight_mask, bias_mask = GetSubnetConv.apply(layer.scores.abs(), layer.bias_scores.abs(), parser_args.prune_rate)
+        w_numer, w_denom = weight_mask.sum().item(), weight_mask.flatten().numel()
+
+        if parser_args.bias:
+            b_numer, b_denom = bias_mask.sum().item(), bias_mask.flatten().numel()
+        else:
+            b_numer, b_denom = 0, 0
     else:
         # traditional pruning where we just check non-zero values in mask
         weight_mask, bias_mask = GetSubnetConv.apply(layer.scores.abs(), layer.scores_bias.abs(), parser_args.prune_rate)
