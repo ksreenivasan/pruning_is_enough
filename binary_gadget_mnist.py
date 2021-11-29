@@ -234,6 +234,8 @@ class FCBinaryGadgetNet(nn.Module):
                 self.layers.append(SupermaskLinear(2*prec*d, 10, bias=False))
             else:
                 self.layers.append(SupermaskLinear(2*prec*d, d, bias=False))
+
+        self.initialize_weights()
         
     def initialize_weights(self):
         # initialize weights appropriately
@@ -251,7 +253,7 @@ class FCBinaryGadgetNet(nn.Module):
                 # second layer
                 for idx, row in enumerate(layer.weight):
                     layer.weight.data[idx] = torch.zeros_like(row)
-                    p = 2**(idx%self.prec)
+                    p = 2**(-(idx%self.prec))
                     layer.weight.data[idx][idx] = p
             else:
                 # third layer
