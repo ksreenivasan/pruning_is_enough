@@ -100,6 +100,10 @@ class GetSubnet(autograd.Function):
             out = torch.bernoulli(scores)
             bias_out = torch.bernoulli(bias_scores)
 
+        elif parser_args.algo == 'quantized_hc':
+            out = torch.gt(scores, torch.ones_like(scores)*parser_args.quantize_threshold).int().float()
+            bias_out = torch.gt(bias_scores, torch.ones_like(bias_scores)*parser_args.quantize_threshold).int().float()
+
         else:
             logging.info("INVALID PRUNING ALGO")
             logging.info("EXITING")
