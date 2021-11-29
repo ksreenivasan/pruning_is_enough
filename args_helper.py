@@ -788,7 +788,6 @@ class ArgsHelper:
              )
 
 
-
         if jupyter_mode:
             args = parser.parse_args("")
         else:

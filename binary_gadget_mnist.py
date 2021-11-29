@@ -221,17 +221,17 @@ class FCBinaryGadgetNet(nn.Module):
         self.l = l
         self.prec = prec
         self.layers = nn.ModuleList([
-            SuperMaskLinear(784, 784*2*prec, bias=False),
-            SuperMaskLinear(784*2*prec, 784*2*prec, bias=False),
-            SuperMaskLinear(784*2*prec, d, bias=False),
+            SupermaskLinear(784, 784*2*prec, bias=False),
+            SupermaskLinear(784*2*prec, 784*2*prec, bias=False),
+            SupermaskLinear(784*2*prec, d, bias=False),
         ])
         for i in range(l-1):
-            self.layers.append(SuperMaskLinear(d, 2*prec*d, bias=False))
-            self.layers.append(SuperMaskLinear(2*prec*d, 2*prec*d, bias=False))
+            self.layers.append(SupermaskLinear(d, 2*prec*d, bias=False))
+            self.layers.append(SupermaskLinear(2*prec*d, 2*prec*d, bias=False))
             if i == l-1:
-                self.layers.append(SuperMaskLinear(2*prec*d, 10, bias=False))
+                self.layers.append(SupermaskLinear(2*prec*d, 10, bias=False))
             else:
-                self.layers.append(SuperMaskLinear(2*prec*d, d, bias=False))
+                self.layers.append(SupermaskLinear(2*prec*d, d, bias=False))
         
     def initialize_weights(self):
         # initialize weights appropriately
@@ -578,9 +578,9 @@ def main():
                         help="second exponent in regularizer",)
     parser.add_argument("--d", default=5, type=int,
                         help="width of the gadget network",)
-    parser.add_argument("--l", default=1.0, type=int,
+    parser.add_argument("--l", default=5, type=int,
                         help="depth of the gadget network",)
-    parser.add_argument("--prec", default=1.0, type=int,
+    parser.add_argument("--prec", default=4, type=int,
                         help="precision of the gadget network",)
 
     epoch_list = []
@@ -615,7 +615,7 @@ def main():
         batch_size=parser_args.test_batch_size, shuffle=True, **kwargs)
 
     
-    model = FCBinaryGadgetNet(parser_args.d, parser_args.l, parser_args.prec)
+    model = FCBinaryGadgetNet(parser_args.d, parser_args.l, parser_args.prec).to(device)
 
     # NOTE: only pass the parameters where p.requires_grad == True to the optimizer! Important!
     if parser_args.optimizer == 'sgd':
