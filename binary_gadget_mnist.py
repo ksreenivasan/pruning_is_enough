@@ -258,7 +258,8 @@ class FCBinaryGadgetNet(nn.Module):
                     layer.weight.data[idx][int(row.size(dim=0)/2):] = 0
 
     def forward(self, x):
-        out = x
+        # flatten input so it can pass through the FC network
+        out = x.reshape(-1, 28*28)
         for layer in self.layers:
             out = layer(out)
             out = F.relu(out)
