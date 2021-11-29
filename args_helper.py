@@ -786,7 +786,18 @@ class ArgsHelper:
              default=None,
              help="subfolder within the location for saving the results"
              )
-
+        parser.add_argument(
+            "--ep_threshold",
+            default=1.0,
+            type=float,
+            help="score threshold for global ep"
+        )
+        parser.add_argument(
+            "--ep_bias_threshold",
+            default=1.0,
+            type=float,
+            help="score bias threshold for global ep"
+        )
 
 
         if jupyter_mode:

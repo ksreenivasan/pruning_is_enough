@@ -304,18 +304,19 @@ def get_score_sparsity_hc(model):
     return 100*numer/denom
 """
 
-def prune(model):  # update prune() for bottom K pruning
+def prune(model, update_thresholds_only=False):  # update prune() for bottom K pruning
 
-    if parser_args.algo != 'hc_iter':
+    if parser_args.algo not in ['hc_iter', 'global_ep']:
         print('not appropriate to use prune() in the current parser_args.algo')
         raise ValueError
 
-    print('Pruning Model:')
+    #print('Pruning Model:')
     conv_layers, linear_layers = get_layers(parser_args.arch, model)
     if parser_args.prune_type == 'FixThresholding':
-        # prune weights that would be rounded to 0
-        for layer in (conv_layers + linear_layers):
-            layer.flag.data = (layer.flag.data + torch.gt(layer.scores, torch.ones_like(layer.scores)*0.5).int() == 2).int()
+        if update_thresholds_only == False:
+            # prune weights that would be rounded to 0
+            for layer in (conv_layers + linear_layers):
+                layer.flag.data = (layer.flag.data + torch.gt(layer.scores, torch.ones_like(layer.scores)*0.5).int() == 2).int()
     
     elif parser_args.prune_type == 'BottomK':
         num_active_weights = 0
@@ -343,22 +344,30 @@ def prune(model):  # update prune() for bottom K pruning
         else:
             bias_scores_threshold = -1
 
-        for layer in (conv_layers + linear_layers):
-            layer.flag.data = (layer.flag.data + torch.gt(layer.scores, torch.ones_like(layer.scores)*scores_threshold).int() == 2).int()
-            if parser_args.bias:
-                layer.bias_flag.data = (layer.bias_flag.data + torch.gt(layer.bias_scores, torch.ones_like(layer.bias_scores)*bias_scores_threshold).int() == 2).int()
+        if update_thresholds_only == False:
 
-        if parser_args.rewind_score and layer.saved_scores is not None:
-            # if we go into this branch, we will load the rewinded states of the scores
-            with torch.no_grad():
-                layer.scores.data = copy.deepcopy(layer.saved_scores.data)
+            for layer in (conv_layers + linear_layers):
+                layer.flag.data = (layer.flag.data + torch.gt(layer.scores, torch.ones_like(layer.scores)*scores_threshold).int() == 2).int()
                 if parser_args.bias:
-                    # TODO: this will probably break
-                    layer.bias_scores.data = copy.deepcopy(layer.saved_bias_scores.data)
-                # for sanity check: the score rewind back
-                # print(layer.scores.data)  # yes, it always rewind back to the same score, the saved score does not change
-        else:  # if we do not explicitly specify rewind_score, we will keep the score same
-            pass
+                    layer.bias_flag.data = (layer.bias_flag.data + torch.gt(layer.bias_scores, torch.ones_like(layer.bias_scores)*bias_scores_threshold).int() == 2).int()
+
+            if parser_args.rewind_score and layer.saved_scores is not None:
+                # if we go into this branch, we will load the rewinded states of the scores
+                with torch.no_grad():
+                    layer.scores.data = copy.deepcopy(layer.saved_scores.data)
+                    if parser_args.bias:
+                        # TODO: this will probably break
+                        layer.bias_scores.data = copy.deepcopy(layer.saved_bias_scores.data)
+                    # for sanity check: the score rewind back
+                    # print(layer.scores.data)  # yes, it always rewind back to the same score, the saved score does not change
+            else:  # if we do not explicitly specify rewind_score, we will keep the score same
+                pass
+
+        else:
+            for layer in (conv_layers + linear_layers):
+                parser_args.ep_threshold = scores_threshold #layer.threshold.data = scores_threshold
+                if parser_args.bias:
+                    parser_args.ep_bias_threshold = bias_scores_threshold  #layer.bias_threshold.data = bias_scores_threshold
 
     return
 

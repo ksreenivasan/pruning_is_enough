@@ -14,7 +14,7 @@ DenseConv = nn.Conv2d
 
 class GetSubnet(autograd.Function):
     @staticmethod
-    def forward(ctx, scores, bias_scores, k):
+    def forward(ctx, scores, bias_scores, k) #forward(ctx, scores, bias_scores, threshold, bias_threshold, k):
         if parser_args.algo == 'pt_hack':
             # Get the supermask by normalizing scores and "sampling" by probability
             if parser_args.normalize_scores:
@@ -59,8 +59,9 @@ class GetSubnet(autograd.Function):
             bias_flat_out[idx[j:]] = 1
 
         elif parser_args.algo == 'global_ep':
-
-            raise NotImplementedError  
+            # define out, bias_out based on the threshold, bias_threshold
+            out = torch.gt(scores, torch.ones_like(scores)*parser_args.ep_threshold).int().float()
+            bias_out = torch.gt(bias_scores, torch.ones_like(bias_scores)*parser_args.ep_bias_threshold).int().float()
 
         elif parser_args.algo == 'pt':
             scores = torch.clamp(MULTIPLIER*scores, 0, 1)
@@ -108,7 +109,13 @@ class SubnetConv(nn.Conv2d):
         else:
             # dummy variable just so other things don't break
             self.bias_scores = nn.Parameter(torch.Tensor(1))
-
+        '''
+        self.threshold = torch.Tensor(1)
+        self.threshold.requires_grad = False
+        self.bias_threshold = torch.Tensor(1)
+        self.bias_threshold.requires_grad = False
+        '''
+        
         if parser_args.algo in ['hc', 'hc_iter']:
             if parser_args.random_subnet:
                 self.scores.data = torch.bernoulli(parser_args.prune_rate * torch.ones_like(self.scores.data))
@@ -166,7 +173,7 @@ class SubnetConv(nn.Conv2d):
             # check if args is quantization/rounding
             # then compute subnet like "else"
             if parser_args.hc_quantized:
-                subnet, subnet_bias = GetSubnet.apply(self.scores, self.bias_scores, parser_args.prune_rate)
+                subnet, subnet_bias = GetSubnet.apply(self.scores, self.bias_scores, parser_args.prune_rate) #GetSubnet.apply(self.scores, self.bias_scores, self.threshold, self.bias_threshold, parser_args.prune_rate)
                 subnet = subnet * self.flag.data.float()
                 subnet_bias = subnet * self.bias_flag.data.float()
             else:
@@ -174,7 +181,7 @@ class SubnetConv(nn.Conv2d):
                 subnet_bias = self.bias_scores * self.bias_flag.data.float()
 
         else:
-            subnet, bias_subnet = GetSubnet.apply(self.scores.abs(), self.bias_scores.abs(), parser_args.prune_rate)
+            subnet, bias_subnet = GetSubnet.apply(self.scores.abs(), self.bias_scores.abs(), parser_args.prune_rate) #GetSubnet.apply(self.scores.abs(), self.bias_scores.abs(), self.threshold, self.bias_threshold, parser_args.prune_rate)
 
         w = self.weight * subnet
         if parser_args.bias:

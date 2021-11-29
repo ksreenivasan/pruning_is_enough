@@ -4,7 +4,7 @@ import tqdm
 
 from utils.eval_utils import accuracy
 from utils.logging import AverageMeter, ProgressMeter
-from utils.net_utils import get_regularization_loss
+from utils.net_utils import get_regularization_loss, prune
 
 
 
@@ -41,6 +41,10 @@ def train(train_loader, model, criterion, optimizer, epoch, args, writer):
 
         target = target.cuda(args.gpu, non_blocking=True)
         
+        # update score thresholds for global ep
+        if args.algo == 'global_ep':
+            prune(model, update_thresholds_only=True)
+
         # compute output
         output = model(images)
 
