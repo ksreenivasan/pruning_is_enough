@@ -171,6 +171,7 @@ class SupermaskLinear(nn.Linear):
 
         # initialize the scores
         self.scores = nn.Parameter(torch.Tensor(self.weight.size()))
+        self.sparsity = 1
         if parser_args.bias:
             self.bias_scores = nn.Parameter(torch.Tensor(self.bias.size()))
         else:
@@ -202,9 +203,9 @@ class SupermaskLinear(nn.Linear):
         elif parser_args.algo in ('pt', 'pt_hacky'):
             self.scores.data = self.scores.abs()
             self.bias_scores.data = self.bias_scores.abs()
-            subnet, bias_subnet = GetSubnet.apply(self.scores, self.bias_scores, parser_args.sparsity)
+            subnet, bias_subnet = GetSubnet.apply(self.scores, self.bias_scores, self.sparsity)
         else:
-            subnet, bias_subnet = GetSubnet.apply(self.scores.abs(), self.bias_scores.abs(), parser_args.sparsity)
+            subnet, bias_subnet = GetSubnet.apply(self.scores.abs(), self.bias_scores.abs(), self.sparsity)
 
         w = self.weight * subnet
         if parser_args.bias:
@@ -242,6 +243,7 @@ class FCBinaryGadgetNet(nn.Module):
         for layer_id, layer in enumerate(self.layers):
             if layer_id % 3 == 0:
                 # first layer
+                layer.sparsity = 1
                 for idx, row in enumerate(layer.weight):
                     if idx%(2*self.prec) < self.prec:
                         layer.weight.data[idx] = torch.zeros_like(row)
@@ -250,12 +252,14 @@ class FCBinaryGadgetNet(nn.Module):
                         layer.weight.data[idx] = torch.zeros_like(row)
                         layer.weight.data[idx][int(idx/(2*self.prec))] = -1
             elif layer_id % 3 == 1:
+                layer.sparsity = 1
                 # second layer
                 for idx, row in enumerate(layer.weight):
                     layer.weight.data[idx] = torch.zeros_like(row)
                     p = 2**(-(idx%self.prec))
                     layer.weight.data[idx][idx] = p
             else:
+                layer.sparsity = parser_args.sparsity
                 # third layer
                 for idx, row in enumerate(layer.weight):
                     layer.weight.data[idx] = torch.ones_like(row)
