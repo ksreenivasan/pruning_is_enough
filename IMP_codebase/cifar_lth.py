@@ -19,6 +19,13 @@ from cifar_model_resnet import resnet20
 from mask import Mask
 
 
+# move this to parent directory
+# handle args is the most important thing to do
+# import parser_args from args_helper like everyone else (make sure defaults etc match what is needed here)
+# delete functions that are repeated (like set_seed etc)
+# don't worry about moving things to utils right now, not a big deal (but can do :) )
+# most important test: run IMP with resnet20 and see if it works without paser.parse_args() like here
+
 def set_seed(seed):
     random.seed(seed)
     torch.manual_seed(seed)
@@ -295,6 +302,7 @@ def main():
     global parser_args
     # Training settings
     parser = argparse.ArgumentParser(description='PyTorch MNIST Example')
+    # delete this
     parser.add_argument('--batch-size', type=int, default=128, metavar='N',
                         help='input batch size for training (default: 64)')
 
@@ -316,6 +324,7 @@ def main():
     parser.add_argument('--seed', type=int, default=42, metavar='S',
                         help='random seed (default: 42)')
     
+    # see if you can reuse this from sth else
     parser.add_argument('--prune_perct', type=float, default=20, metavar='S',
                         help='prune percent for each layer')
 
