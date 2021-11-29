@@ -224,8 +224,10 @@ def finetune(model, parser_args, data, criterion, old_epoch_list, old_test_acc_b
     if parser_args.results_filename:
         result_root = parser_args.results_filename + '_'
 
-    # round the score (in the model itself)
-    model = round_model(model, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio, rank=parser_args.gpu)    
+    if parser_args.algo in ['hc', 'hc_iter']:
+        # round the score (in the model itself)
+        model = round_model(model, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio, rank=parser_args.gpu)    
+
     # apply reinit/shuffling masks/weights (if necessary)
     model = redraw(model, shuffle=shuffle, reinit=reinit, invert=invert, chg_mask=chg_mask, chg_weight=chg_weight)
 
