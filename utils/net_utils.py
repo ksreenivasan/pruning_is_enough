@@ -312,7 +312,7 @@ def prune(model, update_thresholds_only=False):  # update prune() for bottom K p
 
     conv_layers, linear_layers = get_layers(parser_args.arch, model)
     if parser_args.algo in ['hc_iter']:
-        if update_threshold_only:
+        if update_thresholds_only:
             raise NotImplementedError
         print('Pruning Model:')
 
@@ -431,11 +431,7 @@ def get_layer_sparsity(layer, threshold=0):
         else:
             b_numer, b_denom = 0, 0
 
-    elif parser_args.algo in ['ep']:
-        # NOTE: hard-coded
-        w_numer, w_denom = parser_args.prune_rate * 100, 100
-        b_numer, b_denom = 0, 0
-    elif parser_args.algo in ['global_ep']:
+    elif parser_args.algo in ['global_ep', 'ep']:
         weight_mask, bias_mask = GetSubnetConv.apply(layer.scores.abs(), layer.bias_scores.abs(), parser_args.prune_rate)
         w_numer, w_denom = weight_mask.sum().item(), weight_mask.flatten().numel()
 
