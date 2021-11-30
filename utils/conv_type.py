@@ -61,8 +61,8 @@ class GetSubnet(autograd.Function):
 
         elif parser_args.algo == 'global_ep':
             # define out, bias_out based on the layer's prune_threshold, bias_threshold
-            out = torch.gt(scores, torch.ones_like(scores)*scores_prune_threshold).int().float()
-            bias_out = torch.gt(bias_scores, torch.ones_like(bias_scores)*bias_scores_prune_threshold).int().float()
+            out = torch.gt(scores, torch.ones_like(scores)*scores_prune_threshold).float()
+            bias_out = torch.gt(bias_scores, torch.ones_like(bias_scores)*bias_scores_prune_threshold).float()
 
         elif parser_args.algo == 'pt':
             scores = torch.clamp(MULTIPLIER*scores, 0, 1)
@@ -74,8 +74,8 @@ class GetSubnet(autograd.Function):
             # round scores to {0, 1}
             # NOTE: doing this EP style where the scores are unchanged, but mask is computed
             # can also try a variant where we actually round the scores
-            out = torch.gt(scores, torch.ones_like(scores)*parser_args.quantize_threshold).int().float()
-            bias_out = torch.gt(bias_scores, torch.ones_like(bias_scores)*parser_args.quantize_threshold).int().float()
+            out = torch.gt(scores, torch.ones_like(scores)*parser_args.quantize_threshold).float()
+            bias_out = torch.gt(bias_scores, torch.ones_like(bias_scores)*parser_args.quantize_threshold).float()
 
         else:
             print("INVALID PRUNING ALGO")
