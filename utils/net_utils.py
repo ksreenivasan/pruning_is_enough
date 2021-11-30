@@ -301,6 +301,11 @@ def get_score_sparsity_hc(model):
 """
 
 def prune(model, update_thresholds_only=False):
+    if update_thresholds_only:
+        print("Updating prune thresholds")
+    else:
+        print("Pruning Model:")
+
     scores_threshold = bias_scores_threshold = -np.inf
     if parser_args.algo not in ['hc_iter', 'global_ep']:
         print('not appropriate to use prune() in the current parser_args.algo')
@@ -310,7 +315,6 @@ def prune(model, update_thresholds_only=False):
     if parser_args.algo in ['hc_iter']:
         if update_thresholds_only:
             raise NotImplementedError
-        print('Pruning Model:')
 
     if parser_args.prune_type == 'FixThresholding':
         if parser_args.algo == 'hc_iter': # and update_thresholds_only == False:
