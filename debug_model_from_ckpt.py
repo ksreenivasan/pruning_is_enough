@@ -48,6 +48,9 @@ model.load_state_dict(ckpt)
 parser_args.algo = 'global_ep'
 parser_args.prune_rate = 0.992
 
+# update parser_args.ep_threshold
+prune(model, update_thresholds_only=True)
+
 conv_layers, lin_layers = get_layers(arch='resnet20', model=model)
 
 train, validate, modifier = get_trainer(parser_args)
