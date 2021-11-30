@@ -1,4 +1,9 @@
+# EP on binary gadget network
+python binary_gadget_mnist.py
+#> binary_gadget_log 2>&1
+
 # Checking optimal sparsity
+:<<BLOCK
 python mnist_pruning_exps.py --algo hc \
 --lr 0.01 \
 --epochs 100 \
@@ -9,6 +14,7 @@ python mnist_pruning_exps.py --algo hc \
 --alpha 9 \
 --alpha_prime 1 \
 --results-filename sparse_hc.csv
+BLOCK
 
 # Weight training
 :<<BLOCK
