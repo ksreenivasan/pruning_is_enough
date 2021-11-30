@@ -168,11 +168,13 @@ class SubnetConv(nn.Conv2d):
             if parser_args.hc_quantized:
                 subnet, subnet_bias = GetSubnet.apply(self.scores, self.bias_scores, parser_args.prune_rate)
                 subnet = subnet * self.flag.data.float()
-                subnet_bias = subnet * self.bias_flag.data.float()
+                bias_subnet = subnet * self.bias_flag.data.float()
             else:
                 subnet = self.scores * self.flag.data.float()
-                subnet_bias = self.bias_scores * self.bias_flag.data.float()
-
+                bias_subnet = self.bias_scores * self.bias_flag.data.float()
+        elif parser_args.algo is "imp":  # added for imp
+            subnet = 1.
+            bias_subnet = 1.
         else:
             subnet, bias_subnet = GetSubnet.apply(self.scores.abs(), self.bias_scores.abs(), parser_args.prune_rate)
 

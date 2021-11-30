@@ -144,7 +144,8 @@ def IMP_train(parser_args, data, device):
     #     return optimizer, scheduler
 
     optimizer = get_optimizer(parser_args, model)
-    scheduler = get_scheduler(optimizer, parser_args.lr_policy) 
+    # NOTE: hard code, just to make sure my code runs correctly
+    scheduler = get_scheduler(optimizer, parser_args.lr_policy, milestones=[80, 120], gamma=parser_args.lr_gamma)
 
     scaler = torch.cuda.amp.GradScaler(enabled=use_amp)
     dest_dir = os.path.join("results", parser_args.subfolder)
@@ -242,7 +243,7 @@ def IMP_train(parser_args, data, device):
         before_acc = test(model, device, data.val_loader)
         # optimizer, scheduler = get_optimizer_and_scheduler(parser_args)
         optimizer = get_optimizer(parser_args, model)
-        scheduler = get_scheduler(optimizer, parser_args.lr_policy)
+        scheduler = get_scheduler(optimizer, parser_args.lr_policy, milestones=[80, 120], gamma=parser_args.lr_gamma)
         print(f"\n--- Pruning Level [{idx_round}/{n_round}]: ---")
 
         # Print the table of Nonzeros in each layer
