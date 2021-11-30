@@ -63,7 +63,7 @@ def get_layers(arch='Conv4', model=None):
 def redraw(model, shuffle=False, reinit=False, invert=False, chg_mask=False, chg_weight=False):
     cp_model = copy.deepcopy(model)
     conv_layers, linear_layers = get_layers(parser_args.arch, cp_model)
-    for layer in [*conv_layers, *linear_layers]:
+    for layer in (conv_layers + linear_layers):
         if shuffle:
             if chg_mask:
                 idx = torch.randperm(layer.flag.data.nelement())
