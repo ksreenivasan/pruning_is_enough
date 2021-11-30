@@ -28,7 +28,8 @@ plt.style.use('seaborn-whitegrid')
 parser_args = None
 
 logging.basicConfig()
-
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
 
 # set seed for experiment
 def set_seed(seed):
