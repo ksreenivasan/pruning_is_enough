@@ -304,8 +304,8 @@ def get_score_sparsity_hc(model):
     return 100*numer/denom
 """
 
-def prune(model, update_thresholds_only=False):  # update prune() for bottom K pruning
-
+def prune(model, update_thresholds_only=False):
+    scores_threshold = bias_scores_threshold = -np.inf
     if parser_args.algo not in ['hc_iter', 'global_ep']:
         print('not appropriate to use prune() in the current parser_args.algo')
         raise ValueError
@@ -324,6 +324,7 @@ def prune(model, update_thresholds_only=False):  # update prune() for bottom K p
         else:
             raise NotImplementedError
 
+    # prune the bottom k of scores.abs()
     elif parser_args.prune_type == 'BottomK':
         num_active_weights = 0
         num_active_biases = 0
@@ -344,15 +345,20 @@ def prune(model, update_thresholds_only=False):  # update prune() for bottom K p
         agg_scores = torch.cat(active_scores_list)
         agg_bias_scores = torch.cat(active_bias_scores_list) if parser_args.bias else torch.tensor([])
 
-        scores_threshold = torch.sort(torch.abs(agg_scores)).values[number_of_weights_to_prune-1]
-        #import pdb; pdb.set_trace()
+        scores_threshold = torch.sort(torch.abs(agg_scores)).values[number_of_weights_to_prune-1].item()
+
         if parser_args.bias:
-            bias_scores_threshold = torch.sort(torch.abs(agg_bias_scores)).values[number_of_biases_to_prune-1]
+            bias_scores_threshold = torch.sort(torch.abs(agg_bias_scores)).values[number_of_biases_to_prune-1].item()
         else:
             bias_scores_threshold = -1
 
-        if update_thresholds_only == False:
+        if parser_args.update_thresholds_only:
+            for layer in (conv_layers + linear_layers):
+                layer.scores_prune_threshold = scores_threshold
+            if parser_args.bias:
+                layer.bias_scores_prune_threshold = bias_scores_threshold
 
+        else:
             for layer in (conv_layers + linear_layers):
                 layer.flag.data = (layer.flag.data + torch.gt(layer.scores, torch.ones_like(layer.scores)*scores_threshold).int() == 2).int()
                 if parser_args.bias:
@@ -370,14 +376,7 @@ def prune(model, update_thresholds_only=False):  # update prune() for bottom K p
             else:  # if we do not explicitly specify rewind_score, we will keep the score same
                 pass
 
-        else:
-            #for layer in (conv_layers + linear_layers):
-            parser_args.ep_threshold = scores_threshold #layer.threshold.data = scores_threshold
-            #print(parser_args.ep_threshold)
-            if parser_args.bias:
-                parser_args.ep_bias_threshold = bias_scores_threshold  #layer.bias_threshold.data = bias_scores_threshold
-
-    return
+    return scores_threshold, bias_scores_threshold
 
 
 # returns avg_sparsity = number of non-zero weights!
