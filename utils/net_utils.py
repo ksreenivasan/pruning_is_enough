@@ -431,7 +431,10 @@ def get_layer_sparsity(layer, threshold=0):
             b_numer, b_denom = 0, 0
 
     elif parser_args.algo in ['global_ep', 'ep']:
-        weight_mask, bias_mask = GetSubnetConv.apply(layer.scores.abs(), layer.bias_scores.abs(), parser_args.prune_rate)
+        if parser_args.algo == 'ep':
+            weight_mask, bias_mask = GetSubnetConv.apply(layer.scores.abs(), layer.bias_scores.abs(), parser_args.prune_rate)
+        else:
+            weight_mask, bias_mask = GetSubnetConv.apply(layer.scores.abs(), layer.bias_scores.abs(), 0, layer.scores_prune_threshold, layer.bias_scores_prune_threshold)
         w_numer, w_denom = weight_mask.sum().item(), weight_mask.flatten().numel()
 
         if parser_args.bias:
