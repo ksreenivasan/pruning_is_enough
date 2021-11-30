@@ -1,5 +1,6 @@
 subfolder: Global_EP
-algo: 'global_ep'
+algo: 'global_ep_iter'
+iter_period: 8
 
 # Architecture
 arch: resnet20
@@ -16,7 +17,7 @@ fine_tune_lr: 0.1
 fine_tune_lr_policy: cosine_lr
 
 # ===== Network training config ===== #
-epochs: 150 #150
+epochs: 150
 weight_decay: 0.0005
 momentum: 0.9
 batch_size: 256
@@ -25,6 +26,7 @@ batch_size: 256
 conv_type: SubnetConv
 bn_type: NonAffineBatchNorm
 freeze_weights: True
+prune_type: BottomK
 prune_rate: 0.5
 init: signed_constant
 scale_fan: True
