@@ -111,7 +111,6 @@ def IMP_train(parser_args, data, device):
     # init_params(model)
     model = get_model(parser_args)
     model = switch_to_wt(model).to(device)
-    print(model.layer3[1].conv1.weight.data)
 
     n_round = parser_args.epochs // parser_args.iter_period  # number of round (number of pruning happens)
     n_epoch = parser_args.iter_period  # number of epoch per round

@@ -8,19 +8,19 @@ python imp_main.py \
 --lr 0.1 \
 --lr-policy multistep_lr \
 --lr-gamma 0.1 \
---epochs 6 \
+--epochs 160 \
 --wd 1e-4 \
 --momentum 0.9 \
 --batch-size 128 \
---iter_period 3 \
+--iter_period 8 \
 --seed 42 \
 --prune-rate 0.2 \
 --imp_rewind_iter 1000 \
 --conv-type SubnetConv \
---bn-type NonAffineBatchNorm \
+--bn-type AffineBatchNorm \
 --gpu 1 \
 --init kaiming_normal \
---subfolder "short_imp_sgd/"
+--subfolder "short_imp_sgd_normal/"
 #BLOCK
 
 #:<<BLOCK
@@ -30,7 +30,7 @@ do
     --arch resnet20 \
     --dataset CIFAR10 \
     --optimizer sgd \
-    --subfolder "short_imp_sgd" \
+    --subfolder "short_imp_sgd_normal" \
     --lr 0.1 \
     --lr-policy multistep_lr \
     --lr-gamma 0.1 \
@@ -40,9 +40,9 @@ do
     --batch-size 128 \
     --seed 42 \
     --conv-type SubnetConv \
-    --bn-type NonAffineBatchNorm \
+    --bn-type AffineBatchNorm \
     --imp-resume-round $i \
-    --imp-rewind-model results/short_imp_sgd/Liu_checkpoint_model_correct.pth \
+    --imp-rewind-model results/short_imp_sgd_normal/Liu_checkpoint_model_correct.pth \
     --gpu 2
 done
 #BLOCK
