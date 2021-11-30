@@ -787,6 +787,23 @@ class ArgsHelper:
              help="subfolder within the location for saving the results"
              )
 
+        # added parser args for IMP
+        parser.add_argument(
+            "--imp_rewind_iter", 
+            default=1000, 
+            type=int, 
+            help="which iterations to rewind to"
+            )
+        parser.add_argument(
+            "--imp-resume-round", 
+            type=int, 
+            help="which round to resume to"
+            )
+        parser.add_argument(
+            "--imp-rewind-model", 
+            default="short_imp/Liu_checkpoint_model_correct.pth"
+            )
+
 
         if jupyter_mode:
             args = parser.parse_args("")
