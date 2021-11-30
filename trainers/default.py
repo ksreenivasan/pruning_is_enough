@@ -135,6 +135,7 @@ def validate(val_loader, model, criterion, args, writer, epoch):
         if writer is not None:
             progress.write_to_tensorboard(writer, prefix="test", global_step=epoch)
 
+    print("Model top1 Accuracy: {}".format(top1.avg))
     return top1.avg, top5.avg, top10.avg
 
 def modifier(args, epoch, model):
