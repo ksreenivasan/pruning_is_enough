@@ -59,7 +59,7 @@ class GetSubnet(autograd.Function):
             bias_flat_out[idx[:j]] = 0
             bias_flat_out[idx[j:]] = 1
 
-        elif parser_args.algo == 'global_ep':
+        elif parser_args.algo in ['global_ep', 'global_ep_iter']:
             # define out, bias_out based on the layer's prune_threshold, bias_threshold
             out = torch.gt(scores, torch.ones_like(scores)*scores_prune_threshold).float()
             bias_out = torch.gt(bias_scores, torch.ones_like(bias_scores)*bias_scores_prune_threshold).float()

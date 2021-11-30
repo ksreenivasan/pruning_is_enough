@@ -40,9 +40,9 @@ def train(train_loader, model, criterion, optimizer, epoch, args, writer):
             images = images.cuda(args.gpu, non_blocking=True)
 
         target = target.cuda(args.gpu, non_blocking=True)
-        
+
         # update score thresholds for global ep
-        if args.algo == 'global_ep':
+        if args.algo in ['global_ep', 'global_ep_iter']:
             prune(model, update_thresholds_only=True)
 
         # compute output
