@@ -16,12 +16,13 @@ import sys
 import os
 
 # from cifar_model_resnet import resnet20
-from mask import Mask
+from IMP_codebase.mask import Mask
 
 # for merge the code into parent directory
 from args_helper import parser_args
-from main_utils import get_models
+from main_utils import get_model, get_dataset, get_optimizer, switch_to_wt
 from utils.utils import set_seed
+from utils.schedulers import get_scheduler
 
 
 # move this to parent directory
@@ -93,7 +94,7 @@ def IMP_train(parser_args, data, device):
    
     use_amp = True
 
-    assert parser_args.rewind_iter // 391 < parser_args.iter_period  # NOTE: hard code, needs to modify later
+    assert parser_args.imp_rewind_iter // 391 < parser_args.iter_period  # NOTE: hard code, needs to modify later
 
     # weight initialization
     # model = resnet20(ignore_name=parser_args.imp_ignore_name).to(device)
@@ -109,7 +110,8 @@ def IMP_train(parser_args, data, device):
     #             init.kaiming_normal_(m.weight)
     # init_params(model)
     model = get_model(parser_args)
-    model = switch_to_wt(model)
+    model = switch_to_wt(model).to(device)
+    print(model.layer3[1].conv1.weight.data)
 
     n_round = parser_args.epochs // parser_args.iter_period  # number of round (number of pruning happens)
     n_epoch = parser_args.iter_period  # number of epoch per round
@@ -221,7 +223,7 @@ def IMP_train(parser_args, data, device):
                 total_params = np.prod(tensor.shape)
                 nonzero += nz_count
                 total += total_params
-                # print(f'{name:20} | nonzeros = {nz_count:7} / {total_params:7} ({100 * nz_count / total_params:6.2f}%) | total_pruned = {total_params - nz_count :7} | shape = {tensor.shape}')
+                print(f'{name:20} | nonzeros = {nz_count:7} / {total_params:7} ({100 * nz_count / total_params:6.2f}%) | total_pruned = {total_params - nz_count :7} | shape = {tensor.shape}')
         print(f'alive: {nonzero}, pruned : {total - nonzero}, total: {total}, ({100 * nonzero / total:6.2f}% remained)')
         return (round((nonzero/total)*100, 1))
 
@@ -238,8 +240,10 @@ def IMP_train(parser_args, data, device):
         if idx_round > 0:
             # model, mask = prune_by_percentile_global(parser_args.prune_perct, model, rewind_state_dict, mask)
             model, mask = prune_by_percentile_global(parser_args.prune_rate, model, rewind_state_dict, mask)
-        before_acc = test(model, device, test_loader)
-        optimizer, scheduler = get_optimizer_and_scheduler(parser_args)
+        before_acc = test(model, device, data.val_loader)
+        # optimizer, scheduler = get_optimizer_and_scheduler(parser_args)
+        optimizer = get_optimizer(parser_args, model)
+        scheduler = get_scheduler(optimizer, parser_args.lr_policy)
         print(f"\n--- Pruning Level [{idx_round}/{n_round}]: ---")
 
         # Print the table of Nonzeros in each layer

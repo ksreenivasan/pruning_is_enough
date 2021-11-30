@@ -16,12 +16,13 @@ import sys
 import os
 
 # from cifar_model_resnet import resnet20
-from mask import Mask
+from IMP_codebase.mask import Mask
 
 # for merge the code into parent directory
 from args_helper import parser_args
-from main_utils import get_models
+from main_utils import get_model, get_dataset, get_optimizer, switch_to_wt
 from utils.utils import set_seed
+from utils.schedulers import get_scheduler
 
 
 # def set_seed(seed):
@@ -126,8 +127,8 @@ def sanity_check(parser_args, data, device, shuffle=False, reinit=False, chg_mas
 
     # load model
     model = get_model(parser_args)
-    model = switch_to_wt(model)
-    PATH_model = parser_args.rewind_model
+    model = switch_to_wt(model).to(device)
+    PATH_model = parser_args.imp_rewind_model
     checkpoint = torch.load(PATH_model, map_location='cpu')
     model.load_state_dict(checkpoint['model_state_dict'])
     # load mask
@@ -227,9 +228,9 @@ def sanity_check(parser_args, data, device, shuffle=False, reinit=False, chg_mas
         nact_list.append(nact)
         result_df = pd.DataFrame({'test': test_acc_list, 'nact': nact_list})
         # write here
-        result_df.to_csv("results/{}/LTH_cifar10_resnet20_round_{}_reinit_{}_shuffle_{}_chg_weight_{}_chg_mask_{}.csv".format(parser_args.subfolder, parser_args.resume_round, reinit, shuffle, chg_weight, chg_mask), index=False)
+        result_df.to_csv("results/{}/LTH_cifar10_resnet20_round_{}_reinit_{}_shuffle_{}_chg_weight_{}_chg_mask_{}.csv".format(parser_args.subfolder, parser_args.imp_resume_round, reinit, shuffle, chg_weight, chg_mask), index=False)
         if idx_epoch >= parser_args.epochs - 1:  # don't need to train the last epoch
-            PATH_model = "results/{}/model_round_{}_reinit_{}_shuffle_{}_chg_weight_{}_chg_mask_{}.pth".format(parser_args.subfolder, parser_args.resume_round, reinit, shuffle, chg_weight, chg_mask)
+            PATH_model = "results/{}/model_round_{}_reinit_{}_shuffle_{}_chg_weight_{}_chg_mask_{}.pth".format(parser_args.subfolder, parser_args.imp_resume_round, reinit, shuffle, chg_weight, chg_mask)
             # write here
             torch.save({
                 'model_state_dict': model.state_dict(),
