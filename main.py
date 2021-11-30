@@ -140,7 +140,7 @@ def main_worker(gpu, ngpus_per_node):
         validation_time.update((time.time() - start_validation) / 60)
 
         # prune the model every T_{prune} epochs
-        if parser_args.algo == 'hc_iter' and epoch % (parser_args.iter_period) == 0 and epoch != 0:
+        if parser_args.algo in ['hc_iter', 'global_ep_iter'] and epoch % (parser_args.iter_period) == 0 and epoch != 0:
             prune(model)
             if parser_args.checkpoint_at_prune:
                 save_checkpoint_at_prune(model, parser_args)
@@ -155,7 +155,7 @@ def main_worker(gpu, ngpus_per_node):
                 avg_sparsity = get_model_sparsity(model)
         else:
             # haven't written a weight sparsity function yet
-            avg_sparsity = 1
+            avg_sparsity = -1
         print('Model avg sparsity: {}'.format(avg_sparsity))
 
         # update all results lists
@@ -216,7 +216,7 @@ def main_worker(gpu, ngpus_per_node):
     torch.save(model.state_dict(), result_root + 'model_before_finetune.pth')
 
     # check the performance of trained model
-    if parser_args.algo in ['hc', 'hc_iter', 'ep', 'global_ep']:
+    if parser_args.algo in ['hc', 'hc_iter', 'ep', 'global_ep', 'global_ep_iter']:
         cp_model = copy.deepcopy(model)
         if not parser_args.skip_fine_tune:
             print("Beginning fine-tuning")

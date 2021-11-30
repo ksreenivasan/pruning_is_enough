@@ -307,7 +307,7 @@ def prune(model, update_thresholds_only=False):
         print("Pruning Model:")
 
     scores_threshold = bias_scores_threshold = -np.inf
-    if parser_args.algo not in ['hc_iter', 'global_ep']:
+    if parser_args.algo not in ['hc_iter', 'global_ep', 'global_ep_iter']:
         print('not appropriate to use prune() in the current parser_args.algo')
         raise ValueError
 
