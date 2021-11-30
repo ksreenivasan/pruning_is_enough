@@ -19,7 +19,7 @@ import models
 
 from main import *
 from utils.conv_type import GetSubnet
-from utils.net_utils import get_model_sparsity, get_layer_sparsity
+from utils.net_utils import get_model_sparsity, get_layer_sparsity, prune
 
 import re
 
@@ -34,19 +34,45 @@ parser_args.bias = False
 model = get_model(parser_args)
 model = set_gpu(parser_args, model)
 
+device = torch.device("cuda:{}".format(parser_args.gpu))
+
 # enter checkpoint here
-#ckpt = torch.load("results/SGD_finetune/results_pruning_CIFAR10_resnet20_hc_iter_0_2_8_reg_L1_0_0001_sgd_constant_lr_0_1_0_1_50_fan_0_1_False_signed_constant_width_unif_seed_1_0/model_before_finetune.pth")
-#ckpt = torch.load("results/SGD_finetune/results_pruning_CIFAR10_resnet20_hc_iter_0_2_8_reg_L1_0_0001_sgd_constant_lr_0_1_0_1_50_fan_0_1_False_signed_constant_width_unif_seed_1_0/model_after_finetune.pth")
-
-
-ckpt = torch.load("results/SGD_finetune/results_pruning_CIFAR10_resnet20_hc_iter_0_2_8_reg_L1_5e-05_sgd_cosine_lr_0_1_0_1_50_fan_0_01_False_signed_constant_width_unif_seed_1_0/model_before_finetune.pth")
-#ckpt = torch.load("results/SGD_finetune/results_pruning_CIFAR10_resnet20_hc_iter_0_2_8_reg_L1_5e-05_sgd_cosine_lr_0_1_0_1_50_fan_0_01_False_signed_constant_width_unif_seed_1_0/model_after_finetune.pth")
+ckpt = torch.load("results/Global_EP/results_pruning_CIFAR10_resnet20_global_ep_0_982_20_reg_None__sgd_cosine_lr_0_1_0_1_50_finetune_0_01_fan_True_signed_constant_unif_width_1_0_seed_42_idx_8/model_before_finetune.pth")
 
 # note that if you are loading ckpt from the ramanujan-style savepoints, you need to add ckpt['state_dict']
 # otherwise, we typically save the state dict directly, so you can just use ckpt
-#model.load_state_dict(ckpt['state_dict'])
+# model.load_state_dict(ckpt['state_dict'])
 model.load_state_dict(ckpt)
 
+# test global ep
+parser_args.algo = 'global_ep'
+parser_args.prune_rate = 0.992
+
+conv_layers, lin_layers = get_layers(arch='resnet20', model=model)
+
+train, validate, modifier = get_trainer(parser_args)
+criterion = nn.CrossEntropyLoss().cuda()
+data = get_dataset(parser_args)
+acc1, acc5, acc10 = validate(data.val_loader, model, criterion, parser_args, writer=None, epoch=-1)
+print("Accuracy of final model={}".format(acc1))
+
+# get sample image
+for idx, (images, target) in enumerate(data.train_loader):
+    images = images.to(device)
+    target = target.to(device)
+    break
+
+# check if model has bottlenecks
+out = model(images)
+print("Output sum is: {}".format(out.sum()))
+
+for conv_layer in conv_layers:
+    subnet, bias_subnet = GetSubnet.apply(conv_layer.scores, conv_layer.bias_scores, parser_args.prune_rate)
+    print("Layer: {}".format(conv_layer))
+    print("Mask: {}/{}".format(subnet.sum(), subnet.flatten().size(dim=0)))
+
+
+# debug traditional HC style algo
 cp_model = round_model(model, 'naive')
 conv_layers, lin_layers = get_layers(arch='resnet20', model=cp_model)
 
@@ -80,10 +106,4 @@ for name, param in model.named_parameters():
 
 sparsity = get_model_sparsity(cp_model)
 print("Sparsity of final model={}".format(sparsity))
-
-train, validate, modifier = get_trainer(args)
-criterion = nn.CrossEntropyLoss().cuda()
-data = get_dataset(args)
-acc1, acc5, acc10 = validate(data.val_loader, model, criterion, args, writer=None, epoch=-1)
-print("Accuracy of final model={}".format(acc1))
 
