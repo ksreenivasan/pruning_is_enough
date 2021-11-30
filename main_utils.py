@@ -875,9 +875,6 @@ def get_model(parser_args):
         model = models.__dict__[parser_args.arch]()
     if parser_args.fixed_init:    
         set_seed(parser_args.seed)
-    for name, params in model.named_parameters():
-        if ".weight" in name:
-            print(torch.sum(params.data))
 
     if not parser_args.weight_training:
         # applying sparsity to the network

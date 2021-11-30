@@ -113,8 +113,6 @@ def main_worker(gpu, ngpus_per_node):
                 for layer in [*conv_layers, *linear_layers]:
                     layer.saved_score.data = layer.score.data
 
-        print('epoch: {}, lr: {}, ep_threshold: {}'.format(epoch, cur_lr, parser_args.ep_threshold))
-        print("="*60)
         # train for one epoch
         start_train = time.time()
         train_acc1, train_acc5, train_acc10, reg_loss = train(

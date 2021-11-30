@@ -64,8 +64,6 @@ def redraw(model, shuffle=False, reinit=False, invert=False, chg_mask=False, chg
     cp_model = copy.deepcopy(model)
     conv_layers, linear_layers = get_layers(parser_args.arch, cp_model)
     for layer in [*conv_layers, *linear_layers]:
-        #print(layer)
-        #print(layer.weight)
         if shuffle:
             if chg_mask:
                 idx = torch.randperm(layer.flag.data.nelement())
@@ -98,8 +96,6 @@ def redraw(model, shuffle=False, reinit=False, invert=False, chg_mask=False, chg
                     layer.flag_bias.data = 1 - layer.flag_bias.data
             else:
                 raise NotImplementedError
-
-        #print(layer.weight)
 
 
     return cp_model
@@ -352,7 +348,7 @@ def prune(model, update_thresholds_only=False):
         else:
             bias_scores_threshold = -1
 
-        if parser_args.update_thresholds_only:
+        if update_thresholds_only:
             for layer in (conv_layers + linear_layers):
                 layer.scores_prune_threshold = scores_threshold
             if parser_args.bias:
