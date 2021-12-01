@@ -176,7 +176,7 @@ def sanity_check(parser_args, data, device, shuffle=False, reinit=False, chg_mas
 
     # optimizer, scheduler = get_optimizer_and_scheduler(parser_args)
     optimizer = get_optimizer(parser_args, model)
-    scheduler = get_scheduler(optimizer, parser_args.lr_policy) 
+    scheduler = get_scheduler(optimizer, parser_args.lr_policy, milestones=[80, 120], gamma=parser_args.lr_gamma) 
     scaler = torch.cuda.amp.GradScaler(enabled=use_amp)
 
 
