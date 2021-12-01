@@ -1,0 +1,41 @@
+subfolder: Global_EP
+algo: 'global_ep'
+
+# Architecture
+arch: resnet20
+
+# ===== Dataset ===== #
+dataset: CIFAR10
+name: resnet20_cifar10_sc_global_ep
+
+# ===== Learning Rate Policy ======== #
+optimizer: sgd
+lr: 0.1
+lr_policy: cosine_lr
+fine_tune_lr: 0.1
+fine_tune_lr_policy: cosine_lr
+
+# ===== Network training config ===== #
+epochs: 150
+weight_decay: 0.0005
+momentum: 0.9
+batch_size: 256
+
+# ===== Sparsity =========== #
+conv_type: SubnetConv
+bn_type: NonAffineBatchNorm
+freeze_weights: True
+prune_type: BottomK
+prune_rate: 0.5
+init: signed_constant
+scale_fan: True
+
+mode: fan_in 
+nonlinearity: relu
+
+# ===== Hardware setup ===== #
+workers: 4
+gpu: 1
+
+# ==== sanity check ==== #
+skip_sanity_checks: True
