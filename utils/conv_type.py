@@ -75,10 +75,6 @@ class GetSubnet(autograd.Function):
             out = torch.gt(scores, torch.ones_like(scores)*parser_args.quantize_threshold).int().float()
             bias_out = torch.gt(bias_scores, torch.ones_like(bias_scores)*parser_args.quantize_threshold).int().float()
 
-        elif parser_args.algo == 'imp':
-            out = 1.
-            bias_out = 1.
-
         else:
             print("INVALID PRUNING ALGO")
             print("EXITING")
@@ -161,7 +157,7 @@ class SubnetConv(nn.Conv2d):
         return self.scores.abs()
 
     def forward(self, x):
-        if parser_args.algo in ('hc', 'hc_iter'):
+        if parser_args.algo in ['hc', 'hc_iter']:
             # don't need a mask here. the scores are directly multiplied with weights
             if parser_args.differentiate_clamp:
                 self.scores.data = torch.clamp(self.scores.data, 0.0, 1.0)
@@ -176,17 +172,23 @@ class SubnetConv(nn.Conv2d):
             else:
                 subnet = self.scores * self.flag.data.float()
                 bias_subnet = self.bias_scores * self.bias_flag.data.float()
-        elif parser_args.algo is "imp":  # added for imp
-            subnet = 1.
-            bias_subnet = 1.
+        elif parser_args.algo in ['imp']:
+            # no STE, no subnet. Mask is handled outside
+            pass
         else:
+            # ep, global_ep, global_ep_iter, pt etc
             subnet, bias_subnet = GetSubnet.apply(self.scores.abs(), self.bias_scores.abs(), parser_args.prune_rate)
-
-        w = self.weight * subnet
-        if parser_args.bias:
-            b = self.bias * bias_subnet
-        else:
+        
+        if parser_args.algo in ['imp']:
+            # no STE, no subnet. Mask is handled outside
+            w = self.weight
             b = self.bias
+        else:
+            w = self.weight * subnet
+            if parser_args.bias:
+                b = self.bias * bias_subnet
+            else:
+                b = self.bias
         x = F.conv2d(
             x, w, b, self.stride, self.padding, self.dilation, self.groups
         )
