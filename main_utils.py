@@ -91,12 +91,9 @@ def save_checkpoint_at_prune(model, parser_args):
 
 
 def evaluate_without_training(parser_args, model, model2, validate, data, criterion):
-
-    #eval_and_print(validate, data.val_loader, model, criterion, parser_args, writer=None, epoch=parser_args.start_epoch, description='model')
     if parser_args.algo in ['hc_iter']:
         model = round_model(model, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio, rank=parser_args.gpu)
         eval_and_print(validate, data.val_loader, model, criterion, parser_args, writer=None, epoch=parser_args.start_epoch, description='final model after rounding')
-        # sanity_check(model, parser_args, data, criterion)
     for trial in range(parser_args.num_test):
         if parser_args.algo in ['hc']:
             if parser_args.how_to_connect == "prob":
@@ -116,7 +113,7 @@ def evaluate_without_training(parser_args, model, model2, validate, data, criter
         if parser_args.weight_training:
             print('We are connecting weights')
             connect_weight(cp_model, criterion, data, validate, cp_model2)
-        elif parser_args.algo in ['hc', 'ep']:
+        elif parser_args.algo in ['hc', 'ep', 'global_ep']:
             print('We are connecting masks')
             connect_mask(cp_model, criterion, data, validate, cp_model2)
         # visualize_mask_2D(cp_model, criterion, data, validate)
@@ -224,8 +221,10 @@ def finetune(model, parser_args, data, criterion, old_epoch_list, old_test_acc_b
     if parser_args.results_filename:
         result_root = parser_args.results_filename + '_'
 
-    # round the score (in the model itself)
-    model = round_model(model, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio, rank=parser_args.gpu)    
+    if parser_args.algo in ['hc', 'hc_iter']:
+        # round the score (in the model itself)
+        model = round_model(model, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio, rank=parser_args.gpu)    
+
     # apply reinit/shuffling masks/weights (if necessary)
     model = redraw(model, shuffle=shuffle, reinit=reinit, invert=invert, chg_mask=chg_mask, chg_weight=chg_weight)
 
@@ -873,9 +872,6 @@ def get_model(parser_args):
         model = models.__dict__[parser_args.arch]()
     if parser_args.fixed_init:    
         set_seed(parser_args.seed)
-    for name, params in model.named_parameters():
-        if ".weight" in name:
-            print(torch.sum(params.data))
 
     if not parser_args.weight_training:
         # applying sparsity to the network

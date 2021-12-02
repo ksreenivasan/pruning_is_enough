@@ -4,7 +4,7 @@ import tqdm
 
 from utils.eval_utils import accuracy
 from utils.logging import AverageMeter, ProgressMeter
-from utils.net_utils import get_regularization_loss
+from utils.net_utils import get_regularization_loss, prune
 
 
 
@@ -40,7 +40,11 @@ def train(train_loader, model, criterion, optimizer, epoch, args, writer):
             images = images.cuda(args.gpu, non_blocking=True)
 
         target = target.cuda(args.gpu, non_blocking=True)
-        
+
+        # update score thresholds for global ep
+        if args.algo in ['global_ep', 'global_ep_iter']:
+            prune(model, update_thresholds_only=True)
+
         # compute output
         output = model(images)
 
@@ -131,6 +135,7 @@ def validate(val_loader, model, criterion, args, writer, epoch):
         if writer is not None:
             progress.write_to_tensorboard(writer, prefix="test", global_step=epoch)
 
+    print("Model top1 Accuracy: {}".format(top1.avg))
     return top1.avg, top5.avg, top10.avg
 
 def modifier(args, epoch, model):

@@ -101,8 +101,8 @@ class GetSubnet(autograd.Function):
             bias_out = torch.bernoulli(bias_scores)
 
         elif parser_args.algo == 'quantized_hc':
-            out = torch.gt(scores, torch.ones_like(scores)*parser_args.quantize_threshold).int().float()
-            bias_out = torch.gt(bias_scores, torch.ones_like(bias_scores)*parser_args.quantize_threshold).int().float()
+            out = torch.gt(scores, torch.ones_like(scores)*0.5).int().float()
+            bias_out = torch.gt(bias_scores, torch.ones_like(bias_scores)*0.5).int().float()
 
         else:
             logging.info("INVALID PRUNING ALGO")
@@ -181,7 +181,7 @@ class SupermaskLinear(nn.Linear):
         else:
             # dummy variable just so other things don't break
             self.bias_scores = nn.Parameter(torch.Tensor(1))
-        if parser_args.algo in ('hc'):
+        if parser_args.algo in ('hc', 'quantized_hc'):
             nn.init.uniform_(self.scores, a=0.0, b=1.0)
             nn.init.uniform_(self.bias_scores, a=0.0, b=1.0)
         else:
@@ -209,7 +209,7 @@ class SupermaskLinear(nn.Linear):
             self.bias_scores.data = self.bias_scores.abs()
             subnet, bias_subnet = GetSubnet.apply(self.scores, self.bias_scores, self.sparsity)
         else:
-            subnet, bias_subnet = GetSubnet.apply(self.scores.abs(), self.bias_scores.abs(), self.sparsity)
+            subnet, bias_subnet = GetSubnet.apply(self.scores, self.bias_scores, self.sparsity)
 
         w = self.weight * subnet
         if parser_args.bias:
@@ -230,8 +230,11 @@ class FCBinaryGadgetNet(nn.Module):
         self.layers = nn.ModuleList([
             SupermaskLinear(784, 784*2*prec, bias=False),
             SupermaskLinear(784*2*prec, 784*2*prec, bias=False),
-            SupermaskLinear(784*2*prec, d, bias=False),
         ])
+        if l == 1:
+            self.layers.append(SupermaskLinear(784*2*prec, 10, bias=False))
+        else:
+            self.layers.append(SupermaskLinear(784*2*prec, d, bias=False))
         for i in range(l-1):
             self.layers.append(SupermaskLinear(d, 2*prec*d, bias=False))
             self.layers.append(SupermaskLinear(2*prec*d, 2*prec*d, bias=False))
@@ -248,6 +251,8 @@ class FCBinaryGadgetNet(nn.Module):
             if layer_id % 3 == 0:
                 # first layer
                 layer.sparsity = 1
+                layer.scores.required_grad=False
+                layer.scores.data = torch.ones_like(layer.scores.data)
                 for idx, row in enumerate(layer.weight):
                     if idx%(2*self.prec) < self.prec:
                         layer.weight.data[idx] = torch.zeros_like(row)
@@ -256,6 +261,8 @@ class FCBinaryGadgetNet(nn.Module):
                         layer.weight.data[idx] = torch.zeros_like(row)
                         layer.weight.data[idx][int(idx/(2*self.prec))] = -1
             elif layer_id % 3 == 1:
+                layer.scores.required_grad=False
+                layer.scores.data = torch.ones_like(layer.scores.data)
                 layer.sparsity = 1
                 # second layer
                 for idx, row in enumerate(layer.weight):
@@ -534,7 +541,7 @@ def main():
     parser = argparse.ArgumentParser(description='PyTorch MNIST Example')
     parser.add_argument('--gpu', type=int, default=3, metavar='N',
                         help='id of gpu to use')
-    parser.add_argument('--batch-size', type=int, default=128, metavar='N',
+    parser.add_argument('--batch-size', type=int, default=512, metavar='N',
                         help='input batch size for training (default: 64)')
     parser.add_argument('--test-batch-size', type=int, default=100, metavar='N',
                         help='input batch size for testing (default: 1000)')
@@ -567,7 +574,7 @@ def main():
     # hc: hypercube pruning
     parser.add_argument('--algo', type=str, default='ep',
                         help='pruning algo to use |ep|pt_hack|pt_reg|hc|')
-    parser.add_argument('--optimizer', type=str, default='sgd',
+    parser.add_argument('--optimizer', type=str, default='adam',
                         help='optimizer option to use |sgd|adam|')
     parser.add_argument('--evaluate-only', action='store_true', default=False,
                         help='just use rounding techniques to evaluate a saved model')
@@ -655,6 +662,7 @@ def main():
 
     if not parser_args.evaluate_only:
         for epoch in range(1, parser_args.epochs + 1):
+            # import ipdb; ipdb.set_trace()
             train(model, device, train_loader, optimizer, criterion, epoch)
             if parser_args.algo in ['hc']:
                 test_acc = round_and_evaluate(model, device, criterion, train_loader, test_loader)
@@ -664,13 +672,15 @@ def main():
             epoch_list.append(epoch)
             test_acc_list.append(test_acc)
             if parser_args.mode != "training":
-                if parser_args.algo == 'hc':
+                if parser_args.algo in ['hc']:
                     cp_model = round_model(model, device, train_loader)
                     model_sparsity = get_model_sparsity(cp_model)
+                elif parser_args.algo in ['ep', 'quantized_hc']:
+                    model_sparsity = parser_args.sparsity
                 else:
                     model_sparsity = get_model_sparsity(model)
 
-                if epoch % 10 == 1:
+                if epoch % 10 == 1 and False:
                     plot_histogram_scores(model, epoch)
             else:
                 model_sparsity = (sum([p.numel() for p in model.parameters()]))
@@ -683,7 +693,7 @@ def main():
             logging.info("Writing results to {}".format(parser_args.results_filename))
             results_df.to_csv('results/MNIST/{}'.format(parser_args.results_filename), index=False)
 
-        if parser_args.mode != "training":
+        if parser_args.mode != "training" and False:
             # gotta plot the final histogram as well
             plot_histogram_scores(model, epoch)
 
