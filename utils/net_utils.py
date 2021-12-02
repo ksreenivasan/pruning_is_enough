@@ -302,7 +302,8 @@ def get_score_sparsity_hc(model):
 
 def prune(model, update_thresholds_only=False):
     if update_thresholds_only:
-        print("Updating prune thresholds")
+        pass
+        #print("Updating prune thresholds")
     else:
         print("Pruning Model:")
 

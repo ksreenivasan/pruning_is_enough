@@ -179,7 +179,7 @@ class SubnetConv(nn.Conv2d):
                 subnet = self.scores * self.flag.data.float()
                 bias_subnet = self.bias_scores * self.bias_flag.data.float()
 
-        elif parser_args.algo in ['global_ep']:
+        elif parser_args.algo in ['global_ep', 'global_ep_iter']:
             subnet, bias_subnet = GetSubnet.apply(self.scores.abs(), self.bias_scores.abs(), 0, self.scores_prune_threshold, self.bias_scores_prune_threshold)
         else:
             subnet, bias_subnet = GetSubnet.apply(self.scores.abs(), self.bias_scores.abs(), parser_args.prune_rate)
