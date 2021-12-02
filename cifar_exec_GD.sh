@@ -11,8 +11,9 @@
 
 ### ResNet-20
 #python main.py --config configs/ep/resnet20/resnet20_sc_ep.yml 
-python main.py --config configs/ep/resnet20/resnet20_sc_global_ep.yml 
+#python main.py --config configs/ep/resnet20/resnet20_sc_global_ep.yml 
 
+python main.py --config config10.yml --run_idx 10 #> log_config$r 2>&1	
 :<<BLOCK
 run_list=(3 4)
 for r in ${run_list[@]}
