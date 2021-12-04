@@ -181,7 +181,7 @@ class SubnetConv(nn.Conv2d):
         elif parser_args.algo in ['imp']:
             # no STE, no subnet. Mask is handled outside
             pass
-        elif parser_args.algo in ['global_ep']:
+        elif parser_args.algo in ['global_ep', 'global_ep_iter']:
             subnet, bias_subnet = GetSubnet.apply(self.scores.abs(), self.bias_scores.abs(), 0, self.scores_prune_threshold, self.bias_scores_prune_threshold)
         else:
             # ep, global_ep, global_ep_iter, pt etc

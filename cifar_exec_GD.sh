@@ -13,6 +13,15 @@
 #python main.py --config configs/ep/resnet20/resnet20_sc_ep.yml 
 #python main.py --config configs/ep/resnet20/resnet20_sc_global_ep.yml 
 
+python main.py --config config10.yml --run_idx 10 #> log_config$r 2>&1	
+:<<BLOCK
+run_list=(3 4)
+for r in ${run_list[@]}
+do
+	python main.py --config config$r.yml --run_idx $r #> log_config$r 2>&1	
+done
+BLOCK
+
 #python main.py --config config1.yml --run_idx 1
 #python main.py --config config2.yml --run_idx 2 
 #python main.py --config config3.yml --run_idx 3
@@ -23,7 +32,7 @@
 #python main.py --config config8.yml --run_idx 8 
 #python main.py --config config7.yml --run_idx 7
 
-python main.py --config config9.yml --run_idx 9
+#python main.py --config config9.yml --run_idx 9
 #python main.py --config config10.yml --run_idx 10
 
 #python main.py --config config11.yml --run_idx 11
