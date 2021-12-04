@@ -16,69 +16,14 @@ import sys
 import os
 
 # from cifar_model_resnet import resnet20
-from IMP_codebase.mask import Mask
+# from IMP_codebase.mask import Mask
+from imp_mask import Mask
 
 # for merge the code into parent directory
 from args_helper import parser_args
 from main_utils import get_model, get_dataset, get_optimizer, switch_to_wt
 from utils.utils import set_seed
 from utils.schedulers import get_scheduler
-
-
-# move this to parent directory
-# handle args is the most important thing to do
-# import parser_args from args_helper like everyone else (make sure defaults etc match what is needed here)
-# delete functions that are repeated (like set_seed etc)
-# don't worry about moving things to utils right now, not a big deal (but can do :) )
-# most important test: run IMP with resnet20 and see if it works without paser.parse_args() like here
-
-# def set_seed(seed):
-#     random.seed(seed)
-#     torch.manual_seed(seed)
-#     torch.cuda.manual_seed(seed)
-#     torch.cuda.manual_seed_all(seed)
-#     np.random.seed(seed)
-#     os.environ['PYTHONHASHSEED'] = str(seed)
-#     # making sure GPU runs are deterministic even if they are slower
-#     torch.backends.cudnn.deterministic = True
-#     torch.backends.cudnn.benchmark = False # True
-#     print("Seeded everything: {}".format(seed))
-
-
-# def data_loader(parser_args):
-#     # get datapoints
-#     kwargs = {'num_workers': 1, 'pin_memory': True} if torch.cuda.is_available() else {}
-#     normalize = transforms.Normalize(
-#             mean=[0.491, 0.482, 0.447], std=[0.247, 0.243, 0.262]
-#         )
-#     train_dataset = torchvision.datasets.CIFAR10(
-#                         root=parser_args.data,
-#                         train=True,
-#                         download=True,
-#                         transform=transforms.Compose(
-#                             [
-#                                 transforms.RandomCrop(32, padding=4),
-#                                 transforms.RandomHorizontalFlip(),
-#                                 transforms.ToTensor(),
-#                                 normalize,
-#                             ]
-#                         ),
-#                     )
-#     train_loader = torch.utils.data.DataLoader(
-#                         train_dataset, batch_size=parser_args.batch_size, shuffle=True, **kwargs
-#                     )
-
-#     test_dataset = torchvision.datasets.CIFAR10(
-#                         root=parser_args.data,
-#                         train=False,
-#                         download=True,
-#                         transform=transforms.Compose([transforms.ToTensor(), normalize]),
-#                     )
-#     test_loader = torch.utils.data.DataLoader(
-#                         test_dataset, batch_size=parser_args.batch_size, shuffle=False, **kwargs
-#                     )
-
-#     return train_loader, test_loader
 
 
 def IMP_train(parser_args, data, device):
@@ -97,18 +42,6 @@ def IMP_train(parser_args, data, device):
     assert parser_args.imp_rewind_iter // 391 < parser_args.iter_period  # NOTE: hard code, needs to modify later
 
     # weight initialization
-    # model = resnet20(ignore_name=parser_args.imp_ignore_name).to(device)
-    # def init_params(net):
-    #     '''Init layer parameters.'''
-    #     for m in net.modules():
-    #         if isinstance(m, nn.Conv2d):
-    #             init.kaiming_normal_(m.weight)
-    #         elif isinstance(m, nn.BatchNorm2d):
-    #             init.uniform_(m.weight, 0, 1)
-    #             init.constant_(m.bias, 0)
-    #         elif isinstance(m, nn.Linear):
-    #             init.kaiming_normal_(m.weight)
-    # init_params(model)
     model = get_model(parser_args)
     model = switch_to_wt(model).to(device)
 
@@ -117,32 +50,6 @@ def IMP_train(parser_args, data, device):
     
     # Optimizer and criterion
     criterion = nn.CrossEntropyLoss().to(device)
-    # def get_optimizer_and_scheduler(parser_args):
-    #     if parser_args.optimizer == 'sgd':
-    #         optimizer = torch.optim.SGD(
-    #             [p for p in model.parameters() if p.requires_grad],
-    #             lr=parser_args.lr,
-    #             momentum=parser_args.momentum,
-    #             weight_decay=parser_args.wd,
-    #         )
-    #         if parser_args.gamma > 0.:
-    #             scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[80, 120], gamma=parser_args.gamma)  # NOTE: Hard code
-    #         else:
-    #             scheduler = None
-
-    #     elif parser_args.optimizer == 'adam':
-    #         optimizer = torch.optim.Adam([p for p in model.parameters() if p.requires_grad],
-    #                                      lr=parser_args.lr,
-    #                                      weight_decay=parser_args.wd,
-    #                                      amsgrad=False,
-    #                                      )
-    #         scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=n_epoch)
-    #     else:
-    #         print("INVALID OPTIMIZER")
-    #         print("EXITING")
-    #         exit()
-    #     return optimizer, scheduler
-
     optimizer = get_optimizer(parser_args, model)
     # NOTE: hard code, just to make sure my code runs correctly
     scheduler = get_scheduler(optimizer, parser_args.lr_policy, milestones=[80, 120], gamma=parser_args.lr_gamma)
@@ -157,7 +64,7 @@ def IMP_train(parser_args, data, device):
     # =        Pre-define Function         =
     # ======================================
 
-    def prune_by_percentile_global(percent, model, rewind_state_dict, current_mask):
+    def prune_by_percentile_global(percent, model, rewind_state_dict, current_mask, current_mask_bias):
         """This function prune the model by percentile
         :param percent: percentage of pruning for each round
         :param mask: the pervious mask
@@ -168,34 +75,50 @@ def IMP_train(parser_args, data, device):
             mask: the updated mask
         """
         # ========= Prune =========
-        current_mask = Mask.ones_like(model).numpy() if current_mask is None else current_mask.numpy()
-
+        if current_mask is None:
+            # if parser_args.bias == True, current_mask_bias is not None; otherwise it is None.
+            current_mask, current_mask_bias = Mask.ones_like(model)
+        current_mask = current_mask.numpy()
+        if parser_args.bias:
+            current_mask_bias = current_mask_bias.numpy()
+        
         # Determine the number of weights that need to be pruned.
         number_of_remaining_weights = np.sum([np.sum(v) for v in current_mask.values()])
-        # number_of_weights_to_prune = np.ceil(percent / 100. * number_of_remaining_weights).astype(int)
         number_of_weights_to_prune = np.ceil(percent * number_of_remaining_weights).astype(int)
+        if parser_args.bias:  # NOTE: bias use the same pruning rate as weight
+            number_of_remaining_bias = np.sum([np.sum(v) for v in current_mask_bias.values()])
+            number_of_bias_to_prune = np.ceil(percent * number_of_remaining_bias).astype(int)
 
         weights = {k: v.clone().cpu().detach().numpy()
                    for k, v in model.state_dict().items()
-                   if k in model.prunable_layer_names}  # get all the weights except the final linear layer
-        # NOTE: no implementation for bias!
-        assert parser_args.bias == False
+                   if k in model.prunable_layer_names}
+        if parser_args.bias:
+            bias = {k: v.clone().cpu().detach().numpy()
+                    for k, v in model.state_dict().items()
+                    if k in model.prunable_biases}
 
         # Create a vector of all the unpruned weights in the model.
         weight_vector = np.concatenate([v[current_mask[k] == 1] for k, v in weights.items()])
         threshold = np.sort(np.abs(weight_vector))[number_of_weights_to_prune]
-
         new_mask = Mask({k: np.where(np.abs(v) > threshold, current_mask[k], np.zeros_like(v))
                          for k, v in weights.items()})
+        if parser_args.bias:
+            bias_vector = np.concatenate([v[current_mask_bias[k] == 1] for k, v in bias.items()])
+            bias_threshold = np.sort(np.abs(bias_vector))[number_of_bias_to_prune]
+            new_mask_bias = Mask({k: np.where(np.abs(v) > bias_threshold, current_mask_bias[k], np.zeros_like(v))
+                         for k, v in bias.items()})
+        else:
+            new_mask_bias = None
 
         # ========= Update =========
         for name, weight in model.named_parameters():
             if name in model.prunable_layer_names:
                 weight.data = new_mask[name].to(device) * rewind_state_dict[name].data
-                # print(new_mask[name].sum(), new_mask[name].shape)
-        # print("update weight")
+            if parser_args.bias:
+                if name in model.prunable_biases:
+                    weight.data = new_mask_bias[name].to(device) * rewind_state_dict[name].data
 
-        return model, new_mask
+        return model, new_mask, new_mask_bias
 
     
     def test(model, device, test_loader):
@@ -217,7 +140,7 @@ def IMP_train(parser_args, data, device):
         nonzero = 0
         total = 0
         for name, p in model.named_parameters():
-            if name in model.prunable_layer_names:
+            if name in model.prunable_layer_names or name in model.prunable_biases:
                 tensor = p.data.detach().cpu().numpy()
                 nz_count = np.count_nonzero(tensor)
                 total_params = np.prod(tensor.shape)
@@ -234,12 +157,12 @@ def IMP_train(parser_args, data, device):
     
     test_acc_list, n_act_list = [], []
     before_acc_list = []
-    mask = None
+    mask, mask_bias = None, None
     counter = 0
     for idx_round in range(n_round):
         if idx_round > 0:
             # model, mask = prune_by_percentile_global(parser_args.prune_perct, model, rewind_state_dict, mask)
-            model, mask = prune_by_percentile_global(parser_args.prune_rate, model, rewind_state_dict, mask)
+            model, mask, mask_bias = prune_by_percentile_global(parser_args.prune_rate, model, rewind_state_dict, mask, mask_bias)
         before_acc = test(model, device, data.val_loader)
         # optimizer, scheduler = get_optimizer_and_scheduler(parser_args)
         optimizer = get_optimizer(parser_args, model)
@@ -275,7 +198,6 @@ def IMP_train(parser_args, data, device):
                 scaler.scale(train_loss).backward()
                 scaler.step(optimizer)
                 scaler.update()
-                # print(batch_idx, train_loss.item())
                 optimizer.zero_grad()
                 # train_loss.backward()
 
@@ -301,7 +223,6 @@ def IMP_train(parser_args, data, device):
             print('Train Epoch: {}/{} Loss: {:.4f} Test Acc: {:.2f}'.format(idx_epoch, n_epoch, train_loss.item(), test_acc))
             if scheduler is not None:
                 scheduler.step()
-            # print("lr {}".format(optimizer.param_groups[0]["lr"]))
             
             result_df = pd.DataFrame({'test': test_acc_list, 'nact': n_act_list, "before": before_acc_list})
             result_df.to_csv("{}/LTH_cifar10_resnet20.csv".format(dest_dir), index=False)
@@ -316,54 +237,13 @@ def IMP_train(parser_args, data, device):
 
 
 def main():
+    # use the parser_args from args_helper.py
     global parser_args
-    # Training settings
-    # parser = argparse.ArgumentParser(description='PyTorch MNIST Example')
-
-    # parser.add_argument('--batch-size', type=int, default=128, metavar='N',
-                        # help='input batch size for training (default: 64)')
-
-    # parser.add_argument('--optimizer', type=str, default='sgd',
-                        # help='optimizer option to use |sgd|adam|')
-    
-    # parser.add_argument('--lr', type=float, default=0.1, metavar='LR',
-                        # help='learning rate (default: 0.1)')
-    
-    # parser.add_argument('--epochs', type=int, default=50, metavar='N',
-                        # help='number of epochs to train (default: 14)')
-    
-    # parser.add_argument('--wd', type=float, default=0.0005, metavar='M',
-                        # help='Weight decay (default: 0.0005)')
-    
-    # parser.add_argument('--iter_period', type=int, default=20,
-                        # help='period [epochs] for iterative pruning ')
-    
-    # parser.add_argument('--seed', type=int, default=42, metavar='S',
-                        # help='random seed (default: 42)')
-    
-    # parser.add_argument('--prune_perct', type=float, default=20, metavar='S',
-                        # help='prune percent for each layer')
-
-    # parser.add_argument('--data', default='../data')
-    # parser.add_argument('--bias', action='store_true', default=False)
-
-    # added parser for cifar 10 resnet18
-    # parser.add_argument("--ignore_name", default=None, help="the name of layers to be ignored. Example: 'linear1.weight, between.weight'.")
-    # parser.add_argument("--momentum", default=0.9, type=float, help="momentum")
-    # parser.add_argument("--gamma", default=0.1, type=float, help="learning rate scheduler")
-    # parser.add_argument("--rewind_iter", default=1000, type=int, help="which epoch to rewind to")
-    # parser.add_argument('--dest_dir', default='model/')
-    # parser.add_argument("--gpu", default=1)
-
-
-    # parser_args = parser.parse_args()
-
     use_cuda = torch.cuda.is_available()
     device = torch.device("cuda:{}".format(parser_args.gpu) if use_cuda else "cpu")
     kwargs = {'num_workers': 1, 'pin_memory': True} if use_cuda else {}
     set_seed(parser_args.seed)
 
-    # train_loader, test_loader = data_loader(parser_args)
     data = get_dataset(parser_args)
 
     IMP_train(parser_args, data, device)

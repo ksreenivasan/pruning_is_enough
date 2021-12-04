@@ -176,11 +176,7 @@ class ArgsHelper:
             "--algo",
             type=str,
             default='ep',
-<<<<<<< HEAD
-            help="pruning algo to use |ep|pt_hack|pt_reg|hc|ep+greedy|greedy+ep|hc_iter|imp"
-=======
-            help="pruning algo to use |ep|pt_hack|pt_reg|hc|ep+greedy|greedy+ep|hc_iter|global_ep|global_ep_iter|"
->>>>>>> master
+            help="pruning algo to use |ep|pt_hack|pt_reg|hc|ep+greedy|greedy+ep|hc_iter|global_ep|global_ep_iter|imp"
         )
         parser.add_argument(
             "--iter_start", 
