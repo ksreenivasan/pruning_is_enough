@@ -16,6 +16,9 @@ lr_policy: cosine_lr #constant_lr #multistep_lr # cosine_lr
 
 # ===== Network training config ===== #
 epochs: 50 #150 
+unif_prune: False
+PRs: .50,.50,.50,.25
+epoch_pr: 2,4,6,10,20
 wd: 0.0 
 momentum: 0.9
 batch_size: 128
@@ -26,6 +29,7 @@ bn_type: NonAffineBatchNorm
 freeze_weights: True
 prune_type: BottomK
 #prune_rate: 0.2
+
 init: signed_constant
 #score_init: skew #half #bimodal #skew # bern
 scale_fan: False #True
@@ -53,5 +57,5 @@ checkpoint_at_prune: True
 # ==== sanity check ==== #
 skip_sanity_checks: True
 
-# ==== sanity check ==== #
+# ==== get sparsity quickly and train much ==== #
 fast_sparse: True

@@ -790,7 +790,25 @@ class ArgsHelper:
             "--fast-sparse",
             action="store_true",
             default=False,
-            help="Enable this to check for sparsity"
+            help="Enable this for 300-epochs for fine-tuning"
+        )
+        parser.add_argument(
+            "--unif-prune",
+            action="store_true",
+            default=True,
+            help="disable for non uniform pruning rates"
+        )
+        parser.add_argument(
+            '--PRs', #pruning rates
+            default=None,
+            type=str,
+            help='for each number in PR it will start at the corresponding epoch-pr'
+        )
+        parser.add_argument(
+            '--epoch-pr', #pruning rates
+            default=None,
+            type=str,
+            help='this goes in tandum with PRs, for each number in epoch that is when the corresponding PR starts'
         )
 
         if jupyter_mode:

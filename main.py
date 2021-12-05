@@ -1,3 +1,4 @@
+from yaml import parse
 from main_utils import *
 
 
@@ -41,6 +42,12 @@ def main_worker(gpu, ngpus_per_node):
 
     if not os.path.isdir(result_root):
         os.mkdir(result_root)
+
+    if not parser_args.unif_prune:
+        pruning_rates = list(map(int, parser_args.PRs.split(',')))
+        prune_epochs = list(map(int, parser_args.epoch_pr.split(',')))
+        parser_args.pruning_rate = pruning_rates[0]
+
     model = get_model(parser_args)
 
     '''
@@ -140,10 +147,18 @@ def main_worker(gpu, ngpus_per_node):
         validation_time.update((time.time() - start_validation) / 60)
 
         # prune the model every T_{prune} epochs
-        if parser_args.algo in ['hc_iter', 'global_ep_iter'] and epoch % (parser_args.iter_period) == 0 and epoch != 0:
+        if parser_args.algo in ['hc_iter', 'global_ep_iter'] and parser_args.unif_prune and epoch % (parser_args.iter_period) == 0 and epoch != 0:
             prune(model)
             if parser_args.checkpoint_at_prune:
                 save_checkpoint_at_prune(model, parser_args)
+        
+        #prune model non-uniformly
+        if not parser_args.unif_prune:
+            if epoch == prune_epochs[0]:
+                prune_epochs.pop(0)
+                parser_args.pruning_rate = pruning_rates.pop(0)
+                set_model_prune_rate(model, parser_args.pruning_rate)
+                prune(model)
 
         # get model sparsity
         if not parser_args.weight_training:
