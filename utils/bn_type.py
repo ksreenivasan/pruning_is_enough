@@ -6,3 +6,9 @@ LearnedBatchNorm = nn.BatchNorm2d
 class NonAffineBatchNorm(nn.BatchNorm2d):
     def __init__(self, dim):
         super(NonAffineBatchNorm, self).__init__(dim, affine=False)
+
+
+class AffineBatchNorm(nn.BatchNorm2d):
+    def __init__(self, dim):
+        super(AffineBatchNorm, self).__init__(dim, affine=True)
+
