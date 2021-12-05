@@ -786,6 +786,12 @@ class ArgsHelper:
              default=None,
              help="subfolder within the location for saving the results"
              )
+        parser.add_argument(
+            "--fast-sparse",
+            action="store_true",
+            default=False,
+            help="Enable this to check for sparsity"
+        )
 
         if jupyter_mode:
             args = parser.parse_args("")

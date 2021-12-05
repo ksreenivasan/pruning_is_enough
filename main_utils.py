@@ -212,6 +212,8 @@ def eval_and_print(validate, data_loader, model, criterion, parser_args, writer=
     return acc1
 
 def finetune(model, parser_args, data, criterion, old_epoch_list, old_test_acc_before_round_list, old_test_acc_list, old_reg_loss_list, old_model_sparsity_list, result_root, shuffle=False, reinit=False, invert=False, chg_mask=False, chg_weight=False):
+    if parser_args.fast_sparse:
+        parser_args.epochs = 300 - parser_args.epochs
     epoch_list = copy.deepcopy(old_epoch_list)
     test_acc_before_round_list = copy.deepcopy(old_test_acc_before_round_list)
     test_acc_list = copy.deepcopy(old_test_acc_list)
