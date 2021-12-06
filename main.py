@@ -44,9 +44,9 @@ def main_worker(gpu, ngpus_per_node):
         os.mkdir(result_root)
 
     if not parser_args.unif_prune:
-        pruning_rates = list(map(int, parser_args.PRs.split(',')))
-        prune_epochs = list(map(int, parser_args.epoch_pr.split(',')))
-        parser_args.pruning_rate = pruning_rates[0]
+        prune_rates = list(map(float, parser_args.PRs.split(',')))
+        prune_epochs = list(map(float, parser_args.epoch_pr.split(',')))
+        parser_args.prune_rate = prune_rates[0]
 
     model = get_model(parser_args)
 
@@ -154,10 +154,11 @@ def main_worker(gpu, ngpus_per_node):
         
         #prune model non-uniformly
         if not parser_args.unif_prune:
-            if epoch == prune_epochs[0]:
+            if epoch == prune_epochs[0]-1:
+                print('PRUNING NON-UNIFORMLY ######################################********')
                 prune_epochs.pop(0)
-                parser_args.pruning_rate = pruning_rates.pop(0)
-                set_model_prune_rate(model, parser_args.pruning_rate)
+                parser_args.prune_rate = prune_rates.pop(0)
+                set_model_prune_rate(model, parser_args.prune_rate)
                 prune(model)
 
         # get model sparsity

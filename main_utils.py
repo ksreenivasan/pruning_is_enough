@@ -323,8 +323,11 @@ def get_idty_str(parser_args):
     dataset_str = parser_args.dataset
     model_str = parser_args.arch
     algo_str = parser_args.algo
-    rate_str = parser_args.prune_rate
-    period_str = parser_args.iter_period
+    #rate_str = parser_args.prune_rate
+    rate_str = parser_args.PRs
+    #period_str = parser_args.iter_period
+    period_str = parser_args.epoch_pr
+    epoch_str = parser_args.epochs
     reg_str = 'reg_{}'.format(parser_args.regularization)
     reg_lmbda = parser_args.lmbda if parser_args.regularization else ''
     opt_str = parser_args.optimizer
@@ -340,10 +343,13 @@ def get_idty_str(parser_args):
     seed_str = parser_args.seed + parser_args.trial_num - 1
     run_idx_str = parser_args.run_idx
     idty_str = "{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_finetune_{}_fan_{}_{}_{}_width_{}_seed_{}_idx_{}".\
-        format(train_mode_str, dataset_str, model_str, algo_str, rate_str, period_str, reg_str, reg_lmbda,
+    format(train_mode_str, dataset_str, model_str, algo_str, rate_str, period_str, epoch_str, reg_str, reg_lmbda,
         opt_str, policy_str, lr_str, lr_gamma, lr_adj, finetune_lr_str, fan_str, w_str, s_str,
         width_str, seed_str, run_idx_str).replace(".", "_")
-
+     # idty_str = "{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_finetune_{}_fan_{}_{}_{}_width_{}_seed_{}_idx_{}".\
+     #  format(train_mode_str, dataset_str, model_str, algo_str, rate_str, period_str, reg_str, reg_lmbda,
+     #  opt_str, policy_str, lr_str, lr_gamma, lr_adj, finetune_lr_str, fan_str, w_str, s_str,
+     #      width_str, seed_str, run_idx_str).replace(".", "_")
 
     return idty_str
 

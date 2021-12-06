@@ -17,8 +17,8 @@ lr_policy: cosine_lr #constant_lr #multistep_lr # cosine_lr
 # ===== Network training config ===== #
 epochs: 50 #150 
 unif_prune: False
-PRs: .50,.50,.50,.25
-epoch_pr: 2,4,6,10,20
+PRs: .50,.50,.40,.35,.30,.30
+epoch_pr: 5,10,15,20,25,35,60
 wd: 0.0 
 momentum: 0.9
 batch_size: 128
