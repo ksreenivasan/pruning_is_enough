@@ -106,7 +106,7 @@ def sanity_check(parser_args, data, device, shuffle=False, reinit=False, chg_mas
                 pred = output.argmax(dim=1, keepdim=True)  # get the index of the max log-probability
                 correct += pred.eq(target.view_as(pred)).sum().item()
 
-        test_acc = 100. * correct/len(test_loader.dataset)
+        test_acc = 100. * correct / len(test_loader.dataset)
         return test_acc
 
     
@@ -168,6 +168,7 @@ def sanity_check(parser_args, data, device, shuffle=False, reinit=False, chg_mas
                     tensor = param.data.detach()
                     param.data = tensor * mask[()][name].to(device).float()
 
+        test_acc = test(model, device, data.val_loader)
         print('Train Epoch: {}/{} Loss: {:.4f} Test Acc: {:.2f}'.format(idx_epoch, parser_args.epochs, train_loss.item(), test_acc))
         if scheduler is not None:
             scheduler.step()
