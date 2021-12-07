@@ -13,6 +13,8 @@ name: resnet20_cifar10_hypercube_bottom_K_SGD
 optimizer: sgd
 lr: 0.1 #0.01
 lr_policy: cosine_lr #constant_lr #multistep_lr # cosine_lr
+fine_tune_lr: 0.01
+fine_tune_lr_policy: multistep_lr
 
 # ===== Network training config ===== #
 epochs: 30 #150 
@@ -29,9 +31,8 @@ bn_type: NonAffineBatchNorm
 freeze_weights: True
 prune_type: BottomK
 #prune_rate: 0.2
-
 init: signed_constant
-#score_init: skew #half #bimodal #skew # bern
+score_init: unif #half #bimodal #skew # bern
 scale_fan: False #True
 
 # ===== Rounding ===== #
@@ -45,7 +46,7 @@ quantize_threshold: 0.5
 
 # ===== Regularization ===== #
 regularization: L1
-#lmbda: 0.000001 # 0.01 #0.0001 #0.000001
+lmbda: 0.00005 # 0.01 #0.0001 #0.000001
 
 # ===== Hardware setup ===== #
 workers: 4
