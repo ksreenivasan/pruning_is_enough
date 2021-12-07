@@ -10,12 +10,12 @@
 ### ResNet-20
 
 # use cosine lr 300 epochs, 150 train, 150 cont train
-# python main.py \
-#    --config configs/hypercube/resnet20/config10.yml \
-#    --HC-cont-use-previous-optimizer \
-#    --epochs 150 \
-#    --HC-cont-epochs 150 \
-#    --results-filename 1
+python main.py \
+   --config configs/hypercube/resnet20/config10.yml \
+   --HC-cont-use-previous-optimizer \
+   --epochs 150 \
+   --HC-cont-epochs 150 \
+   --results-filename 1
 
 # use cosine lr 150 epochs, then set cont lr to be original lr / 2, again 150 epochs for cosine lr
 python main.py \
@@ -27,70 +27,70 @@ python main.py \
    --results-filename 2a
 
 # same as file2, different start lr
-# python main.py \
-#    --config configs/hypercube/resnet20/config10.yml \
-#    --HC-cont-lr 0.01 \
-#    --epochs 150 \
-#    --HC-cont-epochs 150 \
-#    --HC-cont-lr-policy cosine_lr \
-#    --results-filename 2b
+python main.py \
+   --config configs/hypercube/resnet20/config10.yml \
+   --HC-cont-lr 0.01 \
+   --epochs 150 \
+   --HC-cont-epochs 150 \
+   --HC-cont-lr-policy cosine_lr \
+   --results-filename 2b
 
 # same as file2, different start lr
-# python main.py \
-#    --config configs/hypercube/resnet20/config10.yml \
-#    --HC-cont-lr 0.005 \
-#    --epochs 150 \
-#    --HC-cont-epochs 150 \
-#    --HC-cont-lr-policy cosine_lr \
-#    --results-filename 2c
+python main.py \
+   --config configs/hypercube/resnet20/config10.yml \
+   --HC-cont-lr 0.005 \
+   --epochs 150 \
+   --HC-cont-epochs 150 \
+   --HC-cont-lr-policy cosine_lr \
+   --results-filename 2c
 
 # use consine lr 150 epochs with eta_min set to somthing
-# python main.py \
-#    --config configs/hypercube/resnet20/config10.yml \
-#    --cosine-lr-min 0.05 \
-#    --epochs 150 \
-#    --HC-cont-epochs 150 \
-#    --HC-cont-lr 0.05 \
-#    --HC-cont-lr-policy cosine_lr \
-#    --results-filename 3a
+python main.py \
+   --config configs/hypercube/resnet20/config10.yml \
+   --cosine-lr-min 0.05 \
+   --epochs 150 \
+   --HC-cont-epochs 150 \
+   --HC-cont-lr 0.05 \
+   --HC-cont-lr-policy cosine_lr \
+   --results-filename 3a
 
 # same as file3, different start lr
-# python main.py \
-#    --config configs/hypercube/resnet20/config10.yml \
-#    --cosine-lr-min 0.01 \
-#    --epochs 150 \
-#    --HC-cont-epochs 150 \
-#    --HC-cont-lr 0.01 \
-#    --HC-cont-lr-policy cosine_lr \
-#    --results-filename 3b
+python main.py \
+   --config configs/hypercube/resnet20/config10.yml \
+   --cosine-lr-min 0.01 \
+   --epochs 150 \
+   --HC-cont-epochs 150 \
+   --HC-cont-lr 0.01 \
+   --HC-cont-lr-policy cosine_lr \
+   --results-filename 3b
 
 # same as file3, different start lr
-# python main.py \
-#    --config configs/hypercube/resnet20/config10.yml \
-#    --cosine-lr-min 0.005 \
-#    --HC-cont-lr 0.005 \
-#    --epochs 150 \
-#    --HC-cont-epochs 150 \
-#    --HC-cont-lr-policy cosine_lr \
-#    --results-filename 3c
+python main.py \
+   --config configs/hypercube/resnet20/config10.yml \
+   --cosine-lr-min 0.005 \
+   --HC-cont-lr 0.005 \
+   --epochs 150 \
+   --HC-cont-epochs 150 \
+   --HC-cont-lr-policy cosine_lr \
+   --results-filename 3c
 
 # use cosine lr 150 epochs, then sgd
-# python main.py \
-#    --config configs/hypercube/resnet20/config10.yml \
-#    --HC-cont-lr 0.1 \
-#    --epochs 150 \
-#    --HC-cont-epochs 150 \
-#    --HC-cont-lr-policy multistep_lr \
-#    --results-filename 4
+python main.py \
+   --config configs/hypercube/resnet20/config10.yml \
+   --HC-cont-lr 0.1 \
+   --epochs 150 \
+   --HC-cont-epochs 150 \
+   --HC-cont-lr-policy multistep_lr \
+   --results-filename 4
 
 # use cosine lr 150 epochs, then adam
-# python main.py \
-#    --config configs/hypercube/resnet20/config10.yml \
-#    --HC-cont-optimizer adam \
-#    --epochs 150 \
-#    --HC-cont-epochs 150 \
-#    --HC-cont-lr 0.001 \
-#    --results-filename 5
+python main.py \
+   --config configs/hypercube/resnet20/config10.yml \
+   --HC-cont-optimizer adam \
+   --epochs 150 \
+   --HC-cont-epochs 150 \
+   --HC-cont-lr 0.001 \
+   --results-filename 5
 
 
 :<<BLOCK
