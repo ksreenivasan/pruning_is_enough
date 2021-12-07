@@ -103,6 +103,12 @@ class ArgsHelper:
             help="Learning rate scheduler"
         )
         parser.add_argument(
+            "--cosine-lr-min",
+            type=float,
+            default=0.,
+            help="the minimum cosine lr rate"
+        )
+        parser.add_argument(
             "--lr-gamma",
             type=float,
             default=0.1,
@@ -592,9 +598,15 @@ class ArgsHelper:
             help="print frequency (default: 10)",
         )
         parser.add_argument(
-            '--results-filename',
+            '--results-root',
             type=str,
             default=None,
+            help='csv results folder'
+        )
+        parser.add_argument(
+            '--results-filename',
+            type=str,
+            default="",
             help='csv results filename'
         )
         parser.add_argument(
@@ -802,6 +814,52 @@ class ArgsHelper:
             "--imp-rewind-model", 
             default="short_imp/Liu_checkpoint_model_correct.pth"
             )
+        
+        # added for HC continue training
+        parser.add_argument(
+            "--HC-cont",
+            action="store_true",
+            default=False,
+            help="if set True, we will train the model again for some epoch and before start finetuning"
+        )
+        parser.add_argument(
+            "--HC-cont-epochs",
+            default=0,
+            type=int,
+            help="specify how many epochs we will continue training"
+        )
+        parser.add_argument(
+            "--HC-cont-lr-policy",
+            type=str,
+            default='cosine_lr',
+            help="Learning rate scheduler for continue training. Option consine_lr | multistep_lr"
+        )
+        parser.add_argument(
+            "--HC-cont-use-previous-optimizer",
+            action="store_true",
+            default=False,
+            help="if set True, we will use the optimizer from training stage to keep training"
+        )
+        parser.add_argument(
+            "--HC-cont-optimizer",
+            type=str,
+            default='sgd',
+            help="optimizer option to use in continue training |sgd|adam|"
+        )
+        parser.add_argument(
+            "--HC-cont-lr",
+            type=float,
+            default=0.01,
+            metavar="LR",
+            help="Learning rate for HC continue training"
+        )
+        parser.add_argument(
+            "--HC-cont-wd",
+            type=float,
+            default=0.0001,
+            metavar="WD",
+            help="Weight decay for HC continue training"
+        )
 
         if jupyter_mode:
             args = parser.parse_args("")

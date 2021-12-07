@@ -64,7 +64,10 @@ def main_worker(gpu, ngpus_per_node):
         model2 = None
     optimizer = get_optimizer(parser_args, model)
     data = get_dataset(parser_args)
-    scheduler = get_scheduler(optimizer, parser_args.lr_policy) 
+    if parser_args.HC_cont_use_previous_optimizer:
+        scheduler = get_scheduler(optimizer, parser_args.lr_policy, max_epochs=parser_args.epochs+parser_args.HC_cont_epochs, eta_min=parser_args.cosine_lr_min) 
+    else:
+        scheduler = get_scheduler(optimizer, parser_args.lr_policy, max_epochs=parser_args.epochs, eta_min=parser_args.cosine_lr_min)
     #lr_policy = get_policy(parser_args.lr_policy)(optimizer, parser_args)
     if parser_args.label_smoothing is None:
         criterion = nn.CrossEntropyLoss().cuda()
@@ -92,7 +95,8 @@ def main_worker(gpu, ngpus_per_node):
     parser_args.start_epoch = parser_args.start_epoch or 0
     acc1 = None
     epoch_list, test_acc_before_round_list, test_acc_list, reg_loss_list, model_sparsity_list = [], [], [], [], []
-
+    # added for tmp
+    lr_list = []
     # Save the initial model
     torch.save(model.state_dict(), result_root + 'init_model.pth')
 
@@ -103,6 +107,7 @@ def main_worker(gpu, ngpus_per_node):
         #lr_policy(epoch, iteration=None)
         modifier(parser_args, epoch, model)
         cur_lr = get_lr(optimizer)
+        lr_list.append(cur_lr)
 
         # save the score at the beginning of training epoch, so if we set parser.args.rewind_to_epoch to 0
         # that means we save the initialization of score
@@ -201,29 +206,40 @@ def main_worker(gpu, ngpus_per_node):
         end_epoch = time.time()
 
         if parser_args.algo in ['hc', 'hc_iter']:
-            results_df = pd.DataFrame({'epoch': epoch_list, 'test_acc_before_rounding': test_acc_before_round_list,'test_acc': test_acc_list, 'regularization_loss': reg_loss_list, 'model_sparsity': model_sparsity_list})
+            results_df = pd.DataFrame({'epoch': epoch_list, 'test_acc_before_rounding': test_acc_before_round_list,'test_acc': test_acc_list, 'regularization_loss': reg_loss_list, 'model_sparsity': model_sparsity_list, 'lr': lr_list})
         else:
             results_df = pd.DataFrame({'epoch': epoch_list, 'test_acc': test_acc_list, 'model_sparsity': model_sparsity_list})
 
-        if parser_args.results_filename:
-            results_filename = parser_args.results_filename
+        if parser_args.results_root:
+            result_root = parser_args.results_root + "/"
+            if not os.path.exists(parser_args.results_root):
+                os.mkdir(parser_args.results_root)
+            if parser_args.results_filename:
+                results_filename = result_root + parser_args.results_filename + '.csv'
+            else:
+                results_filename = result_root + 'acc_and_sparsity.csv'
         else:
             results_filename = result_root + 'acc_and_sparsity.csv'    
         print("Writing results into: {}".format(results_filename))
         results_df.to_csv(results_filename, index=False)
 
+    # add option to continue training HC without pruning
+    if parser_args.HC_cont and parser_args.algo in ['hc', 'hc_iter']:
+        torch.save(model.state_dict(), result_root + parser_args.results_filename + '_' + 'model_before_finetune_before_cont_training.pth')
+        model, epoch_list, test_acc_before_round_list, test_acc_list, reg_loss_list, model_sparsity_list, lr_list = continue_train_HC(model, parser_args, data, criterion, optimizer, scheduler, epoch_list, test_acc_before_round_list, test_acc_list, reg_loss_list, model_sparsity_list, lr_list, result_root)
+
     # save checkpoint before fine-tuning
-    torch.save(model.state_dict(), result_root + 'model_before_finetune.pth')
+    torch.save(model.state_dict(), result_root + parser_args.results_filename + '_' + 'model_before_finetune.pth')
 
     # finetune weights
     cp_model = copy.deepcopy(model)
     if not parser_args.skip_fine_tune:
         print("Beginning fine-tuning")
-        cp_model = finetune(cp_model, parser_args, data, criterion, epoch_list, test_acc_before_round_list, test_acc_list, reg_loss_list, model_sparsity_list, result_root)
+        cp_model = finetune(cp_model, parser_args, data, criterion, epoch_list, test_acc_before_round_list, test_acc_list, reg_loss_list, model_sparsity_list, lr_list, result_root)
         # print out the final acc
         eval_and_print(validate, data.val_loader, cp_model, criterion, parser_args, writer=None, description='final model after finetuning')
         # save checkpoint after fine-tuning
-        torch.save(cp_model.state_dict(), result_root + 'model_after_finetune.pth')
+        torch.save(cp_model.state_dict(), result_root + parser_args.results_filename + '_' + 'model_after_finetune.pth')
     else:
         print("Skipping finetuning!!!")
 

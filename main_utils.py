@@ -211,15 +211,22 @@ def eval_and_print(validate, data_loader, model, criterion, parser_args, writer=
 
     return acc1
 
-def finetune(model, parser_args, data, criterion, old_epoch_list, old_test_acc_before_round_list, old_test_acc_list, old_reg_loss_list, old_model_sparsity_list, result_root, shuffle=False, reinit=False, invert=False, chg_mask=False, chg_weight=False):
+def finetune(model, parser_args, data, criterion, old_epoch_list, old_test_acc_before_round_list, old_test_acc_list, old_reg_loss_list, old_model_sparsity_list, old_lr_list, result_root, shuffle=False, reinit=False, invert=False, chg_mask=False, chg_weight=False):
     epoch_list = copy.deepcopy(old_epoch_list)
     test_acc_before_round_list = copy.deepcopy(old_test_acc_before_round_list)
     test_acc_list = copy.deepcopy(old_test_acc_list)
     reg_loss_list = copy.deepcopy(old_reg_loss_list)
     model_sparsity_list = copy.deepcopy(old_model_sparsity_list)
+    lr_list = copy.deepcopy(old_lr_list)
 
-    if parser_args.results_filename:
-        result_root = parser_args.results_filename + '_'
+    if parser_args.results_root:
+        result_root = parser_args.results_root + "/"
+        if not os.path.exists(parser_args.results_root):
+            os.mkdir(parser_args.results_root)
+        if parser_args.results_filename:
+            results_filename = result_root + parser_args.results_filename + '.csv'
+        else:
+            results_filename = result_root + 'acc_and_sparsity.csv'
 
     if parser_args.algo in ['hc', 'hc_iter']:
         # round the score (in the model itself)
@@ -254,15 +261,24 @@ def finetune(model, parser_args, data, criterion, old_epoch_list, old_test_acc_b
     test_acc_list.append(acc1)
     reg_loss_list.append(0.0)
     model_sparsity_list.append(avg_sparsity)
+    lr_list.append(-1)
     
     end_epoch = time.time()
-    for epoch in range(parser_args.epochs, parser_args.epochs*2):
+    if not parser_args.HC_cont:
+        epoch_start_number = parser_args.epochs
+        epoch_finish_number = parser_args.epochs * 2
+    else:
+        epoch_start_number = parser_args.epochs + parser_args.HC_cont_epochs
+        epoch_finish_number = parser_args.epochs * 2 + parser_args.HC_cont_epochs
+    # for epoch in range(parser_args.epochs, parser_args.epochs*2):
+    for epoch in range(epoch_start_number, epoch_finish_number):
 
         if parser_args.multiprocessing_distributed:
             data.train_loader.sampler.set_epoch(epoch)
         # lr_policy(epoch, iteration=None)
         # modifier(parser_args, epoch, model)
         cur_lr = get_lr(optimizer)
+        lr_list.append(cur_lr)
         print('epoch: {}, lr: {}'.format(epoch, cur_lr))
 
         # train for one epoch
@@ -295,9 +311,11 @@ def finetune(model, parser_args, data, criterion, old_epoch_list, old_test_acc_b
         end_epoch = time.time()
 
         results_df = pd.DataFrame({'epoch': epoch_list, 'test_acc_before_rounding': test_acc_before_round_list,'test_acc': test_acc_list,
-                                   'regularization_loss': reg_loss_list, 'model_sparsity': model_sparsity_list})
+                                   'regularization_loss': reg_loss_list, 'model_sparsity': model_sparsity_list, 'lr': lr_list})
         if not chg_mask and not chg_weight:
-            results_filename = result_root + 'acc_and_sparsity.csv'    
+            # NOTE: tmp change, TODO change back
+            pass
+            # results_filename = result_root + 'acc_and_sparsity.csv'    
         # elif chg_weight and shuffle:
         #    results_filename = result_root + 'acc_and_sparsity_weight_shuffle.csv'    
         elif chg_mask and shuffle:
@@ -314,6 +332,95 @@ def finetune(model, parser_args, data, criterion, old_epoch_list, old_test_acc_b
         scheduler.step() 
 
     return model
+
+
+def continue_train_HC(model, parser_args, data, criterion, optimizer, scheduler, old_epoch_list, old_test_acc_before_round_list, old_test_acc_list, old_reg_loss_list, old_model_sparsity_list, old_lr_list, result_root):
+    epoch_list = copy.deepcopy(old_epoch_list)
+    test_acc_before_round_list = copy.deepcopy(old_test_acc_before_round_list)
+    test_acc_list = copy.deepcopy(old_test_acc_list)
+    reg_loss_list = copy.deepcopy(old_reg_loss_list)
+    model_sparsity_list = copy.deepcopy(old_model_sparsity_list)
+    lr_list = copy.deepcopy(old_lr_list)
+
+    if parser_args.results_root:
+        result_root = parser_args.results_root + "/"
+        if not os.path.exists(parser_args.results_root):
+            os.mkdir(parser_args.results_root)
+        if parser_args.results_filename:
+            results_filename = result_root + parser_args.results_filename + '.csv'
+    else:
+        results_filename = result_root + 'acc_and_sparsity.csv'
+
+
+    # set base_setting and evaluate 
+    run_base_dir, ckpt_base_dir, log_base_dir, writer, epoch_time, validation_time, train_time, progress_overall = get_settings(parser_args)
+    
+    if parser_args.HC_cont_use_previous_optimizer:
+        assert optimizer is not None
+        assert scheduler is not None
+    else:
+        optimizer = get_optimizer(parser_args, model, cont_flag=True)
+        if parser_args.HC_cont_epochs == 150 and parser_args.HC_cont_lr_policy == 'multistep_lr':
+            scheduler = get_scheduler(optimizer, parser_args.HC_cont_lr_policy, milestones=[80, 120], gamma=0.1) # NOTE: hard-coded
+        elif parser_args.HC_cont_epochs == 50 and parser_args.HC_cont_lr_policy == 'multistep_lr':
+            scheduler = get_scheduler(optimizer, parser_args.HC_cont_lr_policy, milestones=[20, 40], gamma=0.1) # NOTE: hard-coded
+        elif parser_args.HC_cont_lr_policy == 'cosine_lr':
+            scheduler = get_scheduler(optimizer, parser_args.HC_cont_lr_policy, max_epochs=parser_args.HC_cont_epochs)
+        else:
+            scheduler = None
+    train, validate, modifier = get_trainer(parser_args)
+
+    # check the performance of loaded model (after rounding)
+    acc1, _, _ = validate(data.val_loader, model, criterion, parser_args, writer, parser_args.epochs-1)
+    assert acc1 == test_acc_list[-1]
+    
+    end_epoch = time.time()
+    for epoch in range(parser_args.epochs, parser_args.epochs + parser_args.HC_cont_epochs):
+
+        if parser_args.multiprocessing_distributed:
+            data.train_loader.sampler.set_epoch(epoch)
+        cur_lr = get_lr(optimizer)
+        lr_list.append(cur_lr)
+        print('epoch: {}, lr: {}'.format(epoch, cur_lr))
+
+        # train for one epoch
+        start_train = time.time()
+        _, _, _, reg_loss = train(
+            data.train_loader, model, criterion, optimizer, epoch, parser_args, writer=writer
+        )
+        train_time.update((time.time() - start_train) / 60)
+
+        # evaluate on validation set
+        start_validation = time.time()
+        acc1, _, _ = validate(data.val_loader, model, criterion, parser_args, writer, epoch)
+        validation_time.update((time.time() - start_validation) / 60)
+        avg_sparsity = model_sparsity_list[-1] # copy & paste the sparsity of prev. epoch
+
+        # update all results lists
+        epoch_list.append(epoch)
+        test_acc_before_round_list.append(-1)
+        test_acc_list.append(acc1)
+        reg_loss_list.append(reg_loss)
+        model_sparsity_list.append(avg_sparsity)
+
+
+        epoch_time.update((time.time() - end_epoch) / 60)
+        progress_overall.display(epoch)
+        progress_overall.write_to_tensorboard(
+            writer, prefix="diagnostics", global_step=epoch
+        )
+        writer.add_scalar("test/lr", cur_lr, epoch)
+        end_epoch = time.time()
+
+        results_df = pd.DataFrame({'epoch': epoch_list, 'test_acc_before_rounding': test_acc_before_round_list,'test_acc': test_acc_list,
+                                   'regularization_loss': reg_loss_list, 'model_sparsity': model_sparsity_list, 'lr': lr_list})
+
+        print("Writing results into: {}".format(results_filename))
+        results_df.to_csv(results_filename, index=False)
+        if scheduler is not None:
+            scheduler.step() 
+
+    return model, epoch_list, test_acc_before_round_list, test_acc_list, reg_loss_list, model_sparsity_list, lr_list
 
 
 def get_idty_str(parser_args):
@@ -895,7 +1002,7 @@ def get_model(parser_args):
     return model
 
 
-def get_optimizer(optimizer_args, model, finetune_flag=False):
+def get_optimizer(optimizer_args, model, finetune_flag=False, cont_flag=False):
     '''
     for n, v in model.named_parameters():
         if v.requires_grad:
@@ -908,6 +1015,10 @@ def get_optimizer(optimizer_args, model, finetune_flag=False):
         opt_algo = optimizer_args.fine_tune_optimizer
         opt_lr = optimizer_args.fine_tune_lr
         opt_wd = optimizer_args.fine_tune_wd
+    if cont_flag:
+        opt_algo = optimizer_args.HC_cont_optimizer
+        opt_lr = optimizer_args.HC_cont_lr
+        opt_wd = optimizer_args.HC_cont_wd
     else:
         opt_algo = optimizer_args.optimizer
         opt_lr = optimizer_args.lr
