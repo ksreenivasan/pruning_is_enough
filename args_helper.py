@@ -799,6 +799,12 @@ class ArgsHelper:
             help="disable for non uniform pruning rates"
         )
         parser.add_argument(
+            "--finetune-standard",
+            action="store_true",
+            default=False,
+            help="True mean 150 epochs finetuning nomatter how many epochs for pruning"
+        )
+        parser.add_argument(
             '--PRs', #pruning rates
             default=None,
             type=str,

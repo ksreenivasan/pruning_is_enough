@@ -1,6 +1,6 @@
 # Hypercube optimization
 algo: 'hc_iter'
-#iter_period: 8 #15
+iter_period: 8 #15
 
 # Architecture
 arch: resnet20
@@ -19,7 +19,7 @@ fine_tune_lr_policy: multistep_lr
 # ===== Network training config ===== #
 epochs: 30 #150 
 unif_prune: False
-PRs: .50,.50,.50,.50,.50
+PRs: .60,.50,.50,.05,.40,.40
 epoch_pr: 1,5,10,15,20,30,40
 wd: 0.0 
 momentum: 0.9
@@ -30,7 +30,7 @@ conv_type: SubnetConv
 bn_type: NonAffineBatchNorm
 freeze_weights: True
 prune_type: BottomK
-#prune_rate: 0.2
+prune_rate: 0.2
 init: signed_constant
 score_init: unif #half #bimodal #skew # bern
 scale_fan: False #True
@@ -60,3 +60,6 @@ skip_sanity_checks: True
 
 # ==== get sparsity quickly and train much ==== #
 fast_sparse: True
+
+# ====  ==== #
+finetune_standard: False
