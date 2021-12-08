@@ -72,9 +72,12 @@ def main_worker(gpu, ngpus_per_node):
         criterion = LabelSmoothing(smoothing=parser_args.label_smoothing)
         # if isinstance(model, nn.parallel.DistributedDataParallel):
         #     model = model.module
-    if parser_args.random_subnet:
-        test_random_subnet(model, data, criterion, parser_args, writer, result_root)
+    if parser_args.random_subnet: #### ARE WE USING THIS?
+        test_random_subnet(model, data, criterion, parser_args, writer, result_root) 
         return
+    if parser_args.smart_ratio != -1:
+        test_smart_ratio(model, data, criterion, parser_args, writer, result_root)
+        
 
 
     best_acc1, best_acc5, best_acc10, best_train_acc1, best_train_acc5, best_train_acc10 = 0.0, 0.0, 0.0, 0.0, 0.0, 0.0

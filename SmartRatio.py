@@ -23,6 +23,7 @@ def count_fc_parameters(net):
     return total
 
 
+
 def SmartRatio(net, ratio, device,args):
     keep_ratio = 1-ratio
 

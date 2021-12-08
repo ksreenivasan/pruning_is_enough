@@ -40,6 +40,7 @@ from utils.net_utils import (
 )
 from utils.schedulers import get_scheduler
 from utils.utils import set_seed, plot_histogram_scores
+from SmartRatio import SmartRatio
 
 import importlib
 
@@ -117,6 +118,31 @@ def evaluate_without_training(parser_args, model, model2, validate, data, criter
             print('We are connecting masks')
             connect_mask(cp_model, criterion, data, validate, cp_model2)
         # visualize_mask_2D(cp_model, criterion, data, validate)
+
+
+def test_smart_ratio(model, data, criterion, parser_args, writer, result_root):
+
+    pdb.set_trace()
+    # get mask from SmartRatio scheme
+    smart_ratio_args = {'linear_keep_ratio': 0.3, 
+                        'linear_decay': ??,
+                        'ascend': ??,
+                        'cubic': ??,
+                        'arch': ??,
+                        'init_prune_ratio': ??,
+                        'uniform': ??,
+                        'hybrid': ??
+                        }
+    smart_ratio_args = dotdict(smart_ratio_args)
+    masks = SmartRatio(model, ratio=0.018, device='cuda:0', smart_ratio_args):
+
+    # set base_setting and evaluate 
+    run_base_dir, ckpt_base_dir, log_base_dir, writer, epoch_time, validation_time, train_time, progress_overall = get_settings(parser_args)
+    # TODO: Change this to use finetune() (I think this is possible)
+    optimizer = get_optimizer(parser_args, model, finetune_flag=True)
+    train, validate, modifier = get_trainer(parser_args)
+
+    acc1, acc5, acc10 = validate(data.val_loader, model, criterion, parser_args, writer, epoch=0)
 
 
 def test_random_subnet(model, data, criterion, parser_args, writer, result_root):
