@@ -802,6 +802,11 @@ class ArgsHelper:
             "--imp-rewind-model", 
             default="short_imp/Liu_checkpoint_model_correct.pth"
             )
+        parser.add_argument(
+            "--smart-ratio", 
+            type=float,
+            default=-1
+            )
 
         if jupyter_mode:
             args = parser.parse_args("")
