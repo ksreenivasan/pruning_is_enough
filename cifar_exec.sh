@@ -18,10 +18,15 @@ python main.py --config configs/hypercube/resnet20/resnet20_sc_hypercube_reg_GD.
 BLOCK
 
 # HC
-# :<<BLOCK
+:<<BLOCK
 python main.py \
 --config configs/hypercube/resnet20/resnet20_quantized_iter_hc_0_75.yml > cifar_log 2>&1
-# BLOCK
+BLOCK
+
+# target sparsity 0.5
+python main.py \
+--config configs/hypercube/resnet20/resnet20_quantized_iter_hc_target_sparsity_0_5.yml > cifar_log_target_0_5 2>&1
+
 
 # EP
 :<<BLOCK
