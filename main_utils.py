@@ -125,9 +125,10 @@ class dotdict(dict):
     __setattr__ = dict.__setitem__
     __delattr__ = dict.__delitem__
 
+
+
 def test_smart_ratio(model, data, criterion, parser_args, result_root):
 
-    #pdb.set_trace()
     # get mask from SmartRatio scheme
     smart_ratio_args = {'linear_keep_ratio': 0.3, 
                         'linear_decay': 0,
@@ -139,10 +140,11 @@ def test_smart_ratio(model, data, criterion, parser_args, result_root):
                         'hybrid': 0
                         }
     smart_ratio_args = dotdict(smart_ratio_args)
-    masks = SmartRatio(model, ratio=0.982, device='cuda:0', args=smart_ratio_args)
+    model = SmartRatio(model, smart_ratio_args, parser_args)
 
 
 
+    pdb.set_trace()
 
 
     # set base_setting and evaluate 

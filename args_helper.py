@@ -803,7 +803,7 @@ class ArgsHelper:
             default="short_imp/Liu_checkpoint_model_correct.pth"
             )
         parser.add_argument(
-            "--smart-ratio", 
+            "--smart_ratio", 
             type=float,
             default=-1
             )
