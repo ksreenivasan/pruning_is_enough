@@ -2,7 +2,6 @@ subfolder: SGD_finetune_L2
 
 # Hypercube optimization
 algo: 'hc'
-iter_period: 8
 
 # Architecture
 arch: resnet20
