@@ -309,8 +309,7 @@ def prune(model, update_thresholds_only=False):
 
     scores_threshold = bias_scores_threshold = -np.inf
     if parser_args.algo not in ['hc_iter', 'global_ep', 'global_ep_iter']:
-        print('not appropriate to use prune() in the current parser_args.algo')
-        raise ValueError
+        print('Warning: Using prune() in {}. Are you sure?'.format(parser_args.algo))
 
     conv_layers, linear_layers = get_layers(parser_args.arch, model)
     if parser_args.algo in ['hc_iter']:

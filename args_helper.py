@@ -808,7 +808,7 @@ class ArgsHelper:
             default=-1
         )
         parser.add_argument(
-            "--bottom-k-on-foward",
+            "--bottom-k-on-forward",
             action="store_true",
             default=False,
             help="Enable this to use bottomK on forward for HC"
