@@ -173,8 +173,6 @@ class SubnetConv(nn.Conv2d):
                 self.scores.data = torch.clamp(self.scores.data, 0.0, 1.0)
                 self.bias_scores.data = torch.clamp(self.bias_scores.data, 0.0, 1.0)
 
-            # check if args is quantization/rounding
-            # then compute subnet like "else"
             if parser_args.hc_quantized:
                 subnet, bias_subnet = GetSubnet.apply(self.scores, self.bias_scores, parser_args.prune_rate)
                 subnet = subnet * self.flag.data.float()

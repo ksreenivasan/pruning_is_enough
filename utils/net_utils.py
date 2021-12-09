@@ -411,7 +411,7 @@ def get_model_sparsity(model, threshold=0):
 # returns num_nonzero elements, total_num_elements so that it is easier to compute
 # average sparsity in the end
 def get_layer_sparsity(layer, threshold=0):
-    if parser_args.algo in ['hc', 'hc_iter']:
+    if parser_args.algo in ['hc', 'hc_iter'] and not parser_args.bottom_k_on_forward:
         # assume the model is rounded, compute effective scores
         eff_scores = layer.scores * layer.flag
         if parser_args.bias:
@@ -430,7 +430,7 @@ def get_layer_sparsity(layer, threshold=0):
         else:
             b_numer, b_denom = 0, 0
 
-    elif parser_args.algo in ['global_ep', 'ep', 'global_ep_iter']:
+    elif parser_args.algo in ['global_ep', 'ep', 'global_ep_iter'] or parser_args.bottom_k_on_forward:
         if parser_args.algo == 'ep':
             weight_mask, bias_mask = GetSubnetConv.apply(layer.scores.abs(), layer.bias_scores.abs(), parser_args.prune_rate)
         else:
