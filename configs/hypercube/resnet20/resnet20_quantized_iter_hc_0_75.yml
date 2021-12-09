@@ -2,6 +2,7 @@ subfolder: quantize_0_75
 
 # Hypercube optimization
 algo: 'hc_iter'
+# effectively prune once in the entire process
 iter_period: 100
 
 # Architecture
@@ -29,6 +30,7 @@ conv_type: SubnetConv
 bn_type: NonAffineBatchNorm
 freeze_weights: True
 prune_type: BottomK
+# enter target sparsity here
 prune_rate: 0.982
 init: signed_constant
 score_init: unif #skew #half #bimodal #skew # bern
