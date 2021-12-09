@@ -10,34 +10,53 @@ import math
 
 import pdb
 
-def count_total_parameters(net):
-    total = 0
-    for m in net.modules():
-        if isinstance(m, (nn.Linear, nn.Conv2d)):
-            total += m.weight.numel()
-    return total
+# def count_total_parameters(net):
+#     total = 0
+#     for m in net.modules():
+#         if isinstance(m, (nn.Linear, nn.Conv2d)):
+#             total += m.weight.numel()
+#     return total
 
-def count_fc_parameters(net):
-    total = 0
-    for m in net.modules():
-        if isinstance(m, (nn.Linear)):
-            total += m.weight.numel()
-    return total
+# def count_fc_parameters(net):
+#     total = 0
+#     for m in net.modules():
+#         if isinstance(m, (nn.Linear)):
+#             total += m.weight.numel()
+#     return total
 
 
 
-def SmartRatio(net, ratio, device,args):
+def SmartRatio(model, sr_args, parser_args):
 
+
+    keep_ratio = 1-parser_args.smart_ratio
+    linear_keep_ratio = sr_args.linear_keep_ratio
+
+    model = copy.deepcopy(model)  # .eval()
+    model.zero_grad()
+
+    conv_layers, linear_layers = get_layers(parser_args.arch, model)
+
+
+    # 1. Compute the number of weights to be retrained
+    m_dict = {}
+    layer_num = 0
+    for layer in [*conv_layers, *linear_layers]:
+        print(layer)
+        m_dict[layer_num] = layer.weight.data.view(-1).size()[0]
+        layer_num += 1
+        #m_arr.append(layer.weight.data.view(-1).size()[0])
+    #num_weights
+
+    print(m_dict)
+    print(sum(m_dict.values()))
     pdb.set_trace()
 
-    keep_ratio = 1-ratio
-
-    net = copy.deepcopy(net)  # .eval()
-    net.zero_grad()
-
-    linear_keep_ratio = args.linear_keep_ratio
+    num_remain_weights = keep_ratio * sum(m_dict.values())
 
 
+    # 2. set p_l = (L-l+1)^2 + (L-l+1)
+    
 
     '''
     # ========== calculate the sparsity using order statistics ============
