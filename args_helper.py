@@ -780,33 +780,39 @@ class ArgsHelper:
              "--run_idx",
              default=None,
              help="index of run used for counting yml/log/save_folder"
-             )
+        )
         parser.add_argument(
              "--subfolder",
              default=None,
              help="subfolder within the location for saving the results"
-             )
+        )
         # added parser args for IMP
         parser.add_argument(
             "--imp_rewind_iter", 
             default=1000, 
             type=int, 
             help="which iterations to rewind to"
-            )
+        )
         parser.add_argument(
             "--imp-resume-round", 
             type=int, 
             help="which round to resume to"
-            )
+        )
         parser.add_argument(
             "--imp-rewind-model", 
             default="short_imp/Liu_checkpoint_model_correct.pth"
-            )
+        )
         parser.add_argument(
             "--smart-ratio", 
             type=float,
             default=-1
-            )
+        )
+        parser.add_argument(
+            "--bottom-k-on-foward",
+            action="store_true",
+            default=False,
+            help="Enable this to use bottomK on forward for HC"
+        )
 
         if jupyter_mode:
             args = parser.parse_args("")

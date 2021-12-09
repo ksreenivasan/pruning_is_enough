@@ -145,7 +145,7 @@ class ResNet(nn.Module):
 
     def forward(self, x):
         # update score thresholds for global ep
-        if parser_args.algo in ['global_ep', 'global_ep_iter']:
+        if parser_args.algo in ['global_ep', 'global_ep_iter'] or parser_args.bottom_k_on_forward:
             prune(self, update_thresholds_only=True)
         x = self.conv1(x)
 
