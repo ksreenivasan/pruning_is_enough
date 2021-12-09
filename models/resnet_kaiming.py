@@ -86,7 +86,10 @@ class ResNet(nn.Module):
         return prunable_weights, prunable_biases
 
     def forward(self, x):
-        #import pdb; pdb.set_trace()
+        # update prune_thresholds
+        # update score thresholds for global ep
+        if args.algo in ['global_ep', 'global_ep_iter']:
+            prune(self, update_thresholds_only=True)
         out = F.relu(self.bn1(self.conv1(x)))
         out = self.layer1(out)
         out = self.layer2(out)

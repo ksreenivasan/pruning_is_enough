@@ -85,6 +85,18 @@ def train(train_loader, model, criterion, optimizer, epoch, args, writer):
             t = (num_batches * epoch + i) * batch_size
             progress.display(i)
             progress.write_to_tensorboard(writer, prefix="train", global_step=t)
+
+    # before completing training, clean up model based on latest scores
+    # update score thresholds for global ep
+    if args.algo in ['global_ep', 'global_ep_iter']:
+        prune(model, update_thresholds_only=True)
+    if args.algo in ['hc', 'hc_iter', 'pt'] and not args.differentiate_clamp:
+        for name, params in model.named_parameters():
+            if "score" in name:
+                scores = params
+                with torch.no_grad():
+                    scores.data = torch.clamp(scores.data, 0.0, 1.0)
+
     return top1.avg, top5.avg, top10.avg, regularization_loss.item()
 
 
