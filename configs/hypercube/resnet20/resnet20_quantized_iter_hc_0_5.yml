@@ -43,7 +43,7 @@ noise_ratio: 0
 
 # ===== Quantization ===== #
 hc_quantized: True
-quantize_threshold: 0.75
+quantize_threshold: 0.5
 
 # ===== Regularization ===== #
 regularization: L2
