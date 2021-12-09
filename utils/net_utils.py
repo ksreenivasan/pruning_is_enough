@@ -254,7 +254,7 @@ def round_model(model, round_scheme, noise=False, ratio=0.0, rank=None):
                 params.data += delta
 
             if round_scheme == 'naive':
-                params.data = torch.gt(params.data, torch.ones_like(params.data)*0.5).int().float()
+                params.data = torch.gt(params.data, torch.ones_like(params.data)*parser_args.quantize_threshold).int().float()
             elif round_scheme == 'prob':
                 params.data = torch.clamp(params.data, 0.0, 1.0)
                 params.data = torch.bernoulli(params.data).float()
