@@ -300,7 +300,7 @@ def get_score_sparsity_hc(model):
     return 100*numer/denom
 """
 
-def prune(model, update_thresholds_only=False):
+def prune(model, update_thresholds_only=False, update_scores=False):
     if update_thresholds_only:
         pass
         #print("Updating prune thresholds")
@@ -361,8 +361,12 @@ def prune(model, update_thresholds_only=False):
         else:
             for layer in (conv_layers + linear_layers):
                 layer.flag.data = (layer.flag.data + torch.gt(layer.scores, torch.ones_like(layer.scores)*scores_threshold).int() == 2).int()
+                if update_scores:
+                    layer.scores.data = layer.scores.data * layer.flag.data
                 if parser_args.bias:
                     layer.bias_flag.data = (layer.bias_flag.data + torch.gt(layer.bias_scores, torch.ones_like(layer.bias_scores)*bias_scores_threshold).int() == 2).int()
+                    if update_scores:
+                        layer.bias_scores.data = layer.bias_scores.data * layer.bias_flag.data
 
             if parser_args.rewind_score and layer.saved_scores is not None:
                 # if we go into this branch, we will load the rewinded states of the scores
