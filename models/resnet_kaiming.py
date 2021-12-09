@@ -8,6 +8,7 @@ import torch.nn.init as init
 
 from utils.builder import get_builder
 from args_helper import parser_args
+from utils.net_utils import prune
 
 # def _weights_init(m):
 #     classname = m.__class__.__name__
@@ -88,7 +89,7 @@ class ResNet(nn.Module):
     def forward(self, x):
         # update prune_thresholds
         # update score thresholds for global ep
-        if args.algo in ['global_ep', 'global_ep_iter']:
+        if parser_args.algo in ['global_ep', 'global_ep_iter']:
             prune(self, update_thresholds_only=True)
         out = F.relu(self.bn1(self.conv1(x)))
         out = self.layer1(out)
