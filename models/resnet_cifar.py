@@ -10,6 +10,7 @@ import torch.nn.functional as F
 
 from utils.builder import get_builder
 from args_helper import parser_args
+from utils.net_utils import prune
 
 
 class BasicBlock(nn.Module):
@@ -95,7 +96,9 @@ class ResNet(nn.Module):
         return nn.Sequential(*layers)
 
     def forward(self, x):
-        #import pdb; pdb.set_trace()
+        # update score thresholds for global ep
+        if parser_args.algo in ['global_ep', 'global_ep_iter']:
+            prune(self, update_thresholds_only=True)
         out = F.relu(self.bn1(self.conv1(x)))
         out = self.layer1(out)
         out = self.layer2(out)

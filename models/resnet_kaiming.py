@@ -87,7 +87,6 @@ class ResNet(nn.Module):
         return prunable_weights, prunable_biases
 
     def forward(self, x):
-        # update prune_thresholds
         # update score thresholds for global ep
         if parser_args.algo in ['global_ep', 'global_ep_iter']:
             prune(self, update_thresholds_only=True)
