@@ -35,6 +35,13 @@ def get_layers(arch='Conv4', model=None):
                     conv_layers.append(layer[basic_block_id].shortcut[0])
                 '''
         linear_layers = [model.fc]
+    elif arch == 'resnet32':
+        conv_layers = [model.conv1]
+        for layer in [model.layer1, model.layer2, model.layer3]:
+            for basic_block_id in [0, 1, 2, 3, 4]:
+                conv_layers.append(layer[basic_block_id].conv1)
+                conv_layers.append(layer[basic_block_id].conv2)
+        linear_layers = [model.fc]
     elif arch == 'cResNet18':
         conv_layers = [model.conv1]
         for layer in [model.layer1, model.layer2, model.layer3, model.layer4]:

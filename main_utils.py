@@ -127,43 +127,28 @@ class dotdict(dict):
 
 
 
-def test_smart_ratio(model, data, criterion, parser_args, result_root):
-
-    # get mask from SmartRatio scheme
-    smart_ratio_args = {'linear_keep_ratio': 0.3, 
-                        'linear_decay': 0,
-                        'ascend': 0,
-                        'cubic': 0,
-                        'arch': 0,
-                        'init_prune_ratio': 0,
-                        'uniform': 0,
-                        'hybrid': 0
-                        }
-    smart_ratio_args = dotdict(smart_ratio_args)
-    model = SmartRatio(model, smart_ratio_args, parser_args)
+#def test_smart_ratio(model, data, criterion, parser_args, result_root):
+  
 
 
+def test_random_subnet(model, data, criterion, parser_args, result_root, smart_ratio=-1):
 
-    pdb.set_trace()
+    if smart_ratio != -1:
+        # get a randomly pruned model with SmartRatio
+        smart_ratio_args = {'linear_keep_ratio': 0.3, 
+                            }
+        smart_ratio_args = dotdict(smart_ratio_args)
+        model = SmartRatio(model, smart_ratio_args, parser_args)
+
+    else:
+        # round the score (in the model itself)
+        model = round_model(model, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio, rank=parser_args.gpu)    
+        
+        # TODO: CHANGE THIS BACK once the finetune from checkpoints code is fixed
+        # NOTE: this part is hard coded
+        model = redraw(model, shuffle=parser_args.shuffle, reinit=parser_args.reinit, chg_mask=parser_args.chg_mask, chg_weight=parser_args.chg_weight)  
 
 
-    # set base_setting and evaluate 
-    run_base_dir, ckpt_base_dir, log_base_dir, writer, epoch_time, validation_time, train_time, progress_overall = get_settings(parser_args)
-    # TODO: Change this to use finetune() (I think this is possible)
-    optimizer = get_optimizer(parser_args, model, finetune_flag=True)
-    train, validate, modifier = get_trainer(parser_args)
-
-    acc1, acc5, acc10 = validate(data.val_loader, model, criterion, parser_args, writer, epoch=0)
-
-
-def test_random_subnet(model, data, criterion, parser_args, writer, result_root):
-
-    # round the score (in the model itself)
-    model = round_model(model, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio, rank=parser_args.gpu)    
-    
-    # TODO: CHANGE THIS BACK once the finetune from checkpoints code is fixed
-    # NOTE: this part is hard coded
-    model = redraw(model, shuffle=parser_args.shuffle, reinit=parser_args.reinit, chg_mask=parser_args.chg_mask, chg_weight=parser_args.chg_weight)  
 
     # switch to weight training mode (turn on the requires_grad for weight/bias, and turn off the requires_grad for other parameters)
     model = switch_to_wt(model)

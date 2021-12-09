@@ -10,6 +10,8 @@ import math
 
 import pdb
 
+from utils.net_utils import get_layers
+
 # def count_total_parameters(net):
 #     total = 0
 #     for m in net.modules():
@@ -27,36 +29,71 @@ import pdb
 
 
 def SmartRatio(model, sr_args, parser_args):
-
+    ## TODO: current method assumes we are not using bias. We need to add lines for bias_scores, bias_flag, bias... 
 
     keep_ratio = 1-parser_args.smart_ratio
     linear_keep_ratio = sr_args.linear_keep_ratio
 
     model = copy.deepcopy(model)  # .eval()
     model.zero_grad()
-
-    conv_layers, linear_layers = get_layers(parser_args.arch, model)
+    
+    #for name, param in model.named_parameters():
+    #    print(name)
 
 
     # 1. Compute the number of weights to be retrained
-    m_dict = {}
+    conv_layers, linear_layers = get_layers(parser_args.arch, model)
+    m_arr = []
     layer_num = 0
     for layer in [*conv_layers, *linear_layers]:
-        print(layer)
-        m_dict[layer_num] = layer.weight.data.view(-1).size()[0]
+        layer.scores.data = torch.ones_like(layer.scores.data)
+        m_arr.append(layer.weight.data.view(-1).size()[0])
+        #m_dict[layer_num] = layer.weight.data.view(-1).size()[0]
         layer_num += 1
-        #m_arr.append(layer.weight.data.view(-1).size()[0])
-    #num_weights
+        print(layer_num, layer)
 
-    print(m_dict)
-    print(sum(m_dict.values()))
-    pdb.set_trace()
 
-    num_remain_weights = keep_ratio * sum(m_dict.values())
+    num_remain_weights = keep_ratio * sum(m_arr)
+    num_layers = layer_num
 
+    print(m_arr)
+    print(sum(m_arr)) #print(sum(m_dict.values()))
+    print(num_layers, ' layers')
+    
 
     # 2. set p_l = (L-l+1)^2 + (L-l+1)
+    p_arr = []
+    for l in range(num_layers):
+        if l == num_layers - 1:  # hacky way applicable for resnet_kaiming.py models
+            p_arr.append(linear_keep_ratio)
+        else:
+            p_arr.append((num_layers-l+1)**2 + (num_layers-l+1))
     
+    #print(p_arr)
+
+    # 3. Find gamma such that p = 1 - \frac{ \sum_l m_l gamma p_l  }{ \sum_l m_l }
+
+    conv_term = np.multiply(np.array(m_arr[:-1]), np.array(p_arr[:-1])).sum()
+    lin_term = m_arr[-1] * p_arr[-1]
+    num_weights = sum(m_arr)
+    scale = (num_weights * keep_ratio - lin_term) / conv_term
+    p_arr[:-1] = scale * np.array(p_arr[:-1])
+    print(p_arr)
+    #print(sum(p_arr))
+
+
+    # 4. Randomly set the mask of each layer 
+    layer_idx = 0
+    for layer in [*conv_layers, *linear_layers]: # hacky way since linear layer is at the last part for resnet_kaiming.py models
+        p_curr = p_arr[layer_idx]
+        layer.flag.data = torch.bernoulli(p_curr * torch.ones_like(layer.flag.data)) 
+        layer_idx += 1
+
+        print(layer_idx, torch.sum(layer.flag.data)/layer.flag.data.view(-1).size()[0])
+
+
+    return model
+
 
     '''
     # ========== calculate the sparsity using order statistics ============
@@ -184,6 +221,6 @@ def SmartRatio(model, sr_args, parser_args):
             CNT = CNT + 1
             keep_masks.append(mask.view(Size))
 
-    '''
 
     return keep_masks
+    '''
