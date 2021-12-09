@@ -8,6 +8,8 @@ import copy
 import types
 import math
 
+import pdb
+
 def count_total_parameters(net):
     total = 0
     for m in net.modules():
@@ -25,19 +27,19 @@ def count_fc_parameters(net):
 
 
 def SmartRatio(net, ratio, device,args):
+
+    pdb.set_trace()
+
     keep_ratio = 1-ratio
 
     net = copy.deepcopy(net)  # .eval()
     net.zero_grad()
 
-    total_parameters = count_total_parameters(net)
-    fc_parameters = count_fc_parameters(net)
-
-
-    # ========== the following code is the implementation of our smart ratio ============
-    # ========== default = 0.3 ============
     linear_keep_ratio = args.linear_keep_ratio
 
+
+
+    '''
     # ========== calculate the sparsity using order statistics ============
     CNT = 0
     Num = []
@@ -162,5 +164,7 @@ def SmartRatio(net, ratio, device,args):
             
             CNT = CNT + 1
             keep_masks.append(mask.view(Size))
+
+    '''
 
     return keep_masks

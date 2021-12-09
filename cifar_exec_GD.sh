@@ -27,15 +27,22 @@ BLOCK
 #python main.py --config config3.yml --run_idx 3
 #python main.py --config config4.yml --run_idx 4 
 
-#python main.py --config config6.yml --run_idx 6
 #python main.py --config config5.yml --run_idx 5
-#python main.py --config config8.yml --run_idx 8 
+#python main.py --config config6.yml --run_idx 6
 #python main.py --config config7.yml --run_idx 7
+#python main.py --config config8.yml --run_idx 8 
 
 #python main.py --config config9.yml --run_idx 9
 #python main.py --config config10.yml --run_idx 10
 
 #python main.py --config config11.yml --run_idx 11
+#python main.py --config config12.yml --run_idx 12
+#python main.py --config config13.yml --run_idx 13
+
+# Smart Ratio
+python main.py --config config_sr.yml --run_idx 0
+
+
 
 :<<BLOCK
 run_list=(2 3)

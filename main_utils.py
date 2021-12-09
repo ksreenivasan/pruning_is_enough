@@ -119,22 +119,31 @@ def evaluate_without_training(parser_args, model, model2, validate, data, criter
             connect_mask(cp_model, criterion, data, validate, cp_model2)
         # visualize_mask_2D(cp_model, criterion, data, validate)
 
+class dotdict(dict):
+    """dot.notation access to dictionary attributes"""
+    __getattr__ = dict.get
+    __setattr__ = dict.__setitem__
+    __delattr__ = dict.__delitem__
 
-def test_smart_ratio(model, data, criterion, parser_args, writer, result_root):
+def test_smart_ratio(model, data, criterion, parser_args, result_root):
 
-    pdb.set_trace()
+    #pdb.set_trace()
     # get mask from SmartRatio scheme
     smart_ratio_args = {'linear_keep_ratio': 0.3, 
-                        'linear_decay': ??,
-                        'ascend': ??,
-                        'cubic': ??,
-                        'arch': ??,
-                        'init_prune_ratio': ??,
-                        'uniform': ??,
-                        'hybrid': ??
+                        'linear_decay': 0,
+                        'ascend': 0,
+                        'cubic': 0,
+                        'arch': 0,
+                        'init_prune_ratio': 0,
+                        'uniform': 0,
+                        'hybrid': 0
                         }
     smart_ratio_args = dotdict(smart_ratio_args)
-    masks = SmartRatio(model, ratio=0.018, device='cuda:0', smart_ratio_args):
+    masks = SmartRatio(model, ratio=0.982, device='cuda:0', args=smart_ratio_args)
+
+
+
+
 
     # set base_setting and evaluate 
     run_base_dir, ckpt_base_dir, log_base_dir, writer, epoch_time, validation_time, train_time, progress_overall = get_settings(parser_args)

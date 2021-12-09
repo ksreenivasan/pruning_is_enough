@@ -76,7 +76,7 @@ def main_worker(gpu, ngpus_per_node):
         test_random_subnet(model, data, criterion, parser_args, writer, result_root) 
         return
     if parser_args.smart_ratio != -1:
-        test_smart_ratio(model, data, criterion, parser_args, writer, result_root)
+        test_smart_ratio(model, data, criterion, parser_args, result_root)
         
 
 
