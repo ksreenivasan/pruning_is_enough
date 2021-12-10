@@ -212,6 +212,11 @@ def eval_and_print(validate, data_loader, model, criterion, parser_args, writer=
     return acc1
 
 def finetune(model, parser_args, data, criterion, old_epoch_list, old_test_acc_before_round_list, old_test_acc_list, old_reg_loss_list, old_model_sparsity_list, result_root, shuffle=False, reinit=False, invert=False, chg_mask=False, chg_weight=False):
+    #this order is important because the second will always override the first!!!
+    if parser_args.fast_sparse:
+        finetune_epochs = 300 - parser_args.epochs
+    if parser_args.finetune_standard:
+        finetune_epochs = 150
     epoch_list = copy.deepcopy(old_epoch_list)
     test_acc_before_round_list = copy.deepcopy(old_test_acc_before_round_list)
     test_acc_list = copy.deepcopy(old_test_acc_list)
@@ -258,7 +263,7 @@ def finetune(model, parser_args, data, criterion, old_epoch_list, old_test_acc_b
     model_sparsity_list.append(avg_sparsity)
     
     end_epoch = time.time()
-    for epoch in range(parser_args.epochs, parser_args.epochs*2):
+    for epoch in range(parser_args.epochs, parser_args.epochs+finetune_epochs):
 
         if parser_args.multiprocessing_distributed:
             data.train_loader.sampler.set_epoch(epoch)
@@ -323,8 +328,11 @@ def get_idty_str(parser_args):
     dataset_str = parser_args.dataset
     model_str = parser_args.arch
     algo_str = parser_args.algo
-    rate_str = parser_args.prune_rate
-    period_str = parser_args.iter_period
+    #rate_str = parser_args.prune_rate
+    rate_str = parser_args.PRs
+    #period_str = parser_args.iter_period
+    period_str = parser_args.epoch_pr
+    epoch_str = parser_args.epochs
     reg_str = 'reg_{}'.format(parser_args.regularization)
     reg_lmbda = parser_args.lmbda if parser_args.regularization else ''
     opt_str = parser_args.optimizer
@@ -340,10 +348,13 @@ def get_idty_str(parser_args):
     seed_str = parser_args.seed + parser_args.trial_num - 1
     run_idx_str = parser_args.run_idx
     idty_str = "{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_finetune_{}_fan_{}_{}_{}_width_{}_seed_{}_idx_{}".\
-        format(train_mode_str, dataset_str, model_str, algo_str, rate_str, period_str, reg_str, reg_lmbda,
+    format(train_mode_str, dataset_str, model_str, algo_str, rate_str, period_str, epoch_str, reg_str, reg_lmbda,
         opt_str, policy_str, lr_str, lr_gamma, lr_adj, finetune_lr_str, fan_str, w_str, s_str,
         width_str, seed_str, run_idx_str).replace(".", "_")
-
+     # idty_str = "{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_finetune_{}_fan_{}_{}_{}_width_{}_seed_{}_idx_{}".\
+     #  format(train_mode_str, dataset_str, model_str, algo_str, rate_str, period_str, reg_str, reg_lmbda,
+     #  opt_str, policy_str, lr_str, lr_gamma, lr_adj, finetune_lr_str, fan_str, w_str, s_str,
+     #      width_str, seed_str, run_idx_str).replace(".", "_")
 
     return idty_str
 
