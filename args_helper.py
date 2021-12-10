@@ -246,6 +246,13 @@ class ArgsHelper:
             help="warmup epochs for hypercube"
         )
         parser.add_argument(
+            "--toggle-warmup",
+            default=9999,
+            action='store_true',
+            default=False,
+            help='flag that decides if we add noise to the rounded p_i'
+        )
+        parser.add_argument(
             "--hc-period",
             default=1,
             type=int,
@@ -813,7 +820,37 @@ class ArgsHelper:
             default=False,
             help="Enable this to use bottomK on forward for HC"
         )
-
+        parser.add_argument(
+            "--fast-sparse",
+            action="store_true",
+            default=False,
+            help="Enable this for 300-epochs for fine-tuning"
+        )
+        parser.add_argument(
+            "--unif-prune",
+            action="store_true",
+            default=True,
+            help="disable for non uniform pruning rates"
+        )
+        parser.add_argument(
+            "--finetune-standard",
+            action="store_true",
+            default=False,
+            help="True mean 150 epochs finetuning nomatter how many epochs for pruning"
+        )
+        parser.add_argument(
+            '--PRs', #pruning rates
+            default=None,
+            type=str,
+            help='for each number in PR it will start at the corresponding epoch-pr'
+        )
+        parser.add_argument(
+            '--epoch-pr', #pruning rates
+            default=None,
+            type=str,
+            help='this goes in tandum with PRs, for each number in epoch that is when the corresponding PR starts'
+        )
+        
         if jupyter_mode:
             args = parser.parse_args("")
         else:

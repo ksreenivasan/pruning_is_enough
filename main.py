@@ -103,6 +103,18 @@ def main_worker(gpu, ngpus_per_node):
     # Save the initial model
     torch.save(model.state_dict(), result_root + 'init_model.pth')
 
+    warmup_epochs = parser_args.hc_warmup
+    if parser_args.toggle_warmup:
+        reg = parser_args.regularization
+        parser_args.regularization = None
+        model = switch_to_wt(model)
+        for warmup in range(0,warmup_epochs):
+            train_acc1, train_acc5, train_acc10, reg_loss = train(
+                data.train_loader, model, criterion, optimizer, warmup, parser_args, writer=writer
+            )
+        parser_args.regularization = reg
+        model = switch_to_pruning(model)
+    
     # Start training
     for epoch in range(parser_args.start_epoch, parser_args.epochs):
         if parser_args.multiprocessing_distributed:

@@ -328,10 +328,10 @@ def get_idty_str(parser_args):
     dataset_str = parser_args.dataset
     model_str = parser_args.arch
     algo_str = parser_args.algo
-    #rate_str = parser_args.prune_rate
-    rate_str = parser_args.PRs
-    #period_str = parser_args.iter_period
-    period_str = parser_args.epoch_pr
+    rate_str = parser_args.prune_rate
+    #rate_str = parser_args.PRs
+    period_str = parser_args.iter_period
+    #period_str = parser_args.epoch_pr
     epoch_str = parser_args.epochs
     reg_str = 'reg_{}'.format(parser_args.regularization)
     reg_lmbda = parser_args.lmbda if parser_args.regularization else ''
@@ -410,6 +410,23 @@ def compare_rounding(validate, data_loader, model, criterion, parser_args, resul
 
 
     return
+
+
+# switches off gradients for scores and flags and switches it on for weights and biases
+def switch_to_pruning(model):
+    print('Switching to weight training by switching off requires_grad for scores and switching it on for weights.')
+
+    for name, params in model.named_parameters():
+        # make sure param_name ends with .weight or .bias
+        if re.match('.*\.weight', name):
+            params.requires_grad = False
+        elif parser_args.bias and re.match('.*\.bias$', name):
+            params.requires_grad = False
+        elif "score" in name:
+            params.requires_grad = True
+        else:
+            # flags and everything else
+            params.requires_grad = False
 
 
 # switches off gradients for scores and flags and switches it on for weights and biases
