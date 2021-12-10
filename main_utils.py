@@ -427,6 +427,7 @@ def switch_to_pruning(model):
         else:
             # flags and everything else
             params.requires_grad = False
+    return model
 
 
 # switches off gradients for scores and flags and switches it on for weights and biases

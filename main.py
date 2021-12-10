@@ -137,7 +137,6 @@ def main_worker(gpu, ngpus_per_node):
             results_df.to_csv(results_filename, index=False)
         parser_args.regularization = reg
         model = switch_to_pruning(model)
-        train, validate, modifier = get_trainer(parser_args)
    
     # Start training
     for epoch in range(parser_args.start_epoch, parser_args.epochs):
