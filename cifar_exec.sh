@@ -17,15 +17,22 @@ BLOCK
 python main.py --config configs/hypercube/resnet20/resnet20_sc_hypercube_reg_GD.yml
 BLOCK
 
-# attempt at getting 1.4% sparsity with 80% acc
+# HC
 :<<BLOCK
 python main.py \
---config configs/hypercube/resnet20/resnet20_quantized_hypercube_reg_bottom_K.yml > cifar_log 2>&1
+--config configs/hypercube/resnet20/resnet20_quantized_iter_hc_0_75.yml > cifar_log 2>&1
 BLOCK
 
-# EP
+# target sparsity 0.5
 python main.py \
---config configs/ep/resnet20/resnet20_global_ep_iter.yml > cifar_log 2>&1
+--config configs/hypercube/resnet20/resnet20_quantized_iter_hc_target_sparsity_0_5.yml > cifar_log_target_0_5 2>&1
+
+
+# EP
+:<<BLOCK
+python main.py \
+--config cibfugs/ep/resnet20/resnet20_global_ep.yml > cifar_log 2>&1
+BLOCK
 
 # add score rewinding
 # python main.py \

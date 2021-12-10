@@ -74,8 +74,12 @@ class GetSubnet(autograd.Function):
             # round scores to {0, 1}
             # NOTE: doing this EP style where the scores are unchanged, but mask is computed
             # can also try a variant where we actually round the scores
-            out = torch.gt(scores, torch.ones_like(scores)*parser_args.quantize_threshold).float()
-            bias_out = torch.gt(bias_scores, torch.ones_like(bias_scores)*parser_args.quantize_threshold).float()
+            if parser_args.bottom_k_on_forward:
+                out = torch.gt(scores, torch.ones_like(scores)*scores_prune_threshold).float()
+                bias_out = torch.gt(bias_scores, torch.ones_like(bias_scores)*bias_scores_prune_threshold).float()
+            else:
+                out = torch.gt(scores, torch.ones_like(scores)*parser_args.quantize_threshold).float()
+                bias_out = torch.gt(bias_scores, torch.ones_like(bias_scores)*parser_args.quantize_threshold).float()
 
         else:
             print("INVALID PRUNING ALGO")
@@ -169,8 +173,6 @@ class SubnetConv(nn.Conv2d):
                 self.scores.data = torch.clamp(self.scores.data, 0.0, 1.0)
                 self.bias_scores.data = torch.clamp(self.bias_scores.data, 0.0, 1.0)
 
-            # check if args is quantization/rounding
-            # then compute subnet like "else"
             if parser_args.hc_quantized:
                 subnet, bias_subnet = GetSubnet.apply(self.scores, self.bias_scores, parser_args.prune_rate)
                 subnet = subnet * self.flag.data.float()
@@ -178,17 +180,25 @@ class SubnetConv(nn.Conv2d):
             else:
                 subnet = self.scores * self.flag.data.float()
                 bias_subnet = self.bias_scores * self.bias_flag.data.float()
-
+        elif parser_args.algo in ['imp']:
+            # no STE, no subnet. Mask is handled outside
+            pass
         elif parser_args.algo in ['global_ep', 'global_ep_iter']:
             subnet, bias_subnet = GetSubnet.apply(self.scores.abs(), self.bias_scores.abs(), 0, self.scores_prune_threshold, self.bias_scores_prune_threshold)
         else:
+            # ep, global_ep, global_ep_iter, pt etc
             subnet, bias_subnet = GetSubnet.apply(self.scores.abs(), self.bias_scores.abs(), parser_args.prune_rate)
-
-        w = self.weight * subnet
-        if parser_args.bias:
-            b = self.bias * bias_subnet
-        else:
+        
+        if parser_args.algo in ['imp']:
+            # no STE, no subnet. Mask is handled outside
+            w = self.weight
             b = self.bias
+        else:
+            w = self.weight * subnet
+            if parser_args.bias:
+                b = self.bias * bias_subnet
+            else:
+                b = self.bias
         x = F.conv2d(
             x, w, b, self.stride, self.padding, self.dilation, self.groups
         )

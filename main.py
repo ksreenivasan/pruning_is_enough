@@ -163,7 +163,11 @@ def main_worker(gpu, ngpus_per_node):
 
         # get model sparsity
         if not parser_args.weight_training:
-            if parser_args.algo in ['hc', 'hc_iter']:
+            if parser_args.bottom_k_on_forward:
+                cp_model = copy.deepcopy(model)
+                prune(cp_model, update_scores=True)
+                avg_sparsity = get_model_sparsity(cp_model)
+            elif parser_args.algo in ['hc', 'hc_iter']:
                 # Round before checking sparsity
                 cp_model = round_model(model, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio, rank=parser_args.gpu)
                 avg_sparsity = get_model_sparsity(cp_model)

@@ -176,7 +176,7 @@ class ArgsHelper:
             "--algo",
             type=str,
             default='ep',
-            help="pruning algo to use |ep|pt_hack|pt_reg|hc|ep+greedy|greedy+ep|hc_iter|global_ep|global_ep_iter|"
+            help="pruning algo to use |ep|pt_hack|pt_reg|hc|ep+greedy|greedy+ep|hc_iter|global_ep|global_ep_iter|imp"
         )
         parser.add_argument(
             "--iter_start", 
@@ -780,41 +780,38 @@ class ArgsHelper:
              "--run_idx",
              default=None,
              help="index of run used for counting yml/log/save_folder"
-             )
+        )
         parser.add_argument(
              "--subfolder",
              default=None,
              help="subfolder within the location for saving the results"
-             )
+        )
+        # added parser args for IMP
         parser.add_argument(
-            "--fast-sparse",
+            "--imp_rewind_iter", 
+            default=1000, 
+            type=int, 
+            help="which iterations to rewind to"
+        )
+        parser.add_argument(
+            "--imp-resume-round", 
+            type=int, 
+            help="which round to resume to"
+        )
+        parser.add_argument(
+            "--imp-rewind-model", 
+            default="short_imp/Liu_checkpoint_model_correct.pth"
+        )
+        parser.add_argument(
+            "--smart-ratio", 
+            type=float,
+            default=-1
+        )
+        parser.add_argument(
+            "--bottom-k-on-forward",
             action="store_true",
             default=False,
-            help="Enable this for 300-epochs for fine-tuning"
-        )
-        parser.add_argument(
-            "--unif-prune",
-            action="store_true",
-            default=True,
-            help="disable for non uniform pruning rates"
-        )
-        parser.add_argument(
-            "--finetune-standard",
-            action="store_true",
-            default=False,
-            help="True mean 150 epochs finetuning nomatter how many epochs for pruning"
-        )
-        parser.add_argument(
-            '--PRs', #pruning rates
-            default=None,
-            type=str,
-            help='for each number in PR it will start at the corresponding epoch-pr'
-        )
-        parser.add_argument(
-            '--epoch-pr', #pruning rates
-            default=None,
-            type=str,
-            help='this goes in tandum with PRs, for each number in epoch that is when the corresponding PR starts'
+            help="Enable this to use bottomK on forward for HC"
         )
 
         if jupyter_mode:

@@ -254,7 +254,7 @@ def round_model(model, round_scheme, noise=False, ratio=0.0, rank=None):
                 params.data += delta
 
             if round_scheme == 'naive':
-                params.data = torch.gt(params.data, torch.ones_like(params.data)*0.5).int().float()
+                params.data = torch.gt(params.data, torch.ones_like(params.data)*parser_args.quantize_threshold).int().float()
             elif round_scheme == 'prob':
                 params.data = torch.clamp(params.data, 0.0, 1.0)
                 params.data = torch.bernoulli(params.data).float()
@@ -300,7 +300,7 @@ def get_score_sparsity_hc(model):
     return 100*numer/denom
 """
 
-def prune(model, update_thresholds_only=False):
+def prune(model, update_thresholds_only=False, update_scores=False):
     if update_thresholds_only:
         pass
         #print("Updating prune thresholds")
@@ -309,13 +309,9 @@ def prune(model, update_thresholds_only=False):
 
     scores_threshold = bias_scores_threshold = -np.inf
     if parser_args.algo not in ['hc_iter', 'global_ep', 'global_ep_iter']:
-        print('not appropriate to use prune() in the current parser_args.algo')
-        raise ValueError
+        print('Warning: Using prune() in {}. Are you sure?'.format(parser_args.algo))
 
     conv_layers, linear_layers = get_layers(parser_args.arch, model)
-    if parser_args.algo in ['hc_iter']:
-        if update_thresholds_only:
-            raise NotImplementedError
 
     if parser_args.prune_type == 'FixThresholding':
         if parser_args.algo == 'hc_iter': # and update_thresholds_only == False:
@@ -362,8 +358,12 @@ def prune(model, update_thresholds_only=False):
         else:
             for layer in (conv_layers + linear_layers):
                 layer.flag.data = (layer.flag.data + torch.gt(layer.scores, torch.ones_like(layer.scores)*scores_threshold).int() == 2).int()
+                if update_scores:
+                    layer.scores.data = layer.scores.data * layer.flag.data
                 if parser_args.bias:
                     layer.bias_flag.data = (layer.bias_flag.data + torch.gt(layer.bias_scores, torch.ones_like(layer.bias_scores)*bias_scores_threshold).int() == 2).int()
+                    if update_scores:
+                        layer.bias_scores.data = layer.bias_scores.data * layer.bias_flag.data
 
             if parser_args.rewind_score and layer.saved_scores is not None:
                 # if we go into this branch, we will load the rewinded states of the scores
@@ -412,7 +412,7 @@ def get_model_sparsity(model, threshold=0):
 # returns num_nonzero elements, total_num_elements so that it is easier to compute
 # average sparsity in the end
 def get_layer_sparsity(layer, threshold=0):
-    if parser_args.algo in ['hc', 'hc_iter']:
+    if parser_args.algo in ['hc', 'hc_iter'] and not parser_args.bottom_k_on_forward:
         # assume the model is rounded, compute effective scores
         eff_scores = layer.scores * layer.flag
         if parser_args.bias:
@@ -431,7 +431,7 @@ def get_layer_sparsity(layer, threshold=0):
         else:
             b_numer, b_denom = 0, 0
 
-    elif parser_args.algo in ['global_ep', 'ep', 'global_ep_iter']:
+    elif parser_args.algo in ['global_ep', 'ep', 'global_ep_iter'] or parser_args.bottom_k_on_forward:
         if parser_args.algo == 'ep':
             weight_mask, bias_mask = GetSubnetConv.apply(layer.scores.abs(), layer.bias_scores.abs(), parser_args.prune_rate)
         else:
