@@ -142,6 +142,7 @@ data/datasets/
 
 # results and checkpoints
 results/
+*.csv
 model_checkpoints/
 plots/
 runs/
