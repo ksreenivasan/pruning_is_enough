@@ -110,7 +110,7 @@ def main_worker(gpu, ngpus_per_node):
         # save the regularizer and disable it for warmup then swtich to weight training
         reg = parser_args.regularization
         parser_args.regularization = None
-        model = switch_to_wt(model)
+        model = switch_to_wt(model, set_scores_to_one=True)
         for warmup in range(0,warmup_epochs):
             print('warm-up epoch', warmup)
             train_acc1, train_acc5, train_acc10, reg_loss = train(
@@ -140,7 +140,8 @@ def main_worker(gpu, ngpus_per_node):
             results_df.to_csv(results_filename, index=False)
         # enable regularization for HC and switch back to pruning
         parser_args.regularization = reg
-        model = switch_to_pruning(model)
+        model = switch_to_pruning(model, reinit_scores=True)
+        import ipdb; ipdb.set_trace()
    
     # Start training
     for epoch in range(parser_args.start_epoch, parser_args.epochs):

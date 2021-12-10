@@ -413,7 +413,7 @@ def compare_rounding(validate, data_loader, model, criterion, parser_args, resul
 
 
 # switches off gradients for scores and flags and switches it on for weights and biases
-def switch_to_pruning(model):
+def switch_to_pruning(model, reinit_scores=False):
     print('Switching to weight training by switching off requires_grad for scores and switching it on for weights.')
 
     for name, params in model.named_parameters():
@@ -424,6 +424,10 @@ def switch_to_pruning(model):
             params.requires_grad = False
         elif "score" in name:
             params.requires_grad = True
+            if reinit_scores:
+                nn.init.uniform_(params, a=0.0, b=1.0)
+            # NOTE: this does not take parser_args.score_init into consideration
+            # HACK: does not work for bias, yet
         else:
             # flags and everything else
             params.requires_grad = False
@@ -431,9 +435,8 @@ def switch_to_pruning(model):
 
 
 # switches off gradients for scores and flags and switches it on for weights and biases
-def switch_to_wt(model):
+def switch_to_wt(model, set_scores_to_one=False):
     print('Switching to weight training by switching off requires_grad for scores and switching it on for weights.')
-
     for name, params in model.named_parameters():
         # make sure param_name ends with .weight or .bias
         if re.match('.*\.weight', name):
@@ -442,6 +445,10 @@ def switch_to_wt(model):
             params.requires_grad = True
         elif "score" in name:
             params.requires_grad = False
+            # set all scores to one if you want to do vanilla weight training
+            if set_scores_to_one:
+                params.data = torch.ones_like(params.data)
+                # NOTE: Hack | does not work for bias, yet
         else:
             # flags and everything else
             params.requires_grad = False
