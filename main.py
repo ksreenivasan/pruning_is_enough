@@ -109,9 +109,32 @@ def main_worker(gpu, ngpus_per_node):
         parser_args.regularization = None
         model = switch_to_wt(model)
         for warmup in range(0,warmup_epochs):
+            print('warm-up epoch', warmup)
             train_acc1, train_acc5, train_acc10, reg_loss = train(
                 data.train_loader, model, criterion, optimizer, warmup, parser_args, writer=writer
             )
+            # add stuff here to write the results to the CSV so I can tell if it works 
+            acc1, acc5, acc10 = validate(data.val_loader, model, criterion, parser_args, writer, warmup)
+            
+            epoch_list.append(warmup)
+            test_acc_before_round_list.append(-1)
+            test_acc_list.append(acc1)
+            reg_loss_list.append(reg_loss)
+            cp_model = round_model(model, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio, rank=parser_args.gpu)
+            avg_sparsity = get_model_sparsity(cp_model)
+            model_sparsity_list.append(avg_sparsity)
+            
+            results_df = pd.DataFrame({'epoch': epoch_list, 'test_acc_before_rounding': test_acc_before_round_list,'test_acc': test_acc_list,
+                        'regularization_loss': reg_loss_list, 'model_sparsity': model_sparsity_list})
+
+            if parser_args.results_filename:
+                results_filename = parser_args.results_filename
+            else:
+                results_filename = result_root + 'acc_and_sparsity.csv' 
+
+            
+            print("Writing results into: {}".format(results_filename))
+            results_df.to_csv(results_filename, index=False)
         parser_args.regularization = reg
         model = switch_to_pruning(model)
     
