@@ -1,11 +1,5 @@
-
-### ResNet-20
+### ResNet20
 
 do
-	python main.py --config configs/hypercube/resnet20/resnet20_hypercube_bottom_K_Nov23_11am_SGD.yml \
-		--gpu 2 
+	python main.py --config configs/hypercube/resnet20/resnet20_quantized_iter_hc_0_5.yml \
 done
-
-
-# hc-warmup
-#--toggle-warmup
