@@ -60,5 +60,5 @@ checkpoint_at_prune: True
 skip_sanity_checks: False
 
 # ==== HC with warm-up ==== #
-hc-warmup: 3
+hc_warmup: 3
 toggle_warmup: True
