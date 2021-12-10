@@ -1,12 +1,14 @@
 import time
 import torch
 import tqdm
+import copy
+import pdb
 
 from utils.eval_utils import accuracy
 from utils.logging import AverageMeter, ProgressMeter
-from utils.net_utils import get_regularization_loss, prune
+from utils.net_utils import get_regularization_loss, prune, get_layers
 
-
+from torch import optim
 
 __all__ = ["train", "validate", "modifier"]
 
@@ -56,6 +58,68 @@ def train(train_loader, model, criterion, optimizer, epoch, args, writer):
                         scores.data = torch.clamp(scores.data, 0.0, 1.0)
 
         loss = criterion(output, target)
+
+
+        if args.lam_finetune_loss > 0:
+
+            model2 = copy.deepcopy(model)
+            #delta_list = {}
+            conv, linear = get_layers(arch=args.arch, model=model)
+            conv2, linear2 = get_layers(arch=args.arch, model=model2)
+            layer_list = [*conv, *linear]
+            layer_list2 = [*conv2, *linear2]
+
+            #pdb.set_trace()
+            # clone parameters from model
+            for m_from, m_to in zip(layer_list, layer_list2):#model.modules(), model2.modules()):
+                m_to.scores.data = m_from.scores.data.clone()
+                m_to.flag.data = m_from.flag.data.clone()
+            
+            # turn on gradient for weight, turn off gradient for mask
+            for i, (name, params) in enumerate(model2.named_parameters()):
+                if "weight" in name:
+                    params.requires_grad=True
+                elif "score" in name:
+                    params.requires_grad=False
+                
+            meta_optimizer = optim.SGD(model2.parameters(), lr=0.01, momentum=0.9)
+            # update for several steps
+            num_updates = 10
+            for i in range(num_updates):
+                # forward and backward to update net_pi grad.
+                loss_updated_model = criterion(model2(images), target)
+                meta_optimizer.zero_grad()
+                loss_updated_model.backward()#retain_graph=True)
+                meta_optimizer.step()
+
+            loss_updated_model = criterion(model2(images), target)
+    
+
+            '''
+            # define updates
+            for i, (name, params) in enumerate(model2.named_parameters()):
+                if "weight" in name:
+                    delta_list[i] = torch.autograd.grad(loss, params)
+
+            model3 = clone(model)
+            for i, (name, params) in enumerate(model3.named_parameters()):
+                if "weight" in name:
+                    params -= alpha * delta_list[i]
+            output3 = model3(images)
+            '''
+
+            finetune_loss = args.lam_finetune_loss * loss_updated_model 
+            loss += finetune_loss
+
+            # go back to original setting
+            for i, (name, params) in enumerate(model.named_parameters()):
+                if "weight" in name:
+                    params.requires_grad=False
+                elif "score" in name:
+                    params.requires_grad=True
+
+
+
         regularization_loss = torch.tensor(0)
         if args.regularization:
             regularization_loss =\

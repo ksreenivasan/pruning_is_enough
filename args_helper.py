@@ -813,7 +813,12 @@ class ArgsHelper:
             default=False,
             help="Enable this to use bottomK on forward for HC"
         )
-
+        parser.add_argument(
+            "--lam_finetune_loss",
+            type=float,
+            default=-1,
+            help="lambda for finetune loss "
+        )
         if jupyter_mode:
             args = parser.parse_args("")
         else:
