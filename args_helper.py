@@ -247,7 +247,6 @@ class ArgsHelper:
         )
         parser.add_argument(
             "--toggle-warmup",
-            default=9999,
             action='store_true',
             default=False,
             help='flag that decides if we add noise to the rounded p_i'
@@ -850,7 +849,7 @@ class ArgsHelper:
             type=str,
             help='this goes in tandum with PRs, for each number in epoch that is when the corresponding PR starts'
         )
-        
+
         if jupyter_mode:
             args = parser.parse_args("")
         else:
