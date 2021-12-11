@@ -31,7 +31,7 @@ bn_type: NonAffineBatchNorm
 freeze_weights: True
 prune_type: BottomK
 # enter target sparsity here
-prune_rate: 0.982
+prune_rate: 0.995
 init: signed_constant
 score_init: unif #skew #half #bimodal #skew # bern
 scale_fan: False #True
@@ -43,7 +43,7 @@ noise_ratio: 0
 
 # ===== Quantization ===== #
 hc_quantized: True
-quantize_threshold: 0.75
+quantize_threshold: 0.5
 
 # ===== Regularization ===== #
 regularization: L2

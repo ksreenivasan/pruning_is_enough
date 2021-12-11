@@ -312,9 +312,6 @@ def prune(model, update_thresholds_only=False, update_scores=False):
         print('Warning: Using prune() in {}. Are you sure?'.format(parser_args.algo))
 
     conv_layers, linear_layers = get_layers(parser_args.arch, model)
-    if parser_args.algo in ['hc_iter']:
-        if update_thresholds_only:
-            raise NotImplementedError
 
     if parser_args.prune_type == 'FixThresholding':
         if parser_args.algo == 'hc_iter': # and update_thresholds_only == False:

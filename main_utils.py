@@ -223,7 +223,7 @@ def finetune(model, parser_args, data, criterion, old_epoch_list, old_test_acc_b
         result_root = parser_args.results_filename + '_'
 
     if parser_args.bottom_k_on_forward:
-        model = prune(model, update_scores=True)
+        prune(model, update_scores=True)
     elif parser_args.algo in ['hc', 'hc_iter']:
         # round the score (in the model itself)
         model = round_model(model, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio, rank=parser_args.gpu)    
