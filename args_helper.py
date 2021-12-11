@@ -374,7 +374,8 @@ class ArgsHelper:
             default=None,
             help="Sample Baseline Subnet Init",
         )
-        # represents percentage of weights THAT REMAIN each time (in iter_hc, ep, global_ep etc)
+        # represents percentage of weights THAT REMAIN each time ep, global_ep
+        # whereas it represents number of weights TO PRUNE when calling prune()
         parser.add_argument(
             "--prune-rate",
             default=0.5,

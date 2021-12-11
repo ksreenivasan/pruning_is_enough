@@ -547,7 +547,7 @@ def get_prune_rate(target_sparsity=0.5, iter_period=5):
     print("Computing prune_rate for target_sparsity {} with iter_period {}".format(target_sparsity, iter_period))
     max_epochs = parser_args.epochs
     num_prune_iterations = np.floor(max_epochs/iter_period)
-    prune_rate = np.exp(np.log(target_sparsity/100)/num_prune_iterations)
+    prune_rate = 1-np.exp(np.log(target_sparsity/100)/num_prune_iterations)
     return prune_rate
 
 #### Functions used for greedy pruning ####
