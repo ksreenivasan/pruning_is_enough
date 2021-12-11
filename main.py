@@ -111,6 +111,9 @@ def main_worker(gpu, ngpus_per_node):
         reg = parser_args.regularization
         parser_args.regularization = None
         model = switch_to_wt(model, set_scores_to_one=True)
+        # optimizer needs to be tied to the correct parameters
+        optimizer = get_optimizer(parser_args, model)
+        scheduler = get_scheduler(optimizer, parser_args.lr_policy)
         for warmup in range(0,warmup_epochs):
             print('warm-up epoch', warmup)
             train_acc1, train_acc5, train_acc10, reg_loss = train(
@@ -126,7 +129,6 @@ def main_worker(gpu, ngpus_per_node):
             cp_model = round_model(model, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio, rank=parser_args.gpu)
             avg_sparsity = get_model_sparsity(cp_model)
             model_sparsity_list.append(avg_sparsity)
-            
             results_df = pd.DataFrame({'epoch': epoch_list, 'test_acc_before_rounding': test_acc_before_round_list,'test_acc': test_acc_list,
                         'regularization_loss': reg_loss_list, 'model_sparsity': model_sparsity_list})
 
@@ -135,14 +137,16 @@ def main_worker(gpu, ngpus_per_node):
             else:
                 results_filename = result_root + 'acc_and_sparsity.csv' 
 
-            
             print("Writing results into: {}".format(results_filename))
             results_df.to_csv(results_filename, index=False)
         # enable regularization for HC and switch back to pruning
         parser_args.regularization = reg
         model = switch_to_pruning(model, reinit_scores=True)
-        import ipdb; ipdb.set_trace()
-   
+        # optimizer needs to be tied to the correct parameters
+        optimizer = get_optimizer(parser_args, model)
+        scheduler = get_scheduler(optimizer, parser_args.lr_policy) 
+
+
     # Start training
     for epoch in range(parser_args.start_epoch, parser_args.epochs):
         if parser_args.multiprocessing_distributed:

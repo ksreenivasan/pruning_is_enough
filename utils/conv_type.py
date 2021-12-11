@@ -199,8 +199,6 @@ class SubnetConv(nn.Conv2d):
                 b = self.bias * bias_subnet
             else:
                 b = self.bias
-        # NOTE @mgrinde: changing this for ease of debug
-        w = self.weight
         b = self.bias
         x = F.conv2d(
             x, w, b, self.stride, self.padding, self.dilation, self.groups
