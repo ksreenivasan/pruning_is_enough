@@ -374,8 +374,7 @@ class ArgsHelper:
             default=None,
             help="Sample Baseline Subnet Init",
         )
-
-        # this is an argument that is relevant mainly for EP.
+        # represents percentage of weights THAT REMAIN each time (in iter_hc, ep, global_ep etc)
         parser.add_argument(
             "--prune-rate",
             default=0.5,
@@ -812,6 +811,12 @@ class ArgsHelper:
             action="store_true",
             default=False,
             help="Enable this to use bottomK on forward for HC"
+        )
+        parser.add_argument(
+            "--target-sparsity",
+            default=0.5,
+            help="decides max percentage of weights that remain at the end of training",
+            type=float,
         )
 
         if jupyter_mode:

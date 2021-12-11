@@ -36,7 +36,8 @@ from utils.net_utils import (
     get_model_sparsity,
     prune,
     redraw,
-    get_layers
+    get_layers,
+    get_prune_rate,
 )
 from utils.schedulers import get_scheduler
 from utils.utils import set_seed, plot_histogram_scores
