@@ -185,9 +185,9 @@ class ArgsHelper:
             help="starting epoch for iterative pruning"
         )
         parser.add_argument(
-            "--iter_period", 
-            type=int, 
-            default=20,
+            "--iter-period", 
+            type=int,
+            default=5,
             help="period [epochs] for iterative pruning"
         )
         parser.add_argument(

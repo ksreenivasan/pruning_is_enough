@@ -2,8 +2,7 @@ subfolder: target_sparsity_0_5
 
 # Hypercube optimization
 algo: 'hc_iter'
-# effectively prune once in the entire process
-iter_period: 100
+iter_period: 5
 
 # Architecture
 arch: resnet20
@@ -31,8 +30,8 @@ bn_type: NonAffineBatchNorm
 freeze_weights: True
 prune_type: BottomK
 # enter target sparsity here
-prune_rate: 0.995
-init: signed_constant
+target_sparsity: 0.5
+init: kaiming_normal
 score_init: unif #skew #half #bimodal #skew # bern
 scale_fan: False #True
 
@@ -47,14 +46,14 @@ quantize_threshold: 0.5
 
 # ===== Regularization ===== #
 regularization: L2
-lmbda: 0.00005 # 0.01 #0.0001 #0.000001
+lmbda: 0.000001 # 1e-6
 
 # ===== Hardware setup ===== #
 workers: 4
-gpu: 0
+gpu: 2
 
 # ===== Checkpointing ===== #
 checkpoint_at_prune: True
 
 # ==== sanity check ==== #
-skip_sanity_checks: False
+skip_sanity_checks: True
