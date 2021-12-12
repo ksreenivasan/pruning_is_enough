@@ -266,6 +266,8 @@ def round_model(model, round_scheme, noise=False, ratio=0.0, rank=None):
                 else:
                     # print("Applying naive rounding to {}".format(name))
                     params.data = torch.gt(params.data, torch.ones_like(params.data)*0.5).int().float()
+            elif round_scheme == 'all_ones':
+                params.data = torch.ones_like(params.data)
             else:
                 print("INVALID ROUNDING")
                 print("EXITING")  

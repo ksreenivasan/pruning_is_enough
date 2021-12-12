@@ -825,6 +825,12 @@ class ArgsHelper:
             default=-1,
             help="lambda for finetune loss "
         )
+        parser.add_argument(
+            "--unflag-before-finetune",
+            action="store_true",
+            default=False,
+            help="Enable this to unprune weights if possible, before fine-tune"
+        )
 
         if jupyter_mode:
             args = parser.parse_args("")
