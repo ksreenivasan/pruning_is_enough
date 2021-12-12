@@ -546,7 +546,7 @@ def get_regularization_loss(model, regularizer='L2', lmbda=1, alpha=1, alpha_pri
 def get_prune_rate(target_sparsity=0.5, iter_period=5):
     print("Computing prune_rate for target_sparsity {} with iter_period {}".format(target_sparsity, iter_period))
     max_epochs = parser_args.epochs
-    num_prune_iterations = np.floor(max_epochs/iter_period)
+    num_prune_iterations = np.floor((max_epochs-1)/iter_period)
     # if algo is HC, iter_HC or anything that uses prune() then, prune_rate represents number of weights to prune
     prune_rate = 1 - np.exp(np.log(target_sparsity/100)/num_prune_iterations)
     return prune_rate

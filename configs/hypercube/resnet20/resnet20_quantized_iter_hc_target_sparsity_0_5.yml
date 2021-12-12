@@ -31,7 +31,7 @@ freeze_weights: True
 prune_type: BottomK
 # enter target sparsity here
 target_sparsity: 0.5
-init: kaiming_normal
+init: signed_constant
 score_init: unif #skew #half #bimodal #skew # bern
 scale_fan: False #True
 
@@ -50,10 +50,10 @@ lmbda: 0.000001 # 1e-6
 
 # ===== Hardware setup ===== #
 workers: 4
-gpu: 2
+gpu: 0
 
 # ===== Checkpointing ===== #
 checkpoint_at_prune: True
 
 # ==== sanity check ==== #
-skip_sanity_checks: True
+skip_sanity_checks: False
