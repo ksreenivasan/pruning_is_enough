@@ -217,6 +217,8 @@ def finetune(model, parser_args, data, criterion, old_epoch_list, old_test_acc_b
         finetune_epochs = 300 - parser_args.epochs
     if parser_args.finetune_standard:
         finetune_epochs = 150
+    else:
+        finetune_epochs = 300 - parser_args.epochs
     epoch_list = copy.deepcopy(old_epoch_list)
     test_acc_before_round_list = copy.deepcopy(old_test_acc_before_round_list)
     test_acc_list = copy.deepcopy(old_test_acc_list)

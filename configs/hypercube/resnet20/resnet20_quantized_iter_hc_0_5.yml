@@ -1,4 +1,4 @@
-subfolder: quantize_0_75
+subfolder: quantize_0_75_checking
 
 # Hypercube optimization
 algo: 'hc_iter'
@@ -14,7 +14,7 @@ name: resnet20_quantized_iter_hc
 
 # ===== Learning Rate Policy ======== #
 optimizer: sgd
-lr: 0.01
+lr: 0.1
 lr_policy: cosine_lr #constant_lr #multistep_lr
 fine_tune_lr: 0.01
 fine_tune_lr_policy: multistep_lr
@@ -31,7 +31,7 @@ bn_type: NonAffineBatchNorm
 freeze_weights: True
 prune_type: BottomK
 # enter target sparsity here
-prune_rate: 0.995
+prune_rate: 0.982
 init: signed_constant
 score_init: unif #skew #half #bimodal #skew # bern
 scale_fan: False #True
@@ -51,13 +51,13 @@ lmbda: 0.00005 # 0.01 #0.0001 #0.000001
 
 # ===== Hardware setup ===== #
 workers: 4
-gpu: 0
+gpu: 3
 
 # ===== Checkpointing ===== #
 checkpoint_at_prune: True
 
 # ==== sanity check ==== #
-skip_sanity_checks: False
+skip_sanity_checks: True
 
 # ==== HC with warm-up ==== #
 hc_warmup: 3
