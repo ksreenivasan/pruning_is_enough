@@ -497,6 +497,19 @@ def get_regularization_loss(model, regularizer='L2', lmbda=1, alpha=1, alpha_pri
                 regularization_loss += torch.norm(params, p=1)
         regularization_loss = lmbda * regularization_loss
 
+    elif regularizer == 'L1_L2':
+        # reg_loss =  ||p||_1 + ||p||_2^2
+        for name, params in model.named_parameters():
+            if ".bias_score" in name:
+                if parser_args.bias:
+                    regularization_loss += torch.norm(params, p=1)
+                    regularization_loss += torch.norm(params, p=2)**2
+
+            elif ".score" in name:
+                regularization_loss += torch.norm(params, p=1)
+                regularization_loss += torch.norm(params, p=2)**2
+        regularization_loss = lmbda * regularization_loss
+
     elif regularizer == 'var_red_1':
         # reg_loss = lambda * p^{alpha} (1-p)^{alpha'}
         for name, params in model.named_parameters():
