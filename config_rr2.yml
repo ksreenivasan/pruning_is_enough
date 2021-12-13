@@ -1,6 +1,6 @@
-subfolder: random_rounding_one_flip
+subfolder: random_rounding_majority
 random_rounding: True
-random_round_type: one_flip
+random_round_type: majority
 
 # Hypercube optimization
 algo: 'hc_iter'

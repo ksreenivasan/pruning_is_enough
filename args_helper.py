@@ -843,6 +843,12 @@ class ArgsHelper:
             default=False,
             help="randomized rounding for hc"
         )
+        parser.add_argument(
+            "--random_round_type",
+            type=str,
+            default='one_flip',
+            help="Type of random rounding : one_flip | majority | best "
+        )
 
         if jupyter_mode:
             args = parser.parse_args("")

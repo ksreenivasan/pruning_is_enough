@@ -78,8 +78,28 @@ class GetSubnet(autograd.Function):
                 out = torch.gt(scores, torch.ones_like(scores)*scores_prune_threshold).float()
                 bias_out = torch.gt(bias_scores, torch.ones_like(bias_scores)*bias_scores_prune_threshold).float()
             else:
-                out = torch.gt(scores, torch.ones_like(scores)*parser_args.quantize_threshold).float()
-                bias_out = torch.gt(bias_scores, torch.ones_like(bias_scores)*parser_args.quantize_threshold).float()
+                if parser_args.random_round:
+                    if parser_args.random_round_type == 'one_flip':
+                        out = torch.bernoulli(torch.clamp(scores, 0, 1))
+                        bias_out = torch.bernoulli(torch.clamp(bias_scores, 0, 1))
+                    elif parser_args.random_round_type == 'majority':
+                        # flip 5 coins and take dimension-wise majority voting
+                        out = torch.zeros_like(scores)
+                        bias_out = torch.zeros_like(bias_scores)
+                        for flip_iter in range(5):
+                            out += torch.bernoulli(torch.clamp(scores, 0, 1))
+                            bias_out += torch.bernoulli(torch.clamp(scores, 0, 1))
+                        out = torch.gt(out, torch.ones_like(out)*2).float() # among 5 trials, we need at least 3 heads
+                        bias_out = torch.gt(bias_out, torch.ones_like(bias_out)*2).float() # among 5 trials, we need at least 3 heads
+                        
+                        raise NotImplementedError
+                    elif parser_args.random_round_type == 'best':
+                        # compute loss of 5 coin flips and take the best one (how to compute loss?)
+                        raise NotImplementedError
+
+                else:
+                    out = torch.gt(scores, torch.ones_like(scores)*parser_args.quantize_threshold).float()
+                    bias_out = torch.gt(bias_scores, torch.ones_like(bias_scores)*parser_args.quantize_threshold).float()
 
         else:
             print("INVALID PRUNING ALGO")
