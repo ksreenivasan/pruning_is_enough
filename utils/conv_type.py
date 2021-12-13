@@ -79,6 +79,7 @@ class GetSubnet(autograd.Function):
                 bias_out = torch.gt(bias_scores, torch.ones_like(bias_scores)*bias_scores_prune_threshold).float()
             else:
                 if parser_args.random_round:
+                    pdb.set_trace()
                     if parser_args.random_round_type == 'one_flip':
                         out = torch.bernoulli(torch.clamp(scores, 0, 1))
                         bias_out = torch.bernoulli(torch.clamp(bias_scores, 0, 1))
@@ -90,9 +91,7 @@ class GetSubnet(autograd.Function):
                             out += torch.bernoulli(torch.clamp(scores, 0, 1))
                             bias_out += torch.bernoulli(torch.clamp(scores, 0, 1))
                         out = torch.gt(out, torch.ones_like(out)*2).float() # among 5 trials, we need at least 3 heads
-                        bias_out = torch.gt(bias_out, torch.ones_like(bias_out)*2).float() # among 5 trials, we need at least 3 heads
-                        
-                        raise NotImplementedError
+                        bias_out = torch.gt(bias_out, torch.ones_like(bias_out)*2).float() # among 5 trials, we need at least 3 heads    
                     elif parser_args.random_round_type == 'best':
                         # compute loss of 5 coin flips and take the best one (how to compute loss?)
                         raise NotImplementedError

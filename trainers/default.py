@@ -162,7 +162,7 @@ def train(train_loader, model, criterion, optimizer, epoch, args, writer):
         loss.backward()
         optimizer.step()
 
-        pdb.set_trace()
+        #pdb.set_trace()
         # TODO: print the updated score
         # TODO: print the weight
 
