@@ -339,9 +339,11 @@ def get_idty_str(parser_args):
     width_str = parser_args.width
     seed_str = parser_args.seed + parser_args.trial_num - 1
     run_idx_str = parser_args.run_idx
-    idty_str = "{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_finetune_{}_fan_{}_{}_{}_width_{}_seed_{}_idx_{}".\
+    lam_ft_str = parser_args.lam_finetune_loss
+    n_step_ft_str = parser_args.num_step_finetune
+    idty_str = "{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_finetune_{}_MAML_{}_{}_fan_{}_{}_{}_width_{}_seed_{}_idx_{}".\
         format(train_mode_str, dataset_str, model_str, algo_str, rate_str, period_str, reg_str, reg_lmbda,
-        opt_str, policy_str, lr_str, lr_gamma, lr_adj, finetune_lr_str, fan_str, w_str, s_str,
+        opt_str, policy_str, lr_str, lr_gamma, lr_adj, finetune_lr_str, lam_ft_str, n_step_ft_str, fan_str, w_str, s_str,
         width_str, seed_str, run_idx_str).replace(".", "_")
 
 
@@ -405,6 +407,7 @@ def compare_rounding(validate, data_loader, model, criterion, parser_args, resul
 def switch_to_wt(model):
     print('Switching to weight training by switching off requires_grad for scores and switching it on for weights.')
 
+    parser_args.lam_finetune_loss = 0   # this is for the case considering finetune loss
     for name, params in model.named_parameters():
         # make sure param_name ends with .weight or .bias
         if re.match('.*\.weight', name):

@@ -76,24 +76,31 @@ def train(train_loader, model, criterion, optimizer, epoch, args, writer):
                 m_to.flag.data = m_from.flag.data.clone()
             
             # turn on gradient for weight, turn off gradient for mask
-            for i, (name, params) in enumerate(model2.named_parameters()):
+            for name, params in model2.named_parameters():
+                print(name)
                 if "weight" in name:
                     params.requires_grad=True
                 elif "score" in name:
                     params.requires_grad=False
                 
-            meta_optimizer = optim.SGD(model2.parameters(), lr=0.01, momentum=0.9)
+            meta_optimizer = optim.SGD(model2.parameters(), lr=0.1, momentum=0.9)
             # update for several steps
-            num_updates = 10
-            for i in range(num_updates):
+            for i in range(args.num_step_finetune):
                 # forward and backward to update net_pi grad.
                 loss_updated_model = criterion(model2(images), target)
                 meta_optimizer.zero_grad()
                 loss_updated_model.backward()#retain_graph=True)
                 meta_optimizer.step()
 
+            # go back to original setting
+            for name, params in model.named_parameters():
+                if "weight" in name:
+                    params.requires_grad=False
+                elif "score" in name:
+                    params.requires_grad=True
+
             loss_updated_model = criterion(model2(images), target)
-    
+            
 
             '''
             # define updates
@@ -108,17 +115,30 @@ def train(train_loader, model, criterion, optimizer, epoch, args, writer):
             output3 = model3(images)
             '''
 
-            finetune_loss = args.lam_finetune_loss * loss_updated_model 
+            finetune_loss = args.lam_finetune_loss * loss_updated_model
+            print('original loss: ', loss)
+            print('finetune loss: ', finetune_loss)
+
+            
+            print('For model2')
+            for name, params in model2.named_parameters():
+                if params.requires_grad:
+                    #pdb.set_trace()
+                    grad =torch.autograd.grad(finetune_loss, params, retain_graph=True)[0].data
+                    print(name, 'autograd(): ', (grad != torch.zeros_like(grad)).any().item())
+                     
+            print('For model')
+            for name, params in model.named_parameters():
+                if params.requires_grad:
+                    #pdb.set_trace()
+                    print(name)
+                    #grad =torch.autograd.grad(finetune_loss, params, retain_graph=True, allow_unused=True)[0].data
+                    #print(name, 'autograd(): ', (grad != torch.zeros_like(grad)).any().item())
+            
+
             loss += finetune_loss
 
-            # go back to original setting
-            for i, (name, params) in enumerate(model.named_parameters()):
-                if "weight" in name:
-                    params.requires_grad=False
-                elif "score" in name:
-                    params.requires_grad=True
-
-
+            pdb.set_trace()
 
         regularization_loss = torch.tensor(0)
         if args.regularization:
@@ -127,6 +147,7 @@ def train(train_loader, model, criterion, optimizer, epoch, args, writer):
                                         lmbda=args.lmbda, alpha=args.alpha,
                                         alpha_prime=args.alpha_prime)
 
+        #print('regularization_loss: ', regularization_loss)
         loss += regularization_loss
 
         # measure accuracy and record loss
@@ -140,6 +161,10 @@ def train(train_loader, model, criterion, optimizer, epoch, args, writer):
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
+
+        pdb.set_trace()
+        # TODO: print the updated score
+        # TODO: print the weight
 
         # measure elapsed time
         batch_time.update(time.time() - end)

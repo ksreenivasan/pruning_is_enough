@@ -819,6 +819,12 @@ class ArgsHelper:
             default=-1,
             help="lambda for finetune loss "
         )
+        parser.add_argument(
+            "--num_step_finetune",
+            type=int,
+            default=10,
+            help="number of steps to check finetune loss "
+        )
         if jupyter_mode:
             args = parser.parse_args("")
         else:
