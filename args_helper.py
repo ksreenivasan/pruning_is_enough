@@ -837,6 +837,12 @@ class ArgsHelper:
             default=False,
             help="Enable this to unprune weights if possible, before fine-tune"
         )
+        parser.add_argument(
+            "--override-prune-rate",
+            action="store_true",
+            default=False,
+            help="Enable this to specify prune-rate manually"
+        )
 
         if jupyter_mode:
             args = parser.parse_args("")
