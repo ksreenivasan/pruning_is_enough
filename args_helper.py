@@ -185,9 +185,9 @@ class ArgsHelper:
             help="starting epoch for iterative pruning"
         )
         parser.add_argument(
-            "--iter_period", 
-            type=int, 
-            default=20,
+            "--iter-period", 
+            type=int,
+            default=5,
             help="period [epochs] for iterative pruning"
         )
         parser.add_argument(
@@ -374,8 +374,8 @@ class ArgsHelper:
             default=None,
             help="Sample Baseline Subnet Init",
         )
-
-        # this is an argument that is relevant mainly for EP.
+        # represents percentage of weights THAT REMAIN each time ep, global_ep
+        # whereas it represents number of weights TO PRUNE when calling prune()
         parser.add_argument(
             "--prune-rate",
             default=0.5,
@@ -814,6 +814,12 @@ class ArgsHelper:
             help="Enable this to use bottomK on forward for HC"
         )
         parser.add_argument(
+            "--target-sparsity",
+            default=0.5,
+            help="decides max percentage of weights that remain at the end of training",
+            type=float,
+        )
+        parser.add_argument(
             "--lam_finetune_loss",
             type=float,
             default=-1,
@@ -825,6 +831,13 @@ class ArgsHelper:
             default=10,
             help="number of steps to check finetune loss "
         )
+        parser.add_argument(
+            "--unflag-before-finetune",
+            action="store_true",
+            default=False,
+            help="Enable this to unprune weights if possible, before fine-tune"
+        )
+
         if jupyter_mode:
             args = parser.parse_args("")
         else:

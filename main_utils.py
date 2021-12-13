@@ -36,7 +36,8 @@ from utils.net_utils import (
     get_model_sparsity,
     prune,
     redraw,
-    get_layers
+    get_layers,
+    get_prune_rate,
 )
 from utils.schedulers import get_scheduler
 from utils.utils import set_seed, plot_histogram_scores
@@ -224,8 +225,15 @@ def finetune(model, parser_args, data, criterion, old_epoch_list, old_test_acc_b
     if parser_args.bottom_k_on_forward:
         prune(model, update_scores=True)
     elif parser_args.algo in ['hc', 'hc_iter']:
-        # round the score (in the model itself)
-        model = round_model(model, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio, rank=parser_args.gpu)    
+        if parser_args.unflag_before_finetune:
+            # want to ensure that all weights are available to train, except for those that have been pruned
+            model = round_model(model, round_scheme="all_ones", noise=parser_args.noise, ratio=parser_args.noise_ratio, rank=parser_args.gpu)
+            # check sparsity
+            post_round_sparsity = get_model_sparsity(model)
+        else:
+            # round the score (in the model itself)
+            model = round_model(model, round_scheme=parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio, rank=parser_args.gpu)
+            post_round_sparsity = get_model_sparsity(model)
 
     # apply reinit/shuffling masks/weights (if necessary)
     model = redraw(model, shuffle=shuffle, reinit=reinit, invert=invert, chg_mask=chg_mask, chg_weight=chg_weight)
@@ -250,7 +258,7 @@ def finetune(model, parser_args, data, criterion, old_epoch_list, old_test_acc_b
 
     # check the performance of loaded model (after rounding)
     acc1, acc5, acc10 = validate(data.val_loader, model, criterion, parser_args, writer, parser_args.epochs-1)
-    avg_sparsity = model_sparsity_list[-1] # copy & paste the sparsity of prev. epoch
+    avg_sparsity = post_round_sparsity
     epoch_list.append(parser_args.epochs-1)
     test_acc_before_round_list.append(-1)
     test_acc_list.append(acc1)
