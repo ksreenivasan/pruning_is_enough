@@ -837,6 +837,12 @@ class ArgsHelper:
             default=False,
             help="Enable this to unprune weights if possible, before fine-tune"
         )
+        parser.add_argument(
+            "--random_round",
+            action="store_true",
+            default=False,
+            help="randomized rounding for hc"
+        )
 
         if jupyter_mode:
             args = parser.parse_args("")
