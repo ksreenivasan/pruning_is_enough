@@ -1,5 +1,5 @@
 subfolder: random_rounding_majority
-random_rounding: True
+random_round: True
 random_round_type: majority
 
 # Hypercube optimization
@@ -53,7 +53,7 @@ lmbda: 0.00005 # 0.01 #0.0001 #0.000001
 
 # ===== Hardware setup ===== #
 workers: 4
-gpu: 3
+gpu: 2
 
 # ===== Checkpointing ===== #
 checkpoint_at_prune: True

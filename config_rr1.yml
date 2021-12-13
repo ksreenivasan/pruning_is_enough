@@ -1,5 +1,5 @@
 subfolder: random_rounding_one_flip
-random_rounding: True
+random_round: True
 random_round_type: one_flip
 
 # Hypercube optimization

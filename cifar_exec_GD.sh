@@ -24,7 +24,7 @@
 
 
 # Random rounding
-python main.py --config config_rr1.yml --run_idx 1
+#python main.py --config config_rr1.yml --run_idx 1
 #python main.py --config config_rr2.yml --run_idx 2
 
 
