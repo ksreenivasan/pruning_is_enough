@@ -12,7 +12,7 @@ dataset: CIFAR10
 name: resnet20_quantized_iter_hc
 
 # ===== Learning Rate Policy ======== #
-optimizer: sgd
+optimizer: adam
 lr: 0.1 #0.01
 lr_policy: cosine_lr #constant_lr #multistep_lr
 fine_tune_lr: 0.01
@@ -56,4 +56,4 @@ gpu: 0
 checkpoint_at_prune: True
 
 # ==== sanity check ==== #
-skip_sanity_checks: False
+skip_sanity_checks: True

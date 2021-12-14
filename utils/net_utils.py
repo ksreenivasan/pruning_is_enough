@@ -266,6 +266,8 @@ def round_model(model, round_scheme, noise=False, ratio=0.0, rank=None):
                 else:
                     # print("Applying naive rounding to {}".format(name))
                     params.data = torch.gt(params.data, torch.ones_like(params.data)*0.5).int().float()
+            elif round_scheme == 'all_ones':
+                params.data = torch.ones_like(params.data)
             else:
                 print("INVALID ROUNDING")
                 print("EXITING")  
@@ -495,6 +497,19 @@ def get_regularization_loss(model, regularizer='L2', lmbda=1, alpha=1, alpha_pri
                 regularization_loss += torch.norm(params, p=1)
         regularization_loss = lmbda * regularization_loss
 
+    elif regularizer == 'L1_L2':
+        # reg_loss =  ||p||_1 + ||p||_2^2
+        for name, params in model.named_parameters():
+            if ".bias_score" in name:
+                if parser_args.bias:
+                    regularization_loss += torch.norm(params, p=1)
+                    regularization_loss += torch.norm(params, p=2)**2
+
+            elif ".score" in name:
+                regularization_loss += torch.norm(params, p=1)
+                regularization_loss += torch.norm(params, p=2)**2
+        regularization_loss = lmbda * regularization_loss
+
     elif regularizer == 'var_red_1':
         # reg_loss = lambda * p^{alpha} (1-p)^{alpha'}
         for name, params in model.named_parameters():
@@ -541,6 +556,15 @@ def get_regularization_loss(model, regularizer='L2', lmbda=1, alpha=1, alpha_pri
 
     return regularization_loss
 
+# note target sparsity is MAX PERCENTAGE of weights remaining at the end of training
+# parser_args.prune_rate is a fraction i.e; 1/100*percentage
+def get_prune_rate(target_sparsity=0.5, iter_period=5):
+    print("Computing prune_rate for target_sparsity {} with iter_period {}".format(target_sparsity, iter_period))
+    max_epochs = parser_args.epochs
+    num_prune_iterations = np.floor((max_epochs-1)/iter_period)
+    # if algo is HC, iter_HC or anything that uses prune() then, prune_rate represents number of weights to prune
+    prune_rate = 1 - np.exp(np.log(target_sparsity/100)/num_prune_iterations)
+    return prune_rate
 
 #### Functions used for greedy pruning ####
 def get_sparsity(model):

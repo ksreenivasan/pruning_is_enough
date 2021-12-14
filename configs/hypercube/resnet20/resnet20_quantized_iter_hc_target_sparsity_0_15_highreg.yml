@@ -1,4 +1,4 @@
-subfolder: target_sparsity_0_5
+subfolder: target_sparsity_0_15_highreg_adam
 
 # Hypercube optimization
 algo: 'hc_iter'
@@ -12,7 +12,7 @@ dataset: CIFAR10
 name: resnet20_quantized_iter_hc
 
 # ===== Learning Rate Policy ======== #
-optimizer: sgd
+optimizer: adam
 lr: 0.1 #0.01
 lr_policy: cosine_lr #constant_lr #multistep_lr
 fine_tune_lr: 0.01
@@ -30,7 +30,8 @@ bn_type: NonAffineBatchNorm
 freeze_weights: True
 prune_type: BottomK
 # enter target sparsity here
-target_sparsity: 0.5
+target_sparsity: 0.154
+unflag_before_finetune: True
 init: signed_constant
 score_init: unif #skew #half #bimodal #skew # bern
 scale_fan: False #True
@@ -46,7 +47,7 @@ quantize_threshold: 0.5
 
 # ===== Regularization ===== #
 regularization: L2
-lmbda: 0.000001 # 1e-6
+lmbda: 0.0001 # 1e-4
 
 # ===== Hardware setup ===== #
 workers: 4
@@ -56,4 +57,4 @@ gpu: 0
 checkpoint_at_prune: True
 
 # ==== sanity check ==== #
-skip_sanity_checks: False
+skip_sanity_checks: True

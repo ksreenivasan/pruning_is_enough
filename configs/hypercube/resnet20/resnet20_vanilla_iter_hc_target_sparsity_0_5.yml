@@ -1,4 +1,4 @@
-subfolder: target_sparsity_0_5
+subfolder: target_sparsity_0_5_vanilla
 
 # Hypercube optimization
 algo: 'hc_iter'
@@ -41,7 +41,7 @@ noise: True
 noise_ratio: 0 
 
 # ===== Quantization ===== #
-hc_quantized: True
+hc_quantized: False
 quantize_threshold: 0.5
 
 # ===== Regularization ===== #
@@ -50,10 +50,10 @@ lmbda: 0.000001 # 1e-6
 
 # ===== Hardware setup ===== #
 workers: 4
-gpu: 0
+gpu: 2
 
 # ===== Checkpointing ===== #
 checkpoint_at_prune: True
 
 # ==== sanity check ==== #
-skip_sanity_checks: False
+skip_sanity_checks: True

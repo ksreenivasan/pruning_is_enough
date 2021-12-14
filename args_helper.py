@@ -185,9 +185,9 @@ class ArgsHelper:
             help="starting epoch for iterative pruning"
         )
         parser.add_argument(
-            "--iter_period", 
-            type=int, 
-            default=20,
+            "--iter-period", 
+            type=int,
+            default=5,
             help="period [epochs] for iterative pruning"
         )
         parser.add_argument(
@@ -380,8 +380,8 @@ class ArgsHelper:
             default=None,
             help="Sample Baseline Subnet Init",
         )
-
-        # this is an argument that is relevant mainly for EP.
+        # represents percentage of weights THAT REMAIN each time ep, global_ep
+        # whereas it represents number of weights TO PRUNE when calling prune()
         parser.add_argument(
             "--prune-rate",
             default=0.5,
@@ -820,34 +820,34 @@ class ArgsHelper:
             help="Enable this to use bottomK on forward for HC"
         )
         parser.add_argument(
-            "--fast-sparse",
+            "--target-sparsity",
+            default=0.5,
+            help="decides max percentage of weights that remain at the end of training",
+            type=float,
+        )
+        parser.add_argument(
+            "--lam_finetune_loss",
+            type=float,
+            default=-1,
+            help="lambda for finetune loss "
+        )
+        parser.add_argument(
+            "--num_step_finetune",
+            type=int,
+            default=10,
+            help="number of steps to check finetune loss "
+        )
+        parser.add_argument(
+            "--unflag-before-finetune",
             action="store_true",
             default=False,
-            help="Enable this for 300-epochs for fine-tuning"
+            help="Enable this to unprune weights if possible, before fine-tune"
         )
         parser.add_argument(
-            "--unif-prune",
-            action="store_true",
-            default=True,
-            help="disable for non uniform pruning rates"
-        )
-        parser.add_argument(
-            "--finetune-standard",
+            "--override-prune-rate",
             action="store_true",
             default=False,
-            help="True mean 150 epochs finetuning nomatter how many epochs for pruning"
-        )
-        parser.add_argument(
-            '--PRs', #pruning rates
-            default=None,
-            type=str,
-            help='for each number in PR it will start at the corresponding epoch-pr'
-        )
-        parser.add_argument(
-            '--epoch-pr', #pruning rates
-            default=None,
-            type=str,
-            help='this goes in tandum with PRs, for each number in epoch that is when the corresponding PR starts'
+            help="Enable this to specify prune-rate manually"
         )
 
         if jupyter_mode:

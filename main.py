@@ -103,49 +103,12 @@ def main_worker(gpu, ngpus_per_node):
     # Save the initial model
     torch.save(model.state_dict(), result_root + 'init_model.pth')
 
-    # TODO: once this works, move it to the main_utils.py!
-    # maybe I should just hack it to use the finetune method for 3 epochs?
-    warmup_epochs = parser_args.hc_warmup
-    if parser_args.toggle_warmup:
-        # save the regularizer and disable it for warmup then swtich to weight training
-        reg = parser_args.regularization
-        parser_args.regularization = None
-        model = switch_to_wt(model, set_scores_to_one=True)
-        # optimizer needs to be tied to the correct parameters
-        optimizer = get_optimizer(parser_args, model)
-        scheduler = get_scheduler(optimizer, parser_args.lr_policy)
-        for warmup in range(0,warmup_epochs):
-            print('warm-up epoch', warmup)
-            train_acc1, train_acc5, train_acc10, reg_loss = train(
-                data.train_loader, model, criterion, optimizer, warmup, parser_args, writer=writer
-            )
-            acc1, acc5, acc10 = validate(data.val_loader, model, criterion, parser_args, writer, warmup)
-            # for reporting accuracy in the CSV for debug purpose
-            epoch_list.append(warmup)
-            test_acc_before_round_list.append(-1)
-            test_acc_list.append(acc1)
-            reg_loss_list.append(reg_loss)
-            # calcualte sparsity for each epoch -- do we expect this to be 100 or 50? currently 50
-            cp_model = round_model(model, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio, rank=parser_args.gpu)
-            avg_sparsity = get_model_sparsity(cp_model)
-            model_sparsity_list.append(avg_sparsity)
-            results_df = pd.DataFrame({'epoch': epoch_list, 'test_acc_before_rounding': test_acc_before_round_list,'test_acc': test_acc_list,
-                        'regularization_loss': reg_loss_list, 'model_sparsity': model_sparsity_list})
-
-            if parser_args.results_filename:
-                results_filename = parser_args.results_filename
-            else:
-                results_filename = result_root + 'acc_and_sparsity.csv' 
-
-            print("Writing results into: {}".format(results_filename))
-            results_df.to_csv(results_filename, index=False)
-        # enable regularization for HC and switch back to pruning
-        parser_args.regularization = reg
-        model = switch_to_pruning(model, reinit_scores=True)
-        # optimizer needs to be tied to the correct parameters
-        optimizer = get_optimizer(parser_args, model)
-        scheduler = get_scheduler(optimizer, parser_args.lr_policy) 
-
+    # compute prune_rate to reach target_sparsity
+    if not parser_args.override_prune_rate:
+        parser_args.prune_rate = get_prune_rate(parser_args.target_sparsity, parser_args.iter_period)
+        print("Setting prune_rate to {}".format(parser_args.prune_rate))
+    else:
+        print("Overriding prune_rate to {}".format(parser_args.prune_rate))
 
     # Start training
     for epoch in range(parser_args.start_epoch, parser_args.epochs):

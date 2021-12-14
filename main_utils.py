@@ -36,7 +36,8 @@ from utils.net_utils import (
     get_model_sparsity,
     prune,
     redraw,
-    get_layers
+    get_layers,
+    get_prune_rate,
 )
 from utils.schedulers import get_scheduler
 from utils.utils import set_seed, plot_histogram_scores
@@ -231,8 +232,15 @@ def finetune(model, parser_args, data, criterion, old_epoch_list, old_test_acc_b
     if parser_args.bottom_k_on_forward:
         prune(model, update_scores=True)
     elif parser_args.algo in ['hc', 'hc_iter']:
-        # round the score (in the model itself)
-        model = round_model(model, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio, rank=parser_args.gpu)    
+        if parser_args.unflag_before_finetune:
+            # want to ensure that all weights are available to train, except for those that have been pruned
+            model = round_model(model, round_scheme="all_ones", noise=parser_args.noise, ratio=parser_args.noise_ratio, rank=parser_args.gpu)
+            # check sparsity
+            post_round_sparsity = get_model_sparsity(model)
+        else:
+            # round the score (in the model itself)
+            model = round_model(model, round_scheme=parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio, rank=parser_args.gpu)
+            post_round_sparsity = get_model_sparsity(model)
 
     # apply reinit/shuffling masks/weights (if necessary)
     model = redraw(model, shuffle=shuffle, reinit=reinit, invert=invert, chg_mask=chg_mask, chg_weight=chg_weight)
@@ -257,7 +265,7 @@ def finetune(model, parser_args, data, criterion, old_epoch_list, old_test_acc_b
 
     # check the performance of loaded model (after rounding)
     acc1, acc5, acc10 = validate(data.val_loader, model, criterion, parser_args, writer, parser_args.epochs-1)
-    avg_sparsity = model_sparsity_list[-1] # copy & paste the sparsity of prev. epoch
+    avg_sparsity = post_round_sparsity
     epoch_list.append(parser_args.epochs-1)
     test_acc_before_round_list.append(-1)
     test_acc_list.append(acc1)
@@ -349,9 +357,11 @@ def get_idty_str(parser_args):
     width_str = parser_args.width
     seed_str = parser_args.seed + parser_args.trial_num - 1
     run_idx_str = parser_args.run_idx
-    idty_str = "{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_finetune_{}_fan_{}_{}_{}_width_{}_seed_{}_idx_{}".\
-    format(train_mode_str, dataset_str, model_str, algo_str, rate_str, period_str, epoch_str, reg_str, reg_lmbda,
-        opt_str, policy_str, lr_str, lr_gamma, lr_adj, finetune_lr_str, fan_str, w_str, s_str,
+    lam_ft_str = parser_args.lam_finetune_loss
+    n_step_ft_str = parser_args.num_step_finetune
+    idty_str = "{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_finetune_{}_MAML_{}_{}_fan_{}_{}_{}_width_{}_seed_{}_idx_{}".\
+        format(train_mode_str, dataset_str, model_str, algo_str, rate_str, period_str, reg_str, reg_lmbda,
+        opt_str, policy_str, lr_str, lr_gamma, lr_adj, finetune_lr_str, lam_ft_str, n_step_ft_str, fan_str, w_str, s_str,
         width_str, seed_str, run_idx_str).replace(".", "_")
      # idty_str = "{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_finetune_{}_fan_{}_{}_{}_width_{}_seed_{}_idx_{}".\
      #  format(train_mode_str, dataset_str, model_str, algo_str, rate_str, period_str, reg_str, reg_lmbda,
@@ -418,6 +428,7 @@ def compare_rounding(validate, data_loader, model, criterion, parser_args, resul
 def switch_to_pruning(model, reinit_scores=False):
     print('Switching to weight training by switching off requires_grad for scores and switching it on for weights.')
 
+    parser_args.lam_finetune_loss = 0   # this is for the case considering finetune loss
     for name, params in model.named_parameters():
         # make sure param_name ends with .weight or .bias
         if re.match('.*\.weight', name):
