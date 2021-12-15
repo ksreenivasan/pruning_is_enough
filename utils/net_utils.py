@@ -345,6 +345,41 @@ def prune(model, update_thresholds_only=False, update_scores=False):
         agg_bias_scores = torch.cat(active_bias_scores_list) if parser_args.bias else torch.tensor([])
 
         scores_threshold = torch.sort(torch.abs(agg_scores)).values[number_of_weights_to_prune-1].item()
+        if parser_args.strict_prune:
+            # check whether score_threshold is unique
+            flag_collision = True if torch.sort(torch.abs(agg_scores)).values[number_of_weights_to_prune].item() == scores_threshold else False
+            if flag_collision:  # then may prune more than needed
+                # first find where are these repeated weights
+                num_equal_list = []  # for each layer, the number of weights == scores_threshold
+                num_smaller_sum = 0.  # record the number of weights that is strictly < threshold, so for sure it will be pruned
+                num_larger_list = []  # for each layer, the number of weights > scores_threshold
+                for layer in (conv_layers + linear_layers):
+                    active_scores = (layer.scores.data[layer.flag.data == 1]).clone()
+                    num_equal= (active_scores == scores_threshold).sum()
+                    num_smaller = (active_scores < scores_threshold).sum()
+                    num_larger = (active_scores > scores_threshold).sum()
+                    num_equal_list.append(num_equal)
+                    num_smaller_sum += num_smaller
+                    num_larger_list.append(num_larger)
+                num_remain_pruned = number_of_weights_to_prune - num_smaller_sum  # need to prune this many weights from repeated weights
+                # need to somehow generate a list of integers, sum = num_remain_pruned, each < num_collision_presence_list[i]
+                assert sum(num_equal_list) > num_remain_pruned
+                # layer i with large num_remain_pruned[i] has large probability to prune the repeat weights.
+                # for now just write deterministically: first prune the layer with large num_remain_pruned
+                num_larger_array = np.array(num_larger_list)
+                sort_index = np.argsort(num_larger_array)
+
+                num_prune_array = np.zeros_like(num_larger_array)
+                so_far_pruned = 0
+                for idx in range(sort_index.shape[0]):
+                    which_layer = sort_index[idx]
+                    so_far_pruned += num_equal_list[which_layer]
+                    if so_far_pruned > num_remain_pruned:
+                        num_prune_array[idx] = num_equal_list[which_layer] - (so_far_pruned - num_remain_pruned)
+                        break  # so that all the remain layer get zero weight pruned.
+                    else:
+                        num_prune_array[idx] = num_equal_list[which_layer]
+
 
         if parser_args.bias:
             bias_scores_threshold = torch.sort(torch.abs(agg_bias_scores)).values[number_of_biases_to_prune-1].item()
@@ -358,8 +393,27 @@ def prune(model, update_thresholds_only=False, update_scores=False):
                 layer.bias_scores_prune_threshold = bias_scores_threshold
 
         else:
+            idx = 0
             for layer in (conv_layers + linear_layers):
-                layer.flag.data = (layer.flag.data + torch.gt(layer.scores, torch.ones_like(layer.scores)*scores_threshold).int() == 2).int()
+                if not parser_args.strict_prune:
+                    # 1 if this weight is alive
+                    layer.flag.data = (layer.flag.data + torch.gt(layer.scores, torch.ones_like(layer.scores)*scores_threshold).int() == 2).int()
+                elif flag_collision:  # now really needs to pay attention to the repeated weights == threshold
+                    # first prune strict small weight
+                    layer.flag.data = (layer.flag.data + torch.ge(layer.scores, torch.ones_like(layer.scores)*scores_threshold).int() == 2).int()
+                    # for the equal weight
+                    num_prune_this_layer = num_prune_array[idx]
+                    idx += 1
+                    idx_equal = (layer.flag.data + torch.eq(layer.scores, torch.ones_like(layer.scores)*scores_threshold).int() == 2).int().flatten()
+                    idx_available_to_prune = idx_equal.nonzero()  # [n, 1]
+                    idx_perm = torch.randperm(idx_available_to_prune.shape[0])
+                    idx_available_to_prune_perm = idx_available_to_prune[idx_perm]
+                    idx_prune = idx_available_to_prune_perm[:num_prune_this_layer]
+                    for tmp in range(idx_prune.shape):
+                        idx_equal[tmp] = 0  # prune this weight
+                    idx_equal = idx_equal.reshape(layer.flag.data.shape)
+                    layer.flag.data = layer.flag.data * idx_equal  # mask out those equal weight's flag from 1 to 0
+                    
                 if update_scores:
                     layer.scores.data = layer.scores.data * layer.flag.data
                 if parser_args.bias:
