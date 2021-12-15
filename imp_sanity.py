@@ -26,9 +26,11 @@ from utils.utils import set_seed
 from utils.schedulers import get_scheduler
 
 
-def redraw(model, mask, device, shuffle=False, reinit=False, chg_mask=False, chg_weight=False):
+def redraw(model, mask, mask_bias, device, shuffle=False, reinit=False, chg_mask=False, chg_weight=False):
     cp_model = copy.deepcopy(model)
     cp_mask = copy.deepcopy(mask)
+    if parser_args.bias:
+        cp_mask_bias = copy.deepcopy(mask_bias)
     for name, param in cp_model.named_parameters():
         if name in cp_model.prunable_layer_names:
             weight = param.data.detach()
@@ -47,7 +49,33 @@ def redraw(model, mask, device, shuffle=False, reinit=False, chg_mask=False, chg
                 pass
             else:
                 raise NotImplementedError
-            param.data = weight * mask[()][name].to(device).float()
+            if parser_args.imp_resume_round > 0:
+                param.data = weight * mask[()][name].to(device).float()
+            else:
+                param.data = weight
+    if parser_args.bias:
+        for name, param in cp_model.named_parameters():
+            if name in cp_model.prunable_biases:
+                weight = param.data.detach()
+                if shuffle:
+                    if chg_mask:
+                        tmp_mask = cp_mask[()][name]
+                        idx = torch.randperm(tmp_mask.nelement())
+                        tmp_mask = tmp_mask.view(-1)[idx].view(tmp_mask.size())
+                        mask[()][name] = tmp_mask
+                    if chg_weight:
+                        idx = torch.randperm(weight.nelement())
+                        weight = weight.view(-1)[idx].view(weight.size())
+                elif reinit:
+                    init.kaiming_normal_(weight)
+                elif not (shuffle and reinit):
+                    pass
+                else:
+                    raise NotImplementedError
+                if parser_args.imp_resume_round > 0:
+                    param.data = weight * mask[()][name].to(device).float()
+                else:
+                    param.data = weight
     return cp_model, mask
 
 
@@ -75,14 +103,16 @@ def sanity_check(parser_args, data, device, shuffle=False, reinit=False, chg_mas
     if parser_args.imp_resume_round > 0:
         PATH_mask = "results/{}/round_{}_mask.npy".format(parser_args.subfolder, parser_args.imp_resume_round)
         mask = np.load(PATH_mask, allow_pickle=True)
+        if parser_args.bias:
+            PATH_mask_bias = os.path.join(dest_dir, "round_{}_mask_bias.npy".format(idx_round))
+            mask_bias = np.load(PATH_mask_bias, allow_pickle=True)
+        else:
+            mask_bias = None
     else:
-        PATH_mask = "results/{}/round_1_mask.npy".format(parser_args.subfolder)  # full 1 mask
-        mask = np.load(PATH_mask, allow_pickle=True)
-        for name in mask[()].keys():
-            mask[()][name] = torch.ones_like(mask[()][name])
+        mask, mask_bias = Mask.ones_like(model)
 
     # make change to mask or model
-    model, mask = redraw(model, mask, device, shuffle, reinit, chg_mask, chg_weight)
+    model, mask = redraw(model, mask, mask_bias, device, shuffle, reinit, chg_mask, chg_weight)
 
     # Optimizer and criterion
     criterion = nn.CrossEntropyLoss().to(device)
@@ -166,7 +196,9 @@ def sanity_check(parser_args, data, device, shuffle=False, reinit=False, chg_mas
             for name, param in model.named_parameters():
                 if name in model.prunable_layer_names:
                     tensor = param.data.detach()
-                    param.data = tensor * mask[()][name].to(device).float()
+                    if parser_args.imp_resume_round > 0:
+                        param.data = tensor * mask[()][name].to(device).float()
+                        
 
         test_acc = test(model, device, data.val_loader)
         print('Train Epoch: {}/{} Loss: {:.4f} Test Acc: {:.2f}'.format(idx_epoch, parser_args.epochs, train_loss.item(), test_acc))
@@ -188,13 +220,13 @@ def main():
     data = get_dataset(parser_args)
 
     # finetune: all False
-    sanity_check(parser_args, data, device, shuffle=False, reinit=False, chg_mask=False, chg_weight=False)
+    # sanity_check(parser_args, data, device, shuffle=False, reinit=False, chg_mask=False, chg_weight=False)
     # reinit
-    # sanity_check(parser_args, train_loader, test_loader, device, shuffle=False, reinit=True, chg_mask=False, chg_weight=False)
+    sanity_check(parser_args, data, device, shuffle=False, reinit=True, chg_mask=False, chg_weight=False)
     # shuffle mask
-    # sanity_check(parser_args, train_loader, test_loader, device, shuffle=True, reinit=False, chg_mask=True, chg_weight=False)
+    sanity_check(parser_args, data, device, shuffle=True, reinit=False, chg_mask=True, chg_weight=False)
     # shuffle weights
-    # sanity_check(parser_args, train_loader, test_loader, device, shuffle=True, reinit=False, chg_mask=False, chg_weight=True)
+    sanity_check(parser_args, data, device, shuffle=True, reinit=False, chg_mask=False, chg_weight=True)
 
 
 

@@ -40,10 +40,20 @@ def IMP_train(parser_args, data, device):
     use_amp = True
 
     assert parser_args.imp_rewind_iter // 391 < parser_args.iter_period  # NOTE: hard code, needs to modify later
+    dest_dir = os.path.join("results", parser_args.subfolder)
+    if not os.path.exists(dest_dir):
+        os.mkdir(dest_dir)
 
     # weight initialization
     model = get_model(parser_args)
     model = switch_to_wt(model).to(device)
+
+    if parser_args.imp_rewind_iter == 0:  # handle the case where rewind to initial weights
+        rewind_state_dict = copy.deepcopy(model.state_dict())
+        PATH_model = os.path.join(dest_dir, "Liu_checkpoint_model_correct.pth")
+        torch.save({
+                    'model_state_dict': model.state_dict(),
+        }, PATH_model)
 
     n_round = parser_args.epochs // parser_args.iter_period  # number of round (number of pruning happens)
     n_epoch = parser_args.iter_period  # number of epoch per round
@@ -55,9 +65,6 @@ def IMP_train(parser_args, data, device):
     scheduler = get_scheduler(optimizer, parser_args.lr_policy, milestones=[80, 120], gamma=parser_args.lr_gamma)
 
     scaler = torch.cuda.amp.GradScaler(enabled=use_amp)
-    dest_dir = os.path.join("results", parser_args.subfolder)
-    if not os.path.exists(dest_dir):
-        os.mkdir(dest_dir)
 
 
     # ======================================
@@ -182,6 +189,10 @@ def IMP_train(parser_args, data, device):
             PATH_mask = os.path.join(dest_dir, "round_{}_mask.npy".format(idx_round))
             np.save(PATH_mask, mask, allow_pickle=True)
 
+            if parser_args.bias:
+                PATH_mask_bias = os.path.join(dest_dir, "round_{}_mask_bias.npy".format(idx_round))
+                np.save(PATH_mask_bias, mask_bias, allow_pickle=True)
+
         
         for idx_epoch in range(n_epoch):  # in total will run total_iter # of iterations, so total_epoch is not accurate
             # Training
@@ -209,8 +220,9 @@ def IMP_train(parser_args, data, device):
                             tensor = param.data.detach()
                             param.data = tensor * mask[name].to(device).float()
                 if idx_round == 0 and counter == parser_args.imp_rewind_iter:
-                    rewind_state_dict = copy.deepcopy(model.state_dict())
-                    PATH_model = os.path.join(dest_dir, "Liu_checkpoint_model_correct.pth".format(idx_round))
+                    PATH_model = os.path.join(dest_dir, "Liu_checkpoint_model_correct.pth")
+                    assert counter > 0
+                    rewind_state_dict = copy.deepcopy(model.state_dict())                    
                     torch.save({
                                 'model_state_dict': model.state_dict(),
                                 'optimizer_state_dict': optimizer.state_dict()
