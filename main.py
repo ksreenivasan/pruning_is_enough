@@ -97,8 +97,11 @@ def main_worker(gpu, ngpus_per_node):
     torch.save(model.state_dict(), result_root + 'init_model.pth')
 
     # compute prune_rate to reach target_sparsity
-    parser_args.prune_rate = get_prune_rate(parser_args.target_sparsity, parser_args.iter_period)
-    print("Setting prune_rate to {}".format(parser_args.prune_rate))
+    if not parser_args.override_prune_rate:
+        parser_args.prune_rate = get_prune_rate(parser_args.target_sparsity, parser_args.iter_period)
+        print("Setting prune_rate to {}".format(parser_args.prune_rate))
+    else:
+        print("Overriding prune_rate to {}".format(parser_args.prune_rate))
 
     # Start training
     for epoch in range(parser_args.start_epoch, parser_args.epochs):

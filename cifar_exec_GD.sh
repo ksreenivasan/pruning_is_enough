@@ -9,12 +9,18 @@
 #python main.py --config configs/hypercube/resnet18/resnet18_sc_hypercube_iter_reg_evaluate.yml 
 
 
+
+
 ### ResNet-20
 #python main.py --config configs/ep/resnet20/resnet20_sc_ep.yml 
 #python main.py --config configs/ep/resnet20/resnet20_sc_global_ep.yml 
 #python main.py --config config_current_best.yml --run_idx 0
 
 # Add finetune-loss
+#python main.py --config config_current_best.yml --run_idx 1
+
+
+## testing adding finetune loss
 #python main.py --config config1.yml --run_idx 1 #  
 #python main.py --config config2.yml --run_idx 2
 #python main.py --config configs/hypercube/resnet20/resnet20_quantized_iter_hc_0_5_MAML_1.yml --run_idx 1

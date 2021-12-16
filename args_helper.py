@@ -848,6 +848,12 @@ class ArgsHelper:
             type=str,
             default='one_flip',
             help="Type of random rounding : one_flip | majority | best "
+				)
+        parser.add_argument(
+            "--override-prune-rate",
+            action="store_true",
+            default=False,
+            help="Enable this to specify prune-rate manually"
         )
 
         if jupyter_mode:
