@@ -29,12 +29,24 @@
 #python main.py --config configs/hypercube/resnet20/resnet20_quantized_iter_hc_0_5_MAML_0.yml --run_idx 3
 
 
-# Random rounding
+# Random rounding (majority/greedy, num_coin_flips, train, test)
 #python main.py --config config_rr1.yml --run_idx 1
 #python main.py --config config_rr2.yml --run_idx 2
+python main.py --config configs/hypercube/resnet20/random_rounding/target_sparsity_1_4_naive_rounding.yml
 
+# python main.py --config configs/hypercube/resnet20/random_rounding/target_sparsity_1_4_random_rounding_majority_1_train_only.yml
+# python main.py --config configs/hypercube/resnet20/random_rounding/target_sparsity_1_4_random_rounding_majority_5_train_only.yml
+# python main.py --config configs/hypercube/resnet20/random_rounding/target_sparsity_1_4_random_rounding_majority_15_train_only.yml
 
+# python main.py --config configs/hypercube/resnet20/random_rounding/target_sparsity_1_4_random_rounding_majority_1_train_and_test.yml
+# python main.py --config configs/hypercube/resnet20/random_rounding/target_sparsity_1_4_random_rounding_majority_5_train_and_test.yml
+# python main.py --config configs/hypercube/resnet20/random_rounding/target_sparsity_1_4_random_rounding_majority_15_train_and_test.yml
 
+# python main.py --config configs/hypercube/resnet20/random_rounding/target_sparsity_1_4_random_rounding_greedy_5_train_only.yml
+# python main.py --config configs/hypercube/resnet20/random_rounding/target_sparsity_1_4_random_rounding_greedy_15_train_only.yml
+
+# python main.py --config configs/hypercube/resnet20/random_rounding/target_sparsity_1_4_random_rounding_greedy_5_train_and_test.yml
+# python main.py --config configs/hypercube/resnet20/random_rounding/target_sparsity_1_4_random_rounding_greedy_15_train_and_test.yml
 
 
 
