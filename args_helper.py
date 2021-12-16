@@ -206,9 +206,24 @@ class ArgsHelper:
             "--round",
             type=str,
             default='naive',
-            help='rounding technique to use |naive|prob|pb|'
+            help='rounding technique to use |naive|prob|pb|majority|greedy|'
             # naive: threshold(0.5), prob: probabilistic rounding, pb: pseudo-boolean paper's choice (RoundDown)
+            # round scheme for test (use same scheme for train)
         )
+        parser.add_argument(
+            "--random_round_train",
+            action="store_true",
+            default=False,
+            help="randomized rounding for hc (at train)"
+        )
+        parser.add_argument(
+            "--num_coin_flip_round",
+            type=int,
+            default=5,
+            help="Number of random coin flipping: 1 | 5 | 15 "
+        )
+
+
         parser.add_argument(
             '--noise',
             action='store_true',
@@ -251,19 +266,19 @@ class ArgsHelper:
             type=int,
             help="rounding period for hypercube"
         )
-        parser.add_argument(
-            "--num-round",
-            type=int,
-            default=1,
-            help='number of different models testing in rounding'
-        )
+        # parser.add_argument(
+        #     "--num-round",
+        #     type=int,
+        #     default=1,
+        #     help='number of different models testing in rounding'
+        # )
         # do we need it?
-        parser.add_argument(
-            "--num-test",
-            type=int,
-            default=1,
-            help='number of different models testing in prob rounding'
-        )
+        # parser.add_argument(
+        #     "--num-test",
+        #     type=int,
+        #     default=1,
+        #     help='number of different models testing in prob rounding'
+        # )
         parser.add_argument(
             "--save-model",
             action='store_true',
@@ -837,18 +852,8 @@ class ArgsHelper:
             default=False,
             help="Enable this to unprune weights if possible, before fine-tune"
         )
-        parser.add_argument(
-            "--random_round",
-            action="store_true",
-            default=False,
-            help="randomized rounding for hc"
-        )
-        parser.add_argument(
-            "--random_round_type",
-            type=str,
-            default='one_flip',
-            help="Type of random rounding : one_flip | majority | best "
-				)
+
+
         parser.add_argument(
             "--override-prune-rate",
             action="store_true",

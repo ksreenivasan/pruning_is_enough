@@ -268,6 +268,13 @@ def round_model(model, round_scheme, noise=False, ratio=0.0, rank=None):
                     params.data = torch.gt(params.data, torch.ones_like(params.data)*0.5).int().float()
             elif round_scheme == 'all_ones':
                 params.data = torch.ones_like(params.data)
+            elif round_scheme == 'majority':
+                pdb.set_trace()
+                temp = torch.zeros_like(params.data)
+                for flip_iter in range(parser_args.num_coin_flip_round):
+                    temp += torch.bernoulli(torch.clamp(params.data, 0.0, 1.0))
+                temp = torch.gt(temp, torch.ones_like(temp)*np.floor(parser_args.num_coin_flip_round/2)).float() 
+                params.data = temp
             else:
                 print("INVALID ROUNDING")
                 print("EXITING")  

@@ -40,7 +40,6 @@ scale_fan: False #True
 
 # ===== Rounding ===== #
 round: majority 
-random_round_train: True
 num_coin_flip_round: 5
 noise: True
 noise_ratio: 0 
