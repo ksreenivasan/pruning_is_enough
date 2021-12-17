@@ -170,7 +170,7 @@ class SubnetConv(nn.Conv2d):
     def clamped_scores(self):
         return self.scores.abs()
 
-    def forward(self, x, finetuned=False):
+    def forward(self, x):
         if parser_args.algo in ['hc', 'hc_iter']:
             # don't need a mask here. the scores are directly multiplied with weights
             if parser_args.differentiate_clamp:
@@ -195,13 +195,14 @@ class SubnetConv(nn.Conv2d):
         
         if parser_args.algo in ['imp']:
             # no STE, no subnet. Mask is handled outside
-            if finetuned:
-                w = self.weight
+            if parser_args.finetuned:
+                print("Are we sure we are using finetuned loss for imp?")
+                w = self.weight_ft
             else:
                 w = self.weight
             b = self.bias
         else:
-            if finetuned:
+            if parser_args.finetuned:
                 w = self.weight_ft * subnet    
             else:
                 w = self.weight * subnet

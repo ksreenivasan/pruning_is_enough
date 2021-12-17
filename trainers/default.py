@@ -93,7 +93,9 @@ def train(train_loader, model, criterion, optimizer, epoch, args, writer):
 				m_to.weight_ft.data = m_from.weight.data
 			
 			# compute loss on the finetuned weights
-			finetune_loss = args.lam_finetune_loss * criterion(model(images, finetune=True), data)
+			parser_args.finetuned = True
+			finetune_loss = args.lam_finetune_loss * criterion(model(images), data)
+			parser_args.finetuned = False
 			print('original loss: ', loss)
 			print('finetune loss: ', finetune_loss)
 
