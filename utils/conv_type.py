@@ -115,6 +115,9 @@ class SubnetConv(nn.Conv2d):
             # dummy variable just so other things don't break
             self.bias_scores = nn.Parameter(torch.Tensor(1))
         
+        # storage for finetuned weights
+        self.weight_ft = nn.Parameter(torch.zeros(self.weight.size()))
+
         # prune scores below this for global EP in bottom-k
         self.scores_prune_threshold = -np.inf
         self.bias_scores_prune_threshold = -np.inf
@@ -150,6 +153,7 @@ class SubnetConv(nn.Conv2d):
         if parser_args.freeze_weights:
             # NOTE: turn the gradient on the weights off
             self.weight.requires_grad = False
+            self.weight_ft.requires_grad = False
             self.flag.requires_grad = False
             self.bias_flag.requires_grad = False
             if parser_args.bias:
@@ -166,7 +170,7 @@ class SubnetConv(nn.Conv2d):
     def clamped_scores(self):
         return self.scores.abs()
 
-    def forward(self, x):
+    def forward(self, x, finetuned=False):
         if parser_args.algo in ['hc', 'hc_iter']:
             # don't need a mask here. the scores are directly multiplied with weights
             if parser_args.differentiate_clamp:
@@ -191,10 +195,16 @@ class SubnetConv(nn.Conv2d):
         
         if parser_args.algo in ['imp']:
             # no STE, no subnet. Mask is handled outside
-            w = self.weight
+            if finetuned:
+                w = self.weight
+            else:
+                w = self.weight
             b = self.bias
         else:
-            w = self.weight * subnet
+            if finetuned:
+                w = self.weight_ft * subnet    
+            else:
+                w = self.weight * subnet
             if parser_args.bias:
                 b = self.bias * bias_subnet
             else:
