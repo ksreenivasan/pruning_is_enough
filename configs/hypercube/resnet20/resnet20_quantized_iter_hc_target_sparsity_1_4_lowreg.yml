@@ -1,11 +1,8 @@
-subfolder: quantize_0_5_finetune_loss_test
-lam_finetune_loss: 100
-num_step_finetune: 10
+subfolder: target_sparsity_1_4_lowreg
 
 # Hypercube optimization
 algo: 'hc_iter'
-# effectively prune once in the entire process
-iter_period: 100
+iter_period: 5
 
 # Architecture
 arch: resnet20
@@ -22,7 +19,7 @@ fine_tune_lr: 0.01
 fine_tune_lr_policy: multistep_lr
 
 # ===== Network training config ===== #
-epochs: 150 
+epochs: 150
 wd: 0.0 
 momentum: 0.9
 batch_size: 128
@@ -33,7 +30,9 @@ bn_type: NonAffineBatchNorm
 freeze_weights: True
 prune_type: BottomK
 # enter target sparsity here
-prune_rate: 0.982 #0.995
+target_sparsity: 1.4
+# decide if you want to "unflag"
+unflag_before_finetune: True
 init: signed_constant
 score_init: unif #skew #half #bimodal #skew # bern
 scale_fan: False #True
@@ -49,14 +48,14 @@ quantize_threshold: 0.5
 
 # ===== Regularization ===== #
 regularization: L2
-lmbda: 0 #0.00005 # 0.01 #0.0001 #0.000001
+lmbda: 0.000001 # 1e-6
 
 # ===== Hardware setup ===== #
 workers: 4
-gpu: 1
+gpu: 2
 
 # ===== Checkpointing ===== #
 checkpoint_at_prune: True
 
 # ==== sanity check ==== #
-skip_sanity_checks: False
+skip_sanity_checks: True
