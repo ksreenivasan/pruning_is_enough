@@ -8,6 +8,8 @@ from utils.eval_utils import accuracy
 from utils.logging import AverageMeter, ProgressMeter
 from utils.net_utils import get_regularization_loss, prune, get_layers
 
+from main_utils import get_model
+
 from torch import optim
 
 __all__ = ["train", "validate", "modifier"]
@@ -62,7 +64,8 @@ def train(train_loader, model, criterion, optimizer, epoch, args, writer):
 
         if args.lam_finetune_loss > 0:
 
-            model2 = copy.deepcopy(model)
+            #model2 = copy.deepcopy(model)
+            model2 = get_model(args)
             #delta_list = {}
             conv, linear = get_layers(arch=args.arch, model=model)
             conv2, linear2 = get_layers(arch=args.arch, model=model2)
@@ -73,11 +76,12 @@ def train(train_loader, model, criterion, optimizer, epoch, args, writer):
             # clone parameters from model
             for m_from, m_to in zip(layer_list, layer_list2):#model.modules(), model2.modules()):
                 m_to.scores.data = m_from.scores.data.clone()
-                m_to.flag.data = m_from.flag.data.clone()
+                m_to.flag.data = m_from.flag.data
+                m_to.weight.data = m_from.weight.data
             
             # turn on gradient for weight, turn off gradient for mask
             for name, params in model2.named_parameters():
-                print(name)
+                #print(name)
                 if "weight" in name:
                     params.requires_grad=True
                 elif "score" in name:
@@ -92,8 +96,10 @@ def train(train_loader, model, criterion, optimizer, epoch, args, writer):
                 loss_updated_model.backward()#retain_graph=True)
                 meta_optimizer.step()
 
+            
+
             # go back to original setting
-            for name, params in model.named_parameters():
+            for name, params in model2.named_parameters():
                 if "weight" in name:
                     params.requires_grad=False
                 elif "score" in name:
@@ -116,10 +122,10 @@ def train(train_loader, model, criterion, optimizer, epoch, args, writer):
             '''
 
             finetune_loss = args.lam_finetune_loss * loss_updated_model
-            print('original loss: ', loss)
-            print('finetune loss: ', finetune_loss)
+            #print('original loss: ', loss)
+            #print('finetune loss: ', finetune_loss)
 
-            
+            #''' 
             print('For model2')
             for name, params in model2.named_parameters():
                 if params.requires_grad:
@@ -131,14 +137,14 @@ def train(train_loader, model, criterion, optimizer, epoch, args, writer):
             for name, params in model.named_parameters():
                 if params.requires_grad:
                     #pdb.set_trace()
-                    print(name)
-                    #grad =torch.autograd.grad(finetune_loss, params, retain_graph=True, allow_unused=True)[0].data
-                    #print(name, 'autograd(): ', (grad != torch.zeros_like(grad)).any().item())
-            
+                    #print(name)
+                    grad =torch.autograd.grad(loss, params, retain_graph=True)[0].data
+                    print(name, 'autograd(): ', (grad != torch.zeros_like(grad)).any().item())
+            #'''
 
             loss += finetune_loss
 
-            pdb.set_trace()
+            #pdb.set_trace()
 
         regularization_loss = torch.tensor(0)
         if args.regularization:
