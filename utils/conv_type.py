@@ -78,27 +78,25 @@ class GetSubnet(autograd.Function):
                 out = torch.gt(scores, torch.ones_like(scores)*scores_prune_threshold).float()
                 bias_out = torch.gt(bias_scores, torch.ones_like(bias_scores)*bias_scores_prune_threshold).float()
             else:
-                if parser_args.random_round_train:
-                    if parser_args.round == 'one_flip':
-                        out = torch.bernoulli(torch.clamp(scores, 0, 1))
-                        bias_out = torch.bernoulli(torch.clamp(bias_scores, 0, 1))
-                    elif parser_args.round == 'majority':
-                        # flip 5 coins and take dimension-wise majority voting
-                        out = torch.zeros_like(scores)
-                        bias_out = torch.zeros_like(bias_scores)
-                        for flip_iter in range(parser_args.num_coin_flip_round):
-                            out += torch.bernoulli(torch.clamp(scores, 0, 1))
-                            bias_out += torch.bernoulli(torch.clamp(bias_scores, 0, 1))
-                        out = torch.gt(out, torch.ones_like(out)*np.floor(parser_args.num_coin_flip_round/2)).float() 
-                        bias_out = torch.gt(bias_out, torch.ones_like(bias_out)*np.floor(parser_args.num_coin_flip_round/2)).float() 
-                    elif parser_args.round == 'greedy':
-                        # compute loss of 5 coin flips and take the best one (how to compute loss?) 
-                        #-> need to do outside of this function (here, just randomly pick the subnetwork, and do the comparison at outside)
-                        raise NotImplementedError
-
-                else:
+                if parser_args.round_train == 'naive':
                     out = torch.gt(scores, torch.ones_like(scores)*parser_args.quantize_threshold).float()
                     bias_out = torch.gt(bias_scores, torch.ones_like(bias_scores)*parser_args.quantize_threshold).float()
+                elif parser_args.round_train == 'one_flip':
+                    out = torch.bernoulli(torch.clamp(scores, 0, 1))
+                    bias_out = torch.bernoulli(torch.clamp(bias_scores, 0, 1))
+                elif parser_args.round_train == 'majority':
+                    # flip 5 coins and take dimension-wise majority voting
+                    out = torch.zeros_like(scores)
+                    bias_out = torch.zeros_like(bias_scores)
+                    for flip_iter in range(parser_args.num_coin_flip_round):
+                        out += torch.bernoulli(torch.clamp(scores, 0, 1))
+                        bias_out += torch.bernoulli(torch.clamp(bias_scores, 0, 1))
+                    out = torch.gt(out, torch.ones_like(out)*np.floor(parser_args.num_coin_flip_round/2)).float() 
+                    bias_out = torch.gt(bias_out, torch.ones_like(bias_out)*np.floor(parser_args.num_coin_flip_round/2)).float() 
+                elif parser_args.round_train == 'greedy':
+                    # compute loss of 5 coin flips and take the best one (how to compute loss?) 
+                    #-> need to do outside of this function (here, just randomly pick the subnetwork, and do the comparison at outside)
+                    raise NotImplementedError
 
         else:
             print("INVALID PRUNING ALGO")

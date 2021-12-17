@@ -248,14 +248,14 @@ def round_model(model, round_scheme, noise=False, ratio=0.0, rank=None):
     else:
         cp_model = copy.deepcopy(model)
     for name, params in cp_model.named_parameters():
-        if ".score" in name:
+        if ".score" in name: # or (parser_args.bias and ".bias_score" in name):
             if noise:
                 delta = torch.randn_like(params.data)*ratio
                 params.data += delta
 
             if round_scheme == 'naive':
                 params.data = torch.gt(params.data, torch.ones_like(params.data)*parser_args.quantize_threshold).int().float()
-            elif round_scheme == 'prob':
+            elif round_scheme in ['prob', 'greedy']:
                 params.data = torch.clamp(params.data, 0.0, 1.0)
                 params.data = torch.bernoulli(params.data).float()
             elif round_scheme == 'naive_prob':
@@ -269,11 +269,14 @@ def round_model(model, round_scheme, noise=False, ratio=0.0, rank=None):
             elif round_scheme == 'all_ones':
                 params.data = torch.ones_like(params.data)
             elif round_scheme == 'majority':
-                pdb.set_trace()
+                # just for debug
+                #params.data = torch.gt(params.data, torch.ones_like(params.data)*parser_args.quantize_threshold).int().float()
+                
+                #pdb.set_trace()
                 temp = torch.zeros_like(params.data)
                 for flip_iter in range(parser_args.num_coin_flip_round):
                     temp += torch.bernoulli(torch.clamp(params.data, 0.0, 1.0))
-                temp = torch.gt(temp, torch.ones_like(temp)*np.floor(parser_args.num_coin_flip_round/2)).float() 
+                temp = torch.gt(temp, torch.ones_like(temp)*np.floor(parser_args.num_coin_flip_round/2)).int().float() 
                 params.data = temp
             else:
                 print("INVALID ROUNDING")

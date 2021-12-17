@@ -133,13 +133,21 @@ def main_worker(gpu, ngpus_per_node):
         if parser_args.algo in ['hc', 'hc_iter']:
             br_acc1, br_acc5, br_acc10 = validate(data.val_loader, model, criterion, parser_args, writer, epoch) # before rounding
             print('Acc before rounding: {}'.format(br_acc1))
-            acc_avg = 0
-            for num_trial in range(parser_args.num_test):
+            if parser_args.round == 'greedy':
+                best_train_acc = 0
+                best_model = None
+                for trial_idx in range(parser_args.num_coin_flip_round):
+                    cp_model = round_model(model, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio, rank=parser_args.gpu)
+                    train_acc1, _, _ = validate(data.train_loader, cp_model, criterion, parser_args, writer, epoch)
+                    if train_acc1 > best_train_acc:
+                        best_train_acc = train_acc1
+                        best_model = cp_model
+                    print('trial_idx: {}, best_train_acc: {}'.format(trial_idx, best_train_acc))
+                acc1, acc5, acc10 = validate(data.val_loader, best_model, criterion, parser_args, writer, epoch)
+                cp_model = best_model
+            else:
                 cp_model = round_model(model, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio, rank=parser_args.gpu)
                 acc1, acc5, acc10 = validate(data.val_loader, cp_model, criterion, parser_args, writer, epoch)
-                acc_avg += acc1
-            acc_avg /= parser_args.num_test
-            acc1 = acc_avg
             print('Acc after rounding: {}'.format(acc1))
         else:
             acc1, acc5, acc10 = validate(data.val_loader, model, criterion, parser_args, writer, epoch)

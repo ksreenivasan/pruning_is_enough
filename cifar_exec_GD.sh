@@ -35,17 +35,16 @@
 
 ## Dec.16
 #python main.py --config configs/hypercube/resnet20/random_rounding/target_sparsity_1_4_naive_rounding.yml # GPU 0
+#python main.py --config configs/hypercube/resnet20/random_rounding/target_sparsity_1_4_random_rounding_majority_5_test_only.yml # gpu 0
+#python main.py --config configs/hypercube/resnet20/random_rounding/target_sparsity_1_4_random_rounding_majority_15_test_only.yml # gpu 1
+#python main.py --config configs/hypercube/resnet20/random_rounding/target_sparsity_1_4_random_rounding_greedy_5_test_only.yml # gpu 2
+#python main.py --config configs/hypercube/resnet20/random_rounding/target_sparsity_1_4_random_rounding_greedy_15_test_only.yml # gpu 3
 
-python main.py --config configs/hypercube/resnet20/random_rounding/target_sparsity_1_4_random_rounding_majority_5_test_only.yml
-# python main.py --config configs/hypercube/resnet20/random_rounding/target_sparsity_1_4_random_rounding_majority_15_test_only.yml
+python main.py --config configs/hypercube/resnet20/random_rounding/target_sparsity_1_4_random_rounding_majority_5_train_only.yml # gpu 1
+#python main.py --config configs/hypercube/resnet20/random_rounding/target_sparsity_1_4_random_rounding_majority_15_train_only.yml # gpu 1
 
 # python main.py --config configs/hypercube/resnet20/random_rounding/target_sparsity_1_4_random_rounding_majority_5_train_and_test.yml
 # python main.py --config configs/hypercube/resnet20/random_rounding/target_sparsity_1_4_random_rounding_majority_15_train_and_test.yml
-
-
-# python main.py --config configs/hypercube/resnet20/random_rounding/target_sparsity_1_4_random_rounding_greedy_5_test_only.yml
-# python main.py --config configs/hypercube/resnet20/random_rounding/target_sparsity_1_4_random_rounding_greedy_15_test_only.yml
-
 # python main.py --config configs/hypercube/resnet20/random_rounding/target_sparsity_1_4_random_rounding_greedy_5_train_and_test.yml
 # python main.py --config configs/hypercube/resnet20/random_rounding/target_sparsity_1_4_random_rounding_greedy_15_train_and_test.yml
 

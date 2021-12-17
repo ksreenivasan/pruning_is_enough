@@ -211,11 +211,21 @@ class ArgsHelper:
             # round scheme for test (use same scheme for train)
         )
         parser.add_argument(
+            "--round_train",
+            type=str,
+            default='naive',
+            help='rounding technique to use |naive|prob|pb|majority|greedy|'
+            # naive: threshold(0.5), prob: probabilistic rounding, pb: pseudo-boolean paper's choice (RoundDown)
+            # round scheme for test (use same scheme for train)
+        )
+        '''
+        parser.add_argument(
             "--random_round_train",
             action="store_true",
             default=False,
             help="randomized rounding for hc (at train)"
         )
+        '''
         parser.add_argument(
             "--num_coin_flip_round",
             type=int,
