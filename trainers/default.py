@@ -17,52 +17,50 @@ __all__ = ["train", "validate", "modifier"]
 
 def train(train_loader, model, criterion, optimizer, epoch, args, writer):
 
+	batch_time = AverageMeter("Time", ":6.3f")
+	data_time = AverageMeter("Data", ":6.3f")
+	losses = AverageMeter("Loss", ":.3f")
+	top1 = AverageMeter("Acc@1", ":6.2f")
+	top5 = AverageMeter("Acc@5", ":6.2f")
+	top10 = AverageMeter("Acc@10", ":6.2f")
+	progress = ProgressMeter(
+		len(train_loader),
+		[batch_time, data_time, losses, top1, top5],
+		prefix=f"Epoch: [{epoch}]",
+	)
 
+	# switch to train mode
+	model.train()
 
-    batch_time = AverageMeter("Time", ":6.3f")
-    data_time = AverageMeter("Data", ":6.3f")
-    losses = AverageMeter("Loss", ":.3f")
-    top1 = AverageMeter("Acc@1", ":6.2f")
-    top5 = AverageMeter("Acc@5", ":6.2f")
-    top10 = AverageMeter("Acc@10", ":6.2f")
-    progress = ProgressMeter(
-        len(train_loader),
-        [batch_time, data_time, losses, top1, top5],
-        prefix=f"Epoch: [{epoch}]",
-    )
+	batch_size = train_loader.batch_size
+	num_batches = len(train_loader)
+	end = time.time()
+	for i, (images, target) in tqdm.tqdm(
+		enumerate(train_loader), ascii=True, total=len(train_loader)
+	):
+		# measure data loading time
+		data_time.update(time.time() - end)
+		
+		if args.gpu is not None:
+			images = images.cuda(args.gpu, non_blocking=True)
 
-    # switch to train mode
-    model.train()
+		target = target.cuda(args.gpu, non_blocking=True)
 
-    batch_size = train_loader.batch_size
-    num_batches = len(train_loader)
-    end = time.time()
-    for i, (images, target) in tqdm.tqdm(
-        enumerate(train_loader), ascii=True, total=len(train_loader)
-    ):
-        # measure data loading time
-        data_time.update(time.time() - end)
-        
-        if args.gpu is not None:
-            images = images.cuda(args.gpu, non_blocking=True)
+		# update score thresholds for global ep
+		if args.algo in ['global_ep', 'global_ep_iter']:
+			prune(model, update_thresholds_only=True)
 
-        target = target.cuda(args.gpu, non_blocking=True)
+		# compute output
+		output = model(images)
 
-        # update score thresholds for global ep
-        if args.algo in ['global_ep', 'global_ep_iter']:
-            prune(model, update_thresholds_only=True)
+		if args.algo in ['hc', 'hc_iter', 'pt'] and i % args.project_freq == 0 and not args.differentiate_clamp:
+			for name, params in model.named_parameters():
+				if "score" in name:
+					scores = params
+					with torch.no_grad():
+						scores.data = torch.clamp(scores.data, 0.0, 1.0)
 
-        # compute output
-        output = model(images)
-
-        if args.algo in ['hc', 'hc_iter', 'pt'] and i % args.project_freq == 0 and not args.differentiate_clamp:
-            for name, params in model.named_parameters():
-                if "score" in name:
-                    scores = params
-                    with torch.no_grad():
-                        scores.data = torch.clamp(scores.data, 0.0, 1.0)
-
-        loss = criterion(output, target)
+		loss = criterion(output, target)
 
 
 		if args.lam_finetune_loss > 0:
@@ -101,61 +99,61 @@ def train(train_loader, model, criterion, optimizer, epoch, args, writer):
 
 			# print('For model')
 			# for name, params in model.named_parameters():
-			# 	if params.requires_grad:
-			# 		print(name)
-			# 		grad =torch.autograd.grad(finetune_loss, params, retain_graph=True)[0].data
-			# 		print(name, 'autograd(): ', (grad != torch.zeros_like(grad)).any().item())
+			#   if params.requires_grad:
+			#       print(name)
+			#       grad =torch.autograd.grad(finetune_loss, params, retain_graph=True)[0].data
+			#       print(name, 'autograd(): ', (grad != torch.zeros_like(grad)).any().item())
 			
 
 			loss += finetune_loss
 
-        regularization_loss = torch.tensor(0)
-        if args.regularization:
-            regularization_loss =\
-                get_regularization_loss(model, regularizer=args.regularization,
-                                        lmbda=args.lmbda, alpha=args.alpha,
-                                        alpha_prime=args.alpha_prime)
+		regularization_loss = torch.tensor(0)
+		if args.regularization:
+			regularization_loss =\
+				get_regularization_loss(model, regularizer=args.regularization,
+										lmbda=args.lmbda, alpha=args.alpha,
+										alpha_prime=args.alpha_prime)
 
-        #print('regularization_loss: ', regularization_loss)
-        loss += regularization_loss
+		#print('regularization_loss: ', regularization_loss)
+		loss += regularization_loss
 
-        # measure accuracy and record loss
-        acc1, acc5, acc10 = accuracy(output, target, topk=(1, 5, 10))
-        losses.update(loss.item(), images.size(0))
-        top1.update(acc1.item(), images.size(0))
-        top5.update(acc5.item(), images.size(0))
-        top10.update(acc10.item(), images.size(0))
+		# measure accuracy and record loss
+		acc1, acc5, acc10 = accuracy(output, target, topk=(1, 5, 10))
+		losses.update(loss.item(), images.size(0))
+		top1.update(acc1.item(), images.size(0))
+		top5.update(acc5.item(), images.size(0))
+		top10.update(acc10.item(), images.size(0))
 
-        # compute gradient and do SGD step
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
+		# compute gradient and do SGD step
+		optimizer.zero_grad()
+		loss.backward()
+		optimizer.step()
 
-        #pdb.set_trace()
-        # TODO: print the updated score
-        # TODO: print the weight
+		#pdb.set_trace()
+		# TODO: print the updated score
+		# TODO: print the weight
 
-        # measure elapsed time
-        batch_time.update(time.time() - end)
-        end = time.time()
+		# measure elapsed time
+		batch_time.update(time.time() - end)
+		end = time.time()
 
-        if i % args.print_freq == 0:
-            t = (num_batches * epoch + i) * batch_size
-            progress.display(i)
-            progress.write_to_tensorboard(writer, prefix="train", global_step=t)
+		if i % args.print_freq == 0:
+			t = (num_batches * epoch + i) * batch_size
+			progress.display(i)
+			progress.write_to_tensorboard(writer, prefix="train", global_step=t)
 
-    # before completing training, clean up model based on latest scores
-    # update score thresholds for global ep
-    if args.algo in ['global_ep', 'global_ep_iter']:
-        prune(model, update_thresholds_only=True)
-    if args.algo in ['hc', 'hc_iter', 'pt'] and not args.differentiate_clamp:
-        for name, params in model.named_parameters():
-            if "score" in name:
-                scores = params
-                with torch.no_grad():
-                    scores.data = torch.clamp(scores.data, 0.0, 1.0)
+	# before completing training, clean up model based on latest scores
+	# update score thresholds for global ep
+	if args.algo in ['global_ep', 'global_ep_iter']:
+		prune(model, update_thresholds_only=True)
+	if args.algo in ['hc', 'hc_iter', 'pt'] and not args.differentiate_clamp:
+		for name, params in model.named_parameters():
+			if "score" in name:
+				scores = params
+				with torch.no_grad():
+					scores.data = torch.clamp(scores.data, 0.0, 1.0)
 
-    return top1.avg, top5.avg, top10.avg, regularization_loss.item()
+	return top1.avg, top5.avg, top10.avg, regularization_loss.item()
 
 
 def validate(val_loader, model, criterion, args, writer, epoch):
