@@ -1,5 +1,5 @@
 subfolder: quantize_0_5_finetune_loss_test
-lam_finetune_loss: 100
+lam_finetune_loss: 0 #100
 num_step_finetune: 10
 
 # Hypercube optimization
