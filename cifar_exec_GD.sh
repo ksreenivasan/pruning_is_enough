@@ -18,8 +18,22 @@
 
 
 ## testing adding finetune loss
-python main.py --config config1.yml --run_idx 1 #  
+#python main.py --config configs/hypercube/resnet20/finetune_check/no_finetune.yml
+#python main.py --config configs/hypercube/resnet20/finetune_check/finetune_lam_1_num_5.yml
+#python main.py --config configs/hypercube/resnet20/finetune_check/finetune_lam_0_1_num_5.yml
+
+
+#python main.py --config configs/hypercube/resnet20/finetune_check/no_finetune_without_unflag.yml
+#python main.py --config configs/hypercube/resnet20/finetune_check/finetune_lam_1_num_5_without_unflag.yml
+python main.py --config configs/hypercube/resnet20/finetune_check/finetune_lam_0_1_num_5_without_unflag.yml
+
+
+
+#python main.py --config config1.yml --run_idx 1 #  
+#python main.py --config config1.yml --run_idx 0 #  
 #python main.py --config config2.yml --run_idx 2
+#python main.py --config configs/hypercube/resnet20/finetune_check/finetune_lam_1_num_10.yml
+#python main.py --config configs/hypercube/resnet20/finetune_check/finetune_lam_0_1_num_10.yml
 
 
 

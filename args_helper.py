@@ -721,6 +721,12 @@ class ArgsHelper:
             help="chg weights before sanity check"
         )
         parser.add_argument(
+            "--finetuned",
+            action="store_true",
+            default=False,
+            help="used for finetuned loss (please set it false in the command line. The code will automatically turn on/off it"
+        )
+        parser.add_argument(
             "--fine-tune-optimizer",
             type=str,
             default='sgd',

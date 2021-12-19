@@ -68,7 +68,7 @@ def train(train_loader, model, criterion, optimizer, epoch, args, writer):
 			model2 = copy.deepcopy(model)
 			# turn on gradient for weight, turn off gradient for mask
 			for name, params in model2.named_parameters():
-				print(name)
+				#print(name)
 				if "weight" in name:
 					params.requires_grad=True
 				elif "score" in name:
@@ -93,9 +93,9 @@ def train(train_loader, model, criterion, optimizer, epoch, args, writer):
 				m_to.weight_ft.data = m_from.weight.data
 			
 			# compute loss on the finetuned weights
-			parser_args.finetuned = True
-			finetune_loss = args.lam_finetune_loss * criterion(model(images), data)
-			parser_args.finetuned = False
+			args.finetuned = True
+			finetune_loss = args.lam_finetune_loss * criterion(model(images), target)
+			args.finetuned = False
 			print('original loss: ', loss)
 			print('finetune loss: ', finetune_loss)
 
