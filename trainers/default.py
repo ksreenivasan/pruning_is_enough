@@ -64,50 +64,44 @@ def train(train_loader, model, criterion, optimizer, epoch, args, writer):
 
 
 		if args.lam_finetune_loss > 0:
+			if args.finetune_last_epochs and epoch < args.epochs - 10:
+				pass
+			else:
+				model2 = copy.deepcopy(model)
+				# turn on gradient for weight, turn off gradient for mask
+				for name, params in model2.named_parameters():
+					#print(name)
+					if "weight" in name:
+						params.requires_grad=True
+					elif "score" in name:
+						params.requires_grad=False
 
-			model2 = copy.deepcopy(model)
-			# turn on gradient for weight, turn off gradient for mask
-			for name, params in model2.named_parameters():
-				#print(name)
-				if "weight" in name:
-					params.requires_grad=True
-				elif "score" in name:
-					params.requires_grad=False
-
-			meta_optimizer = optim.SGD(model2.parameters(), lr=0.1, momentum=0.9)
-			# update for several steps
-			for i in range(args.num_step_finetune):
-				loss_updated_model = criterion(model2(images), target)
-				meta_optimizer.zero_grad()
-				loss_updated_model.backward()#retain_graph=True)
-				meta_optimizer.step()
+				meta_optimizer = optim.SGD(model2.parameters(), lr=0.1, momentum=0.9)
+				# update for several steps
+				for i in range(args.num_step_finetune):
+					loss_updated_model = criterion(model2(images), target)
+					meta_optimizer.zero_grad()
+					loss_updated_model.backward()#retain_graph=True)
+					meta_optimizer.step()
 
 
-			conv, linear = get_layers(arch=args.arch, model=model)
-			conv2, linear2 = get_layers(arch=args.arch, model=model2)
-			layer_list = [*conv, *linear]
-			layer_list2 = [*conv2, *linear2]
+				conv, linear = get_layers(arch=args.arch, model=model)
+				conv2, linear2 = get_layers(arch=args.arch, model=model2)
+				layer_list = [*conv, *linear]
+				layer_list2 = [*conv2, *linear2]
 
-			# load updated weight from model2 to model
-			for m_from, m_to in zip(layer_list2, layer_list):
-				m_to.weight_ft.data = m_from.weight.data
-			
-			# compute loss on the finetuned weights
-			args.finetuned = True
-			finetune_loss = args.lam_finetune_loss * criterion(model(images), target)
-			args.finetuned = False
-			print('original loss: ', loss)
-			print('finetune loss: ', finetune_loss)
+				# load updated weight from model2 to model
+				for m_from, m_to in zip(layer_list2, layer_list):
+					m_to.weight_ft.data = m_from.weight.data
+				
+				# compute loss on the finetuned weights
+				args.finetuned = True
+				finetune_loss = args.lam_finetune_loss * criterion(model(images), target)
+				args.finetuned = False
+				print('original loss: ', loss)
+				print('finetune loss: ', finetune_loss)
 
-			# print('For model')
-			# for name, params in model.named_parameters():
-			#   if params.requires_grad:
-			#       print(name)
-			#       grad =torch.autograd.grad(finetune_loss, params, retain_graph=True)[0].data
-			#       print(name, 'autograd(): ', (grad != torch.zeros_like(grad)).any().item())
-			
-
-			loss += finetune_loss
+				loss += finetune_loss
 
 		regularization_loss = torch.tensor(0)
 		if args.regularization:
