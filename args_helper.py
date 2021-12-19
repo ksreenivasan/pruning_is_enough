@@ -721,6 +721,12 @@ class ArgsHelper:
             help="chg weights before sanity check"
         )
         parser.add_argument(
+            "--finetune_last_epochs",
+            action="store_true",
+            default=False,
+            help="used for adding finetune loss at last 10 epochs of HC"
+        )
+        parser.add_argument(
             "--finetuned",
             action="store_true",
             default=False,
