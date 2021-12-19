@@ -53,7 +53,7 @@ lmbda: 0 #0.00005 # 0.01 #0.0001 #0.000001
 
 # ===== Hardware setup ===== #
 workers: 4
-gpu: 1
+gpu: 2
 
 # ===== Checkpointing ===== #
 checkpoint_at_prune: True
