@@ -19,9 +19,10 @@
 
 ## testing adding finetune loss
 #python main.py --config configs/hypercube/resnet20/finetune_check/no_finetune.yml > log_no_finetune_5e-5 2>&1
-python main.py --config configs/hypercube/resnet20/finetune_check/finetune_lam_1_num_5_last_10_epochs.yml
-#python main.py --config configs/hypercube/resnet20/finetune_check/finetune_lam_1_num_5.yml
-#python main.py --config configs/hypercube/resnet20/finetune_check/finetune_lam_0_1_num_5.yml
+#python main.py --config configs/hypercube/resnet20/finetune_check/finetune_lam_1_num_5_last_10_epochs_without_unflag.yml > log_finetune_1e-4_lam_1_num_5_last_10_epochs_without_unflag 2>&1
+#python main.py --config configs/hypercube/resnet20/finetune_check/finetune_lam_1_num_5_last_10_epochs.yml > log_finetune_1e-4_lam_1_num_5_last_10_epochs 2>&1
+python main.py --config configs/hypercube/resnet20/finetune_check/finetune_lam_1_num_5_last_10_epochs_without_unflag.yml > log_finetune_5e-5_lam_1_num_5_last_10_epochs_without_unflag 2>&1
+python main.py --config configs/hypercube/resnet20/finetune_check/finetune_lam_1_num_5_last_10_epochs.yml > log_finetune_5e-5_lam_1_num_5_last_10_epochs 2>&1
 
 
 #python main.py --config configs/hypercube/resnet20/finetune_check/no_finetune_without_unflag.yml
