@@ -12,7 +12,7 @@
 
 
 ### ResNet-20
-#python main.py --config configs/ep/resnet20/resnet20_sc_ep.yml > log_EP_sparsity_50 2>&1
+python main.py --config configs/ep/resnet20/resnet20_sc_ep.yml #> log_EP_sparsity_50 2>&1
 #python main.py --config configs/ep/resnet20/resnet20_sc_global_ep.yml 
 #python main.py --config config_current_best.yml --run_idx 1
 #python main.py --config configs/hypercube/resnet20/resnet20_quantized_iter_hc_target_sparsity_1_4_highreg.yml
@@ -28,7 +28,7 @@
 #python main.py --config configs/hypercube/resnet20/resnet20_quantized_iter_hc_target_sparsity_20.yml > log_target_sparsity_20_lam_1e-5 2>&1
 
 #python main.py --config configs/hypercube/resnet20/resnet20_quantized_iter_hc_target_sparsity_5_without_unflag.yml > log_target_sparsity_5_without_unflag_lam_3e-5 2>&1
-python main.py --config configs/hypercube/resnet20/resnet20_quantized_iter_hc_target_sparsity_20_without_unflag.yml > log_target_sparsity_20_without_unflag_lam_1e-5 2>&1
+#python main.py --config configs/hypercube/resnet20/resnet20_quantized_iter_hc_target_sparsity_20_without_unflag.yml > log_target_sparsity_20_without_unflag_lam_1e-5 2>&1
 #python main.py --config configs/hypercube/resnet20/resnet20_quantized_iter_hc_target_sparsity_50_without_unflag.yml > log_target_sparsity_50_without_flag_lam_0 2>&1
 
 
