@@ -81,7 +81,7 @@ class ResNet(nn.Module):
         self.layer4 = self._make_layer(block, 512, num_blocks[3], stride=2)
         self.avgpool = nn.AdaptiveAvgPool2d(1)
 
-        if args.last_layer_dense:
+        if parser_args.last_layer_dense:
             self.fc = nn.Conv2d(512 * block.expansion, 10, 1)
         else:
             self.fc = builder.conv1x1(512 * block.expansion, 10)
