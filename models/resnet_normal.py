@@ -1,3 +1,5 @@
+# copied & modified from https://pytorch.org/vision/0.8/_modules/torchvision/models/resnet.html
+
 import torch
 import torch.nn as nn
 
