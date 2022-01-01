@@ -6,7 +6,7 @@ algo: 'hc_iter'
 iter_period: 5
 
 # Architecture
-arch: cResNet18
+arch: TinyResNet18
 
 # ===== Dataset ===== #
 dataset: TinyImageNet
@@ -20,10 +20,10 @@ fine_tune_lr: 0.01
 fine_tune_lr_policy: multistep_lr
 
 # ===== Network training config ===== #
-epochs: 150
+epochs: 200
 wd: 0.0 
 momentum: 0.9
-batch_size: 128
+batch_size: 256 # 256
 
 # ===== Sparsity =========== #
 conv_type: SubnetConv
