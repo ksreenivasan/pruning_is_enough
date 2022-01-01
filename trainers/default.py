@@ -17,190 +17,193 @@ __all__ = ["train", "validate", "modifier"]
 
 def train(train_loader, model, criterion, optimizer, epoch, args, writer):
 
-	batch_time = AverageMeter("Time", ":6.3f")
-	data_time = AverageMeter("Data", ":6.3f")
-	losses = AverageMeter("Loss", ":.3f")
-	top1 = AverageMeter("Acc@1", ":6.2f")
-	top5 = AverageMeter("Acc@5", ":6.2f")
-	top10 = AverageMeter("Acc@10", ":6.2f")
-	progress = ProgressMeter(
-		len(train_loader),
-		[batch_time, data_time, losses, top1, top5],
-		prefix=f"Epoch: [{epoch}]",
-	)
+    batch_time = AverageMeter("Time", ":6.3f")
+    data_time = AverageMeter("Data", ":6.3f")
+    losses = AverageMeter("Loss", ":.3f")
+    top1 = AverageMeter("Acc@1", ":6.2f")
+    top5 = AverageMeter("Acc@5", ":6.2f")
+    top10 = AverageMeter("Acc@10", ":6.2f")
+    progress = ProgressMeter(
+        len(train_loader),
+        [batch_time, data_time, losses, top1, top5],
+        prefix=f"Epoch: [{epoch}]",
+    )
 
-	# switch to train mode
-	model.train()
+    # switch to train mode
+    model.train()
 
-	batch_size = train_loader.batch_size
-	num_batches = len(train_loader)
-	end = time.time()
-	for i, (images, target) in tqdm.tqdm(
-		enumerate(train_loader), ascii=True, total=len(train_loader)
-	):
-		# measure data loading time
-		data_time.update(time.time() - end)
-		
-		if args.gpu is not None:
-			images = images.cuda(args.gpu, non_blocking=True)
+    batch_size = train_loader.batch_size
+    num_batches = len(train_loader)
+    end = time.time()
+    for i, (images, target) in tqdm.tqdm(
+            enumerate(train_loader), ascii=True, total=len(train_loader)
+    ):
+        # measure data loading time
+        data_time.update(time.time() - end)
 
-		target = target.cuda(args.gpu, non_blocking=True)
+        if args.gpu is not None:
+            images = images.cuda(args.gpu, non_blocking=True)
 
-		# update score thresholds for global ep
-		if args.algo in ['global_ep', 'global_ep_iter']:
-			prune(model, update_thresholds_only=True)
+        target = target.cuda(args.gpu, non_blocking=True)
 
-		# compute output
-		output = model(images)
+        # update score thresholds for global ep
+        if args.algo in ['global_ep', 'global_ep_iter']:
+            prune(model, update_thresholds_only=True)
 
-		if args.algo in ['hc', 'hc_iter', 'pt'] and i % args.project_freq == 0 and not args.differentiate_clamp:
-			for name, params in model.named_parameters():
-				if "score" in name:
-					scores = params
-					with torch.no_grad():
-						scores.data = torch.clamp(scores.data, 0.0, 1.0)
+        # compute output
+        output = model(images)
 
-		loss = criterion(output, target)
+        if args.algo in ['hc', 'hc_iter', 'pt'] and i % args.project_freq == 0 and not args.differentiate_clamp:
+            for name, params in model.named_parameters():
+                if "score" in name:
+                    scores = params
+                    with torch.no_grad():
+                        scores.data = torch.clamp(scores.data, 0.0, 1.0)
 
+        loss = criterion(output, target)
 
-		if args.lam_finetune_loss > 0:
-			if args.finetune_last_epochs and epoch < args.epochs - 10:
-				pass
-			else:
-				model2 = copy.deepcopy(model)
-				# turn on gradient for weight, turn off gradient for mask
-				for name, params in model2.named_parameters():
-					#print(name)
-					if "weight" in name:
-						params.requires_grad=True
-					elif "score" in name:
-						params.requires_grad=False
+        if args.lam_finetune_loss > 0:
+            if args.finetune_last_epochs and epoch < args.epochs - 10:
+                pass
+            else:
+                model2 = copy.deepcopy(model)
+                # turn on gradient for weight, turn off gradient for mask
+                for name, params in model2.named_parameters():
+                    # print(name)
+                    if "weight" in name:
+                        params.requires_grad = True
+                    elif "score" in name:
+                        params.requires_grad = False
 
-				meta_optimizer = optim.SGD(model2.parameters(), lr=0.1, momentum=0.9)
-				# update for several steps
-				for i in range(args.num_step_finetune):
-					loss_updated_model = criterion(model2(images), target)
-					meta_optimizer.zero_grad()
-					loss_updated_model.backward()#retain_graph=True)
-					meta_optimizer.step()
+                meta_optimizer = optim.SGD(
+                    model2.parameters(), lr=0.1, momentum=0.9)
+                # update for several steps
+                for i in range(args.num_step_finetune):
+                    loss_updated_model = criterion(model2(images), target)
+                    meta_optimizer.zero_grad()
+                    loss_updated_model.backward()  # retain_graph=True)
+                    meta_optimizer.step()
 
+                conv, linear = get_layers(arch=args.arch, model=model)
+                conv2, linear2 = get_layers(arch=args.arch, model=model2)
+                layer_list = [*conv, *linear]
+                layer_list2 = [*conv2, *linear2]
 
-				conv, linear = get_layers(arch=args.arch, model=model)
-				conv2, linear2 = get_layers(arch=args.arch, model=model2)
-				layer_list = [*conv, *linear]
-				layer_list2 = [*conv2, *linear2]
+                # load updated weight from model2 to model
+                for m_from, m_to in zip(layer_list2, layer_list):
+                    m_to.weight_ft.data = m_from.weight.data
 
-				# load updated weight from model2 to model
-				for m_from, m_to in zip(layer_list2, layer_list):
-					m_to.weight_ft.data = m_from.weight.data
-				
-				# compute loss on the finetuned weights
-				args.finetuned = True
-				finetune_loss = args.lam_finetune_loss * criterion(model(images), target)
-				args.finetuned = False
-				print('original loss: ', loss)
-				print('finetune loss: ', finetune_loss)
+                # compute loss on the finetuned weights
+                args.finetuned = True
+                finetune_loss = args.lam_finetune_loss * \
+                    criterion(model(images), target)
+                args.finetuned = False
+                #print('original loss: ', loss)
+                #print('finetune loss: ', finetune_loss)
 
-				loss += finetune_loss
+                loss += finetune_loss
 
-		regularization_loss = torch.tensor(0)
-		if args.regularization:
-			regularization_loss =\
-				get_regularization_loss(model, regularizer=args.regularization,
-										lmbda=args.lmbda, alpha=args.alpha,
-										alpha_prime=args.alpha_prime)
+        regularization_loss = torch.tensor(0)
+        if args.regularization:
+            regularization_loss =\
+                get_regularization_loss(model, regularizer=args.regularization,
+                                        lmbda=args.lmbda, alpha=args.alpha,
+                                        alpha_prime=args.alpha_prime)
 
-		#print('regularization_loss: ', regularization_loss)
-		loss += regularization_loss
+        #print('regularization_loss: ', regularization_loss)
+        loss += regularization_loss
 
-		# measure accuracy and record loss
-		acc1, acc5, acc10 = accuracy(output, target, topk=(1, 5, 10))
-		losses.update(loss.item(), images.size(0))
-		top1.update(acc1.item(), images.size(0))
-		top5.update(acc5.item(), images.size(0))
-		top10.update(acc10.item(), images.size(0))
+        # measure accuracy and record loss
+        acc1, acc5, acc10 = accuracy(output, target, topk=(1, 5, 10))
+        losses.update(loss.item(), images.size(0))
+        top1.update(acc1.item(), images.size(0))
+        top5.update(acc5.item(), images.size(0))
+        top10.update(acc10.item(), images.size(0))
 
-		# compute gradient and do SGD step
-		optimizer.zero_grad()
-		loss.backward()
-		optimizer.step()
+        # compute gradient and do SGD step
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
 
-		#pdb.set_trace()
-		# TODO: print the updated score
-		# TODO: print the weight
+        # pdb.set_trace()
+        # TODO: print the updated score
+        # TODO: print the weight
 
-		# measure elapsed time
-		batch_time.update(time.time() - end)
-		end = time.time()
+        # measure elapsed time
+        batch_time.update(time.time() - end)
+        end = time.time()
 
-		if i % args.print_freq == 0:
-			t = (num_batches * epoch + i) * batch_size
-			progress.display(i)
-			progress.write_to_tensorboard(writer, prefix="train", global_step=t)
+        if i % args.print_freq == 0:
+            t = (num_batches * epoch + i) * batch_size
+            progress.display(i)
+            progress.write_to_tensorboard(
+                writer, prefix="train", global_step=t)
 
-	# before completing training, clean up model based on latest scores
-	# update score thresholds for global ep
-	if args.algo in ['global_ep', 'global_ep_iter']:
-		prune(model, update_thresholds_only=True)
-	if args.algo in ['hc', 'hc_iter', 'pt'] and not args.differentiate_clamp:
-		for name, params in model.named_parameters():
-			if "score" in name:
-				scores = params
-				with torch.no_grad():
-					scores.data = torch.clamp(scores.data, 0.0, 1.0)
+    # before completing training, clean up model based on latest scores
+    # update score thresholds for global ep
+    if args.algo in ['global_ep', 'global_ep_iter']:
+        prune(model, update_thresholds_only=True)
+    if args.algo in ['hc', 'hc_iter', 'pt'] and not args.differentiate_clamp:
+        for name, params in model.named_parameters():
+            if "score" in name:
+                scores = params
+                with torch.no_grad():
+                    scores.data = torch.clamp(scores.data, 0.0, 1.0)
 
-	return top1.avg, top5.avg, top10.avg, regularization_loss.item()
+    return top1.avg, top5.avg, top10.avg, regularization_loss.item()
 
 
 def validate(val_loader, model, criterion, args, writer, epoch):
-	batch_time = AverageMeter("Time", ":6.3f", write_val=False)
-	losses = AverageMeter("Loss", ":.3f", write_val=False)
-	top1 = AverageMeter("Acc@1", ":6.2f", write_val=False)
-	top5 = AverageMeter("Acc@5", ":6.2f", write_val=False)
-	top10 = AverageMeter("Acc@10", ":6.2f", write_val=False)
-	progress = ProgressMeter(
-		len(val_loader), [batch_time, losses, top1, top5, top10], prefix="Test: "
-	)
+    batch_time = AverageMeter("Time", ":6.3f", write_val=False)
+    losses = AverageMeter("Loss", ":.3f", write_val=False)
+    top1 = AverageMeter("Acc@1", ":6.2f", write_val=False)
+    top5 = AverageMeter("Acc@5", ":6.2f", write_val=False)
+    top10 = AverageMeter("Acc@10", ":6.2f", write_val=False)
+    progress = ProgressMeter(
+        len(val_loader), [batch_time, losses, top1, top5, top10], prefix="Test: "
+    )
 
-	# switch to evaluate mode
-	model.eval()
+    # switch to evaluate mode
+    model.eval()
 
-	with torch.no_grad():
-		end = time.time()
-		for i, (images, target) in tqdm.tqdm(
-			enumerate(val_loader), ascii=True, total=len(val_loader)
-		):
-			if args.gpu is not None:
-				images = images.cuda(args.gpu, non_blocking=True)
+    with torch.no_grad():
+        end = time.time()
+        for i, (images, target) in tqdm.tqdm(
+                enumerate(val_loader), ascii=True, total=len(val_loader)
+        ):
+            if args.gpu is not None:
+                images = images.cuda(args.gpu, non_blocking=True)
 
-			target = target.cuda(args.gpu, non_blocking=True)
+            target = target.cuda(args.gpu, non_blocking=True)
 
-			# compute output
-			output = model(images)
+            # compute output
+            output = model(images)
 
-			loss = criterion(output, target)
+            loss = criterion(output, target)
 
-			# measure accuracy and record loss
-			acc1, acc5, acc10 = accuracy(output, target, topk=(1, 5, 10))
-			losses.update(loss.item(), images.size(0))
-			top1.update(acc1.item(), images.size(0))
-			top5.update(acc5.item(), images.size(0))
-			top10.update(acc10.item(), images.size(0))
+            # measure accuracy and record loss
+            acc1, acc5, acc10 = accuracy(output, target, topk=(1, 5, 10))
+            losses.update(loss.item(), images.size(0))
+            top1.update(acc1.item(), images.size(0))
+            top5.update(acc5.item(), images.size(0))
+            top10.update(acc10.item(), images.size(0))
 
-			# measure elapsed time
-			batch_time.update(time.time() - end)
-			end = time.time()
+            # measure elapsed time
+            batch_time.update(time.time() - end)
+            end = time.time()
 
-			if i % args.print_freq == 0:
-				progress.display(i)
+            if i % args.print_freq == 0:
+                progress.display(i)
 
-		progress.display(len(val_loader))
+        progress.display(len(val_loader))
 
-		if writer is not None:
-			progress.write_to_tensorboard(writer, prefix="test", global_step=epoch)
+        if writer is not None:
+            progress.write_to_tensorboard(
+                writer, prefix="test", global_step=epoch)
 
-	print("Model top1 Accuracy: {}".format(top1.avg))
-	return top1.avg, top5.avg, top10.avg
+    print("Model top1 Accuracy: {}".format(top1.avg))
+    return top1.avg, top5.avg, top10.avg
+
 
 def modifier(args, epoch, model):
-	return
+    return
