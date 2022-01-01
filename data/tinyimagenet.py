@@ -1,3 +1,5 @@
+# Follwed data preprocessing in https://github.com/snu-mllab/PuzzleMix/blob/master/load_data.py
+
 import os
 
 import torch
@@ -23,15 +25,15 @@ class TinyImageNet:
         valdir = os.path.join(data_root, "val")
 
         normalize = transforms.Normalize(
-            mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
+            mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]
         )
 
         train_dataset = datasets.ImageFolder(
             traindir,
             transforms.Compose(
                 [
-                    transforms.RandomResizedCrop(224),
                     transforms.RandomHorizontalFlip(),
+                    transforms.RandomCrop(64, padding=4),
                     transforms.ToTensor(),
                     normalize,
                 ]
@@ -47,8 +49,6 @@ class TinyImageNet:
                 valdir,
                 transforms.Compose(
                     [
-                        transforms.Resize(256),
-                        transforms.CenterCrop(224),
                         transforms.ToTensor(),
                         normalize,
                     ]
