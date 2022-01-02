@@ -32,10 +32,10 @@ python main.py --config configs/hypercube/resnet20/error_bar/resnet20_sparsity_0
 BLOCK
 
 ## ran in finetune_loss repo
-python main.py --config configs/hypercube/resnet20/error_bar/resnet20_sparsity_1_35_t1.yml > log_hc_sparsity_1_35_t1 2>&1
+#python main.py --config configs/hypercube/resnet20/error_bar/resnet20_sparsity_1_35_t1.yml > log_hc_sparsity_1_35_t1 2>&1
 #python main.py --config configs/hypercube/resnet20/error_bar/resnet20_sparsity_1_35_t2.yml > log_hc_sparsity_1_35_t2 2>&1
 
-python main.py --config configs/hypercube/resnet20/error_bar/resnet20_sparsity_1_35_t3.yml > log_hc_sparsity_1_35_t3 2>&1
+#python main.py --config configs/hypercube/resnet20/error_bar/resnet20_sparsity_1_35_t3.yml > log_hc_sparsity_1_35_t3 2>&1
 python main.py --config configs/hypercube/resnet20/error_bar/resnet20_sparsity_1_35_t4.yml > log_hc_sparsity_1_35_t4 2>&1
 python main.py --config configs/hypercube/resnet20/error_bar/resnet20_sparsity_1_35_t5.yml > log_hc_sparsity_1_35_t5 2>&1
 
