@@ -18,7 +18,7 @@
 
 # HC for multiple trials
 #:<<BLOCK
-python main.py --config configs/hypercube/resnet20/error_bar/resnet20_sparsity_3_72_t1.yml > log_hc_sparsity_3_72_t1 2>&1
+#python main.py --config configs/hypercube/resnet20/error_bar/resnet20_sparsity_3_72_t1.yml > log_hc_sparsity_3_72_t1 2>&1
 #python main.py --config configs/hypercube/resnet20/error_bar/resnet20_sparsity_3_72_t2.yml > log_hc_sparsity_3_72_t2 2>&1
 #python main.py --config configs/hypercube/resnet20/error_bar/resnet20_sparsity_3_72_t3.yml > log_hc_sparsity_3_72_t3 2>&1
 #python main.py --config configs/hypercube/resnet20/error_bar/resnet20_sparsity_3_72_t4.yml > log_hc_sparsity_3_72_t4 2>&1
@@ -26,11 +26,11 @@ python main.py --config configs/hypercube/resnet20/error_bar/resnet20_sparsity_3
 #BLOCK
 
 #:<<BLOCK
-#python main.py --config configs/hypercube/resnet20/error_bar/resnet20_sparsity_0_59_t1.yml > log_hc_sparsity_0_59_t1 2>&1
-#python main.py --config configs/hypercube/resnet20/error_bar/resnet20_sparsity_0_59_t2.yml > log_hc_sparsity_0_59_t2 2>&1
-#python main.py --config configs/hypercube/resnet20/error_bar/resnet20_sparsity_0_59_t3.yml > log_hc_sparsity_0_59_t3 2>&1
-#python main.py --config configs/hypercube/resnet20/error_bar/resnet20_sparsity_0_59_t4.yml > log_hc_sparsity_0_59_t4 2>&1
-#python main.py --config configs/hypercube/resnet20/error_bar/resnet20_sparsity_0_59_t5.yml > log_hc_sparsity_0_59_t5 2>&1
+python main.py --config configs/hypercube/resnet20/error_bar/resnet20_sparsity_0_59_t1.yml > log_hc_sparsity_0_59_t1 2>&1
+python main.py --config configs/hypercube/resnet20/error_bar/resnet20_sparsity_0_59_t2.yml > log_hc_sparsity_0_59_t2 2>&1
+python main.py --config configs/hypercube/resnet20/error_bar/resnet20_sparsity_0_59_t3.yml > log_hc_sparsity_0_59_t3 2>&1
+python main.py --config configs/hypercube/resnet20/error_bar/resnet20_sparsity_0_59_t4.yml > log_hc_sparsity_0_59_t4 2>&1
+python main.py --config configs/hypercube/resnet20/error_bar/resnet20_sparsity_0_59_t5.yml > log_hc_sparsity_0_59_t5 2>&1
 #BLOCK
 
 
