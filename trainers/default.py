@@ -38,7 +38,7 @@ def train(train_loader, model, criterion, optimizer, epoch, args, writer):
         # measure data loading time
         data_time.update(time.time() - end)
 
-        #print(images.shape, target.shape)
+       # print(images.shape, target.shape)
 
         if args.gpu is not None:
             images = images.cuda(args.gpu, non_blocking=True)
