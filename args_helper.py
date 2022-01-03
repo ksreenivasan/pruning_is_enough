@@ -10,8 +10,6 @@ class ArgsHelper:
     def parse_arguments(self, jupyter_mode=False):
         parser = argparse.ArgumentParser(description="Pruning random networks")
 
-
-
         # Config/Hyperparameters
         parser.add_argument(
             "--data",
