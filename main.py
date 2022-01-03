@@ -3,7 +3,8 @@ from main_utils import *
 
 def main():
     print(parser_args)
-    set_seed(parser_args.seed + parser_args.trial_num - 1)
+    set_seed(parser_args.seed * parser_args.trial_num)
+    #set_seed(parser_args.seed + parser_args.trial_num - 1)
 
     # parser_args.distributed = parser_args.world_size > 1 or parser_args.multiprocessing_distributed
     ngpus_per_node = torch.cuda.device_count()
