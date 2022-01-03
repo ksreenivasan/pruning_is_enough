@@ -802,6 +802,12 @@ class ArgsHelper:
             "--imp-rewind-model", 
             default="short_imp/Liu_checkpoint_model_correct.pth"
             )
+        parser.add_argument(
+            "--imp-no-rewind",
+            action="store_true",
+            default=False,
+            help="if set True, we run IMP algorithm without rewinding to previous states"
+        )
 
         if jupyter_mode:
             args = parser.parse_args("")

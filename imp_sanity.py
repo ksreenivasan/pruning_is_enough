@@ -36,10 +36,13 @@ def redraw(model, mask, mask_bias, device, shuffle=False, reinit=False, chg_mask
             weight = param.data.detach()
             if shuffle:
                 if chg_mask:
-                    tmp_mask = cp_mask[()][name]
-                    idx = torch.randperm(tmp_mask.nelement())
-                    tmp_mask = tmp_mask.view(-1)[idx].view(tmp_mask.size())
-                    mask[()][name] = tmp_mask
+                    try:  # will handle the case where mask is None
+                        tmp_mask = cp_mask[()][name]
+                        idx = torch.randperm(tmp_mask.nelement())
+                        tmp_mask = tmp_mask.view(-1)[idx].view(tmp_mask.size())
+                        mask[()][name] = tmp_mask
+                    except:
+                        pass
                 if chg_weight:
                     idx = torch.randperm(weight.nelement())
                     weight = weight.view(-1)[idx].view(weight.size())
@@ -59,10 +62,13 @@ def redraw(model, mask, mask_bias, device, shuffle=False, reinit=False, chg_mask
                 weight = param.data.detach()
                 if shuffle:
                     if chg_mask:
-                        tmp_mask = cp_mask[()][name]
-                        idx = torch.randperm(tmp_mask.nelement())
-                        tmp_mask = tmp_mask.view(-1)[idx].view(tmp_mask.size())
-                        mask[()][name] = tmp_mask
+                        try:  # will handle the case where mask is None
+                            tmp_mask = cp_mask_bias[()][name]
+                            idx = torch.randperm(tmp_mask.nelement())
+                            tmp_mask = tmp_mask.view(-1)[idx].view(tmp_mask.size())
+                            mask[()][name] = tmp_mask
+                        except:
+                            pass
                     if chg_weight:
                         idx = torch.randperm(weight.nelement())
                         weight = weight.view(-1)[idx].view(weight.size())
@@ -92,11 +98,16 @@ def sanity_check(parser_args, data, device, shuffle=False, reinit=False, chg_mas
 
     print("=================Use device {}===================".format(device))
     use_amp = True
+    dest_dir = os.path.join("results", parser_args.subfolder)
 
     # load model
     model = get_model(parser_args)
     model = switch_to_wt(model).to(device)
-    PATH_model = parser_args.imp_rewind_model
+    if parser_args.imp_no_rewind:
+        # then I will load the model right after being pruned
+        PATH_model = os.path.join(dest_dir, "round_{}_model.pth".format(parser_args.imp_resume_round))
+    else:
+        PATH_model = parser_args.imp_rewind_model
     checkpoint = torch.load(PATH_model, map_location='cpu')
     model.load_state_dict(checkpoint['model_state_dict'])
     # load mask
@@ -104,7 +115,7 @@ def sanity_check(parser_args, data, device, shuffle=False, reinit=False, chg_mas
         PATH_mask = "results/{}/round_{}_mask.npy".format(parser_args.subfolder, parser_args.imp_resume_round)
         mask = np.load(PATH_mask, allow_pickle=True)
         if parser_args.bias:
-            PATH_mask_bias = os.path.join(dest_dir, "round_{}_mask_bias.npy".format(idx_round))
+            PATH_mask_bias = os.path.join(dest_dir, "round_{}_mask_bias.npy".format(parser_args.imp_resume_round))
             mask_bias = np.load(PATH_mask_bias, allow_pickle=True)
         else:
             mask_bias = None
@@ -220,13 +231,14 @@ def main():
     data = get_dataset(parser_args)
 
     # finetune: all False
-    # sanity_check(parser_args, data, device, shuffle=False, reinit=False, chg_mask=False, chg_weight=False)
-    # reinit
-    sanity_check(parser_args, data, device, shuffle=False, reinit=True, chg_mask=False, chg_weight=False)
-    # shuffle mask
-    sanity_check(parser_args, data, device, shuffle=True, reinit=False, chg_mask=True, chg_weight=False)
-    # shuffle weights
-    sanity_check(parser_args, data, device, shuffle=True, reinit=False, chg_mask=False, chg_weight=True)
+    sanity_check(parser_args, data, device, shuffle=False, reinit=False, chg_mask=False, chg_weight=False)
+    if not parser_args.imp_no_rewind:
+        # reinit
+        sanity_check(parser_args, data, device, shuffle=False, reinit=True, chg_mask=False, chg_weight=False)
+        # shuffle mask
+        sanity_check(parser_args, data, device, shuffle=True, reinit=False, chg_mask=True, chg_weight=False)
+        # shuffle weights
+        sanity_check(parser_args, data, device, shuffle=True, reinit=False, chg_mask=False, chg_weight=True)
 
 
 
