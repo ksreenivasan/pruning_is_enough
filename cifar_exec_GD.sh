@@ -14,7 +14,17 @@
 
 ### ResNet-20
 
-#python main.py --config configs/hypercube/resnet20/error_bar/resnet20_sparsity_3_72_t1.yml #> log_hc_sparsity_3_72_t1 2>&1
+# old pruning schedule
+:<<BLOCK
+python main.py --config configs/hypercube/resnet20/old_prune_schedule/resnet20_sparsity_1_8_t1.yml > log_hc_old_prune_schedule_sparsity_1_8_t1 2>&1
+python main.py --config configs/hypercube/resnet20/old_prune_schedule/resnet20_sparsity_0_15_t1.yml > log_hc_old_prune_schedule_sparsity_0_15_t1 2>&1
+python main.py --config configs/hypercube/resnet20/old_prune_schedule/resnet20_sparsity_0_15_t2.yml > log_hc_old_prune_schedule_sparsity_0_15_t2 2>&1
+python main.py --config configs/hypercube/resnet20/old_prune_schedule/resnet20_sparsity_0_15_t3.yml > log_hc_old_prune_schedule_sparsity_0_15_t3 2>&1
+python main.py --config configs/hypercube/resnet20/old_prune_schedule/resnet20_sparsity_0_15_t4.yml > log_hc_old_prune_schedule_sparsity_0_15_t4 2>&1
+python main.py --config configs/hypercube/resnet20/old_prune_schedule/resnet20_sparsity_0_15_t5.yml > log_hc_old_prune_schedule_sparsity_0_15_t5 2>&1
+BLOCK
+python main.py --config configs/hypercube/resnet20/old_prune_schedule/resnet20_target_sparsity_0_15_t1.yml > log_hc_old_prune_schedule_target_sparsity_0_15_t1 2>&1
+#python main.py --config configs/hypercube/resnet20/old_prune_schedule/resnet20_target_sparsity_0_15_t1.yml > log_hc_old_prune_schedule_target_sparsity_0_15_t1_real 2>&1
 
 # HC for multiple trials
 #:<<BLOCK
@@ -25,13 +35,16 @@
 #python main.py --config configs/hypercube/resnet20/error_bar/resnet20_sparsity_3_72_t5.yml > log_hc_sparsity_3_72_t5 2>&1
 #BLOCK
 
-#:<<BLOCK
+:<<BLOCK
 python main.py --config configs/hypercube/resnet20/error_bar/resnet20_sparsity_0_59_t1.yml > log_hc_sparsity_0_59_t1 2>&1
 python main.py --config configs/hypercube/resnet20/error_bar/resnet20_sparsity_0_59_t2.yml > log_hc_sparsity_0_59_t2 2>&1
 python main.py --config configs/hypercube/resnet20/error_bar/resnet20_sparsity_0_59_t3.yml > log_hc_sparsity_0_59_t3 2>&1
 python main.py --config configs/hypercube/resnet20/error_bar/resnet20_sparsity_0_59_t4.yml > log_hc_sparsity_0_59_t4 2>&1
 python main.py --config configs/hypercube/resnet20/error_bar/resnet20_sparsity_0_59_t5.yml > log_hc_sparsity_0_59_t5 2>&1
-#BLOCK
+BLOCK
+
+
+
 
 
 
