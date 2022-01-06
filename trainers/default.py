@@ -13,7 +13,8 @@ from torch import optim
 __all__ = ["train", "validate", "modifier"]
 
 
-def train(train_loader, model, criterion, optimizer, epoch, args, writer):
+
+def train(train_loader, model, criterion, optimizer, epoch, args, writer, scaler=None):
     batch_time = AverageMeter("Time", ":6.3f")
     data_time = AverageMeter("Data", ":6.3f")
     losses = AverageMeter("Loss", ":.3f")
@@ -48,9 +49,6 @@ def train(train_loader, model, criterion, optimizer, epoch, args, writer):
         if args.algo in ['global_ep', 'global_ep_iter']:
             prune(model, update_thresholds_only=True)
 
-        # compute output
-        output = model(images)
-
         if args.algo in ['hc', 'hc_iter', 'pt'] and i % args.project_freq == 0 and not args.differentiate_clamp:
             for name, params in model.named_parameters():
                 if "score" in name:
@@ -58,7 +56,14 @@ def train(train_loader, model, criterion, optimizer, epoch, args, writer):
                     with torch.no_grad():
                         scores.data = torch.clamp(scores.data, 0.0, 1.0)
 
-        loss = criterion(output, target)
+        # compute output
+        if scaler is None:
+            output = model(images)
+            loss = criterion(output, target)
+        else:
+            with torch.cuda.amp.autocast(enabled=True): # mixed precision
+                output = model(images)
+                loss = criterion(output, target)
 
         if args.lam_finetune_loss > 0:
             raise NotImplementedError  # please check finetune_loss repo
@@ -82,12 +87,13 @@ def train(train_loader, model, criterion, optimizer, epoch, args, writer):
 
         # compute gradient and do SGD step
         optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
-
-        # pdb.set_trace()
-        # TODO: print the updated score
-        # TODO: print the weight
+        if scaler is None:
+            loss.backward()
+            optimizer.step()
+        else:
+            scaler.scale(loss).backward()
+            scaler.step(optimizer)
+            scaler.update()
 
         # measure elapsed time
         batch_time.update(time.time() - end)

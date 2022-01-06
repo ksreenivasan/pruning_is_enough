@@ -112,6 +112,11 @@ def main_worker(gpu, ngpus_per_node):
     if parser_args.dataset == 'TinyImageNet':
         print_num_dataset(data)
 
+
+    if parser_args.mixed_precision:
+        scaler = torch.cuda.amp.GradScaler(enabled=True) # mixed precision
+    else:
+        scaler = None
     # Start training
     for epoch in range(parser_args.start_epoch, parser_args.epochs):
         if parser_args.multiprocessing_distributed:
@@ -134,7 +139,7 @@ def main_worker(gpu, ngpus_per_node):
         # train for one epoch
         start_train = time.time()
         train_acc1, train_acc5, train_acc10, reg_loss = train(
-            data.train_loader, model, criterion, optimizer, epoch, parser_args, writer=writer
+            data.train_loader, model, criterion, optimizer, epoch, parser_args, writer=writer, scaler=scaler
         )
         train_time.update((time.time() - start_train) / 60)
         scheduler.step()
