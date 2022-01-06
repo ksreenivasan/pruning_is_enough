@@ -37,8 +37,7 @@ def train(train_loader, model, criterion, optimizer, epoch, args, writer):
     ):
         # measure data loading time
         data_time.update(time.time() - end)
-
-       # print(images.shape, target.shape)
+        #print(images.shape, target.shape)
 
         if args.gpu is not None:
             images = images.cuda(args.gpu, non_blocking=True)
@@ -62,7 +61,7 @@ def train(train_loader, model, criterion, optimizer, epoch, args, writer):
         loss = criterion(output, target)
 
         if args.lam_finetune_loss > 0:
-            raise NotImplementedError # please check finetune_loss repo
+            raise NotImplementedError  # please check finetune_loss repo
 
         regularization_loss = torch.tensor(0)
         if args.regularization:
@@ -136,6 +135,8 @@ def validate(val_loader, model, criterion, args, writer, epoch):
                 images = images.cuda(args.gpu, non_blocking=True)
 
             target = target.cuda(args.gpu, non_blocking=True)
+
+            #print(images.shape, target.shape)
 
             # compute output
             output = model(images)
