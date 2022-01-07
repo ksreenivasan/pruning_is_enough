@@ -1,8 +1,12 @@
+from args_helper import parser_args
 import numpy as np
 import torch
 
-def get_scheduler(optimizer, policy='multistep_lr', milestones=[100, 150], gamma=0.1, max_epochs=150):
-#def get_scheduler(optimizer, policy='multistep_lr', milestones=[80, 120], gamma=0.1, max_epochs=150):
+def get_scheduler(optimizer, policy='multistep_lr', milestones=[80, 120], gamma=0.1, max_epochs=150):
+
+    if parser_args.dataset == 'TinyImageNet':
+        milestones = [100, 150]
+        max_epochs = 200
 
 
     if policy == 'multistep_lr':
