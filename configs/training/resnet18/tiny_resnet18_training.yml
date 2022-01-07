@@ -15,7 +15,7 @@ name: tiny_resnet18_training
 # ===== Learning Rate Policy ======== #
 optimizer: adam
 lr: 0.001
-lr_policy: constant_lr
+lr_policy: cosine_lr #constant_lr
 
 # ===== Network training config ===== #
 epochs: 200
@@ -35,5 +35,5 @@ scale_fan: True
 
 # ===== Hardware setup ===== #
 workers: 4
-gpu: 0
+gpu: 1
 
