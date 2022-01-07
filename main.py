@@ -109,8 +109,8 @@ def main_worker(gpu, ngpus_per_node):
         print("Setting prune_rate to {}".format(parser_args.prune_rate))
     else:
         print("Overriding prune_rate to {}".format(parser_args.prune_rate))
-    if parser_args.dataset == 'TinyImageNet':
-        print_num_dataset(data)
+    #if parser_args.dataset == 'TinyImageNet':
+    #    print_num_dataset(data)
 
 
     if parser_args.mixed_precision:
