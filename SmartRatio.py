@@ -63,8 +63,8 @@ def SmartRatio(model, sr_args, parser_args):
 
     # 2. set p_l = (L-l+1)^2 + (L-l+1)
     p_arr = []
-    for l in range(num_layers):
-        if l == num_layers - 1:  # hacky way applicable for resnet_kaiming.py models
+    for l in range(1, num_layers+1):
+        if l == num_layers:  # hacky way applicable for resnet_kaiming.py models
             p_arr.append(linear_keep_ratio)
         else:
             p_arr.append((num_layers-l+1)**2 + (num_layers-l+1))
