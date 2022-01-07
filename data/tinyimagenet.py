@@ -27,6 +27,7 @@ class TinyImageNet:
         valdir = os.path.join(data_root, "val")
         testdir = os.path.join(data_root, "test")
 
+        '''
         if False: #True:
             normalize = transforms.Normalize(
                 mean=[0.4802, 0.4481, 0.3975], std=[0.2302, 0.2265, 0.2262]
@@ -43,7 +44,8 @@ class TinyImageNet:
                     ]
                 ),
             )
-        else:
+        '''
+        if True:
             normalize = transforms.Normalize(
                 mean=[0.48024578664982126,
                       0.44807218089384643, 0.3975477478649648],
