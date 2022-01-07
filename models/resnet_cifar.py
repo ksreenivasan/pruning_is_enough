@@ -10,6 +10,7 @@ import torch.nn.functional as F
 
 from utils.builder import get_builder
 from args_helper import parser_args
+from utils.net_utils import prune
 
 
 class BasicBlock(nn.Module):
@@ -80,7 +81,7 @@ class ResNet(nn.Module):
         self.layer4 = self._make_layer(block, 512, num_blocks[3], stride=2)
         self.avgpool = nn.AdaptiveAvgPool2d(1)
 
-        if args.last_layer_dense:
+        if parser_args.last_layer_dense:
             self.fc = nn.Conv2d(512 * block.expansion, 10, 1)
         else:
             self.fc = builder.conv1x1(512 * block.expansion, 10)
@@ -95,7 +96,9 @@ class ResNet(nn.Module):
         return nn.Sequential(*layers)
 
     def forward(self, x):
-        #import pdb; pdb.set_trace()
+        # update score thresholds for global ep
+        if parser_args.algo in ['global_ep', 'global_ep_iter'] or parser_args.bottom_k_on_forward:
+            prune(self, update_thresholds_only=True)
         out = F.relu(self.bn1(self.conv1(x)))
         out = self.layer1(out)
         out = self.layer2(out)

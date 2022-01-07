@@ -93,7 +93,7 @@ class Bottleneck(nn.Module):
 
 # ResNet {{{
 class ResNet(nn.Module):
-    def __init__(self, builder, block, layers, num_classes=1000, base_width=64):
+    def __init__(self, builder, block, layers, num_classes=200, base_width=64):
         self.inplanes = 64
         super(ResNet, self).__init__()
 
@@ -101,13 +101,7 @@ class ResNet(nn.Module):
         if self.base_width // 64 > 1:
             print(f"==> Using {self.base_width // 64}x wide model")
 
-        if args.first_layer_dense:
-            self.conv1 = nn.Conv2d(
-                3, self.inplanes, kernel_size=7, stride=2, padding=3, bias=False
-            )
-        else:
-            self.conv1 = builder.conv7x7(3, 64, stride=2, first_layer=True)
-
+        self.conv1 = builder.conv7x7(3, 64, stride=2, first_layer=True)
         self.bn1 = builder.batchnorm(64)
         self.relu = builder.activation()
         self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
@@ -118,7 +112,7 @@ class ResNet(nn.Module):
         self.avgpool = nn.AdaptiveAvgPool2d(1)
 
         # self.fc = nn.Linear(512 * block.expansion, num_classes)
-        if args.last_layer_dense:
+        if parser_args.last_layer_dense:
             self.fc = nn.Conv2d(512 * block.expansion, args.num_classes, 1)
         else:
             self.fc = builder.conv1x1(512 * block.expansion, num_classes)
@@ -167,26 +161,33 @@ class ResNet(nn.Module):
 
 
 # ResNet }}}
-def ResNet18(pretrained=False):
-    return ResNet(get_builder(), BasicBlock, [2, 2, 2, 2], 1000)
+def TinyResNet18(pretrained=False):
+    return ResNet(get_builder(), BasicBlock, [2, 2, 2, 2], 200)
 
 
-def ResNet50(pretrained=False):
-    return ResNet(get_builder(), Bottleneck, [3, 4, 6, 3], 1000)
+def TinyResNet50(pretrained=False):
+    return ResNet(get_builder(), Bottleneck, [3, 4, 6, 3], 200)
 
 
-def ResNet101(pretrained=False):
-    return ResNet(get_builder(), Bottleneck, [3, 4, 23, 3], 1000)
+def TinyResNet101(pretrained=False):
+    return ResNet(get_builder(), Bottleneck, [3, 4, 23, 3], 200)
 
 
-def WideResNet50_2(pretrained=False):
+def TinyWideResNet50_2(pretrained=False):
     return ResNet(
-        get_builder(), Bottleneck, [3, 4, 6, 3], num_classes=1000, base_width=64 * 2
+        get_builder(), Bottleneck, [3, 4, 6, 3], num_classes=200, base_width=64 * 2
     )
 
 
-def WideResNet101_2(pretrained=False):
+def TinyWideResNet101_2(pretrained=False):
     return ResNet(
-        get_builder(), Bottleneck, [3, 4, 23, 3], num_classes=1000, base_width=64 * 2
+        get_builder(), Bottleneck, [3, 4, 23, 3], num_classes=200, base_width=64 * 2
     )
+
+
+
+
+
+
+
 

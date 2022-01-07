@@ -8,6 +8,7 @@ import torch.nn.init as init
 
 from utils.builder import get_builder
 from args_helper import parser_args
+from utils.net_utils import prune
 
 # def _weights_init(m):
 #     classname = m.__class__.__name__
@@ -86,7 +87,9 @@ class ResNet(nn.Module):
         return prunable_weights, prunable_biases
 
     def forward(self, x):
-        #import pdb; pdb.set_trace()
+        # update score thresholds for global ep
+        if parser_args.algo in ['global_ep', 'global_ep_iter'] or parser_args.bottom_k_on_forward:
+            prune(self, update_thresholds_only=True)
         out = F.relu(self.bn1(self.conv1(x)))
         out = self.layer1(out)
         out = self.layer2(out)
