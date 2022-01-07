@@ -1,5 +1,5 @@
 subfolder: sr
-algo: 'ep' # NOTE: change
+algo: 'hc' # NOTE: is this okay?
 random_subnet: True
 smart_ratio: 0.98 # 2% sparsity
 
