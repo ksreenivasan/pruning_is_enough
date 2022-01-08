@@ -1,3 +1,8 @@
+*.txt
+*.jpg
+*.pth
+*.sh
+
 # A
 results/
 *.pdf
