@@ -7,7 +7,7 @@ import torch.nn as nn
 from utils.builder import get_builder
 
 from args_helper import parser_args
-
+from utils.net_utils import prune
 
 class Conv2(nn.Module):
     def __init__(self):
@@ -30,6 +30,9 @@ class Conv2(nn.Module):
         )
 
     def forward(self, x):
+        # update score thresholds for global ep
+        if parser_args.algo in ['global_ep', 'global_ep_iter'] or parser_args.bottom_k_on_forward:
+            prune(self, update_thresholds_only=True)
         out = self.convs(x)
         out = out.view(out.size(0), 64 * 16 * 16, 1, 1)
         out = self.linear(out)
@@ -69,8 +72,10 @@ class Conv4(nn.Module):
         )
 
     def forward(self, x):
+        # update score thresholds for global ep
+        if parser_args.algo in ['global_ep', 'global_ep_iter'] or parser_args.bottom_k_on_forward:
+            prune(self, update_thresholds_only=True)
         out = self.convs(x)
-        #import pdb; pdb.set_trace()
         out = out.view(out.size(0), (int)(8192 * self.width), 1, 1)
         out = self.linear(out)
         return out.squeeze()
@@ -145,6 +150,9 @@ class Conv6(nn.Module):
         )
 
     def forward(self, x):
+        # update score thresholds for global ep
+        if parser_args.algo in ['global_ep', 'global_ep_iter'] or parser_args.bottom_k_on_forward:
+            prune(self, update_thresholds_only=True)
         out = self.convs(x)
         out = out.view(out.size(0), 256 * 4 * 4, 1, 1)
         out = self.linear(out)
@@ -186,6 +194,9 @@ class Conv8(nn.Module):
         )
 
     def forward(self, x):
+        # update score thresholds for global ep
+        if parser_args.algo in ['global_ep', 'global_ep_iter']:
+            prune(self, update_thresholds_only=True)
         out = self.convs(x)
         out = out.view(out.size(0), 512 * 2 * 2, 1, 1)
         out = self.linear(out)
@@ -205,6 +216,9 @@ class FC(nn.Module):
         )
 
     def forward(self, x):
+        # update score thresholds for global ep
+        if parser_args.algo in ['global_ep', 'global_ep_iter'] or parser_args.bottom_k_on_forward:
+            prune(self, update_thresholds_only=True)
         out = x.view(x.size(0), 28 * 28, 1, 1)
         out = self.linear(out)
         return out.squeeze()
@@ -241,6 +255,9 @@ class Conv4Wide(nn.Module):
         )
 
     def forward(self, x):
+        # update score thresholds for global ep
+        if parser_args.algo in ['global_ep', 'global_ep_iter'] or parser_args.bottom_k_on_forward:
+            prune(self, update_thresholds_only=True)
         out = self.convs(x)
         out = out.view(out.size(0), scale(128)*8*8, 1, 1)
         out = self.linear(out)
@@ -278,6 +295,9 @@ class Conv6Wide(nn.Module):
         )
 
     def forward(self, x):
+        # update score thresholds for global ep
+        if parser_args.algo in ['global_ep', 'global_ep_iter'] or parser_args.bottom_k_on_forward:
+            prune(self, update_thresholds_only=True)
         out = self.convs(x)
         out = out.view(out.size(0), scale(256) * 4 * 4, 1, 1)
         out = self.linear(out)

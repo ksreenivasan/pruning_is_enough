@@ -1,0 +1,39 @@
+subfolder: tiny_weight_training_t1
+trial_num: 1
+
+
+# algorithm
+algo: 'training'
+
+# Architecture
+arch: TinyResNet18Normal
+
+# ===== Dataset ===== #
+dataset: TinyImageNet
+name: tiny_resnet18_training
+
+# ===== Learning Rate Policy ======== #
+optimizer: adam
+lr: 0.001
+lr_policy: cosine_lr #constant_lr
+
+# ===== Network training config ===== #
+epochs: 200
+wd: 0.0001
+momentum: 0.9
+batch_size: 256
+
+weight_training: True
+
+# ===== Sparsity =========== #
+conv_type: SubnetConv
+bn_type: NonAffineBatchNorm
+freeze_weights: True
+prune_rate: -1
+init: kaiming_normal
+scale_fan: True
+
+# ===== Hardware setup ===== #
+workers: 4
+gpu: 1
+

@@ -5,7 +5,9 @@
 
 # A
 results/
+configs/
 *.pdf
+*.yml
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -152,3 +154,4 @@ plots/
 runs/
 *.pt
 cifar_log
+log*

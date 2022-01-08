@@ -21,7 +21,8 @@ def get_layers(arch='Conv4', model=None):
     if isinstance(model, nn.parallel.DistributedDataParallel):
         model = model.module
     if arch == 'Conv4':
-        conv_layers = [model.convs[0], model.convs[2], model.convs[5], model.convs[7]]
+        conv_layers = [model.convs[0], model.convs[2],
+                       model.convs[5], model.convs[7]]
         linear_layers = [model.linear[0], model.linear[2], model.linear[4]]
     elif arch == 'resnet20':
         conv_layers = [model.conv1]
@@ -45,6 +46,13 @@ def get_layers(arch='Conv4', model=None):
                 if len(layer[basic_block_id].shortcut) > 0:
                     conv_layers.append(layer[basic_block_id].shortcut[0])
         linear_layers = [model.fc]
+    elif arch == 'TinyResNet18':
+        conv_layers = [model.conv1]
+        for layer in [model.layer1, model.layer2, model.layer3, model.layer4]:
+            for basic_block_id in [0, 1]:
+                conv_layers.append(layer[basic_block_id].conv1)
+                conv_layers.append(layer[basic_block_id].conv2)
+        linear_layers = [model.fc]
     elif arch == 'ResNet50':
         conv_layers = [model.conv1]
         for layer in [model.layer1, model.layer2, model.layer3, model.layer4]:
@@ -67,10 +75,12 @@ def redraw(model, shuffle=False, reinit=False, invert=False, chg_mask=False, chg
         if shuffle:
             if chg_mask:
                 idx = torch.randperm(layer.flag.data.nelement())
-                layer.flag.data = layer.flag.data.view(-1)[idx].view(layer.flag.data.size())
+                layer.flag.data = layer.flag.data.view(
+                    -1)[idx].view(layer.flag.data.size())
                 if parser_args.bias:
                     idx = torch.randperm(layer.bias_flag.data.nelement())
-                    layer.bias_flag.data = layer.bias_flag.data.view(-1)[idx].view(layer.bias_flag.data.size())
+                    layer.bias_flag.data = layer.bias_flag.data.view(
+                        -1)[idx].view(layer.bias_flag.data.size())
 
             if chg_weight:
                 raise NotImplementedError
@@ -83,12 +93,14 @@ def redraw(model, shuffle=False, reinit=False, invert=False, chg_mask=False, chg
                 '''
         if reinit:
             if chg_weight:
-                nn.init.kaiming_normal_(layer.weight, mode="fan_in", nonlinearity="relu")
+                nn.init.kaiming_normal_(
+                    layer.weight, mode="fan_in", nonlinearity="relu")
                 if parser_args.bias:
-                    nn.init.kaiming_normal_(layer.bias, mode="fan_in", nonlinearity="relu")
+                    nn.init.kaiming_normal_(
+                        layer.bias, mode="fan_in", nonlinearity="relu")
             else:
                 raise NotImplementedError
-        
+
         if invert:
             if chg_mask:
                 layer.flag.data = 1 - layer.flag.data
@@ -97,11 +109,7 @@ def redraw(model, shuffle=False, reinit=False, invert=False, chg_mask=False, chg
             else:
                 raise NotImplementedError
 
-
     return cp_model
-
-
-
 
 
 def save_checkpoint(state, is_best, filename="checkpoint.pth", save=False, parser_args=None):
@@ -117,7 +125,8 @@ def save_checkpoint(state, is_best, filename="checkpoint.pth", save=False, parse
 
         # added for mode connectivity
         if parser_args is not None and parser_args.mode_connect:
-            print('We are saving stat_dict for checking mode connectivity: {}'.format(parser_args.mode_connect_filename))
+            print('We are saving stat_dict for checking mode connectivity: {}'.format(
+                parser_args.mode_connect_filename))
             shutil.copyfile(filename, parser_args.mode_connect_filename)
 
 #        if not save:
@@ -239,7 +248,6 @@ class SubnetL1RegLoss(nn.Module):
         return l1_accum
 
 
-        
 # rounds model by round_scheme and returns the rounded model
 def round_model(model, round_scheme, noise=False, ratio=0.0, rank=None):
     print("Rounding model with scheme: {}".format(round_scheme))
@@ -254,7 +262,8 @@ def round_model(model, round_scheme, noise=False, ratio=0.0, rank=None):
                 params.data += delta
 
             if round_scheme == 'naive':
-                params.data = torch.gt(params.data, torch.ones_like(params.data)*0.5).int().float()
+                params.data = torch.gt(params.data, torch.ones_like(
+                    params.data)*parser_args.quantize_threshold).int().float()
             elif round_scheme == 'prob':
                 params.data = torch.clamp(params.data, 0.0, 1.0)
                 params.data = torch.bernoulli(params.data).float()
@@ -265,10 +274,13 @@ def round_model(model, round_scheme, noise=False, ratio=0.0, rank=None):
                     params.data = torch.bernoulli(params.data).float()
                 else:
                     # print("Applying naive rounding to {}".format(name))
-                    params.data = torch.gt(params.data, torch.ones_like(params.data)*0.5).int().float()
+                    params.data = torch.gt(params.data, torch.ones_like(
+                        params.data)*0.5).int().float()
+            elif round_scheme == 'all_ones':
+                params.data = torch.ones_like(params.data)
             else:
                 print("INVALID ROUNDING")
-                print("EXITING")  
+                print("EXITING")
             '''    
             if noise:
                 delta = torch.bernoulli(torch.ones_like(params.data)*ratio)
@@ -276,7 +288,8 @@ def round_model(model, round_scheme, noise=False, ratio=0.0, rank=None):
             '''
 
     if isinstance(model, nn.parallel.DistributedDataParallel):
-        cp_model = nn.parallel.DistributedDataParallel(cp_model, device_ids=[rank], find_unused_parameters=True)
+        cp_model = nn.parallel.DistributedDataParallel(
+            cp_model, device_ids=[rank], find_unused_parameters=True)
 
     return cp_model
 
@@ -300,7 +313,8 @@ def get_score_sparsity_hc(model):
     return 100*numer/denom
 """
 
-def prune(model, update_thresholds_only=False):
+
+def prune(model, update_thresholds_only=False, update_scores=False):
     if update_thresholds_only:
         pass
         #print("Updating prune thresholds")
@@ -309,19 +323,16 @@ def prune(model, update_thresholds_only=False):
 
     scores_threshold = bias_scores_threshold = -np.inf
     if parser_args.algo not in ['hc_iter', 'global_ep', 'global_ep_iter']:
-        print('not appropriate to use prune() in the current parser_args.algo')
-        raise ValueError
+        print('Warning: Using prune() in {}. Are you sure?'.format(parser_args.algo))
 
     conv_layers, linear_layers = get_layers(parser_args.arch, model)
-    if parser_args.algo in ['hc_iter']:
-        if update_thresholds_only:
-            raise NotImplementedError
 
     if parser_args.prune_type == 'FixThresholding':
-        if parser_args.algo == 'hc_iter': # and update_thresholds_only == False:
+        if parser_args.algo == 'hc_iter':  # and update_thresholds_only == False:
             # prune weights that would be rounded to 0
             for layer in (conv_layers + linear_layers):
-                layer.flag.data = (layer.flag.data + torch.gt(layer.scores, torch.ones_like(layer.scores)*0.5).int() == 2).int()
+                layer.flag.data = (layer.flag.data + torch.gt(layer.scores,
+                                   torch.ones_like(layer.scores)*0.5).int() == 2).int()
         else:
             raise NotImplementedError
 
@@ -331,25 +342,31 @@ def prune(model, update_thresholds_only=False):
         num_active_biases = 0
         active_scores_list = []
         active_bias_scores_list = []
-        for layer in (conv_layers+ linear_layers):
+        for layer in (conv_layers + linear_layers):
             num_active_weights += layer.flag.data.sum().item()
             active_scores = (layer.scores.data[layer.flag.data == 1]).clone()
             active_scores_list.append(active_scores)
             if parser_args.bias:
                 num_active_biases += layer.bias_flag.data.sum().item()
-                active_biases = (layer.bias_scores.data[layer.bias_flag.data == 1]).clone()
+                active_biases = (
+                    layer.bias_scores.data[layer.bias_flag.data == 1]).clone()
                 active_bias_scores_list.append(active_biases)
 
-        number_of_weights_to_prune = np.ceil(parser_args.prune_rate * num_active_weights).astype(int)
-        number_of_biases_to_prune = np.ceil(parser_args.prune_rate * num_active_biases).astype(int)
+        number_of_weights_to_prune = np.ceil(
+            parser_args.prune_rate * num_active_weights).astype(int)
+        number_of_biases_to_prune = np.ceil(
+            parser_args.prune_rate * num_active_biases).astype(int)
 
         agg_scores = torch.cat(active_scores_list)
-        agg_bias_scores = torch.cat(active_bias_scores_list) if parser_args.bias else torch.tensor([])
+        agg_bias_scores = torch.cat(
+            active_bias_scores_list) if parser_args.bias else torch.tensor([])
 
-        scores_threshold = torch.sort(torch.abs(agg_scores)).values[number_of_weights_to_prune-1].item()
+        scores_threshold = torch.sort(
+            torch.abs(agg_scores)).values[number_of_weights_to_prune-1].item()
 
         if parser_args.bias:
-            bias_scores_threshold = torch.sort(torch.abs(agg_bias_scores)).values[number_of_biases_to_prune-1].item()
+            bias_scores_threshold = torch.sort(
+                torch.abs(agg_bias_scores)).values[number_of_biases_to_prune-1].item()
         else:
             bias_scores_threshold = -1
 
@@ -361,9 +378,15 @@ def prune(model, update_thresholds_only=False):
 
         else:
             for layer in (conv_layers + linear_layers):
-                layer.flag.data = (layer.flag.data + torch.gt(layer.scores, torch.ones_like(layer.scores)*scores_threshold).int() == 2).int()
+                layer.flag.data = (layer.flag.data + torch.gt(layer.scores,
+                                   torch.ones_like(layer.scores)*scores_threshold).int() == 2).int()
+                if update_scores:
+                    layer.scores.data = layer.scores.data * layer.flag.data
                 if parser_args.bias:
-                    layer.bias_flag.data = (layer.bias_flag.data + torch.gt(layer.bias_scores, torch.ones_like(layer.bias_scores)*bias_scores_threshold).int() == 2).int()
+                    layer.bias_flag.data = (layer.bias_flag.data + torch.gt(layer.bias_scores, torch.ones_like(
+                        layer.bias_scores)*bias_scores_threshold).int() == 2).int()
+                    if update_scores:
+                        layer.bias_scores.data = layer.bias_scores.data * layer.bias_flag.data
 
             if parser_args.rewind_score and layer.saved_scores is not None:
                 # if we go into this branch, we will load the rewinded states of the scores
@@ -371,7 +394,8 @@ def prune(model, update_thresholds_only=False):
                     layer.scores.data = copy.deepcopy(layer.saved_scores.data)
                     if parser_args.bias:
                         # TODO: this will probably break
-                        layer.bias_scores.data = copy.deepcopy(layer.saved_bias_scores.data)
+                        layer.bias_scores.data = copy.deepcopy(
+                            layer.saved_bias_scores.data)
                     # for sanity check: the score rewind back
                     # print(layer.scores.data)  # yes, it always rewind back to the same score, the saved score does not change
             else:  # if we do not explicitly specify rewind_score, we will keep the score same
@@ -391,7 +415,8 @@ def get_model_sparsity(model, threshold=0):
     # TODO: find a nicer way to do this (skip dropout)
     # TODO: Update: can't use .children() or .named_modules() because of the way things are wrapped in builder
     for conv_layer in conv_layers:
-        w_numer, w_denom, b_numer, b_denom = get_layer_sparsity(conv_layer, threshold)
+        w_numer, w_denom, b_numer, b_denom = get_layer_sparsity(
+            conv_layer, threshold)
         numer += w_numer
         denom += w_denom
         if parser_args.bias:
@@ -399,7 +424,8 @@ def get_model_sparsity(model, threshold=0):
             denom += b_denom
 
     for lin_layer in linear_layers:
-        w_numer, w_denom, b_numer, b_denom = get_layer_sparsity(lin_layer, threshold)
+        w_numer, w_denom, b_numer, b_denom = get_layer_sparsity(
+            lin_layer, threshold)
         numer += w_numer
         denom += w_denom
         if parser_args.bias:
@@ -412,7 +438,7 @@ def get_model_sparsity(model, threshold=0):
 # returns num_nonzero elements, total_num_elements so that it is easier to compute
 # average sparsity in the end
 def get_layer_sparsity(layer, threshold=0):
-    if parser_args.algo in ['hc', 'hc_iter']:
+    if parser_args.algo in ['hc', 'hc_iter'] and not parser_args.bottom_k_on_forward:
         # assume the model is rounded, compute effective scores
         eff_scores = layer.scores * layer.flag
         if parser_args.bias:
@@ -424,18 +450,22 @@ def get_layer_sparsity(layer, threshold=0):
         if num_middle > 0:
             print("WARNING: Model scores are not binary. Sparsity number is unreliable.")
             raise ValueError
-        w_numer, w_denom = eff_scores.detach().sum().item(), eff_scores.detach().flatten().numel()
+        w_numer, w_denom = eff_scores.detach().sum(
+        ).item(), eff_scores.detach().flatten().numel()
 
         if parser_args.bias:
-            b_numer, b_denom = eff_bias_scores.detach().sum().item(), eff_bias_scores.detach().flatten().numel()
+            b_numer, b_denom = eff_bias_scores.detach().sum(
+            ).item(), eff_bias_scores.detach().flatten().numel()
         else:
             b_numer, b_denom = 0, 0
 
-    elif parser_args.algo in ['global_ep', 'ep', 'global_ep_iter']:
+    elif parser_args.algo in ['global_ep', 'ep', 'global_ep_iter'] or parser_args.bottom_k_on_forward:
         if parser_args.algo == 'ep':
-            weight_mask, bias_mask = GetSubnetConv.apply(layer.scores.abs(), layer.bias_scores.abs(), parser_args.prune_rate)
+            weight_mask, bias_mask = GetSubnetConv.apply(
+                layer.scores.abs(), layer.bias_scores.abs(), parser_args.prune_rate)
         else:
-            weight_mask, bias_mask = GetSubnetConv.apply(layer.scores.abs(), layer.bias_scores.abs(), 0, layer.scores_prune_threshold, layer.bias_scores_prune_threshold)
+            weight_mask, bias_mask = GetSubnetConv.apply(layer.scores.abs(), layer.bias_scores.abs(
+            ), 0, layer.scores_prune_threshold, layer.bias_scores_prune_threshold)
         w_numer, w_denom = weight_mask.sum().item(), weight_mask.flatten().numel()
 
         if parser_args.bias:
@@ -444,7 +474,8 @@ def get_layer_sparsity(layer, threshold=0):
             b_numer, b_denom = 0, 0
     else:
         # traditional pruning where we just check non-zero values in mask
-        weight_mask, bias_mask = GetSubnetConv.apply(layer.scores.abs(), layer.bias_scores.abs(), parser_args.prune_rate)
+        weight_mask, bias_mask = GetSubnetConv.apply(
+            layer.scores.abs(), layer.bias_scores.abs(), parser_args.prune_rate)
         w_numer, w_denom = weight_mask.sum().item(), weight_mask.flatten().numel()
 
         if parser_args.bias:
@@ -459,19 +490,23 @@ def get_regularization_loss(model, regularizer='L2', lmbda=1, alpha=1, alpha_pri
     if isinstance(model, nn.parallel.DistributedDataParallel):
         model = model.module
     conv_layers, linear_layers = get_layers(parser_args.arch, model)
+
     def get_special_reg_sum(layer):
         # reg_loss =  \sum_{i} w_i^2 * p_i(1-p_i)
         # NOTE: alpha = alpha' = 1 here. Change if needed.
         reg_sum = torch.tensor(0.).cuda()
         w_i = layer.weight
         p_i = layer.scores
-        reg_sum += torch.sum(torch.pow(w_i, 2) * torch.pow(p_i, 1) * torch.pow(1-p_i, 1))
+        reg_sum += torch.sum(torch.pow(w_i, 2) *
+                             torch.pow(p_i, 1) * torch.pow(1-p_i, 1))
         if parser_args.bias:
             b_i = layer.bias
             p_i = layer.bias_scores
-            reg_sum += torch.sum(torch.pow(b_i, 2) * torch.pow(p_i, 1) * torch.pow(1-p_i, 1))
+            reg_sum += torch.sum(torch.pow(b_i, 2) *
+                                 torch.pow(p_i, 1) * torch.pow(1-p_i, 1))
         return reg_sum
 
+    #pdb.set_trace()
     regularization_loss = torch.tensor(0.).cuda()
     if regularizer == 'L2':
         # reg_loss =  ||p||_2^2
@@ -495,16 +530,31 @@ def get_regularization_loss(model, regularizer='L2', lmbda=1, alpha=1, alpha_pri
                 regularization_loss += torch.norm(params, p=1)
         regularization_loss = lmbda * regularization_loss
 
+    elif regularizer == 'L1_L2':
+        # reg_loss =  ||p||_1 + ||p||_2^2
+        for name, params in model.named_parameters():
+            if ".bias_score" in name:
+                if parser_args.bias:
+                    regularization_loss += torch.norm(params, p=1)
+                    regularization_loss += torch.norm(params, p=2)**2
+
+            elif ".score" in name:
+                regularization_loss += torch.norm(params, p=1)
+                regularization_loss += torch.norm(params, p=2)**2
+        regularization_loss = lmbda * regularization_loss
+
     elif regularizer == 'var_red_1':
         # reg_loss = lambda * p^{alpha} (1-p)^{alpha'}
         for name, params in model.named_parameters():
             if ".bias_score" in name:
                 if parser_args.bias:
-                    regularization_loss += torch.sum(torch.pow(params, alpha) * torch.pow(1-params, alpha_prime))
+                    regularization_loss += torch.sum(
+                        torch.pow(params, alpha) * torch.pow(1-params, alpha_prime))
 
             elif ".score" in name:
                 #import pdb; pdb.set_trace()
-                regularization_loss += torch.sum(torch.pow(params, alpha) * torch.pow(1-params, alpha_prime))
+                regularization_loss += torch.sum(
+                    torch.pow(params, alpha) * torch.pow(1-params, alpha_prime))
 
         regularization_loss = lmbda * regularization_loss
 
@@ -527,13 +577,13 @@ def get_regularization_loss(model, regularizer='L2', lmbda=1, alpha=1, alpha_pri
                     params_filt = params[(params > 0) & (params < 1)]
                     regularization_loss +=\
                         torch.sum(-1.0 * params_filt * torch.log(params_filt)
-                            - (1-params_filt) * torch.log(1-params_filt))
+                                  - (1-params_filt) * torch.log(1-params_filt))
 
             elif ".score" in name:
                 params_filt = params[(params > 0) & (params < 1)]
                 regularization_loss +=\
-                        torch.sum(-1.0 * params_filt * torch.log(params_filt)
-                            - (1-params_filt) * torch.log(1-params_filt))
+                    torch.sum(-1.0 * params_filt * torch.log(params_filt)
+                              - (1-params_filt) * torch.log(1-params_filt))
 
         regularization_loss = lmbda * regularization_loss
 
@@ -541,8 +591,22 @@ def get_regularization_loss(model, regularizer='L2', lmbda=1, alpha=1, alpha_pri
 
     return regularization_loss
 
+# note target sparsity is MAX PERCENTAGE of weights remaining at the end of training
+# parser_args.prune_rate is a fraction i.e; 1/100*percentage
+
+
+def get_prune_rate(target_sparsity=0.5, iter_period=5):
+    print("Computing prune_rate for target_sparsity {} with iter_period {}".format(
+        target_sparsity, iter_period))
+    max_epochs = parser_args.epochs
+    num_prune_iterations = np.floor((max_epochs-1)/iter_period)
+    # if algo is HC, iter_HC or anything that uses prune() then, prune_rate represents number of weights to prune
+    prune_rate = 1 - np.exp(np.log(target_sparsity/100)/num_prune_iterations)
+    return prune_rate
 
 #### Functions used for greedy pruning ####
+
+
 def get_sparsity(model):
     if "Baseline" in model.__class__.__name__:
         return 0
@@ -552,15 +616,18 @@ def get_sparsity(model):
         for child in model.children():
             if isinstance(child, MaskLinear) or isinstance(child, MaskConv):
                 total_num_params += torch.numel(child.mask_weight)
-                total_num_kept += torch.sum(child.mask_weight * child.fixed_weight)
+                total_num_kept += torch.sum(child.mask_weight *
+                                            child.fixed_weight)
 
-        return 1 - (total_num_kept / total_num_params)      # The sparsity of a network is the ratio of weights that have been removed (pruned) to all the weights in the network
+        # The sparsity of a network is the ratio of weights that have been removed (pruned) to all the weights in the network
+        return 1 - (total_num_kept / total_num_params)
 
 
 def flip(model):
     params_dict = {}
     idx_dict = {}
-    idx_start = 0   # Starting index for a particular flattened binary mask in the network. 
+    # Starting index for a particular flattened binary mask in the network.
+    idx_start = 0
 
     for name, param in model.named_parameters():
         if "mask" in name:
@@ -573,11 +640,12 @@ def flip(model):
 
     rand_idx = random.sample(range(idx_start), k=round(0.1 * idx_start))
 
-    for i in range(len(rand_idx)): 
+    for i in range(len(rand_idx)):
         param_idx = rand_idx[i]
         for name in reversed(param_names):
             if idx_dict[name] <= param_idx:
-                params_dict[name][param_idx - idx_dict[name]] = 1 - params_dict[name][param_idx - idx_dict[name]]
+                params_dict[name][param_idx - idx_dict[name]] = 1 - \
+                    params_dict[name][param_idx - idx_dict[name]]
                 break
 
 

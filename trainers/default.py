@@ -1,17 +1,20 @@
 import time
 import torch
 import tqdm
+import copy
+import pdb
 
 from utils.eval_utils import accuracy
 from utils.logging import AverageMeter, ProgressMeter
-from utils.net_utils import get_regularization_loss, prune
+from utils.net_utils import get_regularization_loss, prune, get_layers
 
-
+from torch import optim
 
 __all__ = ["train", "validate", "modifier"]
 
 
-def train(train_loader, model, criterion, optimizer, epoch, args, writer):
+
+def train(train_loader, model, criterion, optimizer, epoch, args, writer, scaler=None):
     batch_time = AverageMeter("Time", ":6.3f")
     data_time = AverageMeter("Data", ":6.3f")
     losses = AverageMeter("Loss", ":.3f")
@@ -35,7 +38,8 @@ def train(train_loader, model, criterion, optimizer, epoch, args, writer):
     ):
         # measure data loading time
         data_time.update(time.time() - end)
-        
+        #print(images.shape, target.shape)
+
         if args.gpu is not None:
             images = images.cuda(args.gpu, non_blocking=True)
 
@@ -45,9 +49,6 @@ def train(train_loader, model, criterion, optimizer, epoch, args, writer):
         if args.algo in ['global_ep', 'global_ep_iter']:
             prune(model, update_thresholds_only=True)
 
-        # compute output
-        output = model(images)
-
         if args.algo in ['hc', 'hc_iter', 'pt'] and i % args.project_freq == 0 and not args.differentiate_clamp:
             for name, params in model.named_parameters():
                 if "score" in name:
@@ -55,7 +56,18 @@ def train(train_loader, model, criterion, optimizer, epoch, args, writer):
                     with torch.no_grad():
                         scores.data = torch.clamp(scores.data, 0.0, 1.0)
 
-        loss = criterion(output, target)
+        # compute output
+        if scaler is None:
+            output = model(images)
+            loss = criterion(output, target)
+        else:
+            with torch.cuda.amp.autocast(enabled=True): # mixed precision
+                output = model(images)
+                loss = criterion(output, target)
+
+        if args.lam_finetune_loss > 0:
+            raise NotImplementedError  # please check finetune_loss repo
+
         regularization_loss = torch.tensor(0)
         if args.regularization:
             regularization_loss =\
@@ -63,6 +75,7 @@ def train(train_loader, model, criterion, optimizer, epoch, args, writer):
                                         lmbda=args.lmbda, alpha=args.alpha,
                                         alpha_prime=args.alpha_prime)
 
+        #print('regularization_loss: ', regularization_loss)
         loss += regularization_loss
 
         # measure accuracy and record loss
@@ -74,8 +87,13 @@ def train(train_loader, model, criterion, optimizer, epoch, args, writer):
 
         # compute gradient and do SGD step
         optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
+        if scaler is None:
+            loss.backward()
+            optimizer.step()
+        else:
+            scaler.scale(loss).backward()
+            scaler.step(optimizer)
+            scaler.update()
 
         # measure elapsed time
         batch_time.update(time.time() - end)
@@ -84,7 +102,20 @@ def train(train_loader, model, criterion, optimizer, epoch, args, writer):
         if i % args.print_freq == 0:
             t = (num_batches * epoch + i) * batch_size
             progress.display(i)
-            progress.write_to_tensorboard(writer, prefix="train", global_step=t)
+            progress.write_to_tensorboard(
+                writer, prefix="train", global_step=t)
+
+    # before completing training, clean up model based on latest scores
+    # update score thresholds for global ep
+    if args.algo in ['global_ep', 'global_ep_iter']:
+        prune(model, update_thresholds_only=True)
+    if args.algo in ['hc', 'hc_iter', 'pt'] and not args.differentiate_clamp:
+        for name, params in model.named_parameters():
+            if "score" in name:
+                scores = params
+                with torch.no_grad():
+                    scores.data = torch.clamp(scores.data, 0.0, 1.0)
+
     return top1.avg, top5.avg, top10.avg, regularization_loss.item()
 
 
@@ -111,6 +142,8 @@ def validate(val_loader, model, criterion, args, writer, epoch):
 
             target = target.cuda(args.gpu, non_blocking=True)
 
+            #print(images.shape, target.shape)
+
             # compute output
             output = model(images)
 
@@ -133,10 +166,12 @@ def validate(val_loader, model, criterion, args, writer, epoch):
         progress.display(len(val_loader))
 
         if writer is not None:
-            progress.write_to_tensorboard(writer, prefix="test", global_step=epoch)
+            progress.write_to_tensorboard(
+                writer, prefix="test", global_step=epoch)
 
     print("Model top1 Accuracy: {}".format(top1.avg))
     return top1.avg, top5.avg, top10.avg
+
 
 def modifier(args, epoch, model):
     return
