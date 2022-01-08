@@ -31,7 +31,7 @@ class ArgsHelper:
         )
         parser.add_argument(
             "--config",
-            default='configs/hypercube/resnet20/resnet20_quantized_hypercube_reg_bottom_K.yml',
+            default='configs/hypercube/resnet20/resnet20_base.yml',
             help="Config file to use"
         )
         parser.add_argument(

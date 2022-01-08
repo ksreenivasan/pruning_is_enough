@@ -1,6 +1,12 @@
 import time
 import torch
-import tqdm
+from args_helper import ArgsHelper
+ah = ArgsHelper()
+ij = ah.isNotebook()
+if ij:
+    import tqdm.auto as tqdm
+else:
+    import tqdm
 import copy
 import pdb
 
@@ -95,9 +101,10 @@ def train(train_loader, model, criterion, optimizer, epoch, args, writer):
 
         if i % args.print_freq == 0:
             t = (num_batches * epoch + i) * batch_size
-            progress.display(i)
-            progress.write_to_tensorboard(
-                writer, prefix="train", global_step=t)
+            if writer is not None:
+                progress.display(i)
+                progress.write_to_tensorboard(
+                    writer, prefix="train", global_step=t)
 
     # before completing training, clean up model based on latest scores
     # update score thresholds for global ep
