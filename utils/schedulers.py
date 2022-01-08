@@ -8,6 +8,10 @@ def get_scheduler(optimizer, policy='multistep_lr', milestones=[80, 120], gamma=
         milestones = [100, 150]
         max_epochs = 200
 
+    if parser_args.dataset == 'CIFAR10':
+        if parser_args.arch.lower() == 'mobilenetv2':
+            milestones = [150, 250]
+            max_epochs = 300
 
     if policy == 'multistep_lr':
         scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=milestones, gamma=gamma)

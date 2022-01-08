@@ -19,17 +19,17 @@ class Block(nn.Module):
         self.stride = stride
 
         planes = expansion * in_planes
-        self.conv1 = builder.conv1x1(in_planes, planes, stride=1, padding=0, bias=False)
+        self.conv1 = builder.conv1x1(in_planes, planes, stride=1)
         self.bn1 = builder.batchnorm(planes)
-        self.conv2 = builder.conv3x3(planes, planes, stride=stride, padding=1, groups=planes, bias=False)
+        self.conv2 = builder.conv3x3(planes, planes, stride=stride) # TODO: groups=planes
         self.bn2 = builder.batchnorm(planes)
-        self.conv3 = builder.conv1x1(planes, out_planes, stride=1, padding=0, bias=False)
+        self.conv3 = builder.conv1x1(planes, out_planes, stride=1)
         self.bn3 = builder.batchnorm(out_planes)
 
         self.shortcut = nn.Sequential()
         if stride == 1 and in_planes != out_planes:
             self.shortcut = nn.Sequential(
-                builder.conv1x1(in_planes, out_planes, stride=1, padding=0, bias=False),
+                builder.conv1x1(in_planes, out_planes, stride=1),
                 builder.batchnorm(out_planes),
             )
 
@@ -56,12 +56,12 @@ class MobileNetV2(nn.Module):
 
         self.builder = get_builder()
         # NOTE: change conv1 stride 2 -> 1 for CIFAR10
-        self.conv1 = self.builder.conv3x3(3, 32, stride=1, padding=1, bias=False)
+        self.conv1 = self.builder.conv3x3(3, 32, stride=1)
         self.bn1 = self.builder.batchnorm(32)
         self.layers = self._make_layers(in_planes=32)
-        self.conv2 = self.builder.conv1x1(320, 1280, stride=1, padding=0, bias=False)
+        self.conv2 = self.builder.conv1x1(320, 1280, stride=1)
         self.bn2 = self.builder.batchnorm(1280)
-        self.linear = self.builder.conv1x1(1280, num_classes)
+        self.linear = self.builder.conv1x1(1280, num_classes) # original model: bias=True
 
     def _make_layers(self, in_planes):
         layers = []
@@ -73,13 +73,19 @@ class MobileNetV2(nn.Module):
         return nn.Sequential(*layers)
 
     def forward(self, x):
+        #print(x.shape)
         out = F.relu(self.bn1(self.conv1(x)))
+        #print(out.shape)
         out = self.layers(out)
+        #print(out.shape)
         out = F.relu(self.bn2(self.conv2(out)))
+        #print(out.shape)
         # NOTE: change pooling kernel_size 7 -> 4 for CIFAR10
         out = F.avg_pool2d(out, 4)
-        out = out.view(out.size(0), -1)
+        #print(out.shape)
         out = self.linear(out)
+        out = out.view(out.size(0), -1)
+        #print(out.shape)
         return out
 
 
@@ -142,13 +148,20 @@ class MobileNetV2Normal(nn.Module):
         return nn.Sequential(*layers)
 
     def forward(self, x):
+        #print(x.shape)
         out = F.relu(self.bn1(self.conv1(x)))
+        #print(out.shape)
         out = self.layers(out)
+        #print(out.shape)
         out = F.relu(self.bn2(self.conv2(out)))
+        #print(out.shape)
         # NOTE: change pooling kernel_size 7 -> 4 for CIFAR10
         out = F.avg_pool2d(out, 4)
+        #print(out.shape)
         out = out.view(out.size(0), -1)
+        #print(out.shape)
         out = self.linear(out)
+        #print(out.shape)
         return out
 
 
