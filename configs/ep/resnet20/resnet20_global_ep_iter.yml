@@ -1,6 +1,6 @@
 subfolder: Global_EP
 algo: 'global_ep_iter'
-iter_period: 8
+iter_period: 8 # 8
 
 # Architecture
 arch: resnet20
@@ -27,7 +27,7 @@ conv_type: SubnetConv
 bn_type: NonAffineBatchNorm
 freeze_weights: True
 prune_type: BottomK
-prune_rate: 0.5
+prune_rate: 0.2
 init: signed_constant
 scale_fan: True
 

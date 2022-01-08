@@ -46,6 +46,8 @@ def main_worker(gpu, ngpus_per_node):
         os.mkdir(result_root)
     model = get_model(parser_args)
     '''
+    from torchsummary import summary
+    summary(model.cuda(), (3,32,32)) # for cifar
     # check the model architecture
     for name, param in model.named_parameters():
         print(name)

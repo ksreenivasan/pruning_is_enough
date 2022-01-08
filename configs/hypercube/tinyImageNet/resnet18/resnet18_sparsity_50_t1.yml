@@ -1,9 +1,10 @@
 subfolder: tiny_hc_sparsity_50_t1
 trial_num: 1
 
+
 # Hypercube optimization
 algo: 'hc_iter'
-iter_period: 5
+iter_period: 25
 
 # Architecture
 arch: TinyResNet18
@@ -16,7 +17,7 @@ name: tiny_resnet18_hc
 optimizer: sgd
 lr: 0.1 #0.01
 lr_policy: cosine_lr #constant_lr #multistep_lr
-fine_tune_lr: 0.01
+fine_tune_lr: 0.1
 fine_tune_lr_policy: multistep_lr
 
 # ===== Network training config ===== #
@@ -32,8 +33,7 @@ freeze_weights: True
 prune_type: BottomK
 # enter target sparsity here
 target_sparsity: 50.0
-# decide if you want to "unflag"
-#unflag_before_finetune: True
+unflag_before_finetune: True
 init: signed_constant
 score_init: unif #skew #half #bimodal #skew # bern
 scale_fan: False #True
@@ -49,11 +49,11 @@ quantize_threshold: 0.5
 
 # ===== Regularization ===== #
 regularization: L2
-lmbda: 0 
+lmbda: 0.00000001
 
 # ===== Hardware setup ===== #
 workers: 4
-gpu: 0
+gpu: 2
 
 # ===== Checkpointing ===== #
 checkpoint_at_prune: True

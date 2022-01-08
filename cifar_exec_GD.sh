@@ -10,12 +10,14 @@
 #python main.py --config configs/hypercube/resnet18/resnet18_sc_hypercube_iter_reg_evaluate.yml 
 
 
+### ResNet-32
+python main.py --config configs/training/resnet32/cifar10_resnet32_training.yml
 
 
 ### ResNet-20
 
 # check mixed precision
-python main.py --config configs/hypercube/resnet20/mixed_precision/resnet20_sparsity_3_72_t1_with_MP.yml #> log_hc_sparsity_3_72_t1 2>&1
+#python main.py --config configs/hypercube/resnet20/mixed_precision/resnet20_sparsity_3_72_t1_with_MP.yml #> log_hc_sparsity_3_72_t1 2>&1
 
 # old pruning schedule
 :<<BLOCK
