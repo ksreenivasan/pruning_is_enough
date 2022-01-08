@@ -183,9 +183,9 @@ class ArgsHelper:
             help="starting epoch for iterative pruning"
         )
         parser.add_argument(
-            "--iter_period", 
-            type=int, 
-            default=20,
+            "--iter-period", 
+            type=int,
+            default=5,
             help="period [epochs] for iterative pruning"
         )
         parser.add_argument(
@@ -372,8 +372,8 @@ class ArgsHelper:
             default=None,
             help="Sample Baseline Subnet Init",
         )
-
-        # this is an argument that is relevant mainly for EP.
+        # represents percentage of weights THAT REMAIN each time ep, global_ep
+        # whereas it represents number of weights TO PRUNE when calling prune()
         parser.add_argument(
             "--prune-rate",
             default=0.5,
@@ -778,33 +778,74 @@ class ArgsHelper:
              "--run_idx",
              default=None,
              help="index of run used for counting yml/log/save_folder"
-             )
+        )
         parser.add_argument(
              "--subfolder",
              default=None,
              help="subfolder within the location for saving the results"
-             )
+        )
         # added parser args for IMP
         parser.add_argument(
             "--imp_rewind_iter", 
             default=1000, 
             type=int, 
             help="which iterations to rewind to"
-            )
+        )
         parser.add_argument(
             "--imp-resume-round", 
             type=int, 
             help="which round to resume to"
-            )
+        )
         parser.add_argument(
             "--imp-rewind-model", 
             default="short_imp/Liu_checkpoint_model_correct.pth"
-            )
+        )
         parser.add_argument(
             "--imp-no-rewind",
             action="store_true",
             default=False,
             help="if set True, we run IMP algorithm without rewinding to previous states"
+        )
+        parser.add_argument(
+            "--smart-ratio", 
+            type=float,
+            default=-1
+        )
+        parser.add_argument(
+            "--bottom-k-on-forward",
+            action="store_true",
+            default=False,
+            help="Enable this to use bottomK on forward for HC"
+        )
+        parser.add_argument(
+            "--target-sparsity",
+            default=0.5,
+            help="decides max percentage of weights that remain at the end of training",
+            type=float,
+        )
+        parser.add_argument(
+            "--lam_finetune_loss",
+            type=float,
+            default=-1,
+            help="lambda for finetune loss "
+        )
+        parser.add_argument(
+            "--num_step_finetune",
+            type=int,
+            default=10,
+            help="number of steps to check finetune loss "
+        )
+        parser.add_argument(
+            "--unflag-before-finetune",
+            action="store_true",
+            default=False,
+            help="Enable this to unprune weights if possible, before fine-tune"
+        )
+        parser.add_argument(
+            "--override-prune-rate",
+            action="store_true",
+            default=False,
+            help="Enable this to specify prune-rate manually"
         )
 
         if jupyter_mode:

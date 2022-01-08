@@ -1,5 +1,6 @@
 subfolder: EP
 algo: 'ep'
+override_prune_rate: True
 
 # Architecture
 arch: resnet20
@@ -34,6 +35,9 @@ freeze_weights: True
 # ===== Hardware setup ===== #
 workers: 4
 gpu: 1
+
+# ===== Checkpointing ===== #
+checkpoint_at_prune: True
 
 # ==== sanity check ==== #
 skip_sanity_checks: True
