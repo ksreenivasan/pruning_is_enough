@@ -1,35 +1,15 @@
 # ===== warm short IMP ===== #
 
-# subfd="short_warm_imp"
-# n_gpu=1
-
-# python imp_main.py \
-# --config configs/imp/resnet20.yml \
-# --imp_rewind_iter 1000 \
-# --gpu $n_gpu \
-# --subfolder $subfd
-
-# for i in 14 13 7 3 1 0
-# do
-#     python imp_sanity.py \
-#     --config configs/imp/resnet20.yml \
-#     --subfolder $subfd \
-#     --imp-resume-round $i \
-#     --imp-rewind-model results/$subfd/Liu_checkpoint_model_correct.pth \
-#     --gpu $n_gpu
-# done
-
-# ===== cold short IMP ===== #
-subfd="short_cold_imp"
+subfd="short_warm_imp"
 n_gpu=1
 
-# # python imp_main.py \
-# # --config configs/imp/resnet20.yml \
-# # --imp_rewind_iter 0 \
-# # --gpu $n_gpu \
-# # --subfolder $subfd
+python imp_main.py \
+--config configs/imp/resnet20.yml \
+--imp_rewind_iter 1000 \
+--gpu $n_gpu \
+--subfolder $subfd
 
-for i in 23 22 21 20 19 18 17 16 15 14 13 12 11 10 9 8 7 6 5 4 3 2 1 0
+for i in 14 13 7 3 1 0
 do
     python imp_sanity.py \
     --config configs/imp/resnet20.yml \
@@ -38,7 +18,6 @@ do
     --imp-rewind-model results/$subfd/Liu_checkpoint_model_correct.pth \
     --gpu $n_gpu
 done
-
 
 
 # IMP
@@ -69,9 +48,8 @@ python imp_main.py \
 BLOCK
 
 :<<BLOCK
-#for i in {19}
-#do
-i=18
+for i in 19
+do
     python imp_sanity.py \
     --arch resnet20 \
     --dataset CIFAR10 \
@@ -91,5 +69,5 @@ i=18
     --imp-resume-round $i \
     --imp-rewind-model results/$subfd/Liu_checkpoint_model_correct.pth \
     --gpu 2
-#done
+done
 BLOCK
