@@ -45,7 +45,6 @@ def main_worker(gpu, ngpus_per_node):
     if not os.path.isdir(result_root):
         os.mkdir(result_root)
     model = get_model(parser_args)
-
     '''
     # check the model architecture
     for name, param in model.named_parameters():

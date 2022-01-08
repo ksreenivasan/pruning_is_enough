@@ -4,8 +4,10 @@ from models.resnet_tiny import TinyResNet18
 from models.resnet_kaiming import resnet20
 from models.resnet_normal import TinyResNet18Normal
 from models.frankle import FC, Conv2, Conv4, Conv4Normal, Conv6, Conv4Wide, Conv8, Conv6Wide
+from models.vgg_normal import vgg16
 
 __all__ = [
+    "vgg16",
     "ResNet18",
     "ResNet50",
     "ResNet101",
