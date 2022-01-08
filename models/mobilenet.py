@@ -9,6 +9,79 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from utils.builder import get_builder
+
+
+class Block(nn.Module):
+    '''expand + depthwise + pointwise'''
+    def __init__(self, builder, in_planes, out_planes, expansion, stride):
+        super(Block, self).__init__()
+        self.stride = stride
+
+        planes = expansion * in_planes
+        self.conv1 = builder.conv1x1(in_planes, planes, stride=1, padding=0, bias=False)
+        self.bn1 = builder.batchnorm(planes)
+        self.conv2 = builder.conv3x3(planes, planes, stride=stride, padding=1, groups=planes, bias=False)
+        self.bn2 = builder.batchnorm(planes)
+        self.conv3 = builder.conv1x1(planes, out_planes, stride=1, padding=0, bias=False)
+        self.bn3 = builder.batchnorm(out_planes)
+
+        self.shortcut = nn.Sequential()
+        if stride == 1 and in_planes != out_planes:
+            self.shortcut = nn.Sequential(
+                builder.conv1x1(in_planes, out_planes, stride=1, padding=0, bias=False),
+                builder.batchnorm(out_planes),
+            )
+
+    def forward(self, x):
+        out = F.relu(self.bn1(self.conv1(x)))
+        out = F.relu(self.bn2(self.conv2(out)))
+        out = self.bn3(self.conv3(out))
+        out = out + self.shortcut(x) if self.stride==1 else out
+        return out
+
+
+class MobileNetV2(nn.Module):
+    # (expansion, out_planes, num_blocks, stride)
+    cfg = [(1,  16, 1, 1),
+           (6,  24, 2, 1),  # NOTE: change stride 2 -> 1 for CIFAR10
+           (6,  32, 3, 2),
+           (6,  64, 4, 2),
+           (6,  96, 3, 1),
+           (6, 160, 3, 2),
+           (6, 320, 1, 1)]
+
+    def __init__(self, num_classes=10):
+        super(MobileNetV2, self).__init__()
+
+        self.builder = get_builder()
+        # NOTE: change conv1 stride 2 -> 1 for CIFAR10
+        self.conv1 = self.builder.conv3x3(3, 32, stride=1, padding=1, bias=False)
+        self.bn1 = self.builder.batchnorm(32)
+        self.layers = self._make_layers(in_planes=32)
+        self.conv2 = self.builder.conv1x1(320, 1280, stride=1, padding=0, bias=False)
+        self.bn2 = self.builder.batchnorm(1280)
+        self.linear = self.builder.conv1x1(1280, num_classes)
+
+    def _make_layers(self, in_planes):
+        layers = []
+        for expansion, out_planes, num_blocks, stride in self.cfg:
+            strides = [stride] + [1]*(num_blocks-1)
+            for stride in strides:
+                layers.append(Block(self.builder, in_planes, out_planes, expansion, stride))
+                in_planes = out_planes
+        return nn.Sequential(*layers)
+
+    def forward(self, x):
+        out = F.relu(self.bn1(self.conv1(x)))
+        out = self.layers(out)
+        out = F.relu(self.bn2(self.conv2(out)))
+        # NOTE: change pooling kernel_size 7 -> 4 for CIFAR10
+        out = F.avg_pool2d(out, 4)
+        out = out.view(out.size(0), -1)
+        out = self.linear(out)
+        return out
+
 
 class BlockNormal(nn.Module):
     '''expand + depthwise + pointwise'''
