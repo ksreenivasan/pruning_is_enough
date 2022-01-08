@@ -32,7 +32,7 @@ class VGG16_Normal(nn.Module):
                 if batch_norm:
                     layers += [conv2d, nn.BatchNorm2d(v), nn.ReLU(inplace=True)]
                 else:
-                    layers += [conv2d, nn.ReLU(inplace-True]
+                    layers += [conv2d, nn.ReLU(inplace-True)]
                 in_channels = v
         layers += [nn.AvgPool2d(kernel_size=1, stride=1)]
         return nn.Sequential(*layers)
