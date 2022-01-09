@@ -41,7 +41,7 @@ class Block(nn.Module):
         return out
 
 
-class MobileNetV2(nn.Module):
+class MobileNet_base(nn.Module):
     # (expansion, out_planes, num_blocks, stride)
     cfg = [(1,  16, 1, 1),
            (6,  24, 2, 1),  # NOTE: change stride 2 -> 1 for CIFAR10
@@ -51,17 +51,17 @@ class MobileNetV2(nn.Module):
            (6, 160, 3, 2),
            (6, 320, 1, 1)]
 
-    def __init__(self, num_classes=10):
-        super(MobileNetV2, self).__init__()
+    def __init__(self, builder, num_classes=10):
+        super(MobileNet_base, self).__init__()
 
-        self.builder = get_builder()
+        self.builder = builder
         # NOTE: change conv1 stride 2 -> 1 for CIFAR10
-        self.conv1 = self.builder.conv3x3(3, 32, stride=1)
-        self.bn1 = self.builder.batchnorm(32)
+        self.conv1 = builder.conv3x3(3, 32, stride=1)
+        self.bn1 = builder.batchnorm(32)
         self.layers = self._make_layers(in_planes=32)
-        self.conv2 = self.builder.conv1x1(320, 1280, stride=1)
-        self.bn2 = self.builder.batchnorm(1280)
-        self.linear = self.builder.conv1x1(1280, num_classes) # original model: bias=True
+        self.conv2 = builder.conv1x1(320, 1280, stride=1)
+        self.bn2 = builder.batchnorm(1280)
+        self.linear = builder.conv1x1(1280, num_classes) # original model: bias=True
 
     def _make_layers(self, in_planes):
         layers = []
@@ -87,6 +87,9 @@ class MobileNetV2(nn.Module):
         out = out.view(out.size(0), -1)
         #print(out.shape)
         return out
+
+def MobileNetV2():
+    return MobileNet_base(get_builder())
 
 
 class BlockNormal(nn.Module):
