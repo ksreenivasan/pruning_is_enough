@@ -76,7 +76,7 @@ def print_model(model, parser_args):
             print(layer, layer.scores.view(-1).shape)
     '''
     print('total num_params: ', num_params)
-    #exit()
+    exit()
 
 
 def do_sanity_checks(model, parser_args, data, criterion, epoch_list, test_acc_before_round_list, test_acc_list,

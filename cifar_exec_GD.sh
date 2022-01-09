@@ -1,13 +1,16 @@
 #export cuda_visible_devices=3
 
 ### MobileNetV2
-#python main.py --config configs/training/mobilenetV2/cifar10_mobileV2_training.yml #> mobilenet_cifar10_wt
+#####python main.py --config configs/training/mobilenetV2/cifar10_mobileV2_training.yml #> mobilenet_cifar10_wt
+
+
+
 #python main.py --config configs/training/mobilenetV2/cifar10_mobileV2_training_check.yml #> mobilenet_cifar10_wt_check
 
 #python main.py --config configs/ep/mobilenetV2/cifar10_mobileV2_ep_sparsity_50.yml #> log_mobilev2_EP_sparsity_50 2>&1
 #python main.py --config configs/ep/mobilenetV2/cifar10_mobileV2_ep_sparsity_5.yml #> log_mobilev2_EP_sparsity_5 2>&1
 
-#python main.py --config configs/hypercube/mobilenetV2/sparsity_50.yml #> log_mobilev2_HC_sparsity_50 2>&1 
+python main.py --config configs/hypercube/mobilenetV2/sparsity_50.yml #> log_mobilev2_HC_sparsity_50 2>&1 
 #python main.py --config configs/hypercube/mobilenetV2/sparsity_5.yml #> log_mobilev2_HC_sparsity_5 2>&1 
 
 
@@ -27,8 +30,8 @@
 
 
 ### ResNet-20
-python main.py --config configs/training/resnet20/cifar10_resnet20_training.yml
-
+#python main.py --config configs/training/resnet20/cifar10_resnet20_training.yml
+#python main.py --config configs/hypercube/resnet20/error_bar/resnet20_sparsity_3_72_t1.yml #> log_hc_sparsity_3_72_t1 2>&1
 
 
 # check mixed precision
@@ -48,7 +51,6 @@ BLOCK
 
 # HC for multiple trials
 #:<<BLOCK
-python main.py --config configs/hypercube/resnet20/error_bar/resnet20_sparsity_3_72_t1.yml #> log_hc_sparsity_3_72_t1 2>&1
 #python main.py --config configs/hypercube/resnet20/error_bar/resnet20_sparsity_3_72_t2.yml > log_hc_sparsity_3_72_t2 2>&1
 #python main.py --config configs/hypercube/resnet20/error_bar/resnet20_sparsity_3_72_t3.yml > log_hc_sparsity_3_72_t3 2>&1
 #python main.py --config configs/hypercube/resnet20/error_bar/resnet20_sparsity_3_72_t4.yml > log_hc_sparsity_3_72_t4 2>&1

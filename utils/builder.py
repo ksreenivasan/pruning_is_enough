@@ -14,12 +14,13 @@ class Builder(object):
         self.bn_layer = bn_layer
         self.first_layer = first_layer or conv_layer
 
-    def conv(self, kernel_size, in_planes, out_planes, stride=1, first_layer=False):
+    def conv(self, kernel_size, in_planes, out_planes, stride=1, first_layer=False, groups=1):
         conv_layer = self.first_layer if first_layer else self.conv_layer
 
         if first_layer:
             print(f"==> Building first layer")
 
+        #import pdb; pdb.set_trace()
         if kernel_size == 3:
             conv = conv_layer(
                 in_planes,
@@ -28,6 +29,7 @@ class Builder(object):
                 stride=stride,
                 padding=1,
                 bias=parser_args.bias,
+                groups=groups
             )
         elif kernel_size == 1:
             conv = conv_layer(
@@ -58,9 +60,9 @@ class Builder(object):
 
         return conv
 
-    def conv3x3(self, in_planes, out_planes, stride=1, first_layer=False):
+    def conv3x3(self, in_planes, out_planes, stride=1, first_layer=False, groups=1):
         """3x3 convolution with padding"""
-        c = self.conv(3, in_planes, out_planes, stride=stride, first_layer=first_layer)
+        c = self.conv(3, in_planes, out_planes, stride=stride, first_layer=first_layer, groups=groups)
         return c
 
     def conv1x1(self, in_planes, out_planes, stride=1, first_layer=False):
