@@ -56,14 +56,27 @@ def print_model(model, parser_args):
     #from torchsummary import summary
     #summary(model.cuda(), (3,32,32)) # for cifar
     # check the model architecture
-    if True: #parser_args.algo == 'training':
+    
+    num_params = 0
+    if parser_args.algo == 'training':
         for name, param in model.named_parameters():
-            print(name, param.view(-1).shape)
+            print(name, param.view(-1).numel())
+            #pdb.set_trace()
+            num_params += param.view(-1).numel()
+    else:
+        for name, param in model.named_parameters():
+            if name.endswith('.scores'):
+                print(name, param.view(-1).numel())
+                num_params += param.view(-1).numel()
+
+    '''
     else:
         conv_layers, linear_layers = get_layers(parser_args.arch, model)
         for layer in [*conv_layers, *linear_layers]:
             print(layer, layer.scores.view(-1).shape)
-    exit()
+    '''
+    print('total num_params: ', num_params)
+    #exit()
 
 
 def do_sanity_checks(model, parser_args, data, criterion, epoch_list, test_acc_before_round_list, test_acc_list,
