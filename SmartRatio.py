@@ -78,11 +78,12 @@ def SmartRatio(model, sr_args, parser_args):
     num_weights = sum(m_arr)
     scale = (num_weights * keep_ratio - lin_term) / conv_term
     p_arr[:-1] = scale * np.array(p_arr[:-1])
-    print(p_arr)
+    print("p_arr", p_arr)
     #print(sum(p_arr))
 
 
     # 4. Randomly set the mask of each layer 
+    """
     layer_idx = 0
     for layer in [*conv_layers, *linear_layers]: # hacky way since linear layer is at the last part for resnet_kaiming.py models
         p_curr = p_arr[layer_idx]
@@ -90,7 +91,26 @@ def SmartRatio(model, sr_args, parser_args):
         layer_idx += 1
 
         print(layer_idx, torch.sum(layer.flag.data)/layer.flag.data.view(-1).size()[0])
-
+    """
+    # Liu: modify this part to have exact number per layer (instead of Bernoulli sampling)
+    layer_idx = 0
+    conv_layers, linear_layers = get_layers(arch=parser_args.arch, model=model)
+    for layer in conv_layers:
+        N = np.prod(layer.weight.shape)
+        K = int(p_arr[layer_idx] * N)
+        tmp_array = np.array([0] * (N-K) + [1] * K)
+        np.random.shuffle(tmp_array)
+        layer.flag.data = torch.nn.Parameter(torch.from_numpy(tmp_array).float().reshape(layer.weight.shape))
+        layer.scores.data = torch.nn.Parameter(torch.ones(layer.weight.shape))
+        layer_idx += 1
+    for layer in linear_layers:
+        N = np.prod(layer.weight.shape)
+        K = int(p_arr[layer_idx] * N)
+        tmp_array = np.array([0] * (N-K) + [1] * K)
+        np.random.shuffle(tmp_array)
+        layer.flag.data = torch.nn.Parameter(torch.from_numpy(tmp_array).float().reshape(layer.weight.shape))
+        layer.scores.data = torch.nn.Parameter(torch.ones(layer.weight.shape))
+        layer_idx += 1
 
     return model
 

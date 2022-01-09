@@ -151,6 +151,8 @@ def test_random_subnet(model, data, criterion, parser_args, result_root, smart_r
                             }
         smart_ratio_args = dotdict(smart_ratio_args)
         model = SmartRatio(model, smart_ratio_args, parser_args)
+        # this model modify `flag` to represent the sparsity,
+        # and `score` are all ones.
 
     else:
         # round the score (in the model itself)
@@ -168,7 +170,17 @@ def test_random_subnet(model, data, criterion, parser_args, result_root, smart_r
     run_base_dir, ckpt_base_dir, log_base_dir, writer, epoch_time, validation_time, train_time, progress_overall = get_settings(
         parser_args)
     # TODO: Change this to use finetune() (I think this is possible)
+    # Liu: Yes I also think so
     optimizer = get_optimizer(parser_args, model, finetune_flag=True)
+    if parser_args.epochs == 150:
+        scheduler = get_scheduler(optimizer, parser_args.fine_tune_lr_policy, milestones=[
+                                  80, 120], gamma=0.1)  # NOTE: hard-coded
+    elif parser_args.epochs == 50:
+        scheduler = get_scheduler(optimizer, parser_args.fine_tune_lr_policy, milestones=[
+                                  20, 40], gamma=0.1)  # NOTE: hard-coded
+    else:
+        scheduler = get_scheduler(optimizer, parser_args.fine_tune_lr_policy, milestones=[
+                                  20, 40], gamma=0.1)  # NOTE: hard-coded
     train, validate, modifier = get_trainer(parser_args)
 
     # check the performance of loaded model (after rounding)
@@ -184,8 +196,6 @@ def test_random_subnet(model, data, criterion, parser_args, result_root, smart_r
 
         if parser_args.multiprocessing_distributed:
             data.train_loader.sampler.set_epoch(epoch)
-        #lr_policy(epoch, iteration=None)
-        #modifier(parser_args, epoch, model)
         cur_lr = get_lr(optimizer)
         print('epoch: {}, lr: {}'.format(epoch, cur_lr))
         print("="*60)
@@ -195,6 +205,7 @@ def test_random_subnet(model, data, criterion, parser_args, result_root, smart_r
         train_acc1, train_acc5, train_acc10, reg_loss = train(
             data.train_loader, model, criterion, optimizer, epoch, parser_args, writer=writer
         )
+        scheduler.step()
         train_time.update((time.time() - start_train) / 60)
 
         # evaluate on validation set
