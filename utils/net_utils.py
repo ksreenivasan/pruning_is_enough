@@ -25,6 +25,22 @@ def get_layers(arch='Conv4', model=None):
         conv_layers = [model.convs[0], model.convs[2],
                        model.convs[5], model.convs[7]]
         linear_layers = [model.linear[0], model.linear[2], model.linear[4]]
+
+    elif arch == 'MobileNetV2':
+        conv_layers = [model.conv1]
+        
+        #import pdb; pdb.set_trace()
+        #print(len(model.layers), ' layers')
+        for i in range(len(model.layers)):
+            conv_layers.append(model.layers[i].conv1)
+            conv_layers.append(model.layers[i].conv2)
+            conv_layers.append(model.layers[i].conv3)
+            if len(model.layers[i].shortcut) != 0:
+                conv_layers.append(model.layers[i].shortcut[0])
+        conv_layers.append(model.conv2)
+        linear_layers = [model.linear]
+        #print(conv_layers, linear_layers)
+        #pdb.set_trace()
     elif arch == 'resnet20':
         conv_layers = [model.conv1]
         for layer in [model.layer1, model.layer2, model.layer3]:
