@@ -45,8 +45,6 @@ def main_worker(gpu, ngpus_per_node):
     if not os.path.isdir(result_root):
         os.mkdir(result_root)
     model = get_model(parser_args)
-
-
     '''
     from torchsummary import summary
     summary(model.cuda(), (3,32,32)) # for cifar

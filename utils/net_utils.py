@@ -13,6 +13,7 @@ import torch.nn as nn
 
 from utils.mask_layers import MaskLinear, MaskConv
 from utils.conv_type import GetSubnet as GetSubnetConv
+from utils.conv_type import SubnetConv
 
 
 # return layer objects of conv layers and linear layers so we can parse them
@@ -63,8 +64,13 @@ def get_layers(arch='Conv4', model=None):
                 # handle shortcut
                 # if len(layer[basic_block_id].shortcut) > 0:
                 #     conv_layers.append(layer[basic_block_id].shortcut[0])
-
-        linear_layers = [model.fc]
+    elif arch == 'vgg16':
+        conv_layers = []
+        for i in range(len(model.features)):
+            if isinstance(model.features[i], SubnetConv):
+                conv_layers.append(model.features[i])
+        #check how to see how the model.features object works and if this is correct
+        linear_layers = [model.classifier]
     return (conv_layers, linear_layers)
 
 
