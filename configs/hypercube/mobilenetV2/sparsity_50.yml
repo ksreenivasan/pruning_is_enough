@@ -20,7 +20,7 @@ fine_tune_lr: 0.01
 fine_tune_lr_policy: multistep_lr
 
 # ===== Network training config ===== #
-epochs: 200
+epochs: 300 #300
 wd: 0.0 
 momentum: 0.9
 batch_size: 128
@@ -52,7 +52,7 @@ lmbda: 0
 
 # ===== Hardware setup ===== #
 workers: 4
-gpu: 2
+gpu: 0
 
 # ===== Checkpointing ===== #
 checkpoint_at_prune: True

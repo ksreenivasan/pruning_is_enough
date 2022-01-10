@@ -7,13 +7,18 @@
 
 #python main.py --config configs/training/mobilenetV2/cifar10_mobileV2_training_check.yml #> mobilenet_cifar10_wt_check
 
-python main.py --config configs/ep/mobilenetV2/cifar10_mobileV2_ep_sparsity_50.yml #> log_mobilev2_EP_sparsity_50 2>&1
-python main.py --config configs/ep/mobilenetV2/cifar10_mobileV2_ep_sparsity_5.yml #> log_mobilev2_EP_sparsity_5 2>&1
-python main.py --config configs/ep/mobilenetV2/cifar10_mobileV2_ep_sparsity_20.yml #> log_mobilev2_EP_sparsity_20 2>&1
+:<<BLOCK
+python main.py --config configs/ep/mobilenetV2/cifar10_mobileV2_ep_sparsity_50.yml > log_mobilev2_EP_sparsity_50 2>&1
+python main.py --config configs/ep/mobilenetV2/cifar10_mobileV2_ep_sparsity_5.yml > log_mobilev2_EP_sparsity_5 2>&1
+python main.py --config configs/ep/mobilenetV2/cifar10_mobileV2_ep_sparsity_20.yml > log_mobilev2_EP_sparsity_20 2>&1
+BLOCK
 
-#python main.py --config configs/hypercube/mobilenetV2/sparsity_50.yml > log_mobilev2_HC_sparsity_50 2>&1 
-#python main.py --config configs/hypercube/mobilenetV2/sparsity_5.yml > log_mobilev2_HC_sparsity_5 2>&1 
-
+:<<BLOCK
+python main.py --config configs/hypercube/mobilenetV2/sparsity_50.yml > log_mobilev2_HC_sparsity_50 2>&1 
+python main.py --config configs/hypercube/mobilenetV2/sparsity_5.yml > log_mobilev2_HC_sparsity_5 2>&1 
+python main.py --config configs/hypercube/mobilenetV2/sparsity_20.yml > log_mobilev2_HC_sparsity_20 2>&1 
+BLOCK
+python main.py --config configs/hypercube/mobilenetV2/sparsity_5_7lam6.yml > log_mobilev2_HC_sparsity_5_7lam6 2>&1 
 
 
 

@@ -1,4 +1,4 @@
-subfolder: mobilenetV2_hc_sparsity_5
+subfolder: mobilenetV2_hc_sparsity_5_7lam6
 trial_num: 1
 
 # Hypercube optimization
@@ -20,7 +20,7 @@ fine_tune_lr: 0.01
 fine_tune_lr_policy: multistep_lr
 
 # ===== Network training config ===== #
-epochs: 300
+epochs: 200
 wd: 0.0 
 momentum: 0.9
 batch_size: 128
@@ -48,7 +48,7 @@ quantize_threshold: 0.5
 
 # ===== Regularization ===== #
 regularization: L2
-lmbda: 0.0001
+lmbda: 0.000007
 
 # ===== Hardware setup ===== #
 workers: 4

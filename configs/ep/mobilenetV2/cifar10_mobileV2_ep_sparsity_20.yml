@@ -17,10 +17,10 @@ fine_tune_lr: 0.01
 fine_tune_lr_policy: multistep_lr
 
 # ===== Network training config ===== #
-epochs: 200 
+epochs: 300 
 weight_decay: 0.0005
 momentum: 0.9
-batch_size: 256  #256 #128
+batch_size: 128  #256 #128
 
 # ===== Sparsity =========== #
 conv_type: SubnetConv
@@ -34,7 +34,7 @@ freeze_weights: True
 
 # ===== Hardware setup ===== #
 workers: 4
-gpu: 2
+gpu: 0
 
 # ===== Checkpointing ===== #
 checkpoint_at_prune: True
