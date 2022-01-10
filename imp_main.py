@@ -184,7 +184,12 @@ def IMP_train(parser_args, data, device):
         before_acc = test(model, device, data.val_loader)
         # optimizer, scheduler = get_optimizer_and_scheduler(parser_args)
         optimizer = get_optimizer(parser_args, model)
-        scheduler = get_scheduler(optimizer, parser_args.lr_policy, milestones=[80, 120], gamma=parser_args.lr_gamma)
+        # NOTE: hard code
+        if n_epoch in [150, 160]:
+            scheduler = get_scheduler(optimizer, parser_args.lr_policy, milestones=[80, 120], gamma=parser_args.lr_gamma)
+        elif n_epoch == 200: 
+            scheduler = get_scheduler(optimizer, parser_args.lr_policy, milestones=[100, 150], gamma=parser_args.lr_gamma)
+
         print(f"\n--- Pruning Level [{idx_round}/{n_round}]: ---")
 
         # Print the table of Nonzeros in each layer

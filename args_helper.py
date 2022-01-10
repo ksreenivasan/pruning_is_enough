@@ -807,7 +807,7 @@ class ArgsHelper:
             help="if set True, we run IMP algorithm without rewinding to previous states"
         )
         parser.add_argument(
-            "--smart-ratio", 
+            "--smart_ratio", 
             type=float,
             default=-1
         )
