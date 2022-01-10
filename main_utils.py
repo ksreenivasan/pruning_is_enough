@@ -151,6 +151,7 @@ def test_random_subnet(model, data, criterion, parser_args, result_root, smart_r
                             }
         smart_ratio_args = dotdict(smart_ratio_args)
         model = SmartRatio(model, smart_ratio_args, parser_args)
+        model = set_gpu(parser_args, model)
         # this model modify `flag` to represent the sparsity,
         # and `score` are all ones.
 
@@ -165,6 +166,9 @@ def test_random_subnet(model, data, criterion, parser_args, result_root, smart_r
 
     # switch to weight training mode (turn on the requires_grad for weight/bias, and turn off the requires_grad for other parameters)
     model = switch_to_wt(model)
+    model_filename = result_root + "random_subnet_inited_{}_ckpt.pt".format(parser_args.prune_rate)
+    print("Writing init model to {}".format(model_filename))
+    torch.save(model.state_dict(), model_filename)
 
     # set base_setting and evaluate
     run_base_dir, ckpt_base_dir, log_base_dir, writer, epoch_time, validation_time, train_time, progress_overall = get_settings(
@@ -248,8 +252,7 @@ def test_random_subnet(model, data, criterion, parser_args, result_root, smart_r
         cleanup_distributed()
 
     # save checkpoint for later debug
-    model_filename = "random_subnet_finetuned_{}_ckpt.pt".format(
-        parser_args.prune_rate)
+    model_filename = result_root + "random_subnet_finetuned_{}_ckpt.pt".format(parser_args.prune_rate)
     print("Writing final model to {}".format(model_filename))
     torch.save(model.state_dict(), model_filename)
 

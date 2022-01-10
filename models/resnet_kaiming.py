@@ -48,18 +48,18 @@ class BasicBlock(nn.Module):
 
 
 class ResNet(nn.Module):
-    def __init__(self, builder, block, num_blocks):
+    def __init__(self, builder, block, num_blocks, times=1):
         super(ResNet, self).__init__()
-        self.in_planes = 16
+        self.in_planes = 16 * times
         self.builder = builder
 
-        self.conv1 = builder.conv3x3(3, 16, stride=1, first_layer=True)
-        self.bn1 = builder.batchnorm(16)
-        self.layer1 = self._make_layer(block, 16, num_blocks[0], stride=1)
-        self.layer2 = self._make_layer(block, 32, num_blocks[1], stride=2)
-        self.layer3 = self._make_layer(block, 64, num_blocks[2], stride=2)
+        self.conv1 = builder.conv3x3(3, 16 * times, stride=1, first_layer=True)
+        self.bn1 = builder.batchnorm(16 * times)
+        self.layer1 = self._make_layer(block, 16 * times, num_blocks[0], stride=1)
+        self.layer2 = self._make_layer(block, 32 * times, num_blocks[1], stride=2)
+        self.layer3 = self._make_layer(block, 64 * times, num_blocks[2], stride=2)
         # self.avgpool = nn.AdaptiveAvgPool2d(1)
-        self.fc = builder.conv1x1(64 * block.expansion, 10) # 10 = num_classes for cifar10
+        self.fc = builder.conv1x1(64 * block.expansion * times, 10) # 10 = num_classes for cifar10
 
         self.prunable_layer_names, self.prunable_biases = self.get_prunable_param_names()
 
@@ -105,6 +105,10 @@ def resnet20():
 
 def resnet32():
     return ResNet(get_builder(), BasicBlock, [5, 5, 5])
+
+
+def resnet32_double():
+    return ResNet(get_builder(), BasicBlock, [5, 5, 5], 2)
 
 
 def resnet44():

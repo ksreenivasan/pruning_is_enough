@@ -1,10 +1,10 @@
-subfolder: sr
+# subfolder: sr
 algo: 'hc_iter'
 random_subnet: True
-smart_ratio: 0.98 # 2% sparsity
+# smart_ratio: 0.98 # 2% sparsity
 
 # Architecture
-arch: resnet32
+arch: resnet32_double
 
 # ===== Dataset ===== #
 dataset: CIFAR10
@@ -22,7 +22,7 @@ fine_tune_lr_policy: multistep_lr # cosine_lr
 epochs: 160 #150
 weight_decay: 0.0001
 momentum: 0.9
-batch_size: 64 # 256
+batch_size: 128 # 256
 
 # ===== Sparsity =========== #
 conv_type: SubnetConv
@@ -30,7 +30,7 @@ bn_type: NonAffineBatchNorm
 init: kaiming_normal # signed_constant
 mode: fan_in
 nonlinearity: relu
-prune_rate: 0.5
+# prune_rate: 0.5
 scale_fan: True
 freeze_weights: True
 
