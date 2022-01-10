@@ -45,16 +45,10 @@ def main_worker(gpu, ngpus_per_node):
     if not os.path.isdir(result_root):
         os.mkdir(result_root)
     model = get_model(parser_args)
-    '''
-    from torchsummary import summary
-    summary(model.cuda(), (3,32,32)) # for cifar
-    # check the model architecture
-    for name, param in model.named_parameters():
-        print(name)
-    conv_layers, linear_layers = get_layers(parser_args.arch, model)
-    for layer in [*conv_layers, *linear_layers]:
-        print(layer)
-    '''
+    print_model(model, parser_args)
+
+
+
 
     if parser_args.weight_training:
         model = switch_to_wt(model)

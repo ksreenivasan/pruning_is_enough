@@ -1,0 +1,39 @@
+subfolder: resnet32_cifar10_weight_training_b_128
+trial_num: 1
+
+
+# algorithm
+algo: 'training'
+
+# Architecture
+arch: resnet32Normal
+
+# ===== Dataset ===== #
+dataset: CIFAR10
+name: resnet32_cifar10_training
+
+# ===== Learning Rate Policy ======== #
+optimizer: sgd
+lr: 0.1
+lr_policy: multistep_lr #cosine_lr #constant_lr
+
+# ===== Network training config ===== #
+epochs: 150
+wd: 0.0001
+momentum: 0.9
+batch_size: 128
+
+weight_training: True
+
+# ===== Sparsity =========== #
+conv_type: SubnetConv
+bn_type: NonAffineBatchNorm
+freeze_weights: True
+prune_rate: -1
+init: kaiming_normal
+scale_fan: True
+
+# ===== Hardware setup ===== #
+workers: 4
+gpu: 3
+

@@ -1,0 +1,43 @@
+subfolder: EP_sparsity_20
+algo: 'ep'
+override_prune_rate: True
+
+# Architecture
+arch: MobileNetV2
+
+# ===== Dataset ===== #
+dataset: CIFAR10
+name: mobileV2_cifar10_sc
+
+# ===== Learning Rate Policy ======== #
+optimizer: sgd
+lr: 0.1
+lr_policy: cosine_lr
+fine_tune_lr: 0.01
+fine_tune_lr_policy: multistep_lr
+
+# ===== Network training config ===== #
+epochs: 300 
+weight_decay: 0.0005
+momentum: 0.9
+batch_size: 128  #256 #128
+
+# ===== Sparsity =========== #
+conv_type: SubnetConv
+bn_type: NonAffineBatchNorm
+init: signed_constant
+mode: fan_in
+nonlinearity: relu
+prune_rate: 0.2
+scale_fan: True
+freeze_weights: True
+
+# ===== Hardware setup ===== #
+workers: 4
+gpu: 0
+
+# ===== Checkpointing ===== #
+checkpoint_at_prune: True
+
+# ==== sanity check ==== #
+skip_sanity_checks: True
