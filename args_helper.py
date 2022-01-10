@@ -10,8 +10,6 @@ class ArgsHelper:
     def parse_arguments(self, jupyter_mode=False):
         parser = argparse.ArgumentParser(description="Pruning random networks")
 
-
-
         # Config/Hyperparameters
         parser.add_argument(
             "--data",
@@ -803,7 +801,13 @@ class ArgsHelper:
             default="short_imp/Liu_checkpoint_model_correct.pth"
         )
         parser.add_argument(
-            "--smart_ratio", 
+            "--imp-no-rewind",
+            action="store_true",
+            default=False,
+            help="if set True, we run IMP algorithm without rewinding to previous states"
+        )
+        parser.add_argument(
+            "--smart-ratio", 
             type=float,
             default=-1
         )
