@@ -13,7 +13,7 @@ n_gpu=2
 # --subfolder $subfd
 
 # for sanity check
-for i in 19 18 14 13 7 3 1 0 17 16 15 12 11 10 9 8 6 5 4 2
+for i in 18 14 13 7 3 1 0 17 16 15 12 11 10 9 8 6 5 4 2
 do
     python imp_sanity.py \
     --config configs/imp/mobilenet.yml \
