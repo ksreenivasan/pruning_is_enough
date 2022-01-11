@@ -4,10 +4,13 @@ import torch
 
 def get_scheduler(optimizer, policy='multistep_lr', milestones=[80, 120], gamma=0.1, max_epochs=150):
 
-    if parser_args.dataset == 'TinyImageNet':
+    if parser_args.epochs == 200:
         milestones = [100, 150]
         max_epochs = 200
 
+    if parser_args.epochs == 300:
+        milestones = [150, 250]
+        max_epochs = 300
 
     if policy == 'multistep_lr':
         scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=milestones, gamma=gamma)
