@@ -1,15 +1,15 @@
-subfolder: multigpu
+subfolder: wideresnet
 
 # Hypercube optimization
 algo: 'hc_iter'
 iter_period: 5
 
 # Architecture
-arch: resnet20
+arch: WideResNet28
 
 # ===== Dataset ===== #
 dataset: CIFAR10
-name: resnet20_quantized_iter_hc
+name: wideresnet28_quantized_iter_hc
 
 # ===== Learning Rate Policy ======== #
 optimizer: sgd
@@ -46,18 +46,14 @@ quantize_threshold: 0.5
 
 # ===== Regularization ===== #
 regularization: L2
-lmbda: 0.000001 # 1e-6
+lmbda: 0.0001 # 1e-4
 
 # ===== Hardware setup ===== #
 workers: 4
 gpu: 2
-multiprocessing_distributed: True
-world_size: 1
-rank: 1
 
 # ===== Checkpointing ===== #
 checkpoint_at_prune: True
 
 # ==== sanity check ==== #
-skip_sanity_checks: False
-
+skip_sanity_checks: True
