@@ -122,7 +122,7 @@ def resnet32():
 # def resnet1202():
 #     return ResNet(get_builder(), BasicBlock, [200, 200, 200])
 
-
+'''
 def _weights_init(m):
     classname = m.__class__.__name__
     #print(classname)
@@ -203,4 +203,4 @@ def resnet20Normal():
 
 def resnet32Normal():
     return ResNetNormal(BasicBlockNormal, [5, 5, 5])
-
+'''
