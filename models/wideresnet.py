@@ -81,7 +81,7 @@ class WideResNet(nn.Module):
         self.nChannels = nChannels[3]
 
         # TODO: for IMP. might break right now
-        # self.prunable_layer_names, self.prunable_biases = self.get_prunable_param_names()
+        self.prunable_layer_names, self.prunable_biases = self.get_prunable_param_names()
 
         """
         # TODO: deleting weight init because it should be handled by subnetconv
@@ -96,18 +96,18 @@ class WideResNet(nn.Module):
                     m.bias.data.zero_()
         """
 
-        def get_prunable_param_names(model):
-            prunable_weights = [name + '.weight' for name, module in model.named_modules() if
-                    isinstance(module, torch.nn.modules.conv.Conv2d) or
-                    isinstance(module, torch.nn.modules.linear.Linear)]
-            if parser_args.bias:
-                prunable_biases = [name + '.bias' for name, module in model.named_modules() if
-                    isinstance(module, torch.nn.modules.conv.Conv2d) or
-                    isinstance(module, torch.nn.modules.linear.Linear)]
-            else:
-                prunable_biases = [""]
+    def get_prunable_param_names(model):
+        prunable_weights = [name + '.weight' for name, module in model.named_modules() if
+                isinstance(module, torch.nn.modules.conv.Conv2d) or
+                isinstance(module, torch.nn.modules.linear.Linear)]
+        if parser_args.bias:
+            prunable_biases = [name + '.bias' for name, module in model.named_modules() if
+                isinstance(module, torch.nn.modules.conv.Conv2d) or
+                isinstance(module, torch.nn.modules.linear.Linear)]
+        else:
+            prunable_biases = [""]
 
-            return prunable_weights, prunable_biases
+        return prunable_weights, prunable_biases
 
     def forward(self, x):
         # update score thresholds for global ep

@@ -22,6 +22,7 @@ from utils.conv_type import GetSubnet
 from utils.net_utils import get_model_sparsity, get_layer_sparsity, prune
 
 import re
+import yaml
 
 
 # load this guy: resnet18-sc-unsigned.yaml
