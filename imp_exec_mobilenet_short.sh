@@ -7,7 +7,7 @@ n_gpu=2
 
 python imp_main.py \
 --config configs/imp/mobilenet.yml \
---iter_period 15 \
+--iter-period 15 \
 --epochs 300 \
 --gpu $n_gpu \
 --subfolder $subfd
