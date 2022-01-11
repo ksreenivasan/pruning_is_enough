@@ -3,6 +3,7 @@ from models.resnet_kaiming import resnet20, resnet32, resnet20Normal, resnet32No
 from models.mobilenet import MobileNetV2Normal, MobileNetV2
 from models.frankle import FC, Conv2, Conv4, Conv4Normal, Conv6, Conv4Wide, Conv8, Conv6Wide
 from models.vgg_normal import vgg16, vgg16_normal
+from models.wideresnet import WideResNet28
 
 #### TODO: delete below ones (merge with above code)
 from models.resnet_cifar import cResNet18, cResNet50 
@@ -35,4 +36,5 @@ __all__ = [
     "cResNet50",
     "TinyResNet18",
     "TinyResNet18Normal",
+    "WideResNet28"
 ]
