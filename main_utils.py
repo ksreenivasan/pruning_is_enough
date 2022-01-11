@@ -41,6 +41,7 @@ from utils.net_utils import (
 )
 from utils.schedulers import get_scheduler
 from utils.utils import set_seed, plot_histogram_scores
+from SmartRatio import SmartRatio
 
 import importlib
 
@@ -158,26 +159,60 @@ def evaluate_without_training(parser_args, model, model2, validate, data, criter
             connect_mask(cp_model, criterion, data, validate, cp_model2)
         # visualize_mask_2D(cp_model, criterion, data, validate)
 
+class dotdict(dict):
+    """dot.notation access to dictionary attributes"""
+    __getattr__ = dict.get
+    __setattr__ = dict.__setitem__
+    __delattr__ = dict.__delitem__
 
-def test_random_subnet(model, data, criterion, parser_args, writer, result_root):
 
-    # round the score (in the model itself)
-    model = round_model(model, parser_args.round, noise=parser_args.noise,
-                        ratio=parser_args.noise_ratio, rank=parser_args.gpu)
 
-    # TODO: CHANGE THIS BACK once the finetune from checkpoints code is fixed
-    # NOTE: this part is hard coded
-    model = redraw(model, shuffle=parser_args.shuffle, reinit=parser_args.reinit,
-                   chg_mask=parser_args.chg_mask, chg_weight=parser_args.chg_weight)
+#def test_smart_ratio(model, data, criterion, parser_args, result_root):
+  
+
+
+def test_random_subnet(model, data, criterion, parser_args, result_root, smart_ratio=-1):
+
+    if smart_ratio != -1:
+        # get a randomly pruned model with SmartRatio
+        smart_ratio_args = {'linear_keep_ratio': 0.3, 
+                            }
+        smart_ratio_args = dotdict(smart_ratio_args)
+        model = SmartRatio(model, smart_ratio_args, parser_args)
+        model = set_gpu(parser_args, model)
+        # this model modify `flag` to represent the sparsity,
+        # and `score` are all ones.
+
+    else:
+        # round the score (in the model itself)
+        model = round_model(model, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio, rank=parser_args.gpu)    
+        
+        # TODO: CHANGE THIS BACK once the finetune from checkpoints code is fixed
+        # NOTE: this part is hard coded
+        model = redraw(model, shuffle=parser_args.shuffle, reinit=parser_args.reinit, chg_mask=parser_args.chg_mask, chg_weight=parser_args.chg_weight)  
+
 
     # switch to weight training mode (turn on the requires_grad for weight/bias, and turn off the requires_grad for other parameters)
     model = switch_to_wt(model)
+    model_filename = result_root + "random_subnet_inited_{}_ckpt.pt".format(parser_args.prune_rate)
+    print("Writing init model to {}".format(model_filename))
+    torch.save(model.state_dict(), model_filename)
 
     # set base_setting and evaluate
     run_base_dir, ckpt_base_dir, log_base_dir, writer, epoch_time, validation_time, train_time, progress_overall = get_settings(
         parser_args)
     # TODO: Change this to use finetune() (I think this is possible)
+    # Liu: Yes I also think so
     optimizer = get_optimizer(parser_args, model, finetune_flag=True)
+    if parser_args.epochs in [150, 160]:
+        scheduler = get_scheduler(optimizer, parser_args.fine_tune_lr_policy, milestones=[
+                                  80, 120], gamma=0.1)  # NOTE: hard-coded
+    elif parser_args.epochs == 50:
+        scheduler = get_scheduler(optimizer, parser_args.fine_tune_lr_policy, milestones=[
+                                  20, 40], gamma=0.1)  # NOTE: hard-coded
+    else:
+        scheduler = get_scheduler(optimizer, parser_args.fine_tune_lr_policy, milestones=[
+                                  20, 40], gamma=0.1)  # NOTE: hard-coded
     train, validate, modifier = get_trainer(parser_args)
 
     # check the performance of loaded model (after rounding)
@@ -193,8 +228,6 @@ def test_random_subnet(model, data, criterion, parser_args, writer, result_root)
 
         if parser_args.multiprocessing_distributed:
             data.train_loader.sampler.set_epoch(epoch)
-        #lr_policy(epoch, iteration=None)
-        #modifier(parser_args, epoch, model)
         cur_lr = get_lr(optimizer)
         print('epoch: {}, lr: {}'.format(epoch, cur_lr))
         print("="*60)
@@ -204,6 +237,7 @@ def test_random_subnet(model, data, criterion, parser_args, writer, result_root)
         train_acc1, train_acc5, train_acc10, reg_loss = train(
             data.train_loader, model, criterion, optimizer, epoch, parser_args, writer=writer
         )
+        scheduler.step()
         train_time.update((time.time() - start_train) / 60)
 
         # evaluate on validation set
@@ -246,8 +280,7 @@ def test_random_subnet(model, data, criterion, parser_args, writer, result_root)
         cleanup_distributed()
 
     # save checkpoint for later debug
-    model_filename = "random_subnet_finetuned_{}_ckpt.pt".format(
-        parser_args.prune_rate)
+    model_filename = result_root + "random_subnet_finetuned_{}_ckpt.pt".format(parser_args.prune_rate)
     print("Writing final model to {}".format(model_filename))
     torch.save(model.state_dict(), model_filename)
 
