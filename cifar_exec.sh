@@ -24,9 +24,10 @@ python main.py \
 BLOCK
 
 # target sparsity 0.5
+:<<BLOCK
 python main.py \
 --config configs/hypercube/resnet20/resnet20_quantized_iter_hc_target_sparsity_0_5.yml > cifar_log_target_0_5 2>&1
-
+BLOCK
 
 # EP
 :<<BLOCK
@@ -53,4 +54,8 @@ BLOCK
 
 # EP
 #python main.py --config configs/ep/conv4/conv4_sc_ep.yml 
+
+## WideResNet28
+python main.py \
+--config configs/hypercube/wideresnet28/wideresnet28_weight_training.yml > wideresnet_wt_log 2>&1
 
