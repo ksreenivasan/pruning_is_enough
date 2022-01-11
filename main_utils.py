@@ -176,7 +176,7 @@ def test_random_subnet(model, data, criterion, parser_args, result_root, smart_r
     # TODO: Change this to use finetune() (I think this is possible)
     # Liu: Yes I also think so
     optimizer = get_optimizer(parser_args, model, finetune_flag=True)
-    if parser_args.epochs == 150:
+    if parser_args.epochs in [150, 160]:
         scheduler = get_scheduler(optimizer, parser_args.fine_tune_lr_policy, milestones=[
                                   80, 120], gamma=0.1)  # NOTE: hard-coded
     elif parser_args.epochs == 50:

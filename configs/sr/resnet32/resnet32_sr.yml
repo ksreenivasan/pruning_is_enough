@@ -1,7 +1,7 @@
 # subfolder: sr
 algo: 'hc_iter'
 random_subnet: True
-# smart_ratio: 0.98 # 2% sparsity
+smart_ratio: 0.98 # 2% sparsity
 
 # Architecture
 arch: resnet32_double
@@ -26,7 +26,8 @@ batch_size: 128 # 256
 
 # ===== Sparsity =========== #
 conv_type: SubnetConv
-bn_type: NonAffineBatchNorm
+bias: True
+bn_type: AffineBatchNorm  # NonAffineBatchNorm
 init: kaiming_normal # signed_constant
 mode: fan_in
 nonlinearity: relu
