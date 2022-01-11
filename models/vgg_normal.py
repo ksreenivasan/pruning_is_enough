@@ -16,8 +16,8 @@ class VGG16_Normal(nn.Module):
         self.classifier = nn.Linear(512, 10) 
     def forward(self, x):  
         x = self.features(x)
-        x = self.classifier(x) 
         x = x.view(x.size(0), -1)
+        x = self.classifier(x) 
         return x  #.flatten(1)
 
     def make_layers(self, batch_norm=False):
@@ -32,7 +32,7 @@ class VGG16_Normal(nn.Module):
                 if batch_norm:
                     layers += [conv2d, nn.BatchNorm2d(v), nn.ReLU(inplace=True)]
                 else:
-                    layers += [conv2d, nn.ReLU(inplace-True)]
+                    layers += [conv2d, nn.ReLU(inplace=True)]
                 in_channels = v
         layers += [nn.AvgPool2d(kernel_size=1, stride=1)]
         return nn.Sequential(*layers)
@@ -68,7 +68,7 @@ class VGG16(nn.Module):
 
 
 def vgg16_normal(pretrained=False):
-    return VGG16_Normal(get_builder(), False)
+    return VGG16_Normal(False)
 
 def vgg16(pretrained=False):
     return VGG16(get_builder(), False)
