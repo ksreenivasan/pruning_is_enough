@@ -92,9 +92,8 @@ class MobileNet_base(nn.Module):
 def MobileNetV2():
     return MobileNet_base(get_builder())
 
-
+'''
 class BlockNormal(nn.Module):
-    '''expand + depthwise + pointwise'''
     def __init__(self, in_planes, out_planes, expansion, stride):
         super(BlockNormal, self).__init__()
         self.stride = stride
@@ -174,5 +173,4 @@ def test():
     x = torch.randn(2,3,32,32)
     y = net(x)
     print(y.size())
-
-# test()
+'''
