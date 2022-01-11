@@ -2,7 +2,7 @@
 
 # ===== warm short IMP ===== #
 
-subfd="long_warm_imp_mobilenet"
+subfd="short_warm_imp_mobilenet"
 n_gpu=2
 
 python imp_main.py \
