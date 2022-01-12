@@ -22,7 +22,7 @@ python main.py --config configs/hypercube/mobilenetV2/sparsity_5.yml > log_mobil
 python main.py --config configs/hypercube/mobilenetV2/sparsity_20.yml > log_mobilev2_HC_sparsity_20 2>&1 
 BLOCK
 #python main.py --config configs/hypercube/mobilenetV2/sparsity_5_7lam6.yml > log_mobilev2_HC_sparsity_5_7lam6 2>&1 
-
+#python main.py --config configs/hypercube/mobilenetV2/sparsity_20_1lam6.yml > log_mobilev2_HC_sparsity_20_1lam6 2>&1 
 
 
 #### ResNet-18
