@@ -28,9 +28,6 @@ def get_layers(arch='Conv4', model=None):
 
     elif arch == 'MobileNetV2':
         conv_layers = [model.conv1]
-        
-        #import pdb; pdb.set_trace()
-        #print(len(model.layers), ' layers')
         for i in range(len(model.layers)):
             conv_layers.append(model.layers[i].conv1)
             conv_layers.append(model.layers[i].conv2)
@@ -39,8 +36,7 @@ def get_layers(arch='Conv4', model=None):
                 conv_layers.append(model.layers[i].shortcut[0])
         conv_layers.append(model.conv2)
         linear_layers = [model.linear]
-        #print(conv_layers, linear_layers)
-        #pdb.set_trace()
+        
     elif arch == 'resnet20':
         conv_layers = [model.conv1]
         for layer in [model.layer1, model.layer2, model.layer3]:
@@ -53,6 +49,7 @@ def get_layers(arch='Conv4', model=None):
                     conv_layers.append(layer[basic_block_id].shortcut[0])
                 '''
         linear_layers = [model.fc]
+
     elif arch == 'cResNet18':
         conv_layers = [model.conv1]
         for layer in [model.layer1, model.layer2, model.layer3, model.layer4]:
@@ -63,6 +60,7 @@ def get_layers(arch='Conv4', model=None):
                 if len(layer[basic_block_id].shortcut) > 0:
                     conv_layers.append(layer[basic_block_id].shortcut[0])
         linear_layers = [model.fc]
+
     elif arch == 'TinyResNet18':
         conv_layers = [model.conv1]
         for layer in [model.layer1, model.layer2, model.layer3, model.layer4]:
@@ -70,6 +68,7 @@ def get_layers(arch='Conv4', model=None):
                 conv_layers.append(layer[basic_block_id].conv1)
                 conv_layers.append(layer[basic_block_id].conv2)
         linear_layers = [model.fc]
+
     elif arch == 'ResNet50':
         conv_layers = [model.conv1]
         for layer in [model.layer1, model.layer2, model.layer3, model.layer4]:
@@ -80,13 +79,26 @@ def get_layers(arch='Conv4', model=None):
                 # handle shortcut
                 # if len(layer[basic_block_id].shortcut) > 0:
                 #     conv_layers.append(layer[basic_block_id].shortcut[0])
+
     elif arch == 'vgg16':
         conv_layers = []
         for i in range(len(model.features)):
             if isinstance(model.features[i], SubnetConv):
                 conv_layers.append(model.features[i])
-        #check how to see how the model.features object works and if this is correct
+        # check how to see how the model.features object works and if this is correct
         linear_layers = [model.classifier]
+
+    elif arch == 'WideResNet28':
+        conv_layers = [model.conv1]
+        for block in [model.block1, model.block2, model.block3]:
+            layer = block.layer
+            for basic_block_id in range(len(layer)):
+                conv_layers.append(layer[basic_block_id].conv1)
+                conv_layers.append(layer[basic_block_id].conv2)
+                # handle shortcut. this will pick up the conv layer in layer0
+                if layer[basic_block_id].convShortcut:
+                    conv_layers.append(layer[basic_block_id].convShortcut)
+        linear_layers = [model.fc]
     return (conv_layers, linear_layers)
 
 
