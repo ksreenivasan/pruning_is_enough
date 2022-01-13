@@ -14,7 +14,7 @@ name: wideresnet28_quantized_iter_hc
 # ===== Learning Rate Policy ======== #
 optimizer: sgd
 lr: 0.1 #0.01
-lr_policy: cosine_lr #constant_lr #multistep_lr
+lr_policy: multistep_lr
 fine_tune_lr: 0.01
 fine_tune_lr_policy: multistep_lr
 
@@ -23,6 +23,7 @@ epochs: 150
 wd: 0.0 
 momentum: 0.9
 batch_size: 128
+weight_training: True
 
 # ===== Sparsity =========== #
 conv_type: SubnetConv
@@ -31,7 +32,8 @@ freeze_weights: True
 prune_type: BottomK
 # enter target sparsity here
 target_sparsity: 0.5
-init: signed_constant
+unflag_before_finetune: True
+init: kaiming_normal #signed_constant
 score_init: unif #skew #half #bimodal #skew # bern
 scale_fan: False #True
 
@@ -46,14 +48,14 @@ quantize_threshold: 0.5
 
 # ===== Regularization ===== #
 regularization: L2
-lmbda: 0.0001 # 1e-4
+lmbda: 0 # 1e-4
 
 # ===== Hardware setup ===== #
 workers: 4
 gpu: 2
 
 # ===== Checkpointing ===== #
-checkpoint_at_prune: True
+checkpoint_at_prune: False
 
 # ==== sanity check ==== #
 skip_sanity_checks: True
