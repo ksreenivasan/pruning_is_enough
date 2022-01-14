@@ -1,7 +1,7 @@
-subfolder: sr
-algo: 'hc' # NOTE: is this okay?
+# subfolder: sr
+algo: 'hc_iter'
 random_subnet: True
-smart_ratio: 0.98 # 2% sparsity
+# smart_ratio: 0.98 # 2% sparsity
 
 # Architecture
 arch: resnet20
@@ -12,30 +12,32 @@ name: resnet20_cifar10_sc
 
 # ===== Learning Rate Policy ======== #
 optimizer: sgd
-lr: 0.1
-lr_policy: cosine_lr
+# doesn't matter
+# lr: 0.1
+# lr_policy: cosine_lr
 fine_tune_lr: 0.1
-fine_tune_lr_policy: cosine_lr
+fine_tune_lr_policy: multistep_lr # cosine_lr
 
 # ===== Network training config ===== #
-epochs: 150 #150
-weight_decay: 0.0005
+epochs: 160 #150
+weight_decay: 0.0001
 momentum: 0.9
-batch_size: 256
+batch_size: 128 # 256
 
 # ===== Sparsity =========== #
 conv_type: SubnetConv
+bias: False
 bn_type: NonAffineBatchNorm
-init: signed_constant
+init: kaiming_normal # signed_constant
 mode: fan_in
 nonlinearity: relu
-prune_rate: 0.5
+# prune_rate: 0.5
 scale_fan: True
 freeze_weights: True
 
 # ===== Hardware setup ===== #
 workers: 4
-gpu: 1
+# gpu: 3
 
 # ===== Checkpointing ===== #
 checkpoint_at_prune: True
