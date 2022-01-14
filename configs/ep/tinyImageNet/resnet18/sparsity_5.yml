@@ -1,0 +1,46 @@
+subfolder: tiny_ep_sparsity_5_t1
+trial_num: 1
+override_prune_rate: True
+
+# algorithm
+algo: 'ep'
+
+# Architecture
+arch: TinyResNet18
+
+# ===== Dataset ===== #
+dataset: TinyImageNet
+name: tiny_resnet18_ep
+
+# ===== Learning Rate Policy ======== #
+optimizer: sgd
+lr: 0.1
+lr_policy: cosine_lr
+fine_tune_lr: 0.01
+fine_tune_lr_policy: multistep_lr
+
+# ===== Network training config ===== #
+epochs: 200
+wd: 0.0005
+momentum: 0.9
+batch_size: 256
+
+# ===== Sparsity =========== #
+conv_type: SubnetConv
+bn_type: NonAffineBatchNorm
+init: signed_constant
+mode: fan_in
+nonlinearity: relu
+prune_rate: 0.05
+scale_fan: False
+freeze_weights: True
+
+# ===== Hardware setup ===== #
+workers: 4
+gpu: 0
+
+# ===== Checkpointing ===== #
+checkpoint_at_prune: False
+
+# ==== sanity check ==== #
+skip_sanity_checks: True
