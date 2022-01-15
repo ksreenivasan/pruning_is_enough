@@ -99,12 +99,6 @@ class ResNet(nn.Module):
         return out.flatten(1)
 
 
-
-
-
-
-
-
 def resnet20():
     return ResNet(get_builder(), BasicBlock, [3, 3, 3])
 

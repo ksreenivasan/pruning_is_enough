@@ -1,11 +1,9 @@
 *.txt
 *.jpg
 *.pth
-*.sh
 
 # A
 results/
-configs/
 *.pdf
 *.yml
 

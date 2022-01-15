@@ -35,6 +35,8 @@ def main_worker(gpu, ngpus_per_node):
         parser_args.world_size = ngpus_per_node * parser_args.world_size
     idty_str = get_idty_str(parser_args)
     if parser_args.subfolder is not None:
+        if not os.path.isdir('results/'):
+            os.mkdir('results/')
         result_subroot = 'results/' + parser_args.subfolder + '/'
         if not os.path.isdir(result_subroot):
             os.mkdir(result_subroot)
@@ -51,6 +53,8 @@ def main_worker(gpu, ngpus_per_node):
 
 
     if parser_args.weight_training:
+        model = round_model(model, round_scheme="all_ones", noise=parser_args.noise,
+                            ratio=parser_args.noise_ratio, rank=parser_args.gpu)
         model = switch_to_wt(model)
     model = set_gpu(parser_args, model)
     if parser_args.pretrained:
@@ -162,7 +166,7 @@ def main_worker(gpu, ngpus_per_node):
         validation_time.update((time.time() - start_validation) / 60)
 
         # prune the model every T_{prune} epochs
-        if parser_args.algo in ['hc_iter', 'global_ep_iter'] and epoch % (parser_args.iter_period) == 0 and epoch != 0:
+        if not parser_args.weight_training and parser_args.algo in ['hc_iter', 'global_ep_iter'] and epoch % (parser_args.iter_period) == 0 and epoch != 0:
             prune(model)
             if parser_args.checkpoint_at_prune:
                 save_checkpoint_at_prune(model, parser_args)

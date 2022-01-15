@@ -7,11 +7,14 @@
 
 #python main.py --config configs/training/mobilenetV2/cifar10_mobileV2_training_check.yml #> mobilenet_cifar10_wt_check
 
-:<<BLOCK
-python main.py --config configs/ep/mobilenetV2/cifar10_mobileV2_ep_sparsity_50.yml > log_mobilev2_EP_sparsity_50 2>&1
-python main.py --config configs/ep/mobilenetV2/cifar10_mobileV2_ep_sparsity_5.yml > log_mobilev2_EP_sparsity_5 2>&1
-python main.py --config configs/ep/mobilenetV2/cifar10_mobileV2_ep_sparsity_20.yml > log_mobilev2_EP_sparsity_20 2>&1
-BLOCK
+#:<<BLOCK
+#python main.py --config configs/ep/mobilenetV2/cifar10_mobileV2_ep_sparsity_50.yml > log_mobilev2_EP_sparsity_50 2>&1
+#python main.py --config configs/ep/mobilenetV2/cifar10_mobileV2_ep_sparsity_5.yml > log_mobilev2_EP_sparsity_5 2>&1
+#python main.py --config configs/ep/mobilenetV2/cifar10_mobileV2_ep_sparsity_20.yml > log_mobilev2_EP_sparsity_20 2>&1
+#python main.py --config configs/ep/mobilenetV2/cifar10_mobileV2_ep_sparsity_1_7.yml > log_mobilev2_EP_sparsity_1_7 2>&1
+
+
+#BLOCK
 
 :<<BLOCK
 python main.py --config configs/hypercube/mobilenetV2/sparsity_50.yml > log_mobilev2_HC_sparsity_50 2>&1 
@@ -22,6 +25,7 @@ BLOCK
 #python main.py --config configs/hypercube/mobilenetV2/sparsity_1_4.yml > log_mobilev2_HC_sparsity_1_4 2>&1 
 python main.py --config configs/hypercube/mobilenetV2/sparsity_20_3lam6.yml > log_mobilev2_HC_sparsity_20_3lam6 2>&1 
 
+#python main.py --config configs/hypercube/mobilenetV2/sparsity_20_1lam6.yml > log_mobilev2_HC_sparsity_20_1lam6 2>&1 
 
 
 #### ResNet-18
@@ -38,6 +42,7 @@ python main.py --config configs/hypercube/mobilenetV2/sparsity_20_3lam6.yml > lo
 
 
 ### ResNet-20
+<<<<<<< HEAD
 #python main.py --config configs/ep/resnet20/resnet20_sc_ep.yml 
 #TODO: add global_ep yml here
 #python main.py --config configs/ep/resnet20/resnet20_global_ep_iter.yml #> cifar_log 2>&1
@@ -47,6 +52,9 @@ python main.py --config configs/hypercube/mobilenetV2/sparsity_20_3lam6.yml > lo
 #python main.py --config configs/sr/resnet20/resnet20_sr.yml # ResNet-20
 #python main.py --config configs/sr/resnet32/resnet32_sr.yml # ResNet-32
 #python main.py --config configs/training/resnet20/cifar10_resnet20_training.yml
+=======
+python main.py --config configs/training/resnet20/cifar10_resnet20_training.yml
+>>>>>>> master
 #python main.py --config configs/hypercube/resnet20/error_bar/resnet20_sparsity_3_72_t1.yml #> log_hc_sparsity_3_72_t1 2>&1
 
 

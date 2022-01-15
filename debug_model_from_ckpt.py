@@ -22,10 +22,11 @@ from utils.conv_type import GetSubnet
 from utils.net_utils import get_model_sparsity, get_layer_sparsity, prune
 
 import re
+import yaml
 
 
 # load this guy: resnet18-sc-unsigned.yaml
-#yaml_txt = open("configs/hypercube/resnet20/resnet20_quantized_hypercube_reg_bottom_K.yml").read()
+yaml_txt = open("configs/hypercube/resnet20/resnet20_quantized_iter_hc_target_sparsity_0_5_highreg.yml").read()
 # override args
 #loaded_yaml = yaml.load(yaml_txt, Loader=yaml.FullLoader)
 #args.__dict__.update(loaded_yaml)
@@ -37,12 +38,25 @@ model = set_gpu(parser_args, model)
 device = torch.device("cuda:{}".format(parser_args.gpu))
 
 # enter checkpoint here
-ckpt = torch.load("results/Global_EP/results_pruning_CIFAR10_resnet20_global_ep_0_982_20_reg_None__sgd_cosine_lr_0_1_0_1_50_finetune_0_01_fan_True_signed_constant_unif_width_1_0_seed_42_idx_8/model_before_finetune.pth")
+ckpt1 = torch.load("/workspace/results_repo_pruning/resnet20_exps/final_results/target_sparsity_0_5_highreg/model_before_finetune.pth")
+ckpt2 = torch.load("/workspace/results_repo_pruning/resnet20_exps/final_results/target_sparsity_0_5_medreg/model_before_finetune.pth")
+ckpt3 = torch.load("/workspace/results_repo_pruning/resnet20_exps/final_results/target_sparsity_1_4_highreg/model_before_finetune.pth")
+ckpt4 = torch.load("/workspace/results_repo_pruning/resnet20_exps/final_results/target_sparsity_1_4_medreg/model_before_finetune.pth")
 
 # note that if you are loading ckpt from the ramanujan-style savepoints, you need to add ckpt['state_dict']
 # otherwise, we typically save the state dict directly, so you can just use ckpt
 # model.load_state_dict(ckpt['state_dict'])
-model.load_state_dict(ckpt)
+for ckpt in [ckpt1, ckpt2, ckpt3, ckpt4]:
+    model.load_state_dict(ckpt)
+    cp_model = round_model(model, 'naive')
+    conv_layers, lin_layers = get_layers(arch='resnet20', model=cp_model)
+    for conv_layer in conv_layers:
+        w_numer, w_denom, b_numer, b_denom = get_layer_sparsity(conv_layer)
+        print("Layer: {} | {}/{} weights | Sparsity = {}".format(conv_layer, w_numer, w_denom, 100.0*w_numer/w_denom))
+
+    for lin_layer in lin_layers:
+        w_numer, w_denom, b_numer, b_denom = get_layer_sparsity(lin_layer)
+        print("Layer: {} | {}/{} weights | Sparsity = {}".format(lin_layer, w_numer, w_denom, 100.0*w_numer/w_denom))
 
 # test global ep
 parser_args.algo = 'global_ep'

@@ -115,6 +115,8 @@ def save_checkpoint_at_prune(model, parser_args):
                            ratio=parser_args.noise_ratio, rank=parser_args.gpu)
     avg_sparsity = get_model_sparsity(cp_model)
     idty_str = get_idty_str(parser_args)
+    if not os.path.isdir('model_checkpoints/'):
+        os.mkdir('model_checkpoints/')
     ckpt_root = 'model_checkpoints/ckpts_' + idty_str + '/'
     if not os.path.isdir(ckpt_root):
         os.mkdir(ckpt_root)
