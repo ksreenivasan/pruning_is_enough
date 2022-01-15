@@ -35,6 +35,8 @@ def main_worker(gpu, ngpus_per_node):
         parser_args.world_size = ngpus_per_node * parser_args.world_size
     idty_str = get_idty_str(parser_args)
     if parser_args.subfolder is not None:
+        if not os.path.isdir('results/'):
+            os.mkdir('results/')
         result_subroot = 'results/' + parser_args.subfolder + '/'
         if not os.path.isdir(result_subroot):
             os.mkdir(result_subroot)
