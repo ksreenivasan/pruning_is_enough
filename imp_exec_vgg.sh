@@ -3,7 +3,7 @@
 # ===== warm short IMP ===== #
 
 subfd="long_warm_imp_vgg"
-n_gpu=2
+n_gpu=0
 
 python imp_main.py \
 --config configs/imp/vgg.yml \

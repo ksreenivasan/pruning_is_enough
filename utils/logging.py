@@ -1,7 +1,7 @@
 import abc
 import tqdm
 
-from torch.utils.tensorboard import SummaryWriter
+# from torch.utils.tensorboard import SummaryWriter
 
 
 class ProgressMeter(object):
@@ -19,7 +19,7 @@ class ProgressMeter(object):
             tqdm.tqdm.write("\t".join(entries))
 
     def write_to_tensorboard(
-        self, writer: SummaryWriter, prefix="train", global_step=None
+        self, writer, prefix="train", global_step=None
     ):
         for meter in self.meters:
             avg = meter.avg

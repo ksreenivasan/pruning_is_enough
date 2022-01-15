@@ -11,7 +11,7 @@ import pathlib
 import random
 import time
 import pandas as pd
-from torch.utils.tensorboard import SummaryWriter
+# from torch.utils.tensorboard import SummaryWriter
 import torch
 import torch.nn as nn
 import torch.nn.parallel
@@ -457,7 +457,8 @@ def get_settings(parser_args):
 
     run_base_dir, ckpt_base_dir, log_base_dir = get_directories(parser_args)
     parser_args.ckpt_base_dir = ckpt_base_dir
-    writer = SummaryWriter(log_dir=log_base_dir)
+    # writer = SummaryWriter(log_dir=log_base_dir)
+    writer = None
     epoch_time = AverageMeter("epoch_time", ":.4f", write_avg=False)
     validation_time = AverageMeter("validation_time", ":.4f", write_avg=False)
     train_time = AverageMeter("train_time", ":.4f", write_avg=False)
