@@ -792,7 +792,8 @@ class ArgsHelper:
             help="which iterations to rewind to"
         )
         parser.add_argument(
-            "--imp-resume-round", 
+            "--imp-resume-round",
+            default=-1,
             type=int, 
             help="which round to resume to"
         )

@@ -60,6 +60,29 @@ def IMP_train(parser_args, data, device):
     else:  # rewind to early training phase
         pass
 
+    # resume at some point
+    if parser_args.imp_resume_round != -1:
+        ckpt = torch.load(os.path.join(dest_dir, "Liu_checkpoint_model_correct.pth"), map_location='cpu')
+        model.load_state_dict(ckpt["model_state_dict"])
+        rewind_state_dict = copy.deepcopy(model.state_dict())
+        # load mask
+        PATH_mask = "results/{}/round_{}_mask.npy".format(parser_args.subfolder, parser_args.imp_resume_round)
+        mask = np.load(PATH_mask, allow_pickle=True)[()]
+        if parser_args.bias:
+            PATH_mask_bias = os.path.join(dest_dir, "round_{}_mask_bias.npy".format(parser_args.imp_resume_round))
+            mask_bias = np.load(PATH_mask_bias, allow_pickle=True)[()]
+        else:
+            mask_bias = None
+        # load csv file
+        result_df = pd.read_csv(os.path.join(dest_dir, "LTH_cifar10_resnet20.csv"))
+        test_acc_list = result_df["test"]
+        n_act_list = result_df["nact"]
+        before_acc_list = result_df["before"]
+    else:
+        test_acc_list, n_act_list, before_acc_list = [], [], []
+        parser_args.imp_resume_round = 0
+        mask, mask_bias = None, None
+
     n_round = parser_args.epochs // parser_args.iter_period  # number of round (number of pruning happens)
     n_epoch = parser_args.iter_period  # number of epoch per round
     
@@ -173,11 +196,10 @@ def IMP_train(parser_args, data, device):
     # =              Training              =
     # ======================================
     
-    test_acc_list, n_act_list = [], []
-    before_acc_list = []
-    mask, mask_bias = None, None
+    # test_acc_list, n_act_list = [], []
+    # before_acc_list = []
     counter = 0
-    for idx_round in range(n_round):
+    for idx_round in range(parser_args.imp_resume_round, n_round):
         if idx_round > 0:
             # model, mask = prune_by_percentile_global(parser_args.prune_perct, model, rewind_state_dict, mask)
             model, mask, mask_bias = prune_by_percentile_global(parser_args.prune_rate, model, rewind_state_dict, mask, mask_bias)

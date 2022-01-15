@@ -81,6 +81,25 @@ def SmartRatio(model, sr_args, parser_args):
     print("p_arr", p_arr)
     #print(sum(p_arr))
 
+    # sometimes, if the prune_ratio is too small, some layer's keep ratio may be larger than 1
+    ExtraNum = 0
+    for i in range(num_layers):
+        size = m_arr[i]
+        if i < num_layers - 1:
+            if p_arr[i] >= 1:
+                ExtraNum = ExtraNum + int((p_arr[i]-1) * size)
+                p_arr[i] = 1
+            else:
+                RestNum = int((1-p_arr[i])*m_arr[i])
+                if RestNum >= ExtraNum:
+                    p_arr[i] = p_arr[i] + ExtraNum / m_arr[i]
+                    ExtraNum = 0
+                else:
+                    ExtraNum = ExtraNum - RestNum
+                    p_arr[i] = 1
+        if ExtraNum == 0:
+            break
+
 
     # 4. Randomly set the mask of each layer 
     """
