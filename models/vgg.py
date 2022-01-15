@@ -44,6 +44,21 @@ class VGG16(nn.Module):
         self.builder = builder
         self.features = self.make_layers()
         self.classifier = builder.conv1x1(512, 10) 
+        self.prunable_layer_names, self.prunable_biases = self.get_prunable_param_names()
+
+    def get_prunable_param_names(model):
+        prunable_weights = [name + '.weight' for name, module in model.named_modules() if
+                isinstance(module, torch.nn.modules.conv.Conv2d) or
+                isinstance(module, torch.nn.modules.linear.Linear)]
+        if parser_args.bias:
+            prunable_biases = [name + '.bias' for name, module in model.named_modules() if
+                isinstance(module, torch.nn.modules.conv.Conv2d) or
+                isinstance(module, torch.nn.modules.linear.Linear)]
+        else:
+            prunable_biases = [""]
+
+        return prunable_weights, prunable_biases
+
     def forward(self, x):  
         x = self.features(x)
         x = self.classifier(x) 
