@@ -849,6 +849,18 @@ class ArgsHelper:
             default=0,
             help="Use mixed precision or not"
         )
+        parser.add_argument(
+            "--img_height",
+            type=int,
+            default=0,
+            help="height of image for EfficientNet"
+        )
+        parser.add_argument(
+            "--img_width",
+            type=int,
+            default=0,
+            help="width of image for EfficientNet"
+        )
 
 
         if jupyter_mode:

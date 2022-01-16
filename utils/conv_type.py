@@ -159,6 +159,23 @@ class SubnetConv(nn.Conv2d):
         if parser_args.rewind_score:
             self.saved_scores = None
 
+        if parser_args.arch == 'TinyEfficientNet' and static_pad:
+            self.stride = self.stride if len(self.stride) == 2 else [self.stride[0]] * 2
+
+            # Calculate padding based on image size and save it
+            assert image_size is not None
+            ih, iw = (image_size, image_size) if isinstance(image_size, int) else image_size
+            kh, kw = self.weight.size()[-2:]
+            sh, sw = self.stride
+            oh, ow = math.ceil(ih / sh), math.ceil(iw / sw)
+            pad_h = max((oh - 1) * self.stride[0] + (kh - 1) * self.dilation[0] + 1 - ih, 0)
+            pad_w = max((ow - 1) * self.stride[1] + (kw - 1) * self.dilation[1] + 1 - iw, 0)
+            if pad_h > 0 or pad_w > 0:
+                self.static_padding = nn.ZeroPad2d((pad_w // 2, pad_w - pad_w // 2,
+                                                    pad_h // 2, pad_h - pad_h // 2))
+            else:
+                self.static_padding = nn.Identity()
+
     def set_prune_rate(self, prune_rate):
         self.prune_rate = prune_rate
 
@@ -167,6 +184,10 @@ class SubnetConv(nn.Conv2d):
         return self.scores.abs()
 
     def forward(self, x):
+        if parser_args.arch == 'TinyEfficientNet':
+            if static_pad:
+                x = self.static_padding(x)
+
         if parser_args.algo in ['hc', 'hc_iter']:
             # don't need a mask here. the scores are directly multiplied with weights
             if parser_args.differentiate_clamp:

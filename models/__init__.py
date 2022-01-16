@@ -4,12 +4,14 @@ from models.mobilenet import MobileNetV2
 from models.frankle import FC, Conv2, Conv4, Conv4Normal, Conv6, Conv4Wide, Conv8, Conv6Wide
 from models.wideresnet import WideResNet28
 from models.vgg import vgg16
+from models.efficient import TinyEfficientNet
 
 #### TODO: delete below ones (merge with above code)
 from models.resnet_cifar import cResNet18, cResNet50 
 from models.resnet_tiny import TinyResNet18 
 
 __all__ = [
+    "TinyEfficientNet"
     "vgg16",
     "ResNet18",
     "ResNet50",

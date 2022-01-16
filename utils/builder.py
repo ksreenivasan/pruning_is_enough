@@ -14,7 +14,7 @@ class Builder(object):
         self.bn_layer = bn_layer
         self.first_layer = first_layer or conv_layer
 
-    def conv(self, kernel_size, in_planes, out_planes, stride=1, first_layer=False, groups=1):
+    def conv(self, kernel_size, in_planes, out_planes, stride=1, first_layer=False, groups=1):#, static_pad=False):
         conv_layer = self.first_layer if first_layer else self.conv_layer
 
         if first_layer:
@@ -29,11 +29,18 @@ class Builder(object):
                 stride=stride,
                 padding=1,
                 bias=parser_args.bias,
-                groups=groups
+                groups=groups,
+                #static_pad=static_pad
             )
         elif kernel_size == 1:
             conv = conv_layer(
-                in_planes, out_planes, kernel_size=1, stride=stride, bias=parser_args.bias
+                in_planes, 
+                out_planes, 
+                kernel_size=1,
+                stride=stride,
+                bias=parser_args.bias,
+                groups=groups,
+                #static_pad=static_pad
             )
         elif kernel_size == 5:
             conv = conv_layer(
@@ -43,6 +50,8 @@ class Builder(object):
                 stride=stride,
                 padding=2,
                 bias=parser_args.bias,
+                groups=groups,
+                #static_pad=static_pad
             )
         elif kernel_size == 7:
             conv = conv_layer(
@@ -52,6 +61,8 @@ class Builder(object):
                 stride=stride,
                 padding=3,
                 bias=parser_args.bias,
+                groups=groups,
+                #static_pad=static_pad
             )
         else:
             return None
@@ -80,8 +91,8 @@ class Builder(object):
         c = self.conv(5, in_planes, out_planes, stride=stride, first_layer=first_layer)
         return c
 
-    def batchnorm(self, planes, last_bn=False, first_layer=False):
-        return self.bn_layer(planes)
+    def batchnorm(self, planes, last_bn=False, first_layer=False, eps=1e-05, momentum=0.1):
+        return self.bn_layer(planes, eps, momentum)
 
     def activation(self):
         if parser_args.nonlinearity == "relu":
