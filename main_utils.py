@@ -260,11 +260,12 @@ def test_random_subnet(model, data, criterion, parser_args, result_root, smart_r
         model_sparsity_list.append(avg_sparsity)
 
         epoch_time.update((time.time()) / 60)
-        progress_overall.display(epoch)
-        progress_overall.write_to_tensorboard(
-            writer, prefix="diagnostics", global_step=epoch
-        )
-        writer.add_scalar("test/lr", cur_lr, epoch)
+        if writer is not None:
+            progress_overall.display(epoch)
+            progress_overall.write_to_tensorboard(
+                writer, prefix="diagnostics", global_step=epoch
+            )
+            writer.add_scalar("test/lr", cur_lr, epoch)
         end_epoch = time.time()
 
         results_df = pd.DataFrame({'epoch': epoch_list, 'test_acc_before_rounding': test_acc_before_round_list,

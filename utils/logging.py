@@ -24,12 +24,12 @@ class ProgressMeter(object):
         for meter in self.meters:
             avg = meter.avg
             val = meter.val
-            if meter.write_val:
+            if meter.write_val and writer is not None:
                 writer.add_scalar(
                     f"{prefix}/{meter.name}_val", val, global_step=global_step
                 )
 
-            if meter.write_avg:
+            if meter.write_avg and writer is not None:
                 writer.add_scalar(
                     f"{prefix}/{meter.name}_avg", avg, global_step=global_step
                 )
