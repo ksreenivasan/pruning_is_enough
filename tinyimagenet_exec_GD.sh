@@ -4,9 +4,7 @@
 # TinyImageNet, ResNet-101
 
 # Weight training
-python main.py --config configs/training/resnet101/tiny_resnet101_training.yml #> log_tiny_res101_wt 2>&1 # this is current best
-
-
+python main.py --config configs/training/resnet101/tiny_resnet101_training.yml > log_tiny_res101_wt 2>&1 # this is current best
 
 
 
