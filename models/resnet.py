@@ -101,7 +101,7 @@ class ResNet(nn.Module):
         if self.base_width // 64 > 1:
             print(f"==> Using {self.base_width // 64}x wide model")
 
-        if args.first_layer_dense:
+        if parser_args.first_layer_dense:
             self.conv1 = nn.Conv2d(
                 3, self.inplanes, kernel_size=7, stride=2, padding=3, bias=False
             )
@@ -118,8 +118,8 @@ class ResNet(nn.Module):
         self.avgpool = nn.AdaptiveAvgPool2d(1)
 
         # self.fc = nn.Linear(512 * block.expansion, num_classes)
-        if args.last_layer_dense:
-            self.fc = nn.Conv2d(512 * block.expansion, args.num_classes, 1)
+        if parser_args.last_layer_dense:
+            self.fc = nn.Conv2d(512 * block.expansion, num_classes, 1)
         else:
             self.fc = builder.conv1x1(512 * block.expansion, num_classes)
 
@@ -176,7 +176,8 @@ def ResNet50(pretrained=False):
 
 
 def ResNet101(pretrained=False):
-    return ResNet(get_builder(), Bottleneck, [3, 4, 23, 3], 1000)
+    return ResNet(get_builder(), Bottleneck, [3, 4, 23, 3], 200)
+    #return ResNet(get_builder(), Bottleneck, [3, 4, 23, 3], 1000)
 
 
 def WideResNet50_2(pretrained=False):
