@@ -849,6 +849,12 @@ class ArgsHelper:
             default=0,
             help="Use mixed precision or not"
         )
+        parser.add_argument(
+            "--transfer_learning",
+            type=int,
+            default=0,
+            help="Use transfer learning or not"
+        )
 
 
         if jupyter_mode:

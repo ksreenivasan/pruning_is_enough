@@ -122,6 +122,10 @@ class ResNet(nn.Module):
             self.fc = nn.Conv2d(512 * block.expansion, num_classes, 1)
         else:
             self.fc = builder.conv1x1(512 * block.expansion, num_classes)
+        
+        if parser_args.transfer_learning:
+            self.dropout = nn.Dropout2d(0.4)
+
 
     def _make_layer(self, builder, block, planes, blocks, stride=1):
         downsample = None
@@ -159,7 +163,13 @@ class ResNet(nn.Module):
         x = self.layer3(x)
         x = self.layer4(x)
 
-        x = self.avgpool(x)
+        if parser_args.transfer_learning:
+            batch = x.size()[0]
+            x = F.adaptive_avg_pool2d(x, 1).reshape(batch, -1)
+            x = self.dropout(x)
+        else:
+            x = self.avgpool(x)
+
         x = self.fc(x)
         x = x.view(x.size(0), -1)
 
@@ -167,16 +177,16 @@ class ResNet(nn.Module):
 
 
 # ResNet }}}
-def ResNet18(pretrained=False):
-    return ResNet(get_builder(), BasicBlock, [2, 2, 2, 2], 1000)
+def ResNet18(pretrained=False, num_classes=1000):
+    return ResNet(get_builder(), BasicBlock, [2, 2, 2, 2], num_classes=num_classes)
 
 
-def ResNet50(pretrained=False):
-    return ResNet(get_builder(), Bottleneck, [3, 4, 6, 3], 1000)
+def ResNet50(pretrained=False, num_classes=1000):
+    return ResNet(get_builder(), Bottleneck, [3, 4, 6, 3], num_classes=num_classes)
 
 
-def ResNet101(pretrained=False):
-    return ResNet(get_builder(), Bottleneck, [3, 4, 23, 3], 200)
+def ResNet101(pretrained=False, num_classes=200): # default: tinyImagenet
+    return ResNet(get_builder(), Bottleneck, [3, 4, 23, 3], num_classes=num_classes)
     #return ResNet(get_builder(), Bottleneck, [3, 4, 23, 3], 1000)
 
 

@@ -3,7 +3,10 @@ trial_num: 1
 
 
 # algorithm
-algo: 'training'
+algo: 'hc_iter'
+weight_training: True
+transfer_learning: True
+
 
 # Architecture
 arch: resnet50
@@ -23,7 +26,6 @@ wd: 0
 momentum: 0.9
 batch_size: 16
 
-weight_training: True
 
 # ===== Sparsity =========== #
 conv_type: SubnetConv
