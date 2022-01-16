@@ -12,7 +12,7 @@ transfer_learning: True
 arch: resnet50
 
 # ===== Dataset ===== #
-dataset: caltech101
+dataset: Caltech101
 name: resnet50_caltech101_training
 
 # ===== Learning Rate Policy ======== #
