@@ -105,16 +105,16 @@ class BertSelfAttention(nn.Module):
 
 class Block(nn.Module):
 
-    def __init__(self, dim, num_heads, mlp_hidden_dim, qkv_bias=False, drop=0.,
+    def __init__(self, builder, dim, num_heads, mlp_hidden_dim, qkv_bias=False, drop=0.,
                  drop_path=0., act_layer=nn.GELU, norm_layer=nn.LayerNorm(elementwise_affine=False)):
         super().__init__()
         self.norm1 = norm_layer(dim)
-        self.attn = BertSelfAttention(hidden_size=dim, num_attention_heads=num_heads, dropout=drop)
+        self.attn = BertSelfAttention(builder, hidden_size=dim, num_attention_heads=num_heads, dropout=drop)
         # self.attn = Attention(dim, num_heads=num_heads, qkv_bias=qkv_bias, attn_drop=drop, proj_drop=drop)
         # NOTE: drop path for stochastic depth, we shall see if this is better than dropout here
         # self.drop_path = DropPath(drop_path) if drop_path > 0. else nn.Identity()
         self.norm2 = norm_layer(dim)
-        self.mlp = Mlp(in_features=dim, hidden_features=mlp_hidden_dim, act_layer=act_layer, drop=drop)
+        self.mlp = Mlp(builder, in_features=dim, hidden_features=mlp_hidden_dim, act_layer=act_layer, drop=drop)
 
     def forward(self, x, src_mask, src_key_padding_mask=None):
         x = x + self.attn(self.norm1(x), attention_mask=src_mask)
@@ -125,7 +125,7 @@ class Block(nn.Module):
 class Mlp(nn.Module):
     """ MLP as used in Vision Transformer, MLP-Mixer and related networks
     """
-    def __init__(self, in_features, hidden_features=None, out_features=None, act_layer=nn.ReLU, drop=0.):
+    def __init__(self, builder, in_features, hidden_features=None, out_features=None, act_layer=nn.ReLU, drop=0.):
         super().__init__()
         out_features = out_features or in_features
         hidden_features = hidden_features or in_features
