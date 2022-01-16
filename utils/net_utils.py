@@ -99,8 +99,22 @@ def get_layers(arch='Conv4', model=None):
                 if layer[basic_block_id].convShortcut:
                     conv_layers.append(layer[basic_block_id].convShortcut)
         linear_layers = [model.fc]
-    return (conv_layers, linear_layers)
+    
+    elif arch == 'Ti nyEfficientNet':
+        conv_layers = [model._conv_stem]
+        for blocks in model._blocks:
+            if hasattr(blocks, '_expand_conv'):
+                conv_layers.append(blocks._expand_conv)
+            conv_layers.append(blocks._depthwise_conv)
+            if blocks.has_se:
+                conv_layers.append(blocks._se_reduce)
+                conv_layers.append(blocks._se_expand)
+            conv_layers.append(blocks._project_conv)
+        conv_layers.append(model._conv_head)
+        linear_layers = [model._fc]
 
+    return (conv_layers, linear_layers)
+    
 
 def redraw(model, shuffle=False, reinit=False, invert=False, chg_mask=False, chg_weight=False):
     cp_model = copy.deepcopy(model)

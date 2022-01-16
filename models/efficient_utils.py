@@ -20,6 +20,33 @@ BlockArgs = collections.namedtuple('BlockArgs', [
     'num_repeat', 'kernel_size', 'stride', 'expand_ratio',
     'input_filters', 'output_filters', 'se_ratio', 'id_skip'])
 
+# Swish activation function
+if hasattr(nn, 'SiLU'):
+    Swish = nn.SiLU
+else:
+    # For compatibility with old PyTorch versions
+    class Swish(nn.Module):
+        def forward(self, x):
+            return x * torch.sigmoid(x)
+
+# A memory-efficient implementation of Swish function
+class SwishImplementation(torch.autograd.Function):
+    @staticmethod
+    def forward(ctx, i):
+        result = i * torch.sigmoid(i)
+        ctx.save_for_backward(i)
+        return result
+
+    @staticmethod
+    def backward(ctx, grad_output):
+        i = ctx.saved_tensors[0]
+        sigmoid_i = torch.sigmoid(i)
+        return grad_output * (sigmoid_i * (1 + i * (1 - sigmoid_i)))
+
+
+class MemoryEfficientSwish(nn.Module):
+    def forward(self, x):
+        return SwishImplementation.apply(x)
 
 def round_filters(filters, global_params):
     """Calculate and round number of filters based on width multiplier.
@@ -61,12 +88,36 @@ def round_repeats(repeats, global_params):
     # follow the formula transferred from official TensorFlow implementation
     return int(math.ceil(multiplier * repeats))
 
+def drop_connect(inputs, p, training):
+    """Drop connect.
+    Args:
+        input (tensor: BCWH): Input of this structure.
+        p (float: 0.0~1.0): Probability of drop connection.
+        training (bool): The running mode.
+    Returns:
+        output: Output after drop connection.
+    """
+    assert 0 <= p <= 1, 'p must be in range of [0,1]'
+
+    if not training:
+        return inputs
+
+    batch_size = inputs.shape[0]
+    keep_prob = 1 - p
+
+    # generate binary_tensor mask according to probability (p for 0, 1-p for 1)
+    random_tensor = keep_prob
+    random_tensor += torch.rand([batch_size, 1, 1, 1], dtype=inputs.dtype, device=inputs.device)
+    binary_tensor = torch.floor(random_tensor)
+
+    output = inputs / keep_prob * binary_tensor
+    return output
 
 def _decode_block_string(block_string):
         """Get a block through a string notation of arguments.
         Args:
             block_string (str): A string notation of arguments.
-                                Examples: 'r1_k3_s11_e1_i32_o16_se0.25_noskip'.
+                                Examples: 'r1_k3_s11_e1_i32_o16_se0.25_noskip'
         Returns:
             BlockArgs: The namedtuple defined at the top of this file.
         """
@@ -119,12 +170,12 @@ def calculate_output_image_size(input_image_size, stride):
     Returns:
         output_image_size: A list [H,W].
     """
-    if input_image_size is None:
-        return None
-    image_height, image_width = get_width_and_height_from_size(input_image_size)
+    # if input_image_size is None:
+    #     return None
+    # image_height, image_width = get_width_and_height_from_size(input_image_size)
     stride = stride if isinstance(stride, int) else stride[0]
-    parser_args.img_height = int(math.ceil(image_height / stride))
-    parser_args.img_width = int(math.ceil(image_width / stride))
+    parser_args.img_height = int(math.ceil(parser_args.img_height / stride))
+    parser_args.img_width = int(math.ceil(parser_args.img_width / stride))
 
 
 # i think we wonly ned the static part of this method

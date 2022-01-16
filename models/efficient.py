@@ -34,7 +34,8 @@ class MBConvBlock(nn.Module):
         oup = self._block_args.input_filters * self._block_args.expand_ratio  # number of output channels
         if self._block_args.expand_ratio != 1:
             self._expand_conv = self.builder.conv1x1(in_channels=inp, out_channels=oup)
-            self._bn0 = nn.BatchNorm2d(num_features=oup, momentum=self._bn_mom, eps=self._bn_eps)
+            self._bn0 = builder.batchnorm(oup, momentum=self._bn_mom, eps=self._bn_eps)
+            #nn.BatchNorm2d(num_features=oup, momentum=self._bn_mom, eps=self._bn_eps)
             # image_size = calculate_output_image_size(image_size, 1) <-- this wouldn't modify image_size
 
         # Depthwise convolution phase
@@ -42,22 +43,26 @@ class MBConvBlock(nn.Module):
         s = self._block_args.stride
         self._depthwise_conv = builder.conv(k, in_channels=oup, out_channels=oup, groups=oup,  # groups makes it depthwise
                              stride=s)
-        self._bn1 = nn.BatchNorm2d(num_features=oup, momentum=self._bn_mom, eps=self._bn_eps)
-        image_size = calculate_output_image_size(image_size, s)
+        self._bn1 = builder.batchnorm(oup, momentum=self._bn_mom, eps=self._bn_eps)
+        #nn.BatchNorm2d(num_features=oup, momentum=self._bn_mom, eps=self._bn_eps)
+        calculate_output_image_size(s)
 
         # Squeeze and Excitation layer, if desired
         if self.has_se:
-            Conv2d = get_same_padding_conv2d(image_size=(1, 1))
+            #Conv2d = get_same_padding_conv2d(image_size=(1, 1))
             num_squeezed_channels = max(1, int(self._block_args.input_filters * self._block_args.se_ratio))
-            self._se_reduce = Conv2d(in_channels=oup, out_channels=num_squeezed_channels, kernel_size=1)
-            self._se_expand = Conv2d(in_channels=num_squeezed_channels, out_channels=oup, kernel_size=1)
+            self._se_reduce = builder.conv1x1(oup, num_squeezed_channels)
+            #Conv2d(in_channels=oup, out_channels=num_squeezed_channels, kernel_size=1)
+            self._se_expand = builder.conv1x1(num_squeezed_channels,oup)
+            #Conv2d(in_channels=num_squeezed_channels, out_channels=oup, kernel_size=1)
 
         # Pointwise convolution phase
         final_oup = self._block_args.output_filters
-        Conv2d = get_same_padding_conv2d(image_size=image_size)
-        self._project_conv = builder.conv1x1()
+        #Conv2d = get_same_padding_conv2d(image_size=image_size)
+        self._project_conv = builder.conv1x1(oup, final_oup)
         #self._project_conv = Conv2d(in_channels=oup, out_channels=final_oup, kernel_size=1, bias=False)
-        self._bn2 = nn.BatchNorm2d(num_features=final_oup, momentum=self._bn_mom, eps=self._bn_eps)
+        self._bn2 = builder.batchnorm(final_oup, momentum=self._bn_mom, eps=self._bn_eps)
+        #nn.BatchNorm2d(num_features=final_oup, momentum=self._bn_mom, eps=self._bn_eps)
         self._swish = MemoryEfficientSwish()
 
     def forward(self, inputs, drop_connect_rate=None):
@@ -118,7 +123,8 @@ class EfficientNet(nn.Module):
         bn_eps = self._global_params.batch_norm_epsilon
 
         # Get stem static or dynamic convolution depending on image size
-        image_size = global_params.image_size
+        parser_args.img_height = global_params.image_size
+        parser_args.img_width = global_params.image_size
 
         # Stem
         in_channels = 3  # rgb
@@ -126,7 +132,7 @@ class EfficientNet(nn.Module):
         self._conv_stem = builder.conv3x3(in_channels, out_channels, stride=2)
 
         self._bn0 = builder.batchnorm(out_channels, momentum=bn_mom, eps=bn_eps)
-        calculate_output_image_size(image_size, 2)
+        calculate_output_image_size(2)
 
         # Build blocks
         self._blocks = nn.ModuleList([])
@@ -140,8 +146,8 @@ class EfficientNet(nn.Module):
             )
 
             # The first block needs to take care of stride and filter size increase.
-            self._blocks.append(MBConvBlock(builder, block_args, self._global_params, image_size=image_size))
-            calculate_output_image_size(image_size, block_args.stride)
+            self._blocks.append(MBConvBlock(builder, block_args, self._global_params))
+            calculate_output_image_size(block_args.stride)
             if block_args.num_repeat > 1:  # modify block_args to keep same output size
                 block_args = block_args._replace(input_filters=block_args.output_filters, stride=1)
             for _ in range(block_args.num_repeat - 1):
@@ -151,13 +157,14 @@ class EfficientNet(nn.Module):
         in_channels = block_args.output_filters  # output of final block
         out_channels = round_filters(1280, self._global_params)
         self._conv_head = builder.conv1x1(in_channels, out_channels)
-        self._bn1 = nn.BatchNorm2d(num_features=out_channels, momentum=bn_mom, eps=bn_eps)
+        self._bn1 = builder.batchnorm(out_channels, momentum=bn_mom, eps=bn_eps)
+        #nn.BatchNorm2d(num_features=out_channels, momentum=bn_mom, eps=bn_eps)
 
         # Final linear layer
         self._avg_pooling = nn.AdaptiveAvgPool2d(1)
         if self._global_params.include_top:
             self._dropout = nn.Dropout(self._global_params.dropout_rate)
-            self._fc = nn.Linear(out_channels, self._global_params.num_classes)
+            self._fc = builder.conv1x1(out_channels, self._global_params.num_classes)
 
         # set activation to memory efficient swish by default
         self._swish = MemoryEfficientSwish()
@@ -206,7 +213,7 @@ def TinyEfficientNet(pretrained=False):
     # maually forcing this network to be efficnetnet-b1 - incorperate the above dict to make it modular
 
     # get_info will return the blocks and params needed for building the network - in models/efficient_util
-    blocks_args, global_params = get_info(width_coefficient=1.0, depth_coefficient=1.1, dropout_rate=0.2, image_size=240)
+    blocks_args, global_params = get_info(width_coefficient=1.0, depth_coefficient=1.1, dropout_rate=0.2, image_size=64)
     return EfficientNet(get_builder(), blocks_args, global_params) 
 
     # model params 'efficientnet-b1': (widht = 1.0, depth = 1.1, im_size = 240, dropout_rate = 0.2),

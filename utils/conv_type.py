@@ -159,12 +159,12 @@ class SubnetConv(nn.Conv2d):
         if parser_args.rewind_score:
             self.saved_scores = None
 
-        if parser_args.arch == 'TinyEfficientNet' and static_pad:
+        if parser_args.arch == 'TinyEfficientNet': #and static_pad:
             self.stride = self.stride if len(self.stride) == 2 else [self.stride[0]] * 2
 
             # Calculate padding based on image size and save it
-            assert image_size is not None
-            ih, iw = (image_size, image_size) if isinstance(image_size, int) else image_size
+            # assert image_size is not None
+            ih, iw = (parser_args.img_height, parser_args.img_width) # if isinstance(image_size, int) else image_size
             kh, kw = self.weight.size()[-2:]
             sh, sw = self.stride
             oh, ow = math.ceil(ih / sh), math.ceil(iw / sw)
@@ -184,8 +184,7 @@ class SubnetConv(nn.Conv2d):
         return self.scores.abs()
 
     def forward(self, x):
-        if parser_args.arch == 'TinyEfficientNet':
-            if static_pad:
+        if parser_args.arch == 'TinyEfficientNet':# and static_pad:
                 x = self.static_padding(x)
 
         if parser_args.algo in ['hc', 'hc_iter']:
