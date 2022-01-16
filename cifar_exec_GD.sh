@@ -39,7 +39,15 @@ BLOCK
 
 
 ### ResNet-20
-python main.py --config configs/training/resnet20/cifar10_resnet20_training.yml
+#python main.py --config configs/training/resnet20/cifar10_resnet20_training.yml
+#python main.py --config configs/hypercube/resnet20/resnet20_sparsity_3_72_unflagT.yml > log_hc_sparsity_3_72_unflagT 2>&1
+#python main.py --config configs/hypercube/resnet20/resnet20_sparsity_1_44_unflagT.yml > log_hc_sparsity_1_44_unflagT 2>&1
+#python main.py --config configs/hypercube/resnet20/resnet20_sparsity_0_59_unflagT.yml > log_hc_sparsity_0_59_unflagT 2>&1
+
+
+
+
+
 #python main.py --config configs/hypercube/resnet20/error_bar/resnet20_sparsity_3_72_t1.yml #> log_hc_sparsity_3_72_t1 2>&1
 
 
