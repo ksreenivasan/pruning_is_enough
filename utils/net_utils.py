@@ -702,3 +702,54 @@ def zero_one_loss(output, target):
     pred = pred.t()
     zero_one_loss_instance = ~pred.eq(target.view(1, -1).expand_as(pred))
     return torch.mean(zero_one_loss_instance.to(torch.float32))
+
+
+def test_and_load_pretrained_imagenet(model, dataloader):
+
+    # check initial model
+    print('our initial model on transfer task')
+    val_loss, val_accuracy = validate(model, dataloader)
+    
+    # load pytorch pretrained model (imagenet)
+    imagenet_model = pretrainedmodels.__dict__['resnet50'](pretrained='imagenet')
+    print('pretrained model on transfer task')
+    val_loss, val_accuracy = validate(imagenet_model, dataloader)
+
+    # copy weights from imagenet_model to model
+    import pdb; pdb.set_trace()
+
+
+    # check updated model
+    print('our updated model on transfer task')
+    val_loss, val_accuracy = validate(model, dataloader)
+
+    return model
+
+
+#validation function
+def validate(model, dataloader):
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu") # GPU
+    criterion = nn.CrossEntropyLoss()
+
+    print('Validating')
+    model.eval()
+    running_loss = 0.0
+    running_correct = 0
+    with torch.no_grad():
+        for i, data in enumerate(dataloader):
+            data, target = data[0].to(device), data[1].to(device)
+            outputs = model(data)
+            #loss = criterion(outputs, torch.max(target, 1)[1])
+            loss = criterion(outputs, target)
+            
+            running_loss += loss.item()
+            _, preds = torch.max(outputs.data, 1)
+            #running_correct += (preds == torch.max(target, 1)[1]).sum().item()
+            running_correct += (preds == target).sum().item()
+
+        loss = running_loss/len(dataloader.dataset)
+        accuracy = 100. * running_correct/len(dataloader.dataset)
+        print(f'Val Loss: {loss:.4f}, Val Acc: {accuracy:.2f}')
+        
+        return loss, accuracy
+

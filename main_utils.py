@@ -38,6 +38,7 @@ from utils.net_utils import (
     redraw,
     get_layers,
     get_prune_rate,
+    test_and_load_pretrained_imagenet
 )
 from utils.schedulers import get_scheduler
 from utils.utils import set_seed, plot_histogram_scores
@@ -975,17 +976,20 @@ def get_dataset(parser_args):
     return dataset
 
 
-def get_model(parser_args):
+def get_model(parser_args, num_classes=-1):
     if parser_args.first_layer_dense:
         parser_args.first_layer_type = "DenseConv"
 
     print("=> Creating model '{}'".format(parser_args.arch))
     if parser_args.fixed_init:
         set_seed(parser_args.seed_fixed_init)
-    if parser_args.arch in ['Conv4', 'Conv4Normal']:
-        model = models.__dict__[parser_args.arch](width=parser_args.width)
+    if parser_args.transfer_learning:
+        model = models.__dict__[parser_args.arch](num_classes=num_classes)
     else:
-        model = models.__dict__[parser_args.arch]()
+        if parser_args.arch in ['Conv4', 'Conv4Normal']:
+            model = models.__dict__[parser_args.arch](width=parser_args.width)
+        else:
+            model = models.__dict__[parser_args.arch]()
     if parser_args.fixed_init:
         set_seed(parser_args.seed)
 

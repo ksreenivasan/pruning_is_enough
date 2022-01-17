@@ -43,13 +43,15 @@ def main_worker(gpu, ngpus_per_node):
         result_root = result_subroot + '/results_' + idty_str + '/'
     else:
         result_root = 'results/results_' + idty_str + '/'
-
+    data = get_dataset(parser_args)
     if not os.path.isdir(result_root):
         os.mkdir(result_root)
-    model = get_model(parser_args)
+    if parser_args.transfer_learning:
+        model = get_model(parser_args, data.num_classes)
+        model = test_and_load_pretrained_imagenet(model, data.val_loader)
+    else:
+        model = get_model(parser_args)
     print_model(model, parser_args)
-
-
 
 
     if parser_args.weight_training:
@@ -66,7 +68,6 @@ def main_worker(gpu, ngpus_per_node):
     else:
         model2 = None
     optimizer = get_optimizer(parser_args, model)
-    data = get_dataset(parser_args)
     scheduler = get_scheduler(optimizer, parser_args.lr_policy)
     #lr_policy = get_policy(parser_args.lr_policy)(optimizer, parser_args)
     if parser_args.label_smoothing is None:
