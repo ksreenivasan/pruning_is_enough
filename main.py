@@ -50,8 +50,6 @@ def main_worker(gpu, ngpus_per_node):
     print_model(model, parser_args)
 
 
-
-
     if parser_args.weight_training:
         model = round_model(model, round_scheme="all_ones", noise=parser_args.noise,
                             ratio=parser_args.noise_ratio, rank=parser_args.gpu)
@@ -116,6 +114,23 @@ def main_worker(gpu, ngpus_per_node):
         scaler = torch.cuda.amp.GradScaler(enabled=True) # mixed precision
     else:
         scaler = None
+
+    if parser_args.only_sanity:
+        dirs = os.listdir(parser_args.sanity_folder)
+        for path in dirs:
+            parser_args.results_root = parser_args.sanity_folder +'/'+ path +'/' 
+            parser_args.resume =parser_args.results_root + '/model_before_finetune.pth'
+            resume(parser_args, model, optimizer)
+            
+            do_sanity_checks(model, parser_args, data, criterion, epoch_list, test_acc_before_round_list,
+                         test_acc_list, reg_loss_list, model_sparsity_list, parser_args.results_root)
+            
+            #cp_model = round_model(model, round_scheme="all_ones", noise=parser_args.noise,
+            #            ratio=parser_args.noise_ratio, rank=parser_args.gpu)
+            #print(get_model_sparsity(cp_model))
+        return
+
+
     # Start training
     for epoch in range(parser_args.start_epoch, parser_args.epochs):
         if parser_args.multiprocessing_distributed:

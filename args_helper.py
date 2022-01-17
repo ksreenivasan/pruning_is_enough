@@ -849,7 +849,21 @@ class ArgsHelper:
             default=0,
             help="Use mixed precision or not"
         )
+        
+        parser.add_argument(
+            "--only-sanity",
+            action="store_true",
+            default=False,
+            help="Only run sanity checks on the files in specific directory or subdirectories"
+        )
 
+        parser.add_argument(
+            "--sanity-folder",
+            default=None,
+            type=str,
+            metavar="PATH",
+            help="directory(s) to access for only sanity check",
+        )
 
         if jupyter_mode:
             args = parser.parse_args("")
