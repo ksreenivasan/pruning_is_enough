@@ -12,8 +12,9 @@ import transformer_model as model
 
 from utils.utils import set_seed
 from utils.builder import get_builder
+from args_helper import parser_args
 
-parser = argparse.ArgumentParser(description='PyTorch Wikitext-2 RNN/LSTM/GRU/Transformer Language Model')
+# parser = argparse.ArgumentParser(description='PyTorch Wikitext-2 RNN/LSTM/GRU/Transformer Language Model')
 
 # Set the random seed manually for reproducibility.
 set_seed(parser_args.seed * parser_args.trial_num)
@@ -56,7 +57,7 @@ test_data = batchify(corpus.test, eval_batch_size)
 ###############################################################################
 
 ntokens = len(corpus.dictionary)
-model = model.TransformerModel(get_builder(), ntokens, parser_args.transformer_emsize, parser_args.tansformer_nhead, parser_args.transformer_nhid, parser_args.transformer_nlayers, parser_args.transformer_dropout).to(device)
+model = model.TransformerModel(get_builder(), ntokens, parser_args.transformer_emsize, parser_args.transformer_nhead, parser_args.transformer_nhid, parser_args.transformer_nlayers, parser_args.transformer_dropout).to(device)
 criterion = nn.NLLLoss()
 
 ###############################################################################

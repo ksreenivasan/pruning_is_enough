@@ -56,7 +56,7 @@ class PositionalEncoding(nn.Module):
 class TransformerModel(nn.Module):
     """Container module with an encoder, a recurrent or transformer module, and a decoder."""
 
-    def __init__(self, ntoken, ninp, nhead, nhid, nlayers, dropout=0.5):
+    def __init__(self, builder, ntoken, ninp, nhead, nhid, nlayers, dropout=0.5):
         super(TransformerModel, self).__init__()
         # try:
         #     from torch.nn import TransformerEncoder, TransformerEncoderLayer
@@ -66,7 +66,7 @@ class TransformerModel(nn.Module):
         self.src_mask = None
         self.pos_encoder = PositionalEncoding(ninp, dropout)
         # encoder_layers = TransformerEncoderLayer(ninp, nhead, nhid, dropout)
-        encoder_layers = Block(dim=ninp, num_heads=nhead, mlp_hidden_dim=nhid, drop=dropout)
+        encoder_layers = Block(builder, dim=ninp, num_heads=nhead, mlp_hidden_dim=nhid, drop=dropout)
         self.transformer_encoder = TransformerEncoder(encoder_layers, nlayers)
         # self.transformer_encoder = nn.Sequential(*[encoder_layers for i in range(nlayers)])
         self.encoder = nn.Embedding(ntoken, ninp)

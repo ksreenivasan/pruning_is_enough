@@ -68,6 +68,8 @@ class BertSelfAttention(nn.Module):
     ):
         # hidden_states shape [35, 20, 200]
 
+        print(hidden_states.shape)
+
         key_layer = self.transpose_for_scores(self.key(hidden_states))  # [40, 35, 100]
         value_layer = self.transpose_for_scores(self.value(hidden_states))  # [40, 35, 100]
         query_layer = self.transpose_for_scores(self.query(hidden_states))  # [40, 35, 100]
@@ -106,14 +108,14 @@ class BertSelfAttention(nn.Module):
 class Block(nn.Module):
 
     def __init__(self, builder, dim, num_heads, mlp_hidden_dim, qkv_bias=False, drop=0.,
-                 drop_path=0., act_layer=nn.GELU, norm_layer=nn.LayerNorm(elementwise_affine=False)):
+                 drop_path=0., act_layer=nn.GELU, norm_layer=nn.LayerNorm):
         super().__init__()
-        self.norm1 = norm_layer(dim)
+        self.norm1 = norm_layer(dim, elementwise_affine=False)
         self.attn = BertSelfAttention(builder, hidden_size=dim, num_attention_heads=num_heads, dropout=drop)
         # self.attn = Attention(dim, num_heads=num_heads, qkv_bias=qkv_bias, attn_drop=drop, proj_drop=drop)
         # NOTE: drop path for stochastic depth, we shall see if this is better than dropout here
         # self.drop_path = DropPath(drop_path) if drop_path > 0. else nn.Identity()
-        self.norm2 = norm_layer(dim)
+        self.norm2 = norm_layer(dim, elementwise_affine=False)
         self.mlp = Mlp(builder, in_features=dim, hidden_features=mlp_hidden_dim, act_layer=act_layer, drop=drop)
 
     def forward(self, x, src_mask, src_key_padding_mask=None):
@@ -133,7 +135,7 @@ class Mlp(nn.Module):
 
         self.fc1 = builder.conv1x1(in_features, hidden_features)
         self.act = act_layer()
-        self.drop1 = builder.conv1x1(drop_probs[0])
+        self.drop1 = nn.Dropout(drop_probs[0])
         self.fc2 = builder.conv1x1(hidden_features, out_features)
         self.drop2 = nn.Dropout(drop_probs[1])
 
