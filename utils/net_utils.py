@@ -100,7 +100,7 @@ def get_layers(arch='Conv4', model=None):
                     conv_layers.append(layer[basic_block_id].convShortcut)
         linear_layers = [model.fc]
     
-    elif arch == 'Ti nyEfficientNet':
+    elif arch == 'TinyEfficientNet':
         conv_layers = [model._conv_stem]
         for blocks in model._blocks:
             if hasattr(blocks, '_expand_conv'):

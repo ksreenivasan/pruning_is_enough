@@ -33,7 +33,7 @@ class MBConvBlock(nn.Module):
         inp = self._block_args.input_filters  # number of input channels
         oup = self._block_args.input_filters * self._block_args.expand_ratio  # number of output channels
         if self._block_args.expand_ratio != 1:
-            self._expand_conv = self.builder.conv1x1(in_channels=inp, out_channels=oup)
+            self._expand_conv = builder.conv1x1(inp, oup)
             self._bn0 = builder.batchnorm(oup, momentum=self._bn_mom, eps=self._bn_eps)
             #nn.BatchNorm2d(num_features=oup, momentum=self._bn_mom, eps=self._bn_eps)
             # image_size = calculate_output_image_size(image_size, 1) <-- this wouldn't modify image_size
@@ -41,7 +41,7 @@ class MBConvBlock(nn.Module):
         # Depthwise convolution phase
         k = self._block_args.kernel_size
         s = self._block_args.stride
-        self._depthwise_conv = builder.conv(k, in_channels=oup, out_channels=oup, groups=oup,  # groups makes it depthwise
+        self._depthwise_conv = builder.conv(k, oup, oup, groups=oup,  # groups makes it depthwise
                              stride=s)
         self._bn1 = builder.batchnorm(oup, momentum=self._bn_mom, eps=self._bn_eps)
         #nn.BatchNorm2d(num_features=oup, momentum=self._bn_mom, eps=self._bn_eps)
@@ -96,14 +96,16 @@ class MBConvBlock(nn.Module):
         # Pointwise Convolution
         x = self._project_conv(x)
         x = self._bn2(x)
-
+        inter = x
         # Skip connection and drop connect
         input_filters, output_filters = self._block_args.input_filters, self._block_args.output_filters
+        """
         if self.id_skip and self._block_args.stride == 1 and input_filters == output_filters:
             # The combination of skip connection and drop connect brings about stochastic depth.
             if drop_connect_rate:
                 x = drop_connect(x, p=drop_connect_rate, training=self.training)
-            x = x + inputs  # skip connection
+            x = x + inter  #inputs  # skip connection
+        """
         return x
 
 
@@ -169,7 +171,7 @@ class EfficientNet(nn.Module):
         # set activation to memory efficient swish by default
         self._swish = MemoryEfficientSwish()
 
-    def extract_fetaures(self, inputs):
+    def extract_features(self, inputs):
         x = self._swish(self._bn0(self._conv_stem(inputs)))
 
         # Blocks
@@ -191,7 +193,10 @@ class EfficientNet(nn.Module):
         if self._global_params.include_top:
             x = x.flatten(start_dim=1)
             x = self._dropout(x)
+            b,c  = x.size()
+            x = x.view(b,c,1,1)
             x = self._fc(x)
+            x = x.view(b,-1)
         return x
 
 ########################################################################################################################################################################

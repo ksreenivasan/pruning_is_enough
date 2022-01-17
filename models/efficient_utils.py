@@ -109,7 +109,6 @@ def drop_connect(inputs, p, training):
     random_tensor = keep_prob
     random_tensor += torch.rand([batch_size, 1, 1, 1], dtype=inputs.dtype, device=inputs.device)
     binary_tensor = torch.floor(random_tensor)
-
     output = inputs / keep_prob * binary_tensor
     return output
 
@@ -161,7 +160,7 @@ def get_width_and_height_from_size(x):
         raise TypeError()
 
 
-def calculate_output_image_size(input_image_size, stride):
+def calculate_output_image_size(stride):
     """Calculates the output image size when using Conv2dSamePadding with a stride.
        Necessary for static padding. Thanks to mannatsingh for pointing this out.
     Args:
