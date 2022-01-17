@@ -1,4 +1,5 @@
 import torch.nn as nn
+import torch.nn.functional as F
 
 from args_helper import parser_args
 from utils.builder import get_builder
@@ -121,7 +122,13 @@ class ResNet(nn.Module):
         if parser_args.last_layer_dense:
             self.fc = nn.Conv2d(512 * block.expansion, num_classes, 1)
         else:
-            self.fc = builder.conv1x1(512 * block.expansion, num_classes)
+            if parser_args.bias_lastlayer:
+                tmp = parser_args.bias
+                parser_args.bias = True
+                self.fc = builder.conv1x1(512 * block.expansion, num_classes)
+                parser_args.bias = tmp
+            else:
+                self.fc = builder.conv1x1(512 * block.expansion, num_classes)
         
         if parser_args.transfer_learning:
             self.dropout = nn.Dropout2d(0.4)
@@ -147,7 +154,7 @@ class ResNet(nn.Module):
 
         return nn.Sequential(*layers)
 
-    def forward(self, x):
+    def forward(self, x, hidden=False):
         # update score thresholds for global ep
         if parser_args.algo in ['global_ep', 'global_ep_iter'] or parser_args.bottom_k_on_forward:
             prune(self, update_thresholds_only=True)
@@ -163,10 +170,13 @@ class ResNet(nn.Module):
         x = self.layer3(x)
         x = self.layer4(x)
 
+        if hidden:
+            return x
+
         if parser_args.transfer_learning:
-            batch = x.size()[0]
-            x = F.adaptive_avg_pool2d(x, 1).reshape(batch, -1)
+            x = F.adaptive_avg_pool2d(x, 1).reshape(x.size(0), -1)
             x = self.dropout(x)
+            x = x.view(x.size(0), -1, 1, 1)
         else:
             x = self.avgpool(x)
 

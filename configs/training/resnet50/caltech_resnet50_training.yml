@@ -1,6 +1,7 @@
 subfolder: resnet50_caltech_weight_training
 trial_num: 1
-
+score_init: 'all_one'
+bias_lastlayer: True
 
 # algorithm
 algo: 'hc_iter'
@@ -21,7 +22,7 @@ lr: 0.0001
 lr_policy: constant_lr #multistep_lr #cosine_lr #constant_lr
 
 # ===== Network training config ===== #
-epochs: 5
+epochs: 5 #5
 wd: 0
 momentum: 0.9
 batch_size: 16
@@ -29,7 +30,7 @@ batch_size: 16
 
 # ===== Sparsity =========== #
 conv_type: SubnetConv
-bn_type: NonAffineBatchNorm
+bn_type: AffineBatchNorm #NonAffineBatchNorm
 freeze_weights: True
 prune_rate: -1
 init: kaiming_normal
@@ -38,4 +39,13 @@ scale_fan: True
 # ===== Hardware setup ===== #
 workers: 4
 gpu: 0
+
+
+# ===== Checkpointing ===== #
+checkpoint_at_prune: False
+
+# ==== sanity check ==== #
+skip_fine_tune: True
+skip_sanity_checks: True
+
 

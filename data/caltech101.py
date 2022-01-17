@@ -29,7 +29,7 @@ class Caltech101:
 		super(Caltech101, self).__init__()
 
 
-		image_paths = list(paths.list_images('./101_ObjectCategories'))
+		image_paths = list(paths.list_images('test_caltech101/101_ObjectCategories'))
 
 		data = []
 		labels = []
@@ -75,12 +75,12 @@ class Caltech101:
 		val_data = CustomDataset(x_val, y_val, val_transform)
 		test_data = CustomDataset(x_test, y_test, val_transform)       
 
-		self.train_loader = DataLoader(train_data, batch_size=BS, shuffle=True, num_workers=4)
-		self.test_loader = DataLoader(val_data, batch_size=BS, shuffle=True, num_workers=4)
+		self.train_loader = DataLoader(train_data, batch_size=parser_args.batch_size, shuffle=True, num_workers=4)
+		self.val_loader = DataLoader(val_data, batch_size=parser_args.batch_size, shuffle=True, num_workers=4)
 		self.num_classes = len(lb.classes_)
 
-		#valLoader = DataLoader(val_data, batch_size=BS, shuffle=True, num_workers=4)
-		#testLoader = DataLoader(test_data, batch_size=BS, shuffle=True, num_workers=4) 
+		#valLoader = DataLoader(val_data, batch_size=parser_args.batch_size, shuffle=True, num_workers=4)
+		#testLoader = DataLoader(test_data, batch_size=parser_args.batch_size, shuffle=True, num_workers=4) 
 
 
 # custom dataset class

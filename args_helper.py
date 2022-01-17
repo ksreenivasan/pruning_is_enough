@@ -300,6 +300,12 @@ class ArgsHelper:
             help="Boolean flag to indicate whether to use bias"
         )
         parser.add_argument(
+            "--bias_lastlayer",
+            action="store_true",
+            default=False,
+            help="Boolean flag to indicate whether to use bias at the last layer"
+        )
+        parser.add_argument(
             "--freeze-weights",
             action="store_true",
             default=True,

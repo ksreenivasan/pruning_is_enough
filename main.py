@@ -48,7 +48,7 @@ def main_worker(gpu, ngpus_per_node):
         os.mkdir(result_root)
     if parser_args.transfer_learning:
         model = get_model(parser_args, data.num_classes)
-        model = test_and_load_pretrained_imagenet(model, data.val_loader)
+        model = load_pretrained_imagenet(model, data.val_loader)
     else:
         model = get_model(parser_args)
     print_model(model, parser_args)

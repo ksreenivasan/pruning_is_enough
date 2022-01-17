@@ -38,7 +38,7 @@ from utils.net_utils import (
     redraw,
     get_layers,
     get_prune_rate,
-    test_and_load_pretrained_imagenet
+    load_pretrained_imagenet
 )
 from utils.schedulers import get_scheduler
 from utils.utils import set_seed, plot_histogram_scores

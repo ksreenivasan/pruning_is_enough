@@ -10,6 +10,8 @@ import numpy as np
 
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
+import pretrainedmodels
 
 from utils.mask_layers import MaskLinear, MaskConv
 from utils.conv_type import GetSubnet as GetSubnetConv
@@ -79,6 +81,7 @@ def get_layers(arch='Conv4', model=None):
                 # handle shortcut
                 # if len(layer[basic_block_id].shortcut) > 0:
                 #     conv_layers.append(layer[basic_block_id].shortcut[0])
+        linear_layers = [model.fc]
 
     elif arch == 'vgg16':
         conv_layers = []
@@ -100,6 +103,26 @@ def get_layers(arch='Conv4', model=None):
                     conv_layers.append(layer[basic_block_id].convShortcut)
         linear_layers = [model.fc]
     return (conv_layers, linear_layers)
+
+
+
+def get_bn_layers(arch='ResNet50', model=None):
+    if isinstance(model, nn.parallel.DistributedDataParallel):
+        model = model.module
+
+    if arch == 'ResNet50':
+        bn_layers = [model.bn1]
+        for layer in [model.layer1, model.layer2, model.layer3, model.layer4]:
+            for basic_block_id in [i for i in range(len(layer))]:
+                bn_layers.append(layer[basic_block_id].bn1)
+                bn_layers.append(layer[basic_block_id].bn2)
+                bn_layers.append(layer[basic_block_id].bn3)
+
+    return bn_layers
+
+
+
+
 
 
 def redraw(model, shuffle=False, reinit=False, invert=False, chg_mask=False, chg_weight=False):
@@ -704,32 +727,126 @@ def zero_one_loss(output, target):
     return torch.mean(zero_one_loss_instance.to(torch.float32))
 
 
+def load_pretrained_imagenet(model, dataloader):
+
+
+    pretrained = imagenet_ResNet50(pretrained=True).cuda()
+    model_s = pretrained.model # source model
+    #model_s = pretrainedmodels.__dict__['resnet50'](pretrained='imagenet') # source model
+    #model_s = model_s.cuda()
+
+    #for param_tensor in model_s.state_dict():
+    #    print(param_tensor, "\t", model_s.state_dict()[param_tensor].size())
+    PATH = 'pretrained_model_imagenet.pth'
+    torch.save(model_s.state_dict(), PATH)
+    model.load_state_dict(torch.load(PATH), strict=False)
+
+    # test the consistency of model and pretrained model
+    model = model.cuda()
+    x = torch.rand(16,3,224,224).cuda() # random dataset
+    z1 = model.forward(x, hidden=True)
+    z2 = pretrained(x, hidden=True)
+    #z2 = model_s.features(x)
+    print('Compare hidden feature: ', (z1 == z2).all())
+
+
+    # load the final layer
+    num_classes = pretrained.l0.weight.shape[0]
+    model.fc.weight.data = pretrained.l0.weight.data.view(num_classes, -1, 1, 1)
+    model.fc.bias.data = pretrained.l0.bias.data
+
+    y1 = model(x)
+    y2 = pretrained(x)
+    print('Compare prediction: ', torch.norm(y1 - y2))
+    print('Note: this is small only if we turn off dropout at both loaded/our models')
+    #pdb.set_trace()
+
+    return model
+    
+
+class imagenet_ResNet50(nn.Module):
+    def __init__(self, pretrained):
+        super(imagenet_ResNet50, self).__init__()
+        if pretrained is True:
+            self.model = pretrainedmodels.__dict__['resnet50'](pretrained='imagenet')
+        else:
+            self.model = pretrainedmodels.__dict__['resnet50'](pretrained = None)
+        # change the classification layer
+        self.l0= nn.Linear(2048, 101)
+        self.dropout = nn.Dropout2d(0.4)
+        
+    def forward(self, x, hidden=False):
+        # get the batch size only, ignore(c, h, w)
+        batch, _, _, _ = x.size()
+        x = self.model.features(x)
+        if hidden:
+            return x
+        x = F.adaptive_avg_pool2d(x, 1).reshape(batch, -1)
+        x = self.dropout(x)
+        l0 = self.l0(x)
+        return l0
+
+
+'''
 def test_and_load_pretrained_imagenet(model, dataloader):
+    model = model.cuda()
+    x = torch.rand(16,3,224,224).cuda() # random dataset
+    z1 = model.forward(x, hidden=True)
+
+    # load pytorch pretrained model (imagenet)
+   # imagenet_model = pretrainedmodels.__dict__['resnet50'](pretrained='imagenet')
+   # imagenet_model = imagenet_model.cuda()
+    imagenet_model = imagenet_ResNet50(pretrained=True).cuda()
+    #z2 = imagenet_model.forward(x, hidden=True)
 
     # check initial model
     print('our initial model on transfer task')
     val_loss, val_accuracy = validate(model, dataloader)
     
-    # load pytorch pretrained model (imagenet)
-    imagenet_model = pretrainedmodels.__dict__['resnet50'](pretrained='imagenet')
     print('pretrained model on transfer task')
     val_loss, val_accuracy = validate(imagenet_model, dataloader)
 
     # copy weights from imagenet_model to model
-    import pdb; pdb.set_trace()
+    #import pdb; pdb.set_trace()
+    conv, lin = get_layers('ResNet50', model)
+    layers = [*conv, *lin]
+    conv2, lin2 = get_layers('ResNet50', imagenet_model.model)
+    layers2 = [*conv2, *lin2]
 
+    for target_layer, source_layer in zip(layers, layers2):
+        if source_layer is None:
+            continue
+        #print(target_layer, source_layer)
+        assert(target_layer.weight.data.shape == source_layer.weight.data.shape)
+        target_layer.weight.data = source_layer.weight.data    
+
+    bn = get_bn_layers('ResNet50', model)
+    bn2 = get_bn_layers('ResNet50', imagenet_model.model)
+    
+    for target_layer, source_layer in zip(bn, bn2):
+        assert(target_layer.weight.data.shape == source_layer.weight.data.shape)
+        target_layer.weight.data = source_layer.weight.data    
+        target_layer.bias.data = source_layer.bias.data    
+    z3 = model.forward(x, hidden=True)
 
     # check updated model
     print('our updated model on transfer task')
     val_loss, val_accuracy = validate(model, dataloader)
 
+    print((z1 == z2).all())
+    print((z3 == z2).all())
+    print((z3 == z2).all())
+    import pdb; pdb.set_trace()
+
     return model
+
 
 
 #validation function
 def validate(model, dataloader):
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu") # GPU
     criterion = nn.CrossEntropyLoss()
+    model = model.to(device)
 
     print('Validating')
     model.eval()
@@ -752,4 +869,4 @@ def validate(model, dataloader):
         print(f'Val Loss: {loss:.4f}, Val Acc: {accuracy:.2f}')
         
         return loss, accuracy
-
+'''
