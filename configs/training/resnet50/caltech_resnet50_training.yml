@@ -9,7 +9,7 @@ transfer_learning: True
 
 
 # Architecture
-arch: resnet50
+arch: ResNet50
 
 # ===== Dataset ===== #
 dataset: caltech101
