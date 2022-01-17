@@ -3,8 +3,16 @@
 # TinyImageNet, ResNet-50
 
 # Weight training
+#python main.py --config configs/training/resnet50/tiny_resnet50_training_adam_001_multi.yml > log_tiny_res50_wt_adam_001_multi 2>&1 # this is current best
+#python main.py --config configs/training/resnet50/tiny_resnet50_training_adam_001_cosine.yml > log_tiny_res50_wt_adam_001_cosine 2>&1 # this is current best
+#python main.py --config configs/training/resnet50/tiny_resnet50_training_adam_0001_cosine.yml > log_tiny_res50_wt_adam_0001_cosine 2>&1 # this is current best
+python main.py --config configs/training/resnet50/tiny_resnet50_training_sgd_multi.yml > log_tiny_res50_wt_sgd_multi 2>&1 # this is current best
+
+
+
+
+#python main.py --config configs/training/resnet50/tiny_resnet50_training_adam_short.yml > log_tiny_res50_wt_adam_short 2>&1 # this is current best
 #python main.py --config configs/training/resnet50/tiny_resnet50_training_adam.yml > log_tiny_res50_wt_adam 2>&1 # this is current best
-python main.py --config configs/training/resnet50/tiny_resnet50_training_adam_short.yml > log_tiny_res50_wt_adam_short 2>&1 # this is current best
 
 
 
