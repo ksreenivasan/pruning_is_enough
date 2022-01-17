@@ -1,39 +1,40 @@
-subfolder: tiny_res101_weight_training
+subfolder: vgg16_WT_runs
 trial_num: 1
-
 
 # algorithm
 algo: 'hc_iter'
 weight_training: True
 
 # Architecture
-arch: ResNet101
+arch: vgg16
 
 # ===== Dataset ===== #
-dataset: TinyImageNet
-name: tiny_resnet101_training
+dataset: CIFAR10
+name: vgg16_cifar10_training
 
 # ===== Learning Rate Policy ======== #
-optimizer: adam
-lr: 0.001
+optimizer: sgd
+#lr: 0.1
+fine_tune_lr: 0.01
 lr_policy: multistep_lr #cosine_lr #constant_lr
 
 # ===== Network training config ===== #
-epochs: 150
-wd: 0.0001
+epochs: 200
+wd: 0.0005
 momentum: 0.9
-batch_size: 256
-
+batch_size: 128
+target_sparsity: 100
+weight_training: True
 
 # ===== Sparsity =========== #
 conv_type: SubnetConv
 bn_type: NonAffineBatchNorm
 freeze_weights: True
-prune_rate: -1
-init: kaiming_normal
+#prune_rate: -1
+init: signed_constant
 scale_fan: True
+skip_fine_tune: True
 
 # ===== Hardware setup ===== #
 workers: 4
 gpu: 0
-
