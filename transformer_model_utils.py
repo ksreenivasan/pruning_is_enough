@@ -41,7 +41,16 @@ class BertSelfAttention(nn.Module):
 
         self.dropout = nn.Dropout(dropout)
         
-    def transpose_for_scores(self, x):
+    # def transpose_for_scores(self, x):
+    #     new_x_shape = x.size()[:-1] + (self.num_attention_heads, self.attention_head_size)  # [35, 20, 2, 100]
+    #     x = x.view(*new_x_shape)
+    #     x = x.permute(1, 2, 0, 3).contiguous()  # [20, 2, 35, 100]
+    #     x = x.view(-1, x.size()[2], x.size()[3])  # [40, 35, 100]
+    #     return x  # x.permute(0, 2, 1, 3)
+
+    def transpose_for_scores(self, x, N, C, H):  # [700, 200, 1, 1]
+        # N: 35, C: 20, H: 200
+        x = x.view(N * C, H).contiguous()  # [700, 200]
         new_x_shape = x.size()[:-1] + (self.num_attention_heads, self.attention_head_size)  # [35, 20, 2, 100]
         x = x.view(*new_x_shape)
         x = x.permute(1, 2, 0, 3).contiguous()  # [20, 2, 35, 100]
@@ -67,12 +76,12 @@ class BertSelfAttention(nn.Module):
         output_attentions=False,
     ):
         # hidden_states shape [35, 20, 200]
-
-        print(hidden_states.shape)
-
-        key_layer = self.transpose_for_scores(self.key(hidden_states))  # [40, 35, 100]
-        value_layer = self.transpose_for_scores(self.value(hidden_states))  # [40, 35, 100]
-        query_layer = self.transpose_for_scores(self.query(hidden_states))  # [40, 35, 100]
+        N, C, H = hidden_states.shape
+        hidden_states = hidden_states.view(N * C, H, 1, 1).contiguous()。# -> [700, 200, 1, 1]
+        # linear layer [700, 200, 1, 1] -> [700, 200, 1, 1]
+        key_layer = self.transpose_for_scores(self.key(hidden_states), N, C, H)  # [40, 35, 100]
+        value_layer = self.transpose_for_scores(self.value(hidden_states), N, C, H)  # [40, 35, 100]
+        query_layer = self.transpose_for_scores(self.query(hidden_states), N, C, H)  # [40, 35, 100]
 
         # Take the dot product between "query" and "key" to get the raw attention scores.
         attention_scores = torch.matmul(query_layer, key_layer.transpose(-1, -2))  # [40, 35, 35]
