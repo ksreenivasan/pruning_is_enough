@@ -61,7 +61,7 @@ def IMP_train(parser_args, data, device):
         pass
 
     # resume at some point
-    if parser_args.imp_resume_round != -1:
+    if parser_args.imp_resume_round > 0:
         ckpt = torch.load(os.path.join(dest_dir, "Liu_checkpoint_model_correct.pth"), map_location='cpu')
         model.load_state_dict(ckpt["model_state_dict"])
         rewind_state_dict = copy.deepcopy(model.state_dict())
@@ -75,9 +75,10 @@ def IMP_train(parser_args, data, device):
             mask_bias = None
         # load csv file
         result_df = pd.read_csv(os.path.join(dest_dir, "LTH_cifar10_resnet20.csv"))
-        test_acc_list = result_df["test"]
-        n_act_list = result_df["nact"]
-        before_acc_list = result_df["before"]
+        finish_index = parser_args.iter_period * parser_args.imp_resume_round
+        test_acc_list = result_df["test"].tolist()[:finish_index]
+        n_act_list = result_df["nact"].tolist()[:finish_index]
+        before_acc_list = result_df["before"].tolist()[:finish_index]
     else:
         test_acc_list, n_act_list, before_acc_list = [], [], []
         parser_args.imp_resume_round = 0
@@ -161,6 +162,17 @@ def IMP_train(parser_args, data, device):
 
         return model, new_mask, new_mask_bias
 
+
+    def put_mask_on(model, mask, mask_bias):
+        for name, weight in model.named_parameters():
+            if name in model.prunable_layer_names:
+                weight.data = mask[name].to(device) * weight.data
+            if parser_args.bias:
+                if name in model.prunable_biases:
+                    weight.data = mask_bias[name].to(device) * weight.data
+
+        return model
+
     
     def test(model, device, test_loader):
         model.eval()
@@ -177,7 +189,7 @@ def IMP_train(parser_args, data, device):
         return test_acc
 
     
-    def print_nonzeros(model, mask):
+    def print_nonzeros(model):
         nonzero = 0
         total = 0
         for name, p in model.named_parameters():
@@ -200,9 +212,13 @@ def IMP_train(parser_args, data, device):
     # before_acc_list = []
     counter = 0
     for idx_round in range(parser_args.imp_resume_round, n_round):
-        if idx_round > 0:
+        if idx_round > parser_args.imp_resume_round:
             # model, mask = prune_by_percentile_global(parser_args.prune_perct, model, rewind_state_dict, mask)
             model, mask, mask_bias = prune_by_percentile_global(parser_args.prune_rate, model, rewind_state_dict, mask, mask_bias)
+        elif parser_args.imp_resume_round > 0:
+            assert mask is not None
+            model = put_mask_on(model, mask, mask_bias)
+
         before_acc = test(model, device, data.val_loader)
         # optimizer, scheduler = get_optimizer_and_scheduler(parser_args)
         optimizer = get_optimizer(parser_args, model)
@@ -215,7 +231,7 @@ def IMP_train(parser_args, data, device):
         print(f"\n--- Pruning Level [{idx_round}/{n_round}]: ---")
 
         # Print the table of Nonzeros in each layer
-        comp1 = print_nonzeros(model, mask)
+        comp1 = print_nonzeros(model)
 
         # save the model and mask right after prune
         PATH_model = os.path.join(dest_dir, "round_{}_model.pth".format(idx_round))

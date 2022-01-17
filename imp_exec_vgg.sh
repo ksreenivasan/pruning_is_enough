@@ -7,8 +7,9 @@ n_gpu=0
 
 python imp_main.py \
 --config configs/imp/vgg.yml \
---epochs 3200 \
+--epochs 3840 \
 --gpu $n_gpu \
+--imp-resume-round 19 \
 --subfolder $subfd
 
 # for sanity check
