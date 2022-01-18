@@ -3,8 +3,10 @@ import argparse
 import time
 import math
 import os
+import re
 import torch
 import torch.nn as nn
+import numpy as np
 import torch.onnx
 
 import transformer_data as data
@@ -13,8 +15,16 @@ import transformer_model as model
 from utils.utils import set_seed
 from utils.builder import get_builder
 from args_helper import parser_args
+from main_utils import switch_to_wt
+from utils.net_utils import prune, get_prune_rate, round_model
 
 # parser = argparse.ArgumentParser(description='PyTorch Wikitext-2 RNN/LSTM/GRU/Transformer Language Model')
+if parser_args.subfolder is not None:
+        if not os.path.isdir('results/'):
+            os.mkdir('results/')
+        result_subroot = 'results/' + parser_args.subfolder
+        if not os.path.isdir(result_subroot):
+            os.mkdir(result_subroot)
 
 # Set the random seed manually for reproducibility.
 set_seed(parser_args.seed * parser_args.trial_num)
@@ -58,7 +68,30 @@ test_data = batchify(corpus.test, eval_batch_size)
 
 ntokens = len(corpus.dictionary)
 model = model.TransformerModel(get_builder(), ntokens, parser_args.transformer_emsize, parser_args.transformer_nhead, parser_args.transformer_nhid, parser_args.transformer_nlayers, parser_args.transformer_dropout).to(device)
+model = switch_to_wt(model).to(device)
+print(model)
 criterion = nn.NLLLoss()
+
+if not parser_args.override_prune_rate:
+    parser_args.prune_rate = get_prune_rate(parser_args.target_sparsity, parser_args.iter_period)
+    print("Setting prune_rate to {}".format(parser_args.prune_rate))
+else:
+    print("Overriding prune_rate to {}".format(parser_args.prune_rate))
+
+
+def print_nonzeros(model):
+    nonzero = 0
+    total = 0
+    for name, p in model.named_parameters():
+        if re.match('.*\.flag', name) or re.match('.*\.bias_flag', name):
+            tensor = p.data.detach().cpu().numpy()
+            nz_count = np.count_nonzero(tensor)
+            total_params = np.prod(tensor.shape)
+            nonzero += nz_count
+            total += total_params
+            print(f'{name:20} | nonzeros = {nz_count:7} / {total_params:7} ({100 * nz_count / total_params:6.2f}%) | total_pruned = {total_params - nz_count :7} | shape = {tensor.shape}')
+    print(f'alive: {nonzero}, pruned : {total - nonzero}, total: {total}, ({100 * nonzero / total:6.2f}% remained)')
+    return (round((nonzero/total)*100, 1))
 
 ###############################################################################
 # Training code
@@ -122,8 +155,11 @@ def train():
 
         # `clip_grad_norm` helps prevent the exploding gradient problem in RNNs / LSTMs.
         torch.nn.utils.clip_grad_norm_(model.parameters(), parser_args.transformer_clip)
+        
         for p in model.parameters():
-            p.data.add_(p.grad, alpha=-lr)
+            if p.requires_grad:
+                p.data.add_(p.grad, alpha=-lr)
+                # print(p.grad.norm())
 
         total_loss += loss.item()
 
@@ -159,6 +195,14 @@ try:
     for epoch in range(1, parser_args.epochs + 1):
         epoch_start_time = time.time()
         train()
+        if not parser_args.weight_training and parser_args.algo in ['hc_iter', 'global_ep_iter'] and epoch % (parser_args.iter_period) == 0 and epoch != 1:
+            prune(model)
+            cp_model = round_model(model, parser_args.round, noise=parser_args.noise,
+                                   ratio=parser_args.noise_ratio, rank=parser_args.gpu)
+            # avg_sparsity = get_model_sparsity(cp_model)
+            avg_sparsity = print_nonzeros(cp_model)
+            print('Model avg sparsity: {}'.format(avg_sparsity))
+
         val_loss = evaluate(val_data)
         print('-' * 89)
         print('| end of epoch {:3d} | time: {:5.2f}s | valid loss {:5.2f} | '
@@ -191,4 +235,4 @@ print('=' * 89)
 
 
 # Export the model in ONNX format.
-export_onnx(batch_size=1, seq_len=parser_args.transformer_bptt)
+# export_onnx(batch_size=1, seq_len=parser_args.transformer_bptt)
