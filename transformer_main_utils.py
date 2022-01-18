@@ -139,6 +139,9 @@ def finetine(parser_args, old_epoch_list, old_test_acc_list, old_model_sparsity_
     test_acc_list = copy.deepcopy(old_test_acc_list)
     model_sparsity_list = copy.deepcopy(old_model_sparsity_list)
 
+    if parser_args.unflag_before_finetune:
+        model = round_model(model, round_scheme="all_ones", noise=parser_args.noise, ratio=parser_args.noise_ratio, rank=parser_args.gpu)
+
     avg_sparsity = print_nonzeros(cp_model)
 
     for epoch in range(parser_args.epochs, parser_args.epochs * 2):
