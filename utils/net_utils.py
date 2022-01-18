@@ -105,6 +105,18 @@ def get_layers(arch='Conv4', model=None):
                 if layer[basic_block_id].convShortcut:
                     conv_layers.append(layer[basic_block_id].convShortcut)
         linear_layers = [model.fc]
+    
+    elif arch == 'transformer':
+        conv_layers = []
+        linear_layers = []
+        for layer in model.transformer_encoder.layers:
+            linear_layers.append(layer.attn.query)
+            linear_layers.append(layer.attn.key)
+            linear_layers.append(layer.attn.value)
+            linear_layers.append(layer.mlp.fc1)
+            linear_layers.append(layer.mlp.fc2)
+        linear_layers.append(model.decoder)
+    
     return (conv_layers, linear_layers)
 
 

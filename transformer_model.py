@@ -6,6 +6,7 @@ import torch.nn.functional as F
 from transformer_model_utils import *
 from torch.nn import TransformerEncoder
 # from model_utils_torch import TransformerEncoderLayer
+from args_helper import parser_args
 
 
 # Temporarily leave PositionalEncoding module here. Will be moved somewhere else.
@@ -75,6 +76,8 @@ class TransformerModel(nn.Module):
 
         self.init_weights()
 
+        self.prunable_layer_names, self.prunable_biases = self.get_prunable_param_names()
+
     def _generate_square_subsequent_mask(self, sz):
         mask = (torch.triu(torch.ones(sz, sz)) == 1).transpose(0, 1)
         mask = mask.float().masked_fill(mask == 0, float('-inf')).masked_fill(mask == 1, float(0.0))
@@ -85,6 +88,19 @@ class TransformerModel(nn.Module):
         nn.init.uniform_(self.encoder.weight, -initrange, initrange)
         nn.init.zeros_(self.decoder.weight)
         nn.init.uniform_(self.decoder.weight, -initrange, initrange)
+
+    def get_prunable_param_names(model):
+        prunable_weights = [name + '.weight' for name, module in model.named_modules() if
+                isinstance(module, torch.nn.modules.conv.Conv2d) or
+                isinstance(module, torch.nn.modules.linear.Linear)]
+        if parser_args.bias:
+            prunable_biases = [name + '.bias' for name, module in model.named_modules() if
+                isinstance(module, torch.nn.modules.conv.Conv2d) or
+                isinstance(module, torch.nn.modules.linear.Linear)]
+        else:
+            prunable_biases = [""]
+
+        return prunable_weights, prunable_biases
 
     def forward(self, src, has_mask=True):
         if has_mask:
@@ -98,5 +114,8 @@ class TransformerModel(nn.Module):
         src = self.encoder(src) * math.sqrt(self.ninp)
         src = self.pos_encoder(src)
         output = self.transformer_encoder(src, mask=self.src_mask)
+        N, C, H = output.shape
+        output = output.view(N * C, H, 1, 1)  # .contiguous()
         output = self.decoder(output)
+        output = output.view(N, C, -1)  # .contiguous()
         return F.log_softmax(output, dim=-1)

@@ -50,10 +50,10 @@ class BertSelfAttention(nn.Module):
 
     def transpose_for_scores(self, x, N, C, H):  # [700, 200, 1, 1]
         # N: 35, C: 20, H: 200
-        x = x.view(N * C, H).contiguous()  # [700, 200]
-        new_x_shape = x.size()[:-1] + (self.num_attention_heads, self.attention_head_size)  # [35, 20, 2, 100]
-        x = x.view(*new_x_shape)
-        x = x.permute(1, 2, 0, 3).contiguous()  # [20, 2, 35, 100]
+        # x = x.view(N * C, H)#.contiguous()  # [700, 200]
+        new_x_shape = (N, C, self.num_attention_heads, self.attention_head_size)  # [35, 20, 2, 100]
+        x = x.view(*new_x_shape)#.contiguous()
+        x = x.permute(1, 2, 0, 3)#.contiguous()  # [20, 2, 35, 100]
         x = x.view(-1, x.size()[2], x.size()[3])  # [40, 35, 100]
         return x  # x.permute(0, 2, 1, 3)
 
@@ -77,7 +77,7 @@ class BertSelfAttention(nn.Module):
     ):
         # hidden_states shape [35, 20, 200]
         N, C, H = hidden_states.shape
-        hidden_states = hidden_states.view(N * C, H, 1, 1).contiguous()。# -> [700, 200, 1, 1]
+        hidden_states = hidden_states.view(N * C, H, 1, 1)#.contiguous()  # -> [700, 200, 1, 1]
         # linear layer [700, 200, 1, 1] -> [700, 200, 1, 1]
         key_layer = self.transpose_for_scores(self.key(hidden_states), N, C, H)  # [40, 35, 100]
         value_layer = self.transpose_for_scores(self.value(hidden_states), N, C, H)  # [40, 35, 100]
@@ -149,10 +149,13 @@ class Mlp(nn.Module):
         self.drop2 = nn.Dropout(drop_probs[1])
 
     def forward(self, x):
+        N, C, H = x.shape  # N=35, C=20, H=200
+        x = x.view(N * C, H, 1, 1)#.contiguous()  # -> [700, 200, 1, 1]
         x = self.fc1(x)
         x = self.act(x)
         x = self.drop1(x)
         x = self.fc2(x)
         x = self.drop2(x)
+        x = x.view(N, C, -1)#.contiguous()
 
         return x
