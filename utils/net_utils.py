@@ -116,7 +116,6 @@ def get_layers(arch='Conv4', model=None):
             linear_layers.append(layer.mlp.fc1)
             linear_layers.append(layer.mlp.fc2)
         linear_layers.append(model.decoder)
-    
     return (conv_layers, linear_layers)
 
 

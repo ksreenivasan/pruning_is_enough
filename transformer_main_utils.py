@@ -10,16 +10,17 @@ import numpy as np
 import torch.onnx
 
 import transformer_data as data
-import transformer_model as model
+import transformer_model
 
 from utils.utils import set_seed
 from utils.builder import get_builder
+from utils.schedulers import get_scheduler
 from args_helper import parser_args
-from main_utils import switch_to_wt, set_gpu
+from main_utils import switch_to_wt, set_gpu, get_optimizer
 from utils.net_utils import prune, get_prune_rate, round_model, get_regularization_loss
 
 
-def batchify(data, bsz):
+def batchify(data, bsz, device):
     # Work out how cleanly we can divide the dataset into bsz parts.
     nbatch = data.size(0) // bsz
     # Trim off any extra elements that wouldn't cleanly fit (remainders).
@@ -60,11 +61,10 @@ def get_batch(source, i):
     return data, target
 
 
-def evaluate(data_source):
+def evaluate(parser_args, model, ntokens, criterion, data_source):
     # Turn on evaluation mode which disables dropout.
     model.eval()
     total_loss = 0.
-    ntokens = len(corpus.dictionary)
     with torch.no_grad():
         for i in range(0, data_source.size(0) - 1, parser_args.transformer_bptt):
             data, targets = get_batch(data_source, i)
@@ -83,7 +83,7 @@ def export_onnx(batch_size, seq_len):
     torch.onnx.export(model, (dummy_input, hidden), onnx_path)
 
 
-def train(parser_args, ntokens, train_data, model, optimizer, criterion):
+def train(parser_args, epoch, ntokens, train_data, model, optimizer, criterion):
 	# this should be incorporated into trainer/default
     # Turn on training mode which enables dropout.
     model.train()
@@ -99,10 +99,10 @@ def train(parser_args, ntokens, train_data, model, optimizer, criterion):
         loss = criterion(output, targets)
 
         regularization_loss = torch.tensor(0)
-        if args.regularization:
-            regularization_loss = get_regularization_loss(model, regularizer=args.regularization,
-                                        				  lmbda=args.lmbda, alpha=args.alpha,
-                                        				  alpha_prime=args.alpha_prime)
+        if parser_args.regularization:
+            regularization_loss = get_regularization_loss(model, regularizer=parser_args.regularization,
+                                        		  lmbda=parser_args.lmbda, alpha=parser_args.alpha,
+                                        		  alpha_prime=parser_args.alpha_prime)
         loss += regularization_loss
         loss.backward()
 
@@ -113,6 +113,7 @@ def train(parser_args, ntokens, train_data, model, optimizer, criterion):
         #     if p.requires_grad:
         #         p.data.add_(p.grad, alpha=-lr)
         optimizer.step()
+        lr = optimizer.param_groups[0]["lr"]
 
         total_loss += loss.item()
 
@@ -129,13 +130,13 @@ def train(parser_args, ntokens, train_data, model, optimizer, criterion):
 
 
 
-def finetine(parser_args, old_epoch_list, old_test_acc_list, old_model_sparsity_list):
+def finetine(parser_args, ntokens, model, criterion, old_epoch_list, old_test_acc_list, old_model_sparsity_list):
 
-	model = switch_to_wt(model)
-	lr = parser_args.fine_tune_lr
-	parser_args.regularization = False
+    model = switch_to_wt(model)
+    lr = parser_args.fine_tune_lr
+    parser_args.regularization = False
 
-	epoch_list = copy.deepcopy(old_epoch_list)
+    epoch_list = copy.deepcopy(old_epoch_list)
     test_acc_list = copy.deepcopy(old_test_acc_list)
     model_sparsity_list = copy.deepcopy(old_model_sparsity_list)
 
@@ -145,11 +146,11 @@ def finetine(parser_args, old_epoch_list, old_test_acc_list, old_model_sparsity_
     avg_sparsity = print_nonzeros(cp_model)
 
     for epoch in range(parser_args.epochs, parser_args.epochs * 2):
-    	epoch_list.append(epoch)
+        epoch_list.append(epoch)
         epoch_start_time = time.time()
-        train(parser_args, ntokens, train_data, model, optimizer, criterion)
+        train(parser_args, epoch, ntokens, train_data, model, optimizer, criterion)
         
-        val_loss = evaluate(val_data)
+        val_loss = evaluate(parser_args, model, ntokens, criterion, val_data)
         val_acc_list.append(val_loss)
         model_sparsity_list.append(avg_sparsity)
         print('-' * 89)

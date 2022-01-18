@@ -26,7 +26,7 @@ conv_type: SubnetConv
 bn_type: NonAffineBatchNorm
 prune_rate: 0.2
 init: kaiming_normal
-iter_period: 160 # 5
+iter_period: 200 # 5
 imp_rewind_iter: 2000
 
 

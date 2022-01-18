@@ -4,7 +4,7 @@ from transformer_main_utils import *
 def main():
     print(parser_args)
     set_seed(parser_args.seed * parser_args.trial_num)
-    main_worker(parser_args.gpu, ngpus_per_node)
+    main_worker(parser_args.gpu)
 
 
 def main_worker(gpu):
@@ -26,14 +26,13 @@ def main_worker(gpu):
     # LOAD DATA #
     corpus = data.Corpus(parser_args.data)
     eval_batch_size = 10
-    train_data = batchify(corpus.train, parser_args.batch_size)
-    val_data = batchify(corpus.valid, eval_batch_size)
-    test_data = batchify(corpus.test, eval_batch_size)
-    ntokens = len(corpus.dictionary)
+    train_data = batchify(corpus.train, parser_args.batch_size, device)
+    val_data = batchify(corpus.valid, eval_batch_size, device)
+    test_data = batchify(corpus.test, eval_batch_size, device)
 
     # LOAD MODEL #
     ntokens = len(corpus.dictionary)
-    model = model.TransformerModel(get_builder(), ntokens, parser_args.transformer_emsize, parser_args.transformer_nhead, parser_args.transformer_nhid, parser_args.transformer_nlayers, parser_args.transformer_dropout).to(device)
+    model = transformer_model.TransformerModel(get_builder(), ntokens, parser_args.transformer_emsize, parser_args.transformer_nhead, parser_args.transformer_nhid, parser_args.transformer_nlayers, parser_args.transformer_dropout).to(device)
     model = set_gpu(parser_args, model)
     criterion = nn.NLLLoss()
 
@@ -46,18 +45,17 @@ def main_worker(gpu):
     # Loop over epochs.
     lr = parser_args.lr
     optimizer = get_optimizer(parser_args, model)
-    scheduler = get_scheduler(optimizer, parser_args.lr_policy, max_epochs=parser_args.epochs)
+    # scheduler = get_scheduler(optimizer, parser_args.lr_policy, max_epochs=parser_args.epochs)
     best_val_loss = None
-
 
     epoch_list, val_acc_list, model_sparsity_list = [], [], []
     for epoch in range(parser_args.epochs):
         epoch_list.append(epoch)
         epoch_start_time = time.time()
-        train(parser_args, ntokens, train_data, model, optimizer, criterion)
-        scheduler.step()
+        train(parser_args, epoch, ntokens, train_data, model, optimizer, criterion)
+        # scheduler.step()
 
-        val_loss = evaluate(val_data)
+        val_loss = evaluate(parser_args, model, ntokens, criterion, val_data)
         val_acc_list.append(val_loss)
         print('-' * 89)
         print('| end of epoch {:3d} | time: {:5.2f}s | valid loss {:5.2f} | '
@@ -66,13 +64,12 @@ def main_worker(gpu):
         print('-' * 89)
         # Save the model if the validation loss is the best we've seen so far.
         if not best_val_loss or val_loss < best_val_loss:
-            with open(os.path.join("results", parser_args.subfolder, "model.pt"), 'wb') as f:
+            with open(os.path.join("results", parser_args.subfolder, "train_model.pt"), 'wb') as f:
                 torch.save(model, f)
             best_val_loss = val_loss
 
         if not parser_args.weight_training and parser_args.algo in ['hc_iter', 'global_ep_iter'] and epoch % (parser_args.iter_period) == 0 and epoch != 1:
             prune(model)
-
         cp_model = round_model(model, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio, rank=parser_args.gpu)
         avg_sparsity = print_nonzeros(cp_model)
         print('Model avg sparsity: {}'.format(avg_sparsity))
@@ -83,14 +80,14 @@ def main_worker(gpu):
         model = torch.load(f)
 
     # Run on test data.
-    test_loss = evaluate(test_data)
+    test_loss = evaluate(parser_args, model, ntokens, test_data)
     print('=' * 89)
     print('| End of training | test loss {:5.2f} | test ppl {:8.2f}'.format(
         test_loss, math.exp(test_loss)))
     print('=' * 89)
 
     if not parser_args.skip_fine_tune:
-        finetune(parser_args, epoch_list, val_acc_list, model_sparsity_list)
+        finetune(parser_args, ntokens, model, criterion, epoch_list, val_acc_list, model_sparsity_list)
         
 
 

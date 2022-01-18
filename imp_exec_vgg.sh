@@ -2,14 +2,13 @@
 
 # ===== warm short IMP ===== #
 
-subfd="long_warm_imp_vgg"
+subfd="long_warm_imp_vgg_200ep"
 n_gpu=0
 
 python imp_main.py \
 --config configs/imp/vgg.yml \
---epochs 4000 \
+--epochs 5000 \
 --gpu $n_gpu \
---imp-resume-round 23 \
 --subfolder $subfd
 
 # for sanity check
