@@ -300,10 +300,10 @@ class ArgsHelper:
             help="Boolean flag to indicate whether to use bias"
         )
         parser.add_argument(
-            "--bias_lastlayer",
+            "--bias_fc", #_lastlayer",
             action="store_true",
             default=False,
-            help="Boolean flag to indicate whether to use bias at the last layer"
+            help="Boolean flag to indicate whether to use bias at the last fc layers"
         )
         parser.add_argument(
             "--freeze-weights",
@@ -860,6 +860,12 @@ class ArgsHelper:
             type=int,
             default=0,
             help="Use transfer learning or not"
+        )
+        parser.add_argument(
+            "--uv_decomp",
+            type=int,
+            default=0,
+            help="Use W=UV decomposition or not"
         )
 
 

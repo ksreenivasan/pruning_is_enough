@@ -751,15 +751,18 @@ def load_pretrained_imagenet(model, dataloader):
 
 
     # load the final layer
-    num_classes = pretrained.l0.weight.shape[0]
-    model.fc.weight.data = pretrained.l0.weight.data.view(num_classes, -1, 1, 1)
-    model.fc.bias.data = pretrained.l0.bias.data
+    #num_classes = pretrained.l0.weight.shape[0]
+    #model.fc.weight.data = pretrained.l0.weight.data.view(num_classes, -1, 1, 1)
+    #model.fc.bias.data = pretrained.l0.bias.data
 
     y1 = model(x)
     y2 = pretrained(x)
     print('Compare prediction: ', torch.norm(y1 - y2))
     print('Note: this is small only if we turn off dropout at both loaded/our models')
     #pdb.set_trace()
+
+    print('pretrained model on transfer task')
+    val_loss, val_accuracy = validate(model_s, dataloader)
 
     return model
     
@@ -839,8 +842,7 @@ def test_and_load_pretrained_imagenet(model, dataloader):
     import pdb; pdb.set_trace()
 
     return model
-
-
+'''
 
 #validation function
 def validate(model, dataloader):
@@ -869,4 +871,4 @@ def validate(model, dataloader):
         print(f'Val Loss: {loss:.4f}, Val Acc: {accuracy:.2f}')
         
         return loss, accuracy
-'''
+

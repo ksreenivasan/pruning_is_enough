@@ -392,6 +392,7 @@ def finetune(model, parser_args, data, criterion, old_epoch_list, old_test_acc_b
 
 def get_idty_str(parser_args):
     train_mode_str = 'weight_training' if parser_args.weight_training else 'pruning'
+    epoch_str = parser_args.epochs
     dataset_str = parser_args.dataset
     model_str = parser_args.arch
     algo_str = parser_args.algo
@@ -413,8 +414,8 @@ def get_idty_str(parser_args):
     run_idx_str = parser_args.run_idx
     lam_ft_str = parser_args.lam_finetune_loss
     n_step_ft_str = parser_args.num_step_finetune
-    idty_str = "{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_finetune_{}_MAML_{}_{}_fan_{}_{}_{}_width_{}_seed_{}_idx_{}".\
-        format(train_mode_str, dataset_str, model_str, algo_str, rate_str, period_str, reg_str, reg_lmbda,
+    idty_str = "{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_finetune_{}_MAML_{}_{}_fan_{}_{}_{}_width_{}_seed_{}_idx_{}".\
+        format(train_mode_str, epoch_str, dataset_str, model_str, algo_str, rate_str, period_str, reg_str, reg_lmbda,
                opt_str, policy_str, lr_str, lr_gamma, lr_adj, finetune_lr_str, lam_ft_str, n_step_ft_str, fan_str, w_str, s_str,
                width_str, seed_str, run_idx_str).replace(".", "_")
 

@@ -4,6 +4,10 @@ import torch
 
 def get_scheduler(optimizer, policy='multistep_lr', milestones=[80, 120], gamma=0.1, max_epochs=150):
 
+    if parser_args.epochs == 50:
+        milestones = [20, 40]
+        max_epochs = 50
+    
     if parser_args.epochs == 200:
         milestones = [100, 150]
         max_epochs = 200

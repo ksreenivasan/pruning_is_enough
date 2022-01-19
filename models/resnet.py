@@ -1,5 +1,6 @@
 import torch.nn as nn
 import torch.nn.functional as F
+import pdb
 
 from args_helper import parser_args
 from utils.builder import get_builder
@@ -122,16 +123,33 @@ class ResNet(nn.Module):
         if parser_args.last_layer_dense:
             self.fc = nn.Conv2d(512 * block.expansion, num_classes, 1)
         else:
-            if parser_args.bias_lastlayer:
+            if parser_args.transfer_learning:
+                if parser_args.uv_decomp:
+                    dim_size = 1000 
+                else:
+                    dim_size = num_classes
+            else:
+                dim_size = num_classes
+
+            if parser_args.bias_fc:
                 tmp = parser_args.bias
                 parser_args.bias = True
-                self.fc = builder.conv1x1(512 * block.expansion, num_classes)
+                self.fc = builder.conv1x1(512 * block.expansion, dim_size)
                 parser_args.bias = tmp
             else:
-                self.fc = builder.conv1x1(512 * block.expansion, num_classes)
+                self.fc = builder.conv1x1(512 * block.expansion, dim_size)
         
         if parser_args.transfer_learning:
             self.dropout = nn.Dropout2d(0.4)
+            if parser_args.uv_decomp:
+                if parser_args.bias_fc:
+                    tmp = parser_args.bias
+                    parser_args.bias = True
+                    self.fc2 = builder.conv1x1(dim_size, num_classes)
+                    parser_args.bias = tmp
+                else:
+                    self.fc2 = builder.conv1x1(dim_size, num_classes)
+
 
 
     def _make_layer(self, builder, block, planes, blocks, stride=1):
@@ -179,8 +197,11 @@ class ResNet(nn.Module):
             x = x.view(x.size(0), -1, 1, 1)
         else:
             x = self.avgpool(x)
-
+        
         x = self.fc(x)
+        if parser_args.transfer_learning and parser_args.uv_decomp:
+            x = self.fc2(x)
+
         x = x.view(x.size(0), -1)
 
         return x
