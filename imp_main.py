@@ -42,7 +42,11 @@ def IMP_train(parser_args, data, device):
     assert parser_args.imp_rewind_iter // 391 < parser_args.iter_period  # NOTE: hard code, needs to modify later
 
     # weight initialization
-    model = get_model(parser_args)
+    if parser_args.transfer_learning:
+        model = get_model(parser_args, data.num_classes)
+        model = load_pretrained_imagenet(model, data.val_loader)
+    else:
+        model = get_model(parser_args)
     model = switch_to_wt(model).to(device)
 
     n_round = parser_args.epochs // parser_args.iter_period  # number of round (number of pruning happens)
@@ -52,7 +56,7 @@ def IMP_train(parser_args, data, device):
     criterion = nn.CrossEntropyLoss().to(device)
     optimizer = get_optimizer(parser_args, model)
     # NOTE: hard code, just to make sure my code runs correctly
-    scheduler = get_scheduler(optimizer, parser_args.lr_policy, milestones=[80, 120], gamma=parser_args.lr_gamma)
+    scheduler = get_scheduler(optimizer, parser_args.lr_policy, gamma=parser_args.lr_gamma)
 
     scaler = torch.cuda.amp.GradScaler(enabled=use_amp)
     dest_dir = os.path.join("results", parser_args.subfolder)
