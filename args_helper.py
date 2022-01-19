@@ -31,7 +31,7 @@ class ArgsHelper:
         )
         parser.add_argument(
             "--config",
-            default='configs/hypercube/resnet20/resnet20_quantized_hypercube_reg_bottom_K.yml',
+            default='configs/hypercube/resnet20/resnet20_quantized_iter_hc_target_sparsity_1_4_highreg.yml',
             help="Config file to use"
         )
         parser.add_argument(
@@ -848,6 +848,12 @@ class ArgsHelper:
             type=int,
             default=0,
             help="Use mixed precision or not"
+        )
+        parser.add_argument(
+            "--invert-sanity-check",
+            action="store_true",
+            default=False,
+            help="Enable this to run the inverted sanity check (for HC)"
         )
 
 
