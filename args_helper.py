@@ -868,7 +868,12 @@ class ArgsHelper:
                     help='dropout applied to layers (0 = no dropout)')
         parser.add_argument('--transformer_nhead', type=int, default=2,
                     help='the number of heads in the encoder/decoder of the transformer model')
-
+        parser.add_argument(
+            "--invert-sanity-check",
+            action="store_true",
+            default=False,
+            help="Enable this to run the inverted sanity check (for HC)"
+        )
 
 
         if jupyter_mode:
