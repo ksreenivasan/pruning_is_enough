@@ -52,6 +52,14 @@ from torch._utils import _flatten_dense_tensors, _unflatten_dense_tensors
 
 
 
+def print_layers(parser_args, model):
+    conv_layers, linear_layers = get_layers(parser_args.arch, model)
+    i = 0
+    for layer in [*conv_layers, *linear_layers]:
+        i += 1
+        print(i, layer)
+
+
 def print_model(model, parser_args):
     #from torchsummary import summary
     #summary(model.cuda(), (3,32,32)) # for cifar
