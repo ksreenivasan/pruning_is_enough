@@ -1,5 +1,5 @@
 from models.resnet import ResNet18, ResNet50, ResNet101, WideResNet50_2, WideResNet101_2
-from models.resnet_kaiming import resnet20, resnet32 
+from models.resnet_kaiming import resnet20, resnet32, resnet32_double
 from models.mobilenet import MobileNetV2
 from models.frankle import FC, Conv2, Conv4, Conv4Normal, Conv6, Conv4Wide, Conv8, Conv6Wide
 from models.wideresnet import WideResNet28
@@ -18,6 +18,7 @@ __all__ = [
     "WideResNet101_2",
     "resnet20",
     "resnet32",
+    "resnet32_double",
     "MobileNetV2",
     "FC",
     "Conv2",
