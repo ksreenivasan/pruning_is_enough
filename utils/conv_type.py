@@ -4,13 +4,9 @@ import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
 
-import pdb
 import math
 
 from args_helper import parser_args
-
-
-DenseConv = nn.Conv2d
 
 
 class GetSubnet(autograd.Function):
@@ -119,7 +115,7 @@ class SubnetConv(nn.Conv2d):
         self.scores_prune_threshold = -np.inf
         self.bias_scores_prune_threshold = -np.inf
         
-        if parser_args.algo in ['hc', 'hc_iter']:
+        if parser_args.algo in ['hc', 'hc_iter', 'transformer']:
             if parser_args.random_subnet:
                 self.scores.data = torch.bernoulli(parser_args.prune_rate * torch.ones_like(self.scores.data))
                 self.bias_scores.data = torch.bernoulli(parser_args.prune_rate * torch.ones_like(self.bias_scores.data))
@@ -170,7 +166,7 @@ class SubnetConv(nn.Conv2d):
         return self.scores.abs()
 
     def forward(self, x):
-        if parser_args.algo in ['hc', 'hc_iter']:
+        if parser_args.algo in ['hc', 'hc_iter', 'transformer']:
             # don't need a mask here. the scores are directly multiplied with weights
             if parser_args.differentiate_clamp:
                 self.scores.data = torch.clamp(self.scores.data, 0.0, 1.0)
@@ -202,9 +198,7 @@ class SubnetConv(nn.Conv2d):
                 b = self.bias * bias_subnet
             else:
                 b = self.bias
-        #import pdb; pdb.set_trace()
-        #print(x.shape, w.shape)
-        #print(self.groups)
+        
         x = F.conv2d(
             x, w, b, self.stride, self.padding, self.dilation, self.groups
         )
@@ -311,4 +305,3 @@ class FixedSubnetConv(nn.Conv2d):
             x, w, self.bias, self.stride, self.padding, self.dilation, self.groups
         )
         return x
-
