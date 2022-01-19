@@ -67,8 +67,8 @@ class TransformerModel(nn.Module):
         self.model_type = 'Transformer'
         self.src_mask = None
         self.pos_encoder = PositionalEncoding(ninp, dropout)
-        encoder_layers = TransformerEncoderLayer(ninp, nhead, nhid, dropout)
-        # encoder_layers = Block(builder, dim=ninp, num_heads=nhead, mlp_hidden_dim=nhid, drop=dropout)
+        # encoder_layers = TransformerEncoderLayer(ninp, nhead, nhid, dropout)
+        encoder_layers = Block(builder, dim=ninp, num_heads=nhead, mlp_hidden_dim=nhid, drop=dropout)
         self.transformer_encoder = TransformerEncoder(encoder_layers, nlayers)
         # self.transformer_encoder = nn.Sequential(*[encoder_layers for i in range(nlayers)])
         self.encoder = nn.Embedding(ntoken, ninp)
