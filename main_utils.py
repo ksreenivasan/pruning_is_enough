@@ -100,10 +100,13 @@ def do_sanity_checks(model, parser_args, data, criterion, epoch_list, test_acc_b
     cp_model = finetune(cp_model, parser_args, data, criterion, epoch_list, test_acc_before_round_list, test_acc_list,
                         reg_loss_list, model_sparsity_list, result_root, shuffle=True, chg_mask=True)
 
+    # this doesn't work. removing it.
+    """
     print("Sanity Check 3: Mask Invert")
     cp_model = copy.deepcopy(model)
     cp_model = finetune(cp_model, parser_args, data, criterion, epoch_list, test_acc_before_round_list, test_acc_list,
                         reg_loss_list, model_sparsity_list, result_root, invert=True, chg_mask=True)
+    """
 
 
 def save_checkpoint_at_prune(model, parser_args):
@@ -114,6 +117,8 @@ def save_checkpoint_at_prune(model, parser_args):
                            ratio=parser_args.noise_ratio, rank=parser_args.gpu)
     avg_sparsity = get_model_sparsity(cp_model)
     idty_str = get_idty_str(parser_args)
+    if not os.path.isdir('model_checkpoints/'):
+        os.mkdir('model_checkpoints/')
     ckpt_root = 'model_checkpoints/ckpts_' + idty_str + '/'
     if not os.path.isdir(ckpt_root):
         os.mkdir(ckpt_root)
