@@ -1,7 +1,7 @@
 subfolder: resnet50_caltech_weight_training_1FC
 trial_num: 1
 score_init: 'all_one'
-bias_fc: True
+#bias_fc: True
 
 # algorithm
 algo: 'hc_iter'

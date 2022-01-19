@@ -54,6 +54,7 @@ def main_worker(gpu, ngpus_per_node):
     print_model(model, parser_args)
 
 
+    #import pdb; pdb.set_trace()
     if parser_args.weight_training:
         model = round_model(model, round_scheme="all_ones", noise=parser_args.noise,
                             ratio=parser_args.noise_ratio, rank=parser_args.gpu)

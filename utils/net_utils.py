@@ -754,7 +754,7 @@ def load_pretrained_imagenet(model, dataloader):
     #num_classes = pretrained.l0.weight.shape[0]
     #model.fc.weight.data = pretrained.l0.weight.data.view(num_classes, -1, 1, 1)
     #model.fc.bias.data = pretrained.l0.bias.data
-
+    '''
     y1 = model(x)
     y2 = pretrained(x)
     print('Compare prediction: ', torch.norm(y1 - y2))
@@ -763,6 +763,7 @@ def load_pretrained_imagenet(model, dataloader):
 
     print('pretrained model on transfer task')
     val_loss, val_accuracy = validate(model_s, dataloader)
+    '''
 
     return model
     
