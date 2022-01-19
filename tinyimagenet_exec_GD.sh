@@ -19,8 +19,21 @@ python main.py --config configs/training/resnet50/tiny_resnet50_training_sgd_mul
 
 # TinyImageNet, ResNet-101
 
-# Weight training
+## Weight training
+#python main.py --config configs/training/resnet101/tiny_resnet101_training.yml > log_tiny_res101_wt_adam 2>&1 # this is current best
+#python main.py --config configs/training/resnet101/tiny_resnet101_training_300.yml > log_tiny_res101_wt_adam_300 2>&1 # this is current best
+
 #python main.py --config configs/training/resnet101/tiny_resnet101_training.yml > log_tiny_res101_wt 2>&1 # this is current best
+
+
+## HC
+#python main.py --config configs/hypercube/tinyImageNet/resnet101/resnet101_sparsity_5.yml  > log_tiny_res101_hc_sparsity_5 2>&1
+
+
+## EP
+#python main.py --config configs/ep/tinyImageNet/resnet101/resnet101_sparsity_5.yml > log_tiny_res101_ep_sparsity_5 2>&1
+#python main.py --config configs/ep/tinyImageNet/resnet101/resnet101_sparsity_50.yml > log_tiny_res101_ep_sparsity_50 2>&1
+
 
 
 
