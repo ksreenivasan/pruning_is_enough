@@ -60,4 +60,8 @@ checkpoint_at_prune: False
 # ==== sanity check ==== #
 skip_sanity_checks: True
 only_sanity: True
-sanity_folder: results/mobilenetV2_hc_sparsity_20_3lam6/
+sanity_folder: results/mobilenetV2_hc_sparsity_1_4_re/
+
+#results/mobilenetV2_hc_sparsity_5_7lam6_unflag_True/ # AWS-1
+#results/mobilenetV2_hc_sparsity_50/ # AWS-1
+#results/mobilenetV2_hc_sparsity_20_3lam6/ # LOCAL

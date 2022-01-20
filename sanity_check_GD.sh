@@ -15,8 +15,11 @@
 
 
 # Others (weight reinit, mask shuffle)
-#python main.py --config configs/sanity/mobilenet_sanity.yml > log_sanity_mobilenet_sparsity_20 2>&1
-python main.py --config configs/sanity/resnet18_sanity.yml > log_sanity_resnet18_sparsity_50 2>&1
+#python main.py --config configs/sanity/mobilenet_sanity.yml > log_sanity_mobilenet_sparsity_50 2>&1
+#python main.py --config configs/sanity/mobilenet_sanity.yml > log_sanity_mobilenet_sparsity_5 2>&1
+#python main.py --config configs/sanity/mobilenet_sanity.yml > log_sanity_mobilenet_sparsity_1_4 2>&1
+
+python main.py --config configs/sanity/resnet18_sanity.yml > log_sanity_resnet18_sparsity_5 2>&1
 
 
 
