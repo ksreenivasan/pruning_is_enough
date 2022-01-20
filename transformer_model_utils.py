@@ -34,28 +34,33 @@ class BertSelfAttention(nn.Module):
         self.all_head_size = self.num_attention_heads * self.attention_head_size
         # self.all_head_size = 2 * 100 = 200
 
-        # self.query = nn.Linear(hidden_size, self.all_head_size)  # 200 -> 200
-        self.query = builder.conv1x1(hidden_size, self.all_head_size)        
-        self.key = builder.conv1x1(hidden_size, self.all_head_size)  # 200 -> 200
-        self.value = builder.conv1x1(hidden_size, self.all_head_size)  # 200 -> 200
+        # self.query = builder.conv1x1(hidden_size, self.all_head_size)        
+        # self.key = builder.conv1x1(hidden_size, self.all_head_size)  # 200 -> 200
+        # self.value = builder.conv1x1(hidden_size, self.all_head_size)  # 200 -> 200
+        self.query = builder.linear(hidden_size, self.all_head_size)        
+        self.key = builder.linear(hidden_size, self.all_head_size)  # 200 -> 200
+        self.value = builder.linear(hidden_size, self.all_head_size)  # 200 -> 200
+
 
         self.dropout = nn.Dropout(dropout)
-        
-    # def transpose_for_scores(self, x):
-    #     new_x_shape = x.size()[:-1] + (self.num_attention_heads, self.attention_head_size)  # [35, 20, 2, 100]
-    #     x = x.view(*new_x_shape)
-    #     x = x.permute(1, 2, 0, 3).contiguous()  # [20, 2, 35, 100]
-    #     x = x.view(-1, x.size()[2], x.size()[3])  # [40, 35, 100]
-    #     return x  # x.permute(0, 2, 1, 3)
-
-    def transpose_for_scores(self, x, N, C, H):  # [700, 200, 1, 1]
-        # N: 35, C: 20, H: 200
-        # x = x.view(N * C, H)#.contiguous()  # [700, 200]
-        new_x_shape = (N, C, self.num_attention_heads, self.attention_head_size)  # [35, 20, 2, 100]
-        x = x.view(*new_x_shape)#.contiguous()
-        x = x.permute(1, 2, 0, 3)#.contiguous()  # [20, 2, 35, 100]
+    
+    # This is the original implementation from the repo
+    def transpose_for_scores(self, x):
+        new_x_shape = x.size()[:-1] + (self.num_attention_heads, self.attention_head_size)
+        x = x.view(*new_x_shape). # [35, 20, 200] -> [35, 20, 2, 100]
+        x = x.permute(1, 2, 0, 3).contiguous()  # [20, 2, 35, 100]
         x = x.view(-1, x.size()[2], x.size()[3])  # [40, 35, 100]
         return x  # x.permute(0, 2, 1, 3)
+
+    # This is the implementation to adapt subconv
+    # def transpose_for_scores(self, x, N, C, H):  # [700, 200, 1, 1]
+    #     # N: 35, C: 20, H: 200
+    #     # x = x.view(N * C, H)#.contiguous()  # [700, 200]
+    #     new_x_shape = (N, C, self.num_attention_heads, self.attention_head_size)  # [35, 20, 2, 100]
+    #     x = x.view(*new_x_shape)#.contiguous()
+    #     x = x.permute(1, 2, 0, 3)#.contiguous()  # [20, 2, 35, 100]
+    #     x = x.view(-1, x.size()[2], x.size()[3])  # [40, 35, 100]
+    #     return x  # x.permute(0, 2, 1, 3)
 
     def transpose_back(self, x):  # [40, 35, 100]
         dim1, dim2, dim3 = x.shape  # dim1 = 40, dim2 = 35, dim3 = 100
@@ -77,7 +82,7 @@ class BertSelfAttention(nn.Module):
     ):
         # hidden_states shape [35, 20, 200]
         N, C, H = hidden_states.shape
-        hidden_states = hidden_states.view(N * C, H, 1, 1)#.contiguous()  # -> [700, 200, 1, 1]
+        # hidden_states = hidden_states.view(N * C, H, 1, 1)#.contiguous()  # -> [700, 200, 1, 1]
         # linear layer [700, 200, 1, 1] -> [700, 200, 1, 1]
         key_layer = self.transpose_for_scores(self.key(hidden_states), N, C, H)  # [40, 35, 100]
         value_layer = self.transpose_for_scores(self.value(hidden_states), N, C, H)  # [40, 35, 100]
@@ -142,20 +147,22 @@ class Mlp(nn.Module):
         hidden_features = hidden_features or in_features
         drop_probs = to_2tuple(drop)
 
-        self.fc1 = builder.conv1x1(in_features, hidden_features)
+        # self.fc1 = builder.conv1x1(in_features, hidden_features)
+        self.fc1 = builder.linear(in_features, hidden_features)
         self.act = act_layer()
         self.drop1 = nn.Dropout(drop_probs[0])
-        self.fc2 = builder.conv1x1(hidden_features, out_features)
+        # self.fc2 = builder.conv1x1(hidden_features, out_features)
+        self.fc2 = builder.linear(hidden_features, out_features)
         self.drop2 = nn.Dropout(drop_probs[1])
 
     def forward(self, x):
         N, C, H = x.shape  # N=35, C=20, H=200
-        x = x.view(N * C, H, 1, 1)#.contiguous()  # -> [700, 200, 1, 1]
+        # x = x.view(N * C, H, 1, 1)#.contiguous()  # -> [700, 200, 1, 1]
         x = self.fc1(x)
         x = self.act(x)
         x = self.drop1(x)
         x = self.fc2(x)
         x = self.drop2(x)
-        x = x.view(N, C, -1)#.contiguous()
+        # x = x.view(N, C, -1)#.contiguous()
 
         return x

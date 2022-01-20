@@ -5,6 +5,7 @@ import torch.nn.functional as F
 
 from transformer_model_utils import *
 from torch.nn import TransformerEncoder
+from torch.nn import TransformerEncoderLayer
 # from model_utils_torch import TransformerEncoderLayer
 from args_helper import parser_args
 
@@ -72,7 +73,9 @@ class TransformerModel(nn.Module):
         # self.transformer_encoder = nn.Sequential(*[encoder_layers for i in range(nlayers)])
         self.encoder = nn.Embedding(ntoken, ninp)
         self.ninp = ninp
-        self.decoder = builder.conv1x1(ninp, ntoken)
+        # self.decoder = builder.conv1x1(ninp, ntoken)
+        # self.decoder = nn.Linear(ninp, ntoken)
+        self.decoder = builder.linear(ninp, ntoken)
 
         self.init_weights()
 
@@ -115,7 +118,7 @@ class TransformerModel(nn.Module):
         src = self.pos_encoder(src)
         output = self.transformer_encoder(src, mask=self.src_mask)
         N, C, H = output.shape
-        output = output.view(N * C, H, 1, 1)  # .contiguous()
+        # output = output.view(N * C, H, 1, 1)  # .contiguous()
         output = self.decoder(output)
-        output = output.view(N, C, -1)  # .contiguous()
+        # output = output.view(N, C, -1)  # .contiguous()
         return F.log_softmax(output, dim=-1)
