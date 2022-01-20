@@ -2,7 +2,36 @@
 
 # Weight training
 #python main.py --config configs/training/resnet50/caltech_resnet50_training_1FC.yml #> log_caltech_wt_50epoch_1FC 2>&1
-python main.py --config configs/training/resnet50/caltech_resnet50_training_2FC.yml #> log_caltech_wt_50epoch_2FC 2>&1
+#python main.py --config configs/training/resnet50/caltech_resnet50_training_2FC.yml #> log_caltech_wt_50epoch_2FC 2>&1
+
+
+
+# HC
+python main.py --config configs/hypercube/resnet50/caltech101/caltech101_resnet50_hc_sparsity_50_1FC.yml #> log_caltech_hc_sparsity_50_1FC 2>&1
+#python main.py --config configs/hypercube/resnet50/caltech101/caltech101_resnet50_hc_sparsity_50_2FC.yml #> log_caltech_hc_sparsity_50_2FC 2>&1
+
+
+#python main.py --config configs/hypercube/resnet50/caltech101/caltech101_resnet50_hc_sparsity_5_1FC.yml #> log_caltech_hc_sparsity_5_1FC 2>&1
+#python main.py --config configs/hypercube/resnet50/caltech101/caltech101_resnet50_hc_sparsity_5_2FC.yml #> log_caltech_hc_sparsity_5_2FC 2>&1
+
+
+#python main.py --config configs/hypercube/resnet50/caltech101/caltech101_resnet50_hc_sparsity_2_1FC.yml #> log_caltech_hc_sparsity_2_1FC 2>&1
+#python main.py --config configs/hypercube/resnet50/caltech101/caltech101_resnet50_hc_sparsity_2_2FC.yml #> log_caltech_hc_sparsity_2_2FC 2>&1
+
+
+
+
+
+
+
+
+# ======== OLD
+
+
+
+
+
+
 
 # HC
 #:<<BLOCK
