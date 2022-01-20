@@ -317,6 +317,8 @@ def finetune(model, parser_args, data, criterion, old_epoch_list, old_test_acc_b
         parser_args)
 
     optimizer = get_optimizer(parser_args, model, finetune_flag=True)
+    scheduler = get_scheduler(optimizer, policy=parser_args.fine_tune_lr_policy)
+    ''' 
     if parser_args.epochs == 150:
         scheduler = get_scheduler(optimizer, parser_args.fine_tune_lr_policy, milestones=[
                                   80, 120], gamma=0.1)  # NOTE: hard-coded
@@ -332,6 +334,8 @@ def finetune(model, parser_args, data, criterion, old_epoch_list, old_test_acc_b
     else:
         scheduler = get_scheduler(optimizer, parser_args.fine_tune_lr_policy, milestones=[
                                   20, 40], gamma=0.1)  # NOTE: hard-coded
+    '''
+
     train, validate, modifier = get_trainer(parser_args)
 
     # check the performance of loaded model (after rounding)
