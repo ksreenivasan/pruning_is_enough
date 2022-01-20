@@ -72,8 +72,9 @@ def SmartRatio(model, sr_args, parser_args):
     
     # 3. Find gamma such that p = 1 - \frac{ \sum_l m_l gamma p_l  }{ \sum_l m_l }
 
-    conv_term = np.multiply(np.array(m_arr[:-1]), np.array(p_arr[:-1])).sum()
-    lin_term = m_arr[-1] * p_arr[-1]
+    conv_term = np.multiply(np.array(m_arr[:-linear_layer_num]), np.array(p_arr[:-linear_layer_num])).sum()
+    # lin_term = m_arr[-1] * p_arr[-1]
+    lin_term = np.multiply(np.array(m_arr[-linear_layer_num:]), np.array(p_arr[-linear_layer_num:])).sum()
     num_weights = sum(m_arr)
     scale = (num_weights * keep_ratio - lin_term) / conv_term
     p_arr[:-1] = scale * np.array(p_arr[:-1])
