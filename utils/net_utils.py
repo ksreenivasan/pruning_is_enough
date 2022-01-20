@@ -79,6 +79,18 @@ def get_layers(arch='Conv4', model=None):
                 # handle shortcut
                 # if len(layer[basic_block_id].shortcut) > 0:
                 #     conv_layers.append(layer[basic_block_id].shortcut[0])
+        linear_layers = [model.fc]
+
+    elif arch == 'ResNet101':
+        conv_layers = [model.conv1]
+        for layer in [model.layer1, model.layer2, model.layer3, model.layer4]:
+            for basic_block_id in [i for i in range(len(layer))]:
+                conv_layers.append(layer[basic_block_id].conv1)
+                conv_layers.append(layer[basic_block_id].conv2)
+                conv_layers.append(layer[basic_block_id].conv3)
+
+        linear_layers = [model.fc]
+
 
     elif arch == 'vgg16':
         conv_layers = []
@@ -395,12 +407,13 @@ def prune(model, update_thresholds_only=False, update_scores=False):
         agg_bias_scores = torch.cat(
             active_bias_scores_list) if parser_args.bias else torch.tensor([])
 
+        # if invert_sanity_check, then threshold is based on sorted scores in descending order, and we prune all scores ABOVE it
         scores_threshold = torch.sort(
-            torch.abs(agg_scores)).values[number_of_weights_to_prune-1].item()
+            torch.abs(agg_scores), descending=parser_args.invert_sanity_check).values[number_of_weights_to_prune-1].item()
 
         if parser_args.bias:
             bias_scores_threshold = torch.sort(
-                torch.abs(agg_bias_scores)).values[number_of_biases_to_prune-1].item()
+                torch.abs(agg_bias_scores), descending=parser_args.invert_sanity_check).values[number_of_biases_to_prune-1].item()
         else:
             bias_scores_threshold = -1
 
@@ -412,13 +425,21 @@ def prune(model, update_thresholds_only=False, update_scores=False):
 
         else:
             for layer in (conv_layers + linear_layers):
-                layer.flag.data = (layer.flag.data + torch.gt(layer.scores,
-                                   torch.ones_like(layer.scores)*scores_threshold).int() == 2).int()
+                if parser_args.invert_sanity_check:
+                    layer.flag.data = (layer.flag.data + torch.lt(layer.scores,
+                                       torch.ones_like(layer.scores)*scores_threshold).int() == 2).int()
+                else:
+                    layer.flag.data = (layer.flag.data + torch.gt(layer.scores,
+                                       torch.ones_like(layer.scores)*scores_threshold).int() == 2).int()
                 if update_scores:
                     layer.scores.data = layer.scores.data * layer.flag.data
                 if parser_args.bias:
-                    layer.bias_flag.data = (layer.bias_flag.data + torch.gt(layer.bias_scores, torch.ones_like(
-                        layer.bias_scores)*bias_scores_threshold).int() == 2).int()
+                    if parser_args.invert_sanity_check:
+                        layer.bias_flag.data = (layer.bias_flag.data + torch.lt(layer.bias_scores, torch.ones_like(
+                            layer.bias_scores)*bias_scores_threshold).int() == 2).int()
+                    else:
+                        layer.bias_flag.data = (layer.bias_flag.data + torch.gt(layer.bias_scores, torch.ones_like(
+                            layer.bias_scores)*bias_scores_threshold).int() == 2).int()
                     if update_scores:
                         layer.bias_scores.data = layer.bias_scores.data * layer.bias_flag.data
 

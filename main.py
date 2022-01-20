@@ -108,6 +108,9 @@ def main_worker(gpu, ngpus_per_node):
         print("Overriding prune_rate to {}".format(parser_args.prune_rate))
     #if parser_args.dataset == 'TinyImageNet':
     #    print_num_dataset(data)
+    if not parser_args.weight_training:
+        print_layers(parser_args, model)
+    
 
 
     if parser_args.mixed_precision:
@@ -203,6 +206,14 @@ def main_worker(gpu, ngpus_per_node):
             # haven't written a weight sparsity function yet
             avg_sparsity = -1
         print('Model avg sparsity: {}'.format(avg_sparsity))
+
+        # if model has been "short-circuited", then no point in continuing training
+        if avg_sparsity == 0:
+            print("\n\n---------------------------------------------------------------------")
+            print("WARNING: Model Sparsity = 0 => Entire network has been pruned!!!")
+            print("EXITING and moving to Fine-tune")
+            print("---------------------------------------------------------------------\n\n")
+            break
 
         # update all results lists
         epoch_list.append(epoch)
