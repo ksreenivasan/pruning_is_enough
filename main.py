@@ -192,6 +192,12 @@ def main_worker(gpu, ngpus_per_node):
             avg_sparsity = -1
         print('Model avg sparsity: {}'.format(avg_sparsity))
 
+        # if model has been "short-circuited", then no point in continuing training
+        if avg_sparsity == 0:
+            print("WARNING: Model Sparsity = 0 => Entire network has been pruned")
+            print("EXITING and moving to Fine-tune")
+            break
+
         # update all results lists
         epoch_list.append(epoch)
         if parser_args.algo in ['hc', 'hc_iter']:
