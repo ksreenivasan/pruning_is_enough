@@ -213,6 +213,10 @@ def main_worker(gpu, ngpus_per_node):
             print("WARNING: Model Sparsity = 0 => Entire network has been pruned!!!")
             print("EXITING and moving to Fine-tune")
             print("---------------------------------------------------------------------\n\n")
+            # TODO: Hacky code. Doesn't always work. But quick and easy fix. Just prune all weights to target
+            # sparsity, and then continue to finetune so that unflag can do stuff.
+            parser_args.prune_rate = 1 - (parser_args.target_sparsity/100)
+            prune(model)
             break
 
         # update all results lists
