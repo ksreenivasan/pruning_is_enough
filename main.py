@@ -194,8 +194,10 @@ def main_worker(gpu, ngpus_per_node):
 
         # if model has been "short-circuited", then no point in continuing training
         if avg_sparsity == 0:
-            print("WARNING: Model Sparsity = 0 => Entire network has been pruned")
+            print("\n\n---------------------------------------------------------------------")
+            print("WARNING: Model Sparsity = 0 => Entire network has been pruned!!!")
             print("EXITING and moving to Fine-tune")
+            print("---------------------------------------------------------------------\n\n")
             break
 
         # update all results lists
