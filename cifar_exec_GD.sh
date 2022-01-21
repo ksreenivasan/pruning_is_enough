@@ -1,4 +1,38 @@
-#export cuda_visible_devices=3
+
+# Running trials in parallel
+conf_file="configs/final_hc/mobilenet_50.yml"
+log_root="hc_mobilenet_50_"
+log_end="_log"
+subfolder_root="hc_mobilenet_50_results_"
+
+for trial in 2 3
+do
+    python main.py \
+    --config "$conf_file" --subfolder "$subfolder_root$trial" \
+    --trial-num "$trial" > "$log_root$trial$log_end" 2>&1 &
+
+    python main.py \
+    --config "$conf_file" --subfolder "invert_$subfolder_root$trial" \
+    --trial-num "$trial" --invert-sanity-check  > "invert_$log_root$trial$log_end" 2>&1 &
+done
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 ### MobileNetV2
 #####python main.py --config configs/training/mobilenetV2/cifar10_mobileV2_training.yml #> mobilenet_cifar10_wt
