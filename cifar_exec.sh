@@ -56,6 +56,21 @@ BLOCK
 #python main.py --config configs/ep/conv4/conv4_sc_ep.yml 
 
 ## WideResNet28
+:<<BLOCK
 python main.py \
 --config configs/hypercube/wideresnet28/wideresnet28_weight_training.yml > wideresnet_wt_log 2>&1
+BLOCK
 
+
+# Running trials in parallel
+conf_file="configs/hypercube/wideresnet28/wideresnet28_weight_training.yml"
+log_root="wideresnet28_"
+log_end="_log"
+subfolder_root="wideresnet28_results_"
+
+for trial in 2 3
+do
+    python main.py \
+    --config "$conf_file" > "$log_root$trial$log_end" \
+    --subfolder "$subfolder_root$trial" 2>&1 &
+done
