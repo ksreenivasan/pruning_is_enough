@@ -1,4 +1,4 @@
-n_gpu=0
+n_gpu=1
 config_file=configs/sr/vgg_sr.yml
 
 python main.py \
