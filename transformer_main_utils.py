@@ -85,7 +85,7 @@ def export_onnx(batch_size, seq_len):
 
 
 def train(parser_args, epoch, ntokens, train_data, model, optimizer, criterion):
-	# this should be incorporated into trainer/default
+    # this should be incorporated into trainer/default
     # Turn on training mode which enables dropout.
     model.train()
     total_loss = 0.
@@ -111,12 +111,12 @@ def train(parser_args, epoch, ntokens, train_data, model, optimizer, criterion):
         # `clip_grad_norm` helps prevent the exploding gradient problem in RNNs / LSTMs.
         torch.nn.utils.clip_grad_norm_(model.parameters(), parser_args.transformer_clip)
        
-        lr = 5.
+        # lr = 5.
         # import ipdb; ipdb.set_trace()
-        for p in model.parameters():
-            if p.requires_grad:
-                p.data.add_(p.grad, alpha=-lr)
-        # optimizer.step()
+        # for p in model.parameters():
+        #     if p.requires_grad:
+        #         p.data.add_(p.grad, alpha=-lr)
+        optimizer.step()
         lr = optimizer.param_groups[0]["lr"]
 
         total_loss += loss.item()
@@ -137,28 +137,25 @@ def train(parser_args, epoch, ntokens, train_data, model, optimizer, criterion):
 def finetune(parser_args, ntokens, model, criterion, train_data, val_data, test_data, old_epoch_list, old_val_acc_list, old_model_sparsity_list):
 
     model = switch_to_wt(model)
-    model.encoder.weight.requires_grad = False
-    lr = parser_args.fine_tune_lr
     parser_args.regularization = False
-    optimizer = get_optimizer(parser_args, model, finetune_flag=True)
     best_val_loss = None
 
     epoch_list = copy.deepcopy(old_epoch_list)
     val_acc_list = copy.deepcopy(old_val_acc_list)
     model_sparsity_list = copy.deepcopy(old_model_sparsity_list)
 
-    optimizer = get_optimizer(parser_args, model, finetune_flag=True)
     if parser_args.unflag_before_finetune:
         model = round_model(model, round_scheme="all_ones", noise=parser_args.noise, ratio=parser_args.noise_ratio, rank=parser_args.gpu)
 
-    # avg_sparsity = print_nonzeros(model)
+    optimizer = get_optimizer(parser_args, model, finetune_flag=True)
+    scheduler = get_scheduler(optimizer, parser_args.fine_tune_lr_policy) 
 
     for epoch in range(parser_args.epochs, parser_args.epochs * 2):
         epoch_list.append(epoch)
         epoch_start_time = time.time()
-        # GOOD
         train(parser_args, epoch, ntokens, train_data, model, optimizer, criterion)
-        
+        scheduler.step()
+
         val_loss = evaluate(parser_args, model, ntokens, criterion, val_data)
         val_acc_list.append(val_loss)
         avg_sparsity = -1
@@ -177,7 +174,6 @@ def finetune(parser_args, ntokens, model, criterion, train_data, val_data, test_
             # Anneal the learning rate if no improvement has been seen in the validation dataset.
             for param_group in optimizer.param_groups:
                 param_group["lr"] /= 4.0
-            # lr /= 4.0
 
     with open(os.path.join("results", parser_args.subfolder, "finetune_model.pt"), 'rb') as f:
         model = torch.load(f)

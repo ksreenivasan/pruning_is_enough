@@ -4,7 +4,7 @@ algo: 'hc_iter'
 seed: 42
 
 # ===== Data ===== #
-data: ./transformer_data/wikitext-2
+data: transformer_data/wikitext-2
 batch_size: 20
 
 # ===== Training ===== #
@@ -24,8 +24,10 @@ score_init: unif
 scale_fan: False
 
 # ===== Finetune ===== #
-fine_tune_lr: 5
+fine_tune_optimizer: sgd
+fine_tune_lr: 5.
 fine_tune_wd: 0.0
+fine_tune_lr_policy: multistep_lr 
 momentum: 0.
 
 # ===== Sparsity ===== #
