@@ -53,6 +53,14 @@ from torch._utils import _flatten_dense_tensors, _unflatten_dense_tensors
 
 
 
+def print_layers(parser_args, model):
+    conv_layers, linear_layers = get_layers(parser_args.arch, model)
+    i = 0
+    for layer in [*conv_layers, *linear_layers]:
+        i += 1
+        print(i, layer)
+
+
 def print_model(model, parser_args):
     #from torchsummary import summary
     #summary(model.cuda(), (3,32,32)) # for cifar
@@ -101,10 +109,13 @@ def do_sanity_checks(model, parser_args, data, criterion, epoch_list, test_acc_b
     cp_model = finetune(cp_model, parser_args, data, criterion, epoch_list, test_acc_before_round_list, test_acc_list,
                         reg_loss_list, model_sparsity_list, result_root, shuffle=True, chg_mask=True)
 
+    # this doesn't work. removing it.
+    """
     print("Sanity Check 3: Mask Invert")
     cp_model = copy.deepcopy(model)
     cp_model = finetune(cp_model, parser_args, data, criterion, epoch_list, test_acc_before_round_list, test_acc_list,
                         reg_loss_list, model_sparsity_list, result_root, invert=True, chg_mask=True)
+    """
 
 
 def save_checkpoint_at_prune(model, parser_args):
@@ -307,15 +318,25 @@ def finetune(model, parser_args, data, criterion, old_epoch_list, old_test_acc_b
         parser_args)
 
     optimizer = get_optimizer(parser_args, model, finetune_flag=True)
+    scheduler = get_scheduler(optimizer, policy=parser_args.fine_tune_lr_policy)
+    ''' 
     if parser_args.epochs == 150:
         scheduler = get_scheduler(optimizer, parser_args.fine_tune_lr_policy, milestones=[
                                   80, 120], gamma=0.1)  # NOTE: hard-coded
     elif parser_args.epochs == 50:
         scheduler = get_scheduler(optimizer, parser_args.fine_tune_lr_policy, milestones=[
                                   20, 40], gamma=0.1)  # NOTE: hard-coded
+    elif parser_args.epochs == 200:
+        scheduler = get_scheduler(optimizer, parser_args.fine_tune_lr_policy, milestones=[
+                                  100, 150], gamma=0.1)  # NOTE: hard-coded
+    elif parser_args.epochs == 300:
+        scheduler = get_scheduler(optimizer, parser_args.fine_tune_lr_policy, milestones=[
+                                  150, 250], gamma=0.1)  # NOTE: hard-coded
     else:
         scheduler = get_scheduler(optimizer, parser_args.fine_tune_lr_policy, milestones=[
                                   20, 40], gamma=0.1)  # NOTE: hard-coded
+    '''
+
     train, validate, modifier = get_trainer(parser_args)
 
     # check the performance of loaded model (after rounding)
@@ -921,21 +942,21 @@ def resume(parser_args, model, optimizer):
         print(f"=> Loading checkpoint '{parser_args.resume}'")
 
         checkpoint = torch.load(
-            parser_args.resume, map_location=f"cuda:{parser_args.multigpu[0]}")
-        if parser_args.start_epoch is None:
-            print(f"=> Setting new start epoch at {checkpoint['epoch']}")
-            parser_args.start_epoch = checkpoint["epoch"]
+            parser_args.resume, map_location=f"cuda:{parser_args.gpu}")
+        #if parser_args.start_epoch is None:
+        #    print(f"=> Setting new start epoch at {checkpoint['epoch']}")
+        #    parser_args.start_epoch = checkpoint["epoch"]
 
-        best_acc1 = checkpoint["best_acc1"]
+        #best_acc1 = checkpoint["best_acc1"]
 
-        model.load_state_dict(checkpoint["state_dict"])
+        model.load_state_dict(checkpoint)
 
-        optimizer.load_state_dict(checkpoint["optimizer"])
+        # optimizer.load_state_dict(checkpoint["optimizer"])
 
-        print(
-            f"=> Loaded checkpoint '{parser_args.resume}' (epoch {checkpoint['epoch']})")
+        #print(
+        #    f"=> Loaded checkpoint '{parser_args.resume}' (epoch {checkpoint['epoch']})")
 
-        return best_acc1
+        return 0
     else:
         print(f"=> No checkpoint found at '{parser_args.resume}'")
 

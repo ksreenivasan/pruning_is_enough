@@ -1,10 +1,39 @@
 
 
+# TinyImageNet, ResNet-50
+
+# Weight training
+#python main.py --config configs/training/resnet50/tiny_resnet50_training_adam_001_multi.yml > log_tiny_res50_wt_adam_001_multi 2>&1 # this is current best
+#python main.py --config configs/training/resnet50/tiny_resnet50_training_adam_001_cosine.yml > log_tiny_res50_wt_adam_001_cosine 2>&1 # this is current best
+#python main.py --config configs/training/resnet50/tiny_resnet50_training_adam_0001_cosine.yml > log_tiny_res50_wt_adam_0001_cosine 2>&1 # this is current best
+python main.py --config configs/training/resnet50/tiny_resnet50_training_sgd_multi.yml > log_tiny_res50_wt_sgd_multi 2>&1 # this is current best
+
+
+
+
+#python main.py --config configs/training/resnet50/tiny_resnet50_training_adam_short.yml > log_tiny_res50_wt_adam_short 2>&1 # this is current best
+#python main.py --config configs/training/resnet50/tiny_resnet50_training_adam.yml > log_tiny_res50_wt_adam 2>&1 # this is current best
+
+
+
 
 # TinyImageNet, ResNet-101
 
-# Weight training
-python main.py --config configs/training/resnet101/tiny_resnet101_training.yml > log_tiny_res101_wt 2>&1 # this is current best
+## Weight training
+#python main.py --config configs/training/resnet101/tiny_resnet101_training.yml > log_tiny_res101_wt_adam 2>&1 # this is current best
+#python main.py --config configs/training/resnet101/tiny_resnet101_training_300.yml > log_tiny_res101_wt_adam_300 2>&1 # this is current best
+
+#python main.py --config configs/training/resnet101/tiny_resnet101_training.yml > log_tiny_res101_wt 2>&1 # this is current best
+
+
+## HC
+#python main.py --config configs/hypercube/tinyImageNet/resnet101/resnet101_sparsity_5.yml  > log_tiny_res101_hc_sparsity_5 2>&1
+
+
+## EP
+#python main.py --config configs/ep/tinyImageNet/resnet101/resnet101_sparsity_5.yml > log_tiny_res101_ep_sparsity_5 2>&1
+#python main.py --config configs/ep/tinyImageNet/resnet101/resnet101_sparsity_50.yml > log_tiny_res101_ep_sparsity_50 2>&1
+
 
 
 
@@ -42,6 +71,7 @@ python main.py --config configs/training/resnet101/tiny_resnet101_training.yml >
 #python main.py --config configs/hypercube/tinyImageNet/resnet18/resnet18_sparsity_5_adam_8lam6.yml > log_tiny_hc_sparsity_5_adam_8lam6 2>&1
 #python main.py --config configs/hypercube/tinyImageNet/resnet18/resnet18_sparsity_1_4_adam_9lam6.yml #> log_tiny_hc_sparsity_1_4_adam_9lam6 2>&1
 
+#python main.py --config configs/hypercube/tinyImageNet/resnet18/resnet18_sparsity_50_adam.yml > log_tiny_hc_sparsity_50_adam 2>&1
 #python main.py --config configs/hypercube/tinyImageNet/resnet18/resnet18_sparsity_5_adam_1lam6.yml > log_tiny_hc_sparsity_5_adam_1lam6 2>&1
 #python main.py --config configs/hypercube/tinyImageNet/resnet18/resnet18_sparsity_1_4_adam_5lam6.yml > log_tiny_hc_sparsity_1_4_adam_5lam6 2>&1
 #python main.py --config configs/hypercube/tinyImageNet/resnet18/resnet18_sparsity_0_5_adam_1lam5.yml > log_tiny_hc_sparsity_0_5_adam_1lam5 2>&1

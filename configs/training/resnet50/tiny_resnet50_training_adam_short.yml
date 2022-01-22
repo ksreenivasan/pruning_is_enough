@@ -1,4 +1,4 @@
-subfolder: tiny_res101_weight_training
+subfolder: tiny_res50_weight_training_adam_short
 trial_num: 1
 
 
@@ -7,11 +7,11 @@ algo: 'hc_iter'
 weight_training: True
 
 # Architecture
-arch: ResNet101
+arch: ResNet50
 
 # ===== Dataset ===== #
 dataset: TinyImageNet
-name: tiny_resnet101_training
+name: tiny_resnet50_training
 
 # ===== Learning Rate Policy ======== #
 optimizer: adam
@@ -19,7 +19,7 @@ lr: 0.001
 lr_policy: multistep_lr #cosine_lr #constant_lr
 
 # ===== Network training config ===== #
-epochs: 150
+epochs: 100
 wd: 0.0001
 momentum: 0.9
 batch_size: 256

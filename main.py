@@ -54,7 +54,6 @@ def main_worker(gpu, ngpus_per_node):
     print_model(model, parser_args)
 
 
-    #import pdb; pdb.set_trace()
     if parser_args.weight_training:
         model = round_model(model, round_scheme="all_ones", noise=parser_args.noise,
                             ratio=parser_args.noise_ratio, rank=parser_args.gpu)
@@ -112,12 +111,32 @@ def main_worker(gpu, ngpus_per_node):
         print("Overriding prune_rate to {}".format(parser_args.prune_rate))
     #if parser_args.dataset == 'TinyImageNet':
     #    print_num_dataset(data)
+    if not parser_args.weight_training:
+        print_layers(parser_args, model)
+    
 
 
     if parser_args.mixed_precision:
         scaler = torch.cuda.amp.GradScaler(enabled=True) # mixed precision
     else:
         scaler = None
+
+    if parser_args.only_sanity:
+        dirs = os.listdir(parser_args.sanity_folder)
+        for path in dirs:
+            parser_args.results_root = parser_args.sanity_folder +'/'+ path +'/' 
+            parser_args.resume =parser_args.results_root + '/model_before_finetune.pth'
+            resume(parser_args, model, optimizer)
+            
+            do_sanity_checks(model, parser_args, data, criterion, epoch_list, test_acc_before_round_list,
+                         test_acc_list, reg_loss_list, model_sparsity_list, parser_args.results_root)
+            
+            #cp_model = round_model(model, round_scheme="all_ones", noise=parser_args.noise,
+            #            ratio=parser_args.noise_ratio, rank=parser_args.gpu)
+            #print(get_model_sparsity(cp_model))
+        return
+
+
     # Start training
     for epoch in range(parser_args.start_epoch, parser_args.epochs):
         if parser_args.multiprocessing_distributed:
@@ -190,6 +209,18 @@ def main_worker(gpu, ngpus_per_node):
             # haven't written a weight sparsity function yet
             avg_sparsity = -1
         print('Model avg sparsity: {}'.format(avg_sparsity))
+
+        # if model has been "short-circuited", then no point in continuing training
+        if avg_sparsity == 0:
+            print("\n\n---------------------------------------------------------------------")
+            print("WARNING: Model Sparsity = 0 => Entire network has been pruned!!!")
+            print("EXITING and moving to Fine-tune")
+            print("---------------------------------------------------------------------\n\n")
+            # TODO: Hacky code. Doesn't always work. But quick and easy fix. Just prune all weights to target
+            # sparsity, and then continue to finetune so that unflag can do stuff.
+            parser_args.prune_rate = 1 - (parser_args.target_sparsity/100)
+            prune(model)
+            break
 
         # update all results lists
         epoch_list.append(epoch)

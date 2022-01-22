@@ -1,4 +1,38 @@
-#export cuda_visible_devices=3
+
+# Running trials in parallel
+conf_file="configs/final_hc/mobilenet_50.yml"
+log_root="hc_mobilenet_50_"
+log_end="_log"
+subfolder_root="hc_mobilenet_50_results_"
+
+for trial in 2 3
+do
+    python main.py \
+    --config "$conf_file" --subfolder "$subfolder_root$trial" \
+    --trial-num "$trial" > "$log_root$trial$log_end" 2>&1 &
+
+    python main.py \
+    --config "$conf_file" --subfolder "invert_$subfolder_root$trial" \
+    --trial-num "$trial" --invert-sanity-check  > "invert_$log_root$trial$log_end" 2>&1 &
+done
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 ### MobileNetV2
 #####python main.py --config configs/training/mobilenetV2/cifar10_mobileV2_training.yml #> mobilenet_cifar10_wt
@@ -7,14 +41,12 @@
 
 #python main.py --config configs/training/mobilenetV2/cifar10_mobileV2_training_check.yml #> mobilenet_cifar10_wt_check
 
-#:<<BLOCK
+:<<BLOCK
 #python main.py --config configs/ep/mobilenetV2/cifar10_mobileV2_ep_sparsity_50.yml > log_mobilev2_EP_sparsity_50 2>&1
 #python main.py --config configs/ep/mobilenetV2/cifar10_mobileV2_ep_sparsity_5.yml > log_mobilev2_EP_sparsity_5 2>&1
 #python main.py --config configs/ep/mobilenetV2/cifar10_mobileV2_ep_sparsity_20.yml > log_mobilev2_EP_sparsity_20 2>&1
 #python main.py --config configs/ep/mobilenetV2/cifar10_mobileV2_ep_sparsity_1_7.yml > log_mobilev2_EP_sparsity_1_7 2>&1
-
-
-#BLOCK
+BLOCK
 
 :<<BLOCK
 python main.py --config configs/hypercube/mobilenetV2/sparsity_50.yml > log_mobilev2_HC_sparsity_50 2>&1 
@@ -23,6 +55,7 @@ python main.py --config configs/hypercube/mobilenetV2/sparsity_20.yml > log_mobi
 BLOCK
 #python main.py --config configs/hypercube/mobilenetV2/sparsity_5_7lam6.yml > log_mobilev2_HC_sparsity_5_7lam6 2>&1 
 #python main.py --config configs/hypercube/mobilenetV2/sparsity_20_1lam6.yml > log_mobilev2_HC_sparsity_20_1lam6 2>&1 
+#python main.py --config configs/hypercube/mobilenetV2/sparsity_20_3lam6.yml > log_mobilev2_HC_sparsity_20_3lam6 2>&1 
 
 
 #### ResNet-18
@@ -43,6 +76,10 @@ BLOCK
 #python main.py --config configs/hypercube/resnet20/resnet20_sparsity_3_72_unflagT.yml > log_hc_sparsity_3_72_unflagT 2>&1
 #python main.py --config configs/hypercube/resnet20/resnet20_sparsity_1_44_unflagT.yml > log_hc_sparsity_1_44_unflagT 2>&1
 #python main.py --config configs/hypercube/resnet20/resnet20_sparsity_0_59_unflagT.yml > log_hc_sparsity_0_59_unflagT 2>&1
+
+#python main.py --config configs/hypercube/resnet20/resnet20_sparsity_3_72_unflagT_real.yml > log_hc_sparsity_3_72_unflagT_real 2>&1
+#python main.py --config configs/hypercube/resnet20/resnet20_sparsity_1_44_unflagT_real.yml > log_hc_sparsity_1_44_unflagT_real 2>&1
+#python main.py --config configs/hypercube/resnet20/resnet20_sparsity_0_59_unflagT_real.yml > log_hc_sparsity_0_59_unflagT_real 2>&1
 
 
 

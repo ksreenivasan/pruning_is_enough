@@ -4,13 +4,9 @@ import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
 
-import pdb
 import math
 
 from args_helper import parser_args
-
-
-DenseConv = nn.Conv2d
 
 
 class GetSubnet(autograd.Function):
@@ -202,9 +198,7 @@ class SubnetConv(nn.Conv2d):
                 b = self.bias * bias_subnet
             else:
                 b = self.bias
-        #import pdb; pdb.set_trace()
-        #print(x.shape, w.shape)
-        #print(self.groups)
+        
         x = F.conv2d(
             x, w, b, self.stride, self.padding, self.dilation, self.groups
         )
@@ -311,4 +305,3 @@ class FixedSubnetConv(nn.Conv2d):
             x, w, self.bias, self.stride, self.padding, self.dilation, self.groups
         )
         return x
-
