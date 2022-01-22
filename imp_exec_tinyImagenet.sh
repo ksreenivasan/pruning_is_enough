@@ -3,10 +3,11 @@
 # ===== warm short IMP ===== #
 
 subfd="long_warm_imp_tiny_imagenet"
-n_gpu=0
+n_gpu=1
 
 python imp_main.py \
 --config configs/imp/resnet18.yml \
+--imp-resume-round 20 \
 --epochs 6000 \
 --gpu $n_gpu \
 --subfolder $subfd

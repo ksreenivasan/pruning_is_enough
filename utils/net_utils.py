@@ -85,6 +85,7 @@ def get_layers(arch='Conv4', model=None):
                 # handle shortcut
                 # if len(layer[basic_block_id].shortcut) > 0:
                 #     conv_layers.append(layer[basic_block_id].shortcut[0])
+        linear_layers = [model.fc]
 
     elif arch == 'vgg16':
         conv_layers = []
