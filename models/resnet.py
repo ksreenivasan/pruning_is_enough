@@ -1,4 +1,6 @@
 import torch.nn as nn
+import torch.nn.functional as F
+import pdb
 
 from args_helper import parser_args
 from utils.builder import get_builder
@@ -121,7 +123,34 @@ class ResNet(nn.Module):
         if parser_args.last_layer_dense:
             self.fc = nn.Conv2d(512 * block.expansion, num_classes, 1)
         else:
-            self.fc = builder.conv1x1(512 * block.expansion, num_classes)
+            if parser_args.transfer_learning:
+                if parser_args.uv_decomp:
+                    dim_size = 1000 
+                else:
+                    dim_size = num_classes
+            else:
+                dim_size = num_classes
+
+            if parser_args.bias_fc:
+                tmp = parser_args.bias
+                parser_args.bias = True
+                self.fc = builder.conv1x1(512 * block.expansion, dim_size)
+                parser_args.bias = tmp
+            else:
+                self.fc = builder.conv1x1(512 * block.expansion, dim_size)
+        
+        if parser_args.transfer_learning:
+            self.dropout = nn.Dropout2d(0.4)
+            if parser_args.uv_decomp:
+                if parser_args.bias_fc:
+                    tmp = parser_args.bias
+                    parser_args.bias = True
+                    self.fc2 = builder.conv1x1(dim_size, num_classes)
+                    parser_args.bias = tmp
+                else:
+                    self.fc2 = builder.conv1x1(dim_size, num_classes)
+
+
 
     def _make_layer(self, builder, block, planes, blocks, stride=1):
         downsample = None
@@ -143,7 +172,7 @@ class ResNet(nn.Module):
 
         return nn.Sequential(*layers)
 
-    def forward(self, x):
+    def forward(self, x, hidden=False):
         # update score thresholds for global ep
         if parser_args.algo in ['global_ep', 'global_ep_iter'] or parser_args.bottom_k_on_forward:
             prune(self, update_thresholds_only=True)
@@ -159,24 +188,36 @@ class ResNet(nn.Module):
         x = self.layer3(x)
         x = self.layer4(x)
 
-        x = self.avgpool(x)
+        if hidden:
+            return x
+
+        if parser_args.transfer_learning:
+            x = F.adaptive_avg_pool2d(x, 1).reshape(x.size(0), -1)
+            x = self.dropout(x)
+            x = x.view(x.size(0), -1, 1, 1)
+        else:
+            x = self.avgpool(x)
+        
         x = self.fc(x)
+        if parser_args.transfer_learning and parser_args.uv_decomp:
+            x = self.fc2(x)
+
         x = x.view(x.size(0), -1)
 
         return x
 
 
 # ResNet }}}
-def ResNet18(pretrained=False):
-    return ResNet(get_builder(), BasicBlock, [2, 2, 2, 2], 1000)
+def ResNet18(pretrained=False, num_classes=1000):
+    return ResNet(get_builder(), BasicBlock, [2, 2, 2, 2], num_classes=num_classes)
 
 
-def ResNet50(pretrained=False):
-    return ResNet(get_builder(), Bottleneck, [3, 4, 6, 3], 1000)
+def ResNet50(pretrained=False, num_classes=1000):
+    return ResNet(get_builder(), Bottleneck, [3, 4, 6, 3], num_classes=num_classes)
 
 
-def ResNet101(pretrained=False):
-    return ResNet(get_builder(), Bottleneck, [3, 4, 23, 3], 200)
+def ResNet101(pretrained=False, num_classes=200): # default: tinyImagenet
+    return ResNet(get_builder(), Bottleneck, [3, 4, 23, 3], num_classes=num_classes)
     #return ResNet(get_builder(), Bottleneck, [3, 4, 23, 3], 1000)
 
 
