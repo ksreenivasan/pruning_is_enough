@@ -1,9 +1,9 @@
 
 # Running trials in parallel
-conf_file="configs/final_hc/mobilenet_50.yml"
-log_root="hc_mobilenet_50_"
+conf_file="configs/final_hc/mobilenet_1_4.yml"
+log_root="hc_mobilenet_1_4_"
 log_end="_log"
-subfolder_root="hc_mobilenet_50_results_"
+subfolder_root="hc_mobilenet_1_4_results_"
 
 for trial in 2 3
 do
@@ -11,9 +11,9 @@ do
     --config "$conf_file" --subfolder "$subfolder_root$trial" \
     --trial-num "$trial" > "$log_root$trial$log_end" 2>&1 &
 
-    python main.py \
-    --config "$conf_file" --subfolder "invert_$subfolder_root$trial" \
-    --trial-num "$trial" --invert-sanity-check  > "invert_$log_root$trial$log_end" 2>&1 &
+#    python main.py \
+#    --config "$conf_file" --subfolder "invert_$subfolder_root$trial" \
+#    --trial-num "$trial" --invert-sanity-check --skip-sanity-checks > "invert_$log_root$trial$log_end" 2>&1 &
 done
 
 
