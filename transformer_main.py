@@ -49,7 +49,6 @@ def main_worker(gpu):
     best_val_loss = None
 
     epoch_list, val_acc_list, model_sparsity_list = [], [], []
-    """
     for epoch in range(parser_args.epochs):
         epoch_list.append(epoch)
         epoch_start_time = time.time()
@@ -86,7 +85,6 @@ def main_worker(gpu):
     print('| End of training | test loss {:5.2f} | test ppl {:8.2f}'.format(
         test_loss, math.exp(test_loss)))
     print('=' * 89)
-    """
     if not parser_args.skip_fine_tune:
         finetune(parser_args, ntokens, model, criterion, train_data, val_data, test_data, epoch_list, val_acc_list, model_sparsity_list)
         

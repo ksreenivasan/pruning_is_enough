@@ -35,7 +35,7 @@ def print_nonzeros(model):
     nonzero = 0
     total = 0
     for name, p in model.named_parameters():
-        if re.match('.*\.flag', name) or re.match('.*\.bias_flag', name):
+        if (re.match('.*\.flag', name) or re.match('.*\.bias_flag', name)) and 'decoder' not in name:
             tensor = p.data.detach().cpu().numpy()
             nz_count = np.count_nonzero(tensor)
             total_params = np.prod(tensor.shape)

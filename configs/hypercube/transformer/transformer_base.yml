@@ -7,6 +7,9 @@ seed: 42
 data: transformer_data/wikitext-2
 batch_size: 20
 
+# ===== Architecture ===== #
+transformer_nhid: 480
+
 # ===== Training ===== #
 epochs: 6
 optimizer: sgd
@@ -33,7 +36,7 @@ momentum: 0.
 # ===== Sparsity ===== #
 freeze_weights: True
 prune_type: BottomK
-target_sparsity: 50.0
+target_sparsity: 0.5
 unflag_before_finetune: True
 iter_period: 1  # 5
 
