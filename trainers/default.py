@@ -145,7 +145,8 @@ def validate(val_loader, model, criterion, args, writer, epoch):
             #print(images.shape, target.shape)
 
             # compute output
-            output = model(images)
+            with torch.cuda.amp.autocast(enabled=True): # mixed precision
+                output = model(images)
 
             loss = criterion(output, target)
 

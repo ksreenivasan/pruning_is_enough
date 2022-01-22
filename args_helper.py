@@ -842,7 +842,7 @@ class ArgsHelper:
             help="Enable this to specify prune-rate manually"
         )
         parser.add_argument(
-            "--mixed_precision",
+            "--mixed-precision",
             type=int,
             default=0,
             help="Use mixed precision or not"

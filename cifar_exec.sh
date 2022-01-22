@@ -82,3 +82,9 @@ do
     --invert-sanity-check \
     --subfolder "invert_$subfolder_root$trial" > "invert_$log_root$trial$log_end" 2>&1 &
 done
+BLOCK
+
+python main.py \
+--mixed-precision 1 \
+--config configs/hypercube/resnet20/resnet20_wt.yml > resnet20_wt_log 2>&1
+
