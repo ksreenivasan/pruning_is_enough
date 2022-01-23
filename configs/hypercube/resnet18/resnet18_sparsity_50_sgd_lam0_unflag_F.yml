@@ -53,10 +53,10 @@ lmbda: 0
 
 # ===== Hardware setup ===== #
 workers: 4
-gpu: 2
+gpu: 0
 
 # ===== Checkpointing ===== #
-checkpoint_at_prune: True
+checkpoint_at_prune: False
 
 # ==== sanity check ==== #
 skip_sanity_checks: False

@@ -56,7 +56,7 @@ workers: 4
 # gpu: 1
 
 # ===== Checkpointing ===== #
-checkpoint_at_prune: True
+checkpoint_at_prune: False
 
 # ==== sanity check ==== #
 skip_sanity_checks: False
