@@ -25,6 +25,9 @@ from main_utils import get_model, get_dataset, get_optimizer, switch_to_wt
 from utils.utils import set_seed
 from utils.schedulers import get_scheduler
 
+from transformer_model_utils import print_nonzeros as print_nonzeros_transformer
+from transformer_model_utils import train as train_transformer
+
 
 def IMP_train(parser_args, data, device):
     """
@@ -46,7 +49,22 @@ def IMP_train(parser_args, data, device):
         os.mkdir(dest_dir)
 
     # weight initialization
-    model = get_model(parser_args)
+    if parser_args.arch in ['transformer']:
+        ntokens = len(corpus.dictionary)
+        model = transformer_model.TransformerModel(get_builder(), ntokens, parser_args.transformer_emsize, parser_args.transformer_nhead, parser_args.transformer_nhid, parser_args.transformer_nlayers, parser_args.transformer_dropout).to(device)
+        model = set_gpu(parser_args, model)
+        criterion = nn.NLLLoss()
+        corpus = data.Corpus(parser_args.data)
+        eval_batch_size = 10
+        train_data = batchify(corpus.train, parser_args.batch_size, device)
+        val_data = batchify(corpus.valid, eval_batch_size, device)
+        test_data = batchify(corpus.test, eval_batch_size, device)
+        best_val_loss = None
+
+    else:
+        model = get_model(parser_args)
+        criterion = nn.CrossEntropyLoss().to(device)
+
     model = switch_to_wt(model).to(device)
 
     if parser_args.imp_no_rewind:
@@ -80,7 +98,11 @@ def IMP_train(parser_args, data, device):
         n_act_list = result_df["nact"].tolist()[:finish_index]
         before_acc_list = result_df["before"].tolist()[:finish_index]
     else:
-        test_acc_list, n_act_list, before_acc_list = [], [], []
+        test_acc_list, n_act_list = [], []
+        if parser_args.arch in ['transformer']:
+            before_val_acc_list, before_test_acc_list, val_acc_list = [], [], []
+        else:
+            before_acc_list = []
         parser_args.imp_resume_round = 0
         mask, mask_bias = None, None
 
@@ -88,10 +110,10 @@ def IMP_train(parser_args, data, device):
     n_epoch = parser_args.iter_period  # number of epoch per round
     
     # Optimizer and criterion
-    criterion = nn.CrossEntropyLoss().to(device)
+    # criterion = nn.CrossEntropyLoss().to(device)
     optimizer = get_optimizer(parser_args, model)
     # NOTE: hard code, just to make sure my code runs correctly
-    scheduler = get_scheduler(optimizer, parser_args.lr_policy, milestones=[80, 120], gamma=parser_args.lr_gamma)
+    # scheduler = get_scheduler(optimizer, parser_args.lr_policy, milestones=[80, 120], gamma=parser_args.lr_gamma)
 
     scaler = torch.cuda.amp.GradScaler(enabled=use_amp)
 
@@ -219,19 +241,22 @@ def IMP_train(parser_args, data, device):
             assert mask is not None
             model = put_mask_on(model, mask, mask_bias)
 
-        before_acc = test(model, device, data.val_loader)
+        print(f"\n--- Pruning Level [{idx_round}/{n_round}]: ---")
+        if parser_args.arch in ['transformer']:
+            before_val_acc = evaluate(parser_args, model, ntokens, criterion, val_data)
+            before_test_acc = evaluate(parser_args, model, ntokens, criterion, test_data)
+            comp1 = print_nonzeros_transformer(model)
+        else:
+            before_acc = test(model, device, data.val_loader)
+            comp1 = print_nonzeros(model)
         # optimizer, scheduler = get_optimizer_and_scheduler(parser_args)
         optimizer = get_optimizer(parser_args, model)
+        scheduler = get_scheduler(optimizer, parser_args.lr_policy, gamma=parser_args.lr_gamma)
         # NOTE: hard code
-        if n_epoch in [150, 160]:
-            scheduler = get_scheduler(optimizer, parser_args.lr_policy, milestones=[80, 120], gamma=parser_args.lr_gamma)
-        elif n_epoch == 200: 
-            scheduler = get_scheduler(optimizer, parser_args.lr_policy, milestones=[100, 150], gamma=parser_args.lr_gamma)
-
-        print(f"\n--- Pruning Level [{idx_round}/{n_round}]: ---")
-
-        # Print the table of Nonzeros in each layer
-        comp1 = print_nonzeros(model)
+        # if n_epoch in [150, 160]:
+            # scheduler = get_scheduler(optimizer, parser_args.lr_policy, milestones=[80, 120], gamma=parser_args.lr_gamma)
+        # elif n_epoch == 200: 
+            # scheduler = get_scheduler(optimizer, parser_args.lr_policy, milestones=[100, 150], gamma=parser_args.lr_gamma)
 
         # save the model and mask right after prune
         PATH_model = os.path.join(dest_dir, "round_{}_model.pth".format(idx_round))
@@ -249,48 +274,77 @@ def IMP_train(parser_args, data, device):
 
         
         for idx_epoch in range(n_epoch):  # in total will run total_iter # of iterations, so total_epoch is not accurate
-            # Training
-            model.train()
-            for batch_idx, (imgs, targets) in enumerate(data.train_loader):
-                counter += 1
-                with torch.cuda.amp.autocast(enabled=use_amp):
-                    model.train()
-                    imgs, targets = imgs.to(device), targets.to(device)
-                    output = model(imgs)
-                    train_loss = criterion(output, targets)
-                    # optimizer.zero_grad()
-                    # train_loss.backward()
-                scaler.scale(train_loss).backward()
-                scaler.step(optimizer)
-                scaler.update()
-                optimizer.zero_grad()
-                # train_loss.backward()
-
-                # optimizer.step()
-                # mute the neurons again: because of numerical issue in pytorch
-                if idx_round != 0:
-                    for name, param in model.named_parameters():
-                        if name in model.prunable_layer_names:
-                            tensor = param.data.detach()
-                            param.data = tensor * mask[name].to(device).float()
-                if idx_round == 0 and counter == parser_args.imp_rewind_iter and (not parser_args.imp_no_rewind):
-                    PATH_model = os.path.join(dest_dir, "Liu_checkpoint_model_correct.pth")
-                    assert counter > 0
-                    rewind_state_dict = copy.deepcopy(model.state_dict())                    
-                    torch.save({
-                                'model_state_dict': model.state_dict(),
-                                'optimizer_state_dict': optimizer.state_dict()
-                    }, PATH_model)
-
-            test_acc = test(model, device, data.val_loader)
-            test_acc_list.append(test_acc)
-            before_acc_list.append(before_acc)
-            n_act_list.append(comp1)
-            print('Train Epoch: {}/{} Loss: {:.4f} Test Acc: {:.2f}'.format(idx_epoch, n_epoch, train_loss.item(), test_acc))
-            if scheduler is not None:
+            if parser_args.arch in ['transformer']:
+                train_transformer(parser_args, epoch, ntokens, train_data, model, optimizer, criterion)
                 scheduler.step()
-            
-            result_df = pd.DataFrame({'test': test_acc_list, 'nact': n_act_list, "before": before_acc_list})
+                val_loss = evaluate(parser_args, model, ntokens, criterion, val_data)
+                test_loss = evaluate(parser_args, model, ntokens, criterion, test_data)
+                val_acc_list.append(val_loss)
+                test_acc_list.append(test_loss)
+                avg_sparsity = print_nonzeros_transformer(model)
+                model_sparsity_list.append(avg_sparsity)
+                before_val_acc_list.append(before_val_acc)
+                before_test_acc_list.append(before_test_acc)
+                print('-' * 89)
+                print('| end of epoch {:3d} | time: {:5.2f}s | valid loss {:5.2f} | '
+                        'valid ppl {:8.2f}'.format(epoch, (time.time() - epoch_start_time),
+                                                   val_loss, math.exp(val_loss)))
+                print('-' * 89)
+                # Save the model if the validation loss is the best we've seen so far.
+                if not best_val_loss or val_loss < best_val_loss:
+                    with open(os.path.join("results", parser_args.subfolder, "finetune_model.pt"), 'wb') as f:
+                        torch.save(model, f)
+                    best_val_loss = val_loss
+                else:
+                    # Anneal the learning rate if no improvement has been seen in the validation dataset.
+                    for param_group in optimizer.param_groups:
+                        param_group["lr"] /= 4.0
+
+                result_df = pd.DataFrame({'val': val_acc_list, 'nact': model_sparsity_list, "test": test_acc_list, 'before_val': before_val_acc_list, 'before_test': before_test_acc_list})
+
+            else:
+                # Training
+                model.train()
+                for batch_idx, (imgs, targets) in enumerate(data.train_loader):
+                    counter += 1
+                    with torch.cuda.amp.autocast(enabled=use_amp):
+                        model.train()
+                        imgs, targets = imgs.to(device), targets.to(device)
+                        output = model(imgs)
+                        train_loss = criterion(output, targets)
+                        # optimizer.zero_grad()
+                        # train_loss.backward()
+                    scaler.scale(train_loss).backward()
+                    scaler.step(optimizer)
+                    scaler.update()
+                    optimizer.zero_grad()
+                    # train_loss.backward()
+
+                    # optimizer.step()
+                    # mute the neurons again: because of numerical issue in pytorch
+                    if idx_round != 0:
+                        for name, param in model.named_parameters():
+                            if name in model.prunable_layer_names:
+                                tensor = param.data.detach()
+                                param.data = tensor * mask[name].to(device).float()
+                    if idx_round == 0 and counter == parser_args.imp_rewind_iter and (not parser_args.imp_no_rewind):
+                        PATH_model = os.path.join(dest_dir, "Liu_checkpoint_model_correct.pth")
+                        assert counter > 0
+                        rewind_state_dict = copy.deepcopy(model.state_dict())                    
+                        torch.save({
+                                    'model_state_dict': model.state_dict(),
+                                    'optimizer_state_dict': optimizer.state_dict()
+                        }, PATH_model)
+
+                test_acc = test(model, device, data.val_loader)
+                test_acc_list.append(test_acc)
+                before_acc_list.append(before_acc)
+                n_act_list.append(comp1)
+                print('Train Epoch: {}/{} Loss: {:.4f} Test Acc: {:.2f}'.format(idx_epoch, n_epoch, train_loss.item(), test_acc))
+                if scheduler is not None:
+                    scheduler.step()
+                result_df = pd.DataFrame({'test': test_acc_list, 'nact': n_act_list, "before": before_acc_list})
+
             result_df.to_csv("{}/LTH_cifar10_resnet20.csv".format(dest_dir), index=False)
         # save the model
         PATH_model_after = os.path.join(dest_dir, "round_{}_finish_model.pth".format(idx_round))
@@ -310,7 +364,10 @@ def main():
     kwargs = {'num_workers': 1, 'pin_memory': True} if use_cuda else {}
     set_seed(parser_args.seed)
 
-    data = get_dataset(parser_args)
+    if parser_args.arch in ['transformer']:
+        data = None
+    else:
+        data = get_dataset(parser_args)
 
     IMP_train(parser_args, data, device)
 

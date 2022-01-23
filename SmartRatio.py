@@ -56,6 +56,8 @@ def SmartRatio(model, sr_args, parser_args):
         print(layer_num, layer)
 
     linear_layer_num = len(linear_layers)
+    if parser_args.arch == 'transformer':
+        linear_layer_num = 0
 
     num_remain_weights = keep_ratio * sum(m_arr)
     num_layers = layer_num

@@ -94,12 +94,14 @@ class TransformerModel(nn.Module):
 
     def get_prunable_param_names(model):
         prunable_weights = [name + '.weight' for name, module in model.named_modules() if
-                isinstance(module, torch.nn.modules.conv.Conv2d) or
-                isinstance(module, torch.nn.modules.linear.Linear)]
+                (isinstance(module, torch.nn.modules.conv.Conv2d) or
+                isinstance(module, torch.nn.modules.linear.Linear)) and
+                'decoder' not in name]
         if parser_args.bias:
             prunable_biases = [name + '.bias' for name, module in model.named_modules() if
-                isinstance(module, torch.nn.modules.conv.Conv2d) or
-                isinstance(module, torch.nn.modules.linear.Linear)]
+                (isinstance(module, torch.nn.modules.conv.Conv2d) or
+                isinstance(module, torch.nn.modules.linear.Linear)) and
+                'decoder' not in name]
         else:
             prunable_biases = [""]
 

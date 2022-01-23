@@ -42,6 +42,10 @@ def main_worker(gpu):
     else:
         print("Overriding prune_rate to {}".format(parser_args.prune_rate))
 
+    if parser_args.random_subnet: 
+        test_random_subnet(model, data, criterion, parser_args, result_root, parser_args.smart_ratio) 
+        return
+
     # Loop over epochs.
     lr = parser_args.lr
     optimizer = get_optimizer(parser_args, model)

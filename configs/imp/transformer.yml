@@ -1,0 +1,41 @@
+# IMP algorithm
+algo: 'imp'
+seed: 42
+
+# Architecture
+arch: transformer
+
+# ===== Data ===== #
+data: transformer_data/wikitext-2
+batch_size: 20
+
+# ===== Architecture ===== #
+transformer_nhid: 200
+
+# ===== Learning Rate Policy ======== #
+optimizer: sgd
+lr: 5
+lr_policy: multistep_lr
+lr_gamma: 0.25
+wd: 0.0
+
+# ===== Network training config ===== #
+# epochs: 150
+wd: 0.0001
+momentum: 0.9
+batch_size: 128
+bias: False 
+
+# ===== Sparsity =========== #
+conv_type: SubnetConv
+bn_type: NonAffineBatchNorm
+prune_rate: 0.2
+init: kaiming_normal
+iter_period: 160 # 5
+# imp_rewind_iter: 1000
+
+
+# ===== Hardware setup ===== #
+workers: 4
+gpu: 2
+

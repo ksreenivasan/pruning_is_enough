@@ -19,6 +19,7 @@ from utils.schedulers import get_scheduler
 from args_helper import parser_args
 from main_utils import switch_to_wt, set_gpu, get_optimizer
 from utils.net_utils import prune, get_prune_rate, round_model, get_regularization_loss
+from SmartRatio import SmartRatio
 
 
 def batchify(data, bsz, device):
@@ -43,7 +44,7 @@ def print_nonzeros(model):
             total += total_params
             print(f'{name:20} | nonzeros = {nz_count:7} / {total_params:7} ({100 * nz_count / total_params:6.2f}%) | total_pruned = {total_params - nz_count :7} | shape = {tensor.shape}')
     print(f'alive: {nonzero}, pruned : {total - nonzero}, total: {total}, ({100 * nonzero / total:6.2f}% remained)')
-    return (round((nonzero/total)*100, 1))
+    return nonzero / total
 
 
 def repackage_hidden(h):
@@ -185,4 +186,16 @@ def finetune(parser_args, ntokens, model, criterion, train_data, val_data, test_
                                             test_loss, math.exp(test_loss)))
         print('=' * 89)
 
+
+def test_random_subnet(parser_args, ntokens, model, criterion, train_data, val_data, test_data, parser_args.smart_ratio):
+    # get a randomly pruned model with SmartRatio
+    smart_ratio_args = {'linear_keep_ratio': 0.3, }
+    smart_ratio_args = dotdict(smart_ratio_args)
+    model = SmartRatio(model, smart_ratio_args, parser_args)
+    model = set_gpu(parser_args, model)
+    # this model modify `flag` to represent the sparsity,
+    # and `score` are all ones.
+    old_epoch_list, old_val_acc_list, old_model_sparsity_list = [], [], []
+
+    finetune(parser_args, ntokens, model, criterion, train_data, val_data, test_data, old_epoch_list, old_val_acc_list, old_model_sparsity_list)
 
