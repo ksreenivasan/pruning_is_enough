@@ -9,6 +9,7 @@ import torch
 import torch.nn as nn
 import numpy as np
 import torch.onnx
+import pandas as pd
 
 import transformer_data as data
 import transformer_model
@@ -17,7 +18,7 @@ from utils.utils import set_seed
 from utils.builder import get_builder
 from utils.schedulers import get_scheduler
 from args_helper import parser_args
-from main_utils import switch_to_wt, set_gpu, get_optimizer
+from main_utils import switch_to_wt, set_gpu, get_optimizer, dotdict
 from utils.net_utils import prune, get_prune_rate, round_model, get_regularization_loss
 from SmartRatio import SmartRatio
 
@@ -36,7 +37,8 @@ def print_nonzeros(model):
     nonzero = 0
     total = 0
     for name, p in model.named_parameters():
-        if (re.match('.*\.flag', name) or re.match('.*\.bias_flag', name)) and 'decoder' not in name:
+        # if (re.match('.*\.flag', name) or re.match('.*\.bias_flag', name)) and 'decoder' not in name:
+        if re.match('.*.flag', name) and not re.match('.*.bias_flag', name)  and 'decoder' not in name:
             tensor = p.data.detach().cpu().numpy()
             nz_count = np.count_nonzero(tensor)
             total_params = np.prod(tensor.shape)
@@ -85,7 +87,7 @@ def export_onnx(batch_size, seq_len):
     torch.onnx.export(model, (dummy_input, hidden), onnx_path)
 
 
-def train(parser_args, epoch, ntokens, train_data, model, optimizer, criterion):
+def train(parser_args, epoch, ntokens, train_data, model, optimizer, criterion, mask=None, mask_bias=None):
     # this should be incorporated into trainer/default
     # Turn on training mode which enables dropout.
     model.train()
@@ -122,9 +124,21 @@ def train(parser_args, epoch, ntokens, train_data, model, optimizer, criterion):
 
         total_loss += loss.item()
 
+        if mask is not None:
+            for name, param in model.named_parameters():
+                if name in model.prunable_layer_names:
+                    tensor = param.data.detach()
+                    param.data = tensor * mask[name].to(param.device).float()
+        if mask_bias is not None:
+            for name, param in model.named_parameters():
+                if name in model.prunable_biases:
+                    tensor = param.data.detach()
+                    param.data = tensor * mask[name].to(param.device).float()
+
         log_interval = 200
         if batch % log_interval == 0 and batch > 0:
-            cur_loss = total_loss / log_interval
+            # cur_loss = total_loss / log_interval
+            cur_loss = loss.item()
             elapsed = time.time() - start_time
             print('| epoch {:3d} | {:5d}/{:5d} batches | lr {:02.2f} | ms/batch {:5.2f} | '
                     'loss {:5.2f} | ppl {:8.2f}'.format(
@@ -134,8 +148,7 @@ def train(parser_args, epoch, ntokens, train_data, model, optimizer, criterion):
             start_time = time.time()
 
 
-
-def finetune(parser_args, ntokens, model, criterion, train_data, val_data, test_data, old_epoch_list, old_val_acc_list, old_model_sparsity_list):
+def finetune(parser_args, ntokens, model, criterion, train_data, val_data, test_data, old_epoch_list, old_val_acc_list, old_test_acc_list, old_model_sparsity_list):
 
     model = switch_to_wt(model)
     parser_args.regularization = False
@@ -144,6 +157,7 @@ def finetune(parser_args, ntokens, model, criterion, train_data, val_data, test_
     epoch_list = copy.deepcopy(old_epoch_list)
     val_acc_list = copy.deepcopy(old_val_acc_list)
     model_sparsity_list = copy.deepcopy(old_model_sparsity_list)
+    test_acc_list = copy.deepcopy(old_test_acc_list)
 
     if parser_args.unflag_before_finetune:
         model = round_model(model, round_scheme="all_ones", noise=parser_args.noise, ratio=parser_args.noise_ratio, rank=parser_args.gpu)
@@ -159,6 +173,8 @@ def finetune(parser_args, ntokens, model, criterion, train_data, val_data, test_
 
         val_loss = evaluate(parser_args, model, ntokens, criterion, val_data)
         val_acc_list.append(val_loss)
+        test_loss = evaluate(parser_args, model, ntokens, criterion, test_data)
+        test_acc_list.append(test_loss)
         avg_sparsity = -1
         model_sparsity_list.append(avg_sparsity)
         print('-' * 89)
@@ -173,8 +189,12 @@ def finetune(parser_args, ntokens, model, criterion, train_data, val_data, test_
             best_val_loss = val_loss
         else:
             # Anneal the learning rate if no improvement has been seen in the validation dataset.
-            for param_group in optimizer.param_groups:
-                param_group["lr"] /= 4.0
+            pass
+            # for param_group in optimizer.param_groups:
+            #     param_group["lr"] /= 4.0
+
+        result_df = pd.DataFrame({'val': val_acc_list, 'nact': model_sparsity_list, "test": test_acc_list})
+        result_df.to_csv("results/{}/acc_and_sparsity.csv".format(parser_args.subfolder), index=False)
 
     with open(os.path.join("results", parser_args.subfolder, "finetune_model.pt"), 'rb') as f:
         model = torch.load(f)
@@ -187,7 +207,7 @@ def finetune(parser_args, ntokens, model, criterion, train_data, val_data, test_
         print('=' * 89)
 
 
-def test_random_subnet(parser_args, ntokens, model, criterion, train_data, val_data, test_data, parser_args.smart_ratio):
+def test_random_subnet(parser_args, ntokens, model, criterion, train_data, val_data, test_data):
     # get a randomly pruned model with SmartRatio
     smart_ratio_args = {'linear_keep_ratio': 0.3, }
     smart_ratio_args = dotdict(smart_ratio_args)
@@ -195,7 +215,7 @@ def test_random_subnet(parser_args, ntokens, model, criterion, train_data, val_d
     model = set_gpu(parser_args, model)
     # this model modify `flag` to represent the sparsity,
     # and `score` are all ones.
-    old_epoch_list, old_val_acc_list, old_model_sparsity_list = [], [], []
+    old_epoch_list, old_val_acc_list, old_model_sparsity_list, old_test_acc_list = [], [], [], []
 
-    finetune(parser_args, ntokens, model, criterion, train_data, val_data, test_data, old_epoch_list, old_val_acc_list, old_model_sparsity_list)
+    finetune(parser_args, ntokens, model, criterion, train_data, val_data, test_data, old_epoch_list, old_val_acc_list, old_test_acc_list, old_model_sparsity_list)
 

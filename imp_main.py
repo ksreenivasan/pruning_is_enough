@@ -21,12 +21,19 @@ from imp_mask import Mask
 
 # for merge the code into parent directory
 from args_helper import parser_args
-from main_utils import get_model, get_dataset, get_optimizer, switch_to_wt
+from main_utils import get_model, get_dataset, get_optimizer, switch_to_wt, set_gpu
 from utils.utils import set_seed
 from utils.schedulers import get_scheduler
 
-from transformer_model_utils import print_nonzeros as print_nonzeros_transformer
-from transformer_model_utils import train as train_transformer
+if parser_args.arch in ['transformer']:
+    from transformer_main_utils import print_nonzeros as print_nonzeros_transformer
+    from transformer_main_utils import train as train_transformer
+    from transformer_main_utils import batchify, evaluate
+    import transformer_data 
+    import transformer_model
+    from utils.builder import get_builder
+    import time
+    import math
 
 
 def IMP_train(parser_args, data, device):
@@ -50,17 +57,16 @@ def IMP_train(parser_args, data, device):
 
     # weight initialization
     if parser_args.arch in ['transformer']:
+        corpus = transformer_data.Corpus(parser_args.data)
         ntokens = len(corpus.dictionary)
         model = transformer_model.TransformerModel(get_builder(), ntokens, parser_args.transformer_emsize, parser_args.transformer_nhead, parser_args.transformer_nhid, parser_args.transformer_nlayers, parser_args.transformer_dropout).to(device)
         model = set_gpu(parser_args, model)
         criterion = nn.NLLLoss()
-        corpus = data.Corpus(parser_args.data)
         eval_batch_size = 10
         train_data = batchify(corpus.train, parser_args.batch_size, device)
         val_data = batchify(corpus.valid, eval_batch_size, device)
         test_data = batchify(corpus.test, eval_batch_size, device)
         best_val_loss = None
-
     else:
         model = get_model(parser_args)
         criterion = nn.CrossEntropyLoss().to(device)
@@ -108,7 +114,8 @@ def IMP_train(parser_args, data, device):
 
     n_round = parser_args.epochs // parser_args.iter_period  # number of round (number of pruning happens)
     n_epoch = parser_args.iter_period  # number of epoch per round
-    
+    print("{} round, each round takes {} epochs".format(n_round, n_epoch))
+
     # Optimizer and criterion
     # criterion = nn.CrossEntropyLoss().to(device)
     optimizer = get_optimizer(parser_args, model)
@@ -240,21 +247,24 @@ def IMP_train(parser_args, data, device):
         elif parser_args.imp_resume_round > 0:
             assert mask is not None
             model = put_mask_on(model, mask, mask_bias)
+        else:
+            pass
 
         print(f"\n--- Pruning Level [{idx_round}/{n_round}]: ---")
         if parser_args.arch in ['transformer']:
             before_val_acc = evaluate(parser_args, model, ntokens, criterion, val_data)
             before_test_acc = evaluate(parser_args, model, ntokens, criterion, test_data)
-            comp1 = print_nonzeros_transformer(model)
+            # comp1 = print_nonzeros_transformer(model)
+            comp1 = print_nonzeros(model)
         else:
             before_acc = test(model, device, data.val_loader)
             comp1 = print_nonzeros(model)
         # optimizer, scheduler = get_optimizer_and_scheduler(parser_args)
         optimizer = get_optimizer(parser_args, model)
-        scheduler = get_scheduler(optimizer, parser_args.lr_policy, gamma=parser_args.lr_gamma)
+        # scheduler = get_scheduler(optimizer, parser_args.lr_policy, gamma=parser_args.lr_gamma)
         # NOTE: hard code
-        # if n_epoch in [150, 160]:
-            # scheduler = get_scheduler(optimizer, parser_args.lr_policy, milestones=[80, 120], gamma=parser_args.lr_gamma)
+        if n_epoch in [6]:
+            scheduler = get_scheduler(optimizer, parser_args.lr_policy, milestones=[3,], gamma=parser_args.lr_gamma)
         # elif n_epoch == 200: 
             # scheduler = get_scheduler(optimizer, parser_args.lr_policy, milestones=[100, 150], gamma=parser_args.lr_gamma)
 
@@ -272,22 +282,23 @@ def IMP_train(parser_args, data, device):
                 PATH_mask_bias = os.path.join(dest_dir, "round_{}_mask_bias.npy".format(idx_round))
                 np.save(PATH_mask_bias, mask_bias, allow_pickle=True)
 
-        
         for idx_epoch in range(n_epoch):  # in total will run total_iter # of iterations, so total_epoch is not accurate
             if parser_args.arch in ['transformer']:
-                train_transformer(parser_args, epoch, ntokens, train_data, model, optimizer, criterion)
-                scheduler.step()
+                epoch_start_time = time.time()
+                train_transformer(parser_args, idx_epoch, ntokens, train_data, model, optimizer, criterion, mask, mask_bias)
+                if scheduler is not None:
+                    scheduler.step()
                 val_loss = evaluate(parser_args, model, ntokens, criterion, val_data)
                 test_loss = evaluate(parser_args, model, ntokens, criterion, test_data)
                 val_acc_list.append(val_loss)
                 test_acc_list.append(test_loss)
-                avg_sparsity = print_nonzeros_transformer(model)
-                model_sparsity_list.append(avg_sparsity)
+                avg_sparsity = print_nonzeros(model)  # print_nonzeros_transformer(model)
+                n_act_list.append(avg_sparsity)
                 before_val_acc_list.append(before_val_acc)
                 before_test_acc_list.append(before_test_acc)
                 print('-' * 89)
                 print('| end of epoch {:3d} | time: {:5.2f}s | valid loss {:5.2f} | '
-                        'valid ppl {:8.2f}'.format(epoch, (time.time() - epoch_start_time),
+                        'valid ppl {:8.2f}'.format(idx_epoch, (time.time() - epoch_start_time),
                                                    val_loss, math.exp(val_loss)))
                 print('-' * 89)
                 # Save the model if the validation loss is the best we've seen so far.
@@ -297,10 +308,11 @@ def IMP_train(parser_args, data, device):
                     best_val_loss = val_loss
                 else:
                     # Anneal the learning rate if no improvement has been seen in the validation dataset.
-                    for param_group in optimizer.param_groups:
-                        param_group["lr"] /= 4.0
+                    pass
+                    # for param_group in optimizer.param_groups:
+                    #     param_group["lr"] /= 4.0
 
-                result_df = pd.DataFrame({'val': val_acc_list, 'nact': model_sparsity_list, "test": test_acc_list, 'before_val': before_val_acc_list, 'before_test': before_test_acc_list})
+                result_df = pd.DataFrame({'val': val_acc_list, 'nact': n_act_list, "test": test_acc_list, 'before_val': before_val_acc_list, 'before_test': before_test_acc_list})
 
             else:
                 # Training

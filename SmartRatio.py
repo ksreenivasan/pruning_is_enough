@@ -35,6 +35,8 @@ def SmartRatio(model, sr_args, parser_args):
         resnet_flag = False
     elif 'resnet' in parser_args.arch or 'Resnet' in parser_args.arch or 'ResNet' in parser_args.arch:
         resnet_flag = True
+    elif 'transformer' in parser_args.arch or 'Mobile' in parser_args.arch:
+        resnet_flag = True  # NOTE: hard code
     else:
         raise NotImplementedError("Smart Ratio only works for vgg and resnet")
 
@@ -57,7 +59,7 @@ def SmartRatio(model, sr_args, parser_args):
 
     linear_layer_num = len(linear_layers)
     if parser_args.arch == 'transformer':
-        linear_layer_num = 0
+        linear_layer_num = 1
 
     num_remain_weights = keep_ratio * sum(m_arr)
     num_layers = layer_num
@@ -76,13 +78,14 @@ def SmartRatio(model, sr_args, parser_args):
             p_arr.append((num_layers-l+1)**2 + (num_layers-l+1))
         else:
             p_arr.append( ((num_layers-l+1)**2 + (num_layers-l+1)) / (l * l) )
-    
+   
     # 3. Find gamma such that p = 1 - \frac{ \sum_l m_l gamma p_l  }{ \sum_l m_l }
 
     conv_term = np.multiply(np.array(m_arr[:-linear_layer_num]), np.array(p_arr[:-linear_layer_num])).sum()
     # lin_term = m_arr[-1] * p_arr[-1]
     lin_term = np.multiply(np.array(m_arr[-linear_layer_num:]), np.array(p_arr[-linear_layer_num:])).sum()
     num_weights = sum(m_arr)
+    print("conv_term:", conv_term, "lin_term:", lin_term)
     scale = (num_weights * keep_ratio - lin_term) / conv_term
     p_arr[:-1] = scale * np.array(p_arr[:-1])
     print("p_arr", p_arr)

@@ -43,7 +43,8 @@ def main_worker(gpu):
         print("Overriding prune_rate to {}".format(parser_args.prune_rate))
 
     if parser_args.random_subnet: 
-        test_random_subnet(model, data, criterion, parser_args, result_root, parser_args.smart_ratio) 
+        # test_random_subnet(model, data, criterion, parser_args, result_root, parser_args.smart_ratio) 
+        test_random_subnet(parser_args, ntokens, model, criterion, train_data, val_data, test_data)
         return
 
     # Loop over epochs.
@@ -52,7 +53,7 @@ def main_worker(gpu):
     # scheduler = get_scheduler(optimizer, parser_args.lr_policy, max_epochs=parser_args.epochs)
     best_val_loss = None
 
-    epoch_list, val_acc_list, model_sparsity_list = [], [], []
+    epoch_list, val_acc_list, model_sparsity_list, test_acc_list = [], [], [], []
     for epoch in range(parser_args.epochs):
         epoch_list.append(epoch)
         epoch_start_time = time.time()
@@ -78,6 +79,11 @@ def main_worker(gpu):
         avg_sparsity = print_nonzeros(cp_model)
         print('Model avg sparsity: {}'.format(avg_sparsity))
         model_sparsity_list.append(avg_sparsity)
+        test_loss = evaluate(parser_args, model, ntokens, criterion, test_data)
+        test_acc_list.append(test_loss)
+
+        result_df = pd.DataFrame({'val': val_acc_list, 'nact': model_sparsity_list, "test": test_acc_list})
+        result_df.to_csv("results/{}/acc_and_sparsity.csv".format(parser_args.subfolder), index=False)
 
     # Load the best saved model.
     with open(os.path.join("results", parser_args.subfolder, "train_model.pt"), 'rb') as f:
@@ -90,7 +96,7 @@ def main_worker(gpu):
         test_loss, math.exp(test_loss)))
     print('=' * 89)
     if not parser_args.skip_fine_tune:
-        finetune(parser_args, ntokens, model, criterion, train_data, val_data, test_data, epoch_list, val_acc_list, model_sparsity_list)
+        finetune(parser_args, ntokens, model, criterion, train_data, val_data, test_data, epoch_list, val_acc_list, test_acc_list, model_sparsity_list)
         
 
 

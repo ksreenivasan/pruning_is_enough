@@ -3,10 +3,11 @@ config_file=configs/sr/vgg_sr.yml
 
 python main.py \
     --config $config_file \
-    --smart_ratio 0.95 \
-    --subfolder sc_vgg_95_correct \
+    --smart_ratio 0.995 \
+    --subfolder sc_vgg_995_correct \
     --gpu $n_gpu
 
+"""
 python main.py \
     --config $config_file \
     --smart_ratio 0.983 \
@@ -25,4 +26,4 @@ python main.py \
     --smart_ratio 0.9 \
     --subfolder sc_vgg_90_correct \
     --gpu $n_gpu
-
+"""

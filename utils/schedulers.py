@@ -5,8 +5,8 @@ import torch
 def get_scheduler(optimizer, policy='multistep_lr', milestones=[80, 120], gamma=0.1, max_epochs=150):
 
     if parser_args.epochs in [6]:
-        milestones = [3]
-        gamma = 0.25
+        milestones = [3,]
+        gamma = parser_args.lr_gamma
 
     if parser_args.epochs == 100:
         milestones = [50, 80]
