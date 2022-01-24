@@ -24,7 +24,7 @@ from args_helper import parser_args
 from main_utils import get_model, get_dataset, get_optimizer, switch_to_wt
 from utils.utils import set_seed
 from utils.schedulers import get_scheduler
-
+from utils.net_utils import load_pretrained_imagenet
 
 def IMP_train(parser_args, data, device):
     """

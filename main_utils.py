@@ -181,10 +181,11 @@ def test_random_subnet(model, data, criterion, parser_args, result_root, smart_r
 
     if smart_ratio != -1:
         # get a randomly pruned model with SmartRatio
-        smart_ratio_args = {'linear_keep_ratio': 0.3, 
-                            }
+        smart_ratio_args = {'linear_keep_ratio': 0.3, }
         smart_ratio_args = dotdict(smart_ratio_args)
         model = SmartRatio(model, smart_ratio_args, parser_args)
+        # model = round_model(model, round_scheme="all_ones", noise=parser_args.noise,
+        #                     ratio=parser_args.noise_ratio, rank=parser_args.gpu)
         model = set_gpu(parser_args, model)
         # this model modify `flag` to represent the sparsity,
         # and `score` are all ones.
@@ -205,8 +206,7 @@ def test_random_subnet(model, data, criterion, parser_args, result_root, smart_r
     torch.save(model.state_dict(), model_filename)
 
     # set base_setting and evaluate
-    run_base_dir, ckpt_base_dir, log_base_dir, writer, epoch_time, validation_time, train_time, progress_overall = get_settings(
-        parser_args)
+    run_base_dir, ckpt_base_dir, log_base_dir, writer, epoch_time, validation_time, train_time, progress_overall = get_settings(parser_args)
     # TODO: Change this to use finetune() (I think this is possible)
     # Liu: Yes I also think so
     optimizer = get_optimizer(parser_args, model, finetune_flag=True)

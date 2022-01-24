@@ -871,6 +871,7 @@ class ArgsHelper:
             type=int,
             default=0,
             help="Use W=UV decomposition or not"
+        )
         parser.add_argument('--transformer_emsize', type=int, default=200,
                     help='size of word embeddings')
         parser.add_argument('--transformer_nhid', type=int, default=200,

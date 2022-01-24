@@ -52,7 +52,8 @@ def SmartRatio(model, sr_args, parser_args):
         layer_num += 1
         print(layer_num, layer)
 
-    linear_layer_num = len(linear_layers)
+    # linear_layer_num = len(linear_layers)
+    linear_layer_num = 1  # NOTE: hard code
 
     num_remain_weights = keep_ratio * sum(m_arr)
     num_layers = layer_num

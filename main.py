@@ -54,7 +54,6 @@ def main_worker(gpu, ngpus_per_node):
     print_model(model, parser_args)
 
 
-    #import pdb; pdb.set_trace()
     if parser_args.weight_training:
         model = round_model(model, round_scheme="all_ones", noise=parser_args.noise,
                             ratio=parser_args.noise_ratio, rank=parser_args.gpu)
@@ -230,7 +229,8 @@ def main_worker(gpu, ngpus_per_node):
             parser_args.prune_rate = sum_pr / count
             writer.add_scalar("pr/average", parser_args.prune_rate, epoch)
 
-        writer.add_scalar("test/lr", cur_lr, epoch)
+        if writer is not None:
+            writer.add_scalar("test/lr", cur_lr, epoch)
         end_epoch = time.time()
 
         if parser_args.algo in ['hc', 'hc_iter']:

@@ -14,8 +14,8 @@ dataset: TinyImageNet
 name: tiny_resnet101_training
 
 # ===== Learning Rate Policy ======== #
-optimizer: sgd
-lr: 0.2
+optimizer: adam
+lr: 0.001
 lr_policy: multistep_lr #cosine_lr #constant_lr
 
 # ===== Network training config ===== #

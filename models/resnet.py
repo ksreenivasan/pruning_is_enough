@@ -175,12 +175,12 @@ class ResNet(nn.Module):
 
     def get_prunable_param_names(model):
         prunable_weights = [name + '.weight' for name, module in model.named_modules() if
-                isinstance(module, torch.nn.modules.conv.Conv2d) or
-                isinstance(module, torch.nn.modules.linear.Linear)]
+                isinstance(module, nn.modules.conv.Conv2d) or
+                isinstance(module, nn.modules.linear.Linear)]
         if parser_args.bias:
             prunable_biases = [name + '.bias' for name, module in model.named_modules() if
-                isinstance(module, torch.nn.modules.conv.Conv2d) or
-                isinstance(module, torch.nn.modules.linear.Linear)]
+                isinstance(module, nn.modules.conv.Conv2d) or
+                isinstance(module, nn.modules.linear.Linear)]
         else:
             prunable_biases = [""]
 

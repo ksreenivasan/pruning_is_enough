@@ -22,6 +22,9 @@ python main.py --config configs/hypercube/mobilenetV2/sparsity_5.yml > log_mobil
 python main.py --config configs/hypercube/mobilenetV2/sparsity_20.yml > log_mobilev2_HC_sparsity_20 2>&1 
 BLOCK
 #python main.py --config configs/hypercube/mobilenetV2/sparsity_5_7lam6.yml > log_mobilev2_HC_sparsity_5_7lam6 2>&1 
+#python main.py --config configs/hypercube/mobilenetV2/sparsity_1_4.yml > log_mobilev2_HC_sparsity_1_4 2>&1 
+python main.py --config configs/hypercube/mobilenetV2/sparsity_20_3lam6.yml > log_mobilev2_HC_sparsity_20_3lam6 2>&1 
+
 #python main.py --config configs/hypercube/mobilenetV2/sparsity_20_1lam6.yml > log_mobilev2_HC_sparsity_20_1lam6 2>&1 
 
 
@@ -39,15 +42,19 @@ BLOCK
 
 
 ### ResNet-20
+<<<<<<< HEAD
+#python main.py --config configs/ep/resnet20/resnet20_sc_ep.yml 
+#TODO: add global_ep yml here
+#python main.py --config configs/ep/resnet20/resnet20_global_ep_iter.yml #> cifar_log 2>&1
+#python main.py --config configs/ep/resnet20/resnet20_global_ep_iter_adam.yml #> cifar_log 2>&1
+
+# Smart Ratio
+#python main.py --config configs/sr/resnet20/resnet20_sr.yml # ResNet-20
+#python main.py --config configs/sr/resnet32/resnet32_sr.yml # ResNet-32
 #python main.py --config configs/training/resnet20/cifar10_resnet20_training.yml
-#python main.py --config configs/hypercube/resnet20/resnet20_sparsity_3_72_unflagT.yml > log_hc_sparsity_3_72_unflagT 2>&1
-#python main.py --config configs/hypercube/resnet20/resnet20_sparsity_1_44_unflagT.yml > log_hc_sparsity_1_44_unflagT 2>&1
-#python main.py --config configs/hypercube/resnet20/resnet20_sparsity_0_59_unflagT.yml > log_hc_sparsity_0_59_unflagT 2>&1
-
-
-
-
-
+=======
+python main.py --config configs/training/resnet20/cifar10_resnet20_training.yml
+>>>>>>> master
 #python main.py --config configs/hypercube/resnet20/error_bar/resnet20_sparsity_3_72_t1.yml #> log_hc_sparsity_3_72_t1 2>&1
 
 
@@ -115,6 +122,9 @@ BLOCK
 #python main.py --config configs/hypercube/resnet20/resnet20_quantized_iter_hc_0_5_MAML_1e-4.yml --run_idx 2
 #python main.py --config configs/hypercube/resnet20/resnet20_quantized_iter_hc_0_5_MAML_0.yml --run_idx 3
 
+
+
+
 #python main.py --config config10.yml --run_idx 10 #> log_config$r 2>&1	
 :<<BLOCK
 run_list=(3 4)
@@ -129,15 +139,20 @@ BLOCK
 #python main.py --config config3.yml --run_idx 3
 #python main.py --config config4.yml --run_idx 4 
 
-#python main.py --config config6.yml --run_idx 6
 #python main.py --config config5.yml --run_idx 5
-#python main.py --config config8.yml --run_idx 8 
+#python main.py --config config6.yml --run_idx 6
 #python main.py --config config7.yml --run_idx 7
+#python main.py --config config8.yml --run_idx 8 
 
 #python main.py --config config9.yml --run_idx 9
 #python main.py --config config10.yml --run_idx 10
 
 #python main.py --config config11.yml --run_idx 11
+#python main.py --config config12.yml --run_idx 12
+#python main.py --config config13.yml --run_idx 13
+
+
+
 
 :<<BLOCK
 run_list=(2 3)
