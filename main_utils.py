@@ -203,6 +203,7 @@ def test_random_subnet(model, data, criterion, parser_args, result_root, smart_r
     model = switch_to_wt(model)
     writer = None
     avg_sparsity = get_model_sparsity(model)
+    train, validate, modifier = get_trainer(parser_args)
     acc1, acc5, acc10 = validate(data.val_loader, model, criterion, parser_args, writer, 0)
     print("sparsity: {}, acc {}".format(avg_sparsity, acc1))
     return
