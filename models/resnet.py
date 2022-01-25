@@ -186,7 +186,11 @@ class ResNet(nn.Module):
 
         return prunable_weights, prunable_biases
 
+<<<<<<< HEAD
     def forward(self, x, hidden=False):
+=======
+    def forward(self, x):
+>>>>>>> SmartRatio_liu
         # update score thresholds for global ep
         if parser_args.algo in ['global_ep', 'global_ep_iter'] or parser_args.bottom_k_on_forward:
             prune(self, update_thresholds_only=True)

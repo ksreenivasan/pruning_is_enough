@@ -31,15 +31,20 @@ from utils.net_utils import get_layers
 def SmartRatio(model, sr_args, parser_args):
     ## TODO: current method assumes we are not using bias. We need to add lines for bias_scores, bias_flag, bias... 
 
+    if 'vgg' in parser_args.arch:
+        resnet_flag = False
+    elif 'resnet' in parser_args.arch or 'Resnet' in parser_args.arch or 'ResNet' in parser_args.arch:
+        resnet_flag = True
+    elif 'transformer' in parser_args.arch or 'Mobile' in parser_args.arch:
+        resnet_flag = True  # NOTE: hard code
+    else:
+        raise NotImplementedError("Smart Ratio only works for vgg and resnet")
+
     keep_ratio = 1-parser_args.smart_ratio
     linear_keep_ratio = sr_args.linear_keep_ratio
 
     model = copy.deepcopy(model)  # .eval()
     model.zero_grad()
-    
-    #for name, param in model.named_parameters():
-    #    print(name)
-
 
     # 1. Compute the number of weights to be retrained
     conv_layers, linear_layers = get_layers(parser_args.arch, model)
@@ -52,8 +57,9 @@ def SmartRatio(model, sr_args, parser_args):
         layer_num += 1
         print(layer_num, layer)
 
-    # linear_layer_num = len(linear_layers)
-    linear_layer_num = 1  # NOTE: hard code
+    linear_layer_num = len(linear_layers)
+    if parser_args.arch == 'transformer':
+        linear_layer_num = 1
 
     num_remain_weights = keep_ratio * sum(m_arr)
     num_layers = layer_num
@@ -68,15 +74,18 @@ def SmartRatio(model, sr_args, parser_args):
     for l in range(1, num_layers+1):
         if l > num_layers - linear_layer_num:  # hacky way applicable for resnet_kaiming.py models
             p_arr.append(linear_keep_ratio)
-        else:
+        elif resnet_flag:
             p_arr.append((num_layers-l+1)**2 + (num_layers-l+1))
-    
+        else:
+            p_arr.append( ((num_layers-l+1)**2 + (num_layers-l+1)) / (l * l) )
+   
     # 3. Find gamma such that p = 1 - \frac{ \sum_l m_l gamma p_l  }{ \sum_l m_l }
 
     conv_term = np.multiply(np.array(m_arr[:-linear_layer_num]), np.array(p_arr[:-linear_layer_num])).sum()
     # lin_term = m_arr[-1] * p_arr[-1]
     lin_term = np.multiply(np.array(m_arr[-linear_layer_num:]), np.array(p_arr[-linear_layer_num:])).sum()
     num_weights = sum(m_arr)
+    print("conv_term:", conv_term, "lin_term:", lin_term)
     scale = (num_weights * keep_ratio - lin_term) / conv_term
     p_arr[:-1] = scale * np.array(p_arr[:-1])
     print("p_arr", p_arr)

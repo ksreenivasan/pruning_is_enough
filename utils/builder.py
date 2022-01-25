@@ -71,7 +71,7 @@ class Builder(object):
         return c
 
     def linear(self, in_planes, out_planes):
-        l = SubnetLinear(in_planes, out_planes)
+        l = SubnetLinear(in_planes, out_planes, bias=parser_args.bias)
         self._init_conv(l)
         return l
 

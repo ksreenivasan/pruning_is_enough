@@ -120,7 +120,11 @@ def get_layers(arch='Conv4', model=None):
             linear_layers.append(layer.attn.value)
             linear_layers.append(layer.mlp.fc1)
             linear_layers.append(layer.mlp.fc2)
+<<<<<<< HEAD
         linear_layers.append(model.decoder)
+=======
+        # linear_layers.append(model.decoder)
+>>>>>>> SmartRatio_liu
     return (conv_layers, linear_layers)
 
 
@@ -371,7 +375,6 @@ def round_model(model, round_scheme, noise=False, ratio=0.0, rank=None):
 
 
 """
-# @deprecated
 def get_score_sparsity_hc(model):
     sparsity = []
     numer = 0
@@ -440,6 +443,10 @@ def prune(model, update_thresholds_only=False, update_scores=False):
         # if invert_sanity_check, then threshold is based on sorted scores in descending order, and we prune all scores ABOVE it
         scores_threshold = torch.sort(
             torch.abs(agg_scores), descending=parser_args.invert_sanity_check).values[number_of_weights_to_prune-1].item()
+<<<<<<< HEAD
+=======
+        print("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA", scores_threshold)
+>>>>>>> SmartRatio_liu
 
         if parser_args.bias:
             bias_scores_threshold = torch.sort(
