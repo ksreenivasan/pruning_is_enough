@@ -97,7 +97,9 @@ def main_worker(gpu):
     print('=' * 89)
     if not parser_args.skip_fine_tune:
         finetune(parser_args, ntokens, model, criterion, train_data, val_data, test_data, epoch_list, val_acc_list, test_acc_list, model_sparsity_list)
-        
+    
+    if not parser_args.skip_sanity_checks:
+        do_sanity_checks(parser_args, ntokens, model, criterion, train_data, val_data, test_data, epoch_list, val_acc_list, test_acc_list, model_sparsity_list)
 
 
 if __name__ == "__main__":

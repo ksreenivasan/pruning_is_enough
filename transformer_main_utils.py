@@ -160,7 +160,7 @@ def finetune(parser_args, ntokens, model, criterion, train_data, val_data, test_
     test_acc_list = copy.deepcopy(old_test_acc_list)
 
     if parser_args.unflag_before_finetune:
-        model = round_model(model, round_scheme="all_ones", noise=parser_args.noise, ratio=parser_args.noise_ratio, rank=parser_args.gpu)
+        model = round_model(model, round_scheme="all_ones", noise=parser_args.noise, ratio=parser_args.noise_ratio, rank=parser_args.gpu, name_prefix=None)
 
     optimizer = get_optimizer(parser_args, model, finetune_flag=True)
     scheduler = get_scheduler(optimizer, parser_args.fine_tune_lr_policy) 
@@ -194,7 +194,10 @@ def finetune(parser_args, ntokens, model, criterion, train_data, val_data, test_
             #     param_group["lr"] /= 4.0
 
         result_df = pd.DataFrame({'val': val_acc_list, 'nact': model_sparsity_list, "test": test_acc_list})
-        result_df.to_csv("results/{}/acc_and_sparsity.csv".format(parser_args.subfolder), index=False)
+        if name_prefix is None:
+            result_df.to_csv("results/{}/acc_and_sparsity.csv".format(parser_args.subfolder), index=False)
+        else:
+            result_df.to_csv("results/{}/acc_and_sparsity_{}.csv".format(parser_args.subfolder, name_prefix), index=False)
 
     with open(os.path.join("results", parser_args.subfolder, "finetune_model.pt"), 'rb') as f:
         model = torch.load(f)
@@ -205,6 +208,7 @@ def finetune(parser_args, ntokens, model, criterion, train_data, val_data, test_
         print('| End of training | test loss {:5.2f} | test ppl {:8.2f}'.format(
                                             test_loss, math.exp(test_loss)))
         print('=' * 89)
+    return model
 
 
 def test_random_subnet(parser_args, ntokens, model, criterion, train_data, val_data, test_data):
@@ -218,4 +222,20 @@ def test_random_subnet(parser_args, ntokens, model, criterion, train_data, val_d
     old_epoch_list, old_val_acc_list, old_model_sparsity_list, old_test_acc_list = [], [], [], []
 
     finetune(parser_args, ntokens, model, criterion, train_data, val_data, test_data, old_epoch_list, old_val_acc_list, old_test_acc_list, old_model_sparsity_list)
+
+
+def do_sanity_checks(parser_args, ntokens, model, criterion, train_data, val_data, test_data, epoch_list, val_acc_list, test_acc_list, model_sparsity_list):
+
+    print("Beginning Sanity Checks:")
+    # do the sanity check for shuffled mask/weights, reinit weights
+    print("Sanity Check 1: Weight Reinit")
+    cp_model = copy.deepcopy(model)
+    cp_model = redraw(model, shuffle=False, reinit=True, invert=False, chg_mask=False, chg_weight=True)
+    finetune(parser_args, ntokens, cp_model, criterion, train_data, val_data, test_data, epoch_list, val_acc_list, test_acc_list, model_sparsity_list, name_prefix='weight_reinit')
+
+    print("Sanity Check 2: Mask Reshuffle")
+    cp_model = copy.deepcopy(model)
+    cp_model = redraw(model, shuffle=False, reinit=True, invert=False, chg_mask=True, chg_weight=False)
+    finetune(parser_args, ntokens, cp_model, criterion, train_data, val_data, test_data, epoch_list, val_acc_list, test_acc_list, model_sparsity_list, name_prefix='mask_shuffle')
+
 
