@@ -151,4 +151,3 @@ plots/
 runs/
 *.pt
 cifar_log
-log*
