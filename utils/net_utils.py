@@ -432,10 +432,10 @@ def prune(model, update_thresholds_only=False, update_scores=False):
         else:
             for layer in (conv_layers + linear_layers):
                 if parser_args.invert_sanity_check:
-                    layer.flag.data = (layer.flag.data + torch.lt(layer.scores,
+                    layer.flag.data = (layer.flag.data + torch.lt(layer.scores.abs(),  # TODO
                                        torch.ones_like(layer.scores)*scores_threshold).int() == 2).int()
                 else:
-                    layer.flag.data = (layer.flag.data + torch.gt(layer.scores,
+                    layer.flag.data = (layer.flag.data + torch.gt(layer.scores.abs(),  # TODO
                                        torch.ones_like(layer.scores)*scores_threshold).int() == 2).int()
                 if update_scores:
                     layer.scores.data = layer.scores.data * layer.flag.data
