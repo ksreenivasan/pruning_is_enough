@@ -1,28 +1,26 @@
-subfolder: target_sparsity_50
-# random_subnet_per_layer_ratio: []
-# random_subnet: True
+subfolder: mobilenet_sanity
 
 # Hypercube optimization
 algo: 'hc_iter'
-iter_period: 8
+iter_period: 5
 
 # Architecture
-arch: resnet20
+arch: MobileNetV2
 
 # ===== Dataset ===== #
 dataset: CIFAR10
-name: resnet20_quantized_iter_hc
+name: mobilenet_sanity
 
 # ===== Learning Rate Policy ======== #
-optimizer: sgd
-lr: 0.05
+optimizer: adam
+lr: 0.01 #0.01
 lr_policy: cosine_lr #constant_lr #multistep_lr
-fine_tune_lr: 0.1  # 0.01
+fine_tune_lr: 0.01
 fine_tune_lr_policy: multistep_lr
 
 # ===== Network training config ===== #
-epochs: 150
-wd: 0.0 
+epochs: 300
+wd: 0.0
 momentum: 0.9
 batch_size: 128
 
@@ -32,17 +30,17 @@ bn_type: NonAffineBatchNorm
 freeze_weights: True
 prune_type: BottomK
 # enter target sparsity here
-target_sparsity: 50.0
+#target_sparsity: 5
 # decide if you want to "unflag"
 unflag_before_finetune: True
-init: signed_constant
+init: signed_constant #signed_constant
 score_init: unif #skew #half #bimodal #skew # bern
 scale_fan: False #True
 
 # ===== Rounding ===== #
-round: naive 
+round: naive
 noise: True
-noise_ratio: 0 
+noise_ratio: 0
 
 # ===== Quantization ===== #
 hc_quantized: True
@@ -50,7 +48,7 @@ quantize_threshold: 0.5
 
 # ===== Regularization ===== #
 regularization: L2
-lmbda: 0.00000001  # 1e-4 #0.00005 # 5e-5
+#lmbda: 0 # 1e-6
 
 # ===== Hardware setup ===== #
 workers: 4
@@ -60,5 +58,10 @@ gpu: 0
 checkpoint_at_prune: False
 
 # ==== sanity check ==== #
-skip_sanity_checks: False
+skip_sanity_checks: True
+only_sanity: True
+sanity_folder: results/mobilenetV2_hc_sparsity_1_4_re/
 
+#results/mobilenetV2_hc_sparsity_5_7lam6_unflag_True/ # AWS-1
+#results/mobilenetV2_hc_sparsity_50/ # AWS-1
+#results/mobilenetV2_hc_sparsity_20_3lam6/ # LOCAL

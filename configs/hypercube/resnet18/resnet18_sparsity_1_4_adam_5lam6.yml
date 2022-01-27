@@ -1,30 +1,30 @@
-subfolder: target_sparsity_50
-# random_subnet_per_layer_ratio: []
-# random_subnet: True
+# subfolder: tiny_hc_sparsity_1_4_adam_5lam6
+# trial_num: 1
+
 
 # Hypercube optimization
 algo: 'hc_iter'
-iter_period: 8
+iter_period: 5
 
 # Architecture
-arch: resnet20
+arch: TinyResNet18
 
 # ===== Dataset ===== #
-dataset: CIFAR10
-name: resnet20_quantized_iter_hc
+dataset: TinyImageNet
+name: tiny_resnet18_hc
 
 # ===== Learning Rate Policy ======== #
-optimizer: sgd
-lr: 0.05
+optimizer: adam
+lr: 0.001
 lr_policy: cosine_lr #constant_lr #multistep_lr
-fine_tune_lr: 0.1  # 0.01
+fine_tune_lr: 0.1
 fine_tune_lr_policy: multistep_lr
 
 # ===== Network training config ===== #
-epochs: 150
-wd: 0.0 
+epochs: 200
+wd: 0
 momentum: 0.9
-batch_size: 128
+batch_size: 256 # 256
 
 # ===== Sparsity =========== #
 conv_type: SubnetConv
@@ -32,8 +32,7 @@ bn_type: NonAffineBatchNorm
 freeze_weights: True
 prune_type: BottomK
 # enter target sparsity here
-target_sparsity: 50.0
-# decide if you want to "unflag"
+target_sparsity: 1.4
 unflag_before_finetune: True
 init: signed_constant
 score_init: unif #skew #half #bimodal #skew # bern
@@ -50,7 +49,7 @@ quantize_threshold: 0.5
 
 # ===== Regularization ===== #
 regularization: L2
-lmbda: 0.00000001  # 1e-4 #0.00005 # 5e-5
+lmbda: 0.000005
 
 # ===== Hardware setup ===== #
 workers: 4
@@ -61,4 +60,3 @@ checkpoint_at_prune: False
 
 # ==== sanity check ==== #
 skip_sanity_checks: False
-

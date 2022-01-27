@@ -1,10 +1,11 @@
-subfolder: target_sparsity_50
-# random_subnet_per_layer_ratio: []
-# random_subnet: True
+# subfolder: hc_sparsity_1_44_unflagT_real
+# trial_num: 1
+#lam_finetune_loss: 1
+#num_step_finetune: 5
 
 # Hypercube optimization
 algo: 'hc_iter'
-iter_period: 8
+iter_period: 5
 
 # Architecture
 arch: resnet20
@@ -15,9 +16,9 @@ name: resnet20_quantized_iter_hc
 
 # ===== Learning Rate Policy ======== #
 optimizer: sgd
-lr: 0.05
+lr: 0.1 #0.01
 lr_policy: cosine_lr #constant_lr #multistep_lr
-fine_tune_lr: 0.1  # 0.01
+fine_tune_lr: 0.01
 fine_tune_lr_policy: multistep_lr
 
 # ===== Network training config ===== #
@@ -32,7 +33,7 @@ bn_type: NonAffineBatchNorm
 freeze_weights: True
 prune_type: BottomK
 # enter target sparsity here
-target_sparsity: 50.0
+target_sparsity: 1.44
 # decide if you want to "unflag"
 unflag_before_finetune: True
 init: signed_constant
@@ -50,7 +51,7 @@ quantize_threshold: 0.5
 
 # ===== Regularization ===== #
 regularization: L2
-lmbda: 0.00000001  # 1e-4 #0.00005 # 5e-5
+lmbda: 0.0001 # 1e-4 #0.00005 # 5e-5
 
 # ===== Hardware setup ===== #
 workers: 4
@@ -61,4 +62,3 @@ checkpoint_at_prune: False
 
 # ==== sanity check ==== #
 skip_sanity_checks: False
-
