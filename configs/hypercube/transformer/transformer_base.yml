@@ -9,11 +9,12 @@ batch_size: 20
 
 # ===== Architecture ===== #
 transformer_nhid: 200
+transformer_emsize: 200
 
 # ===== Training ===== #
 epochs: 6
 optimizer: sgd
-lr: 5.
+lr: 0.1 # 5.
 lr_policy: multistep_lr
 lr_gamma: 0.25
 # wd: 0.0
@@ -36,7 +37,7 @@ momentum: 0.
 # ===== Sparsity ===== #
 freeze_weights: True
 prune_type: BottomK
-# target_sparsity: 5 # 0.5
+# target_sparsity: 1.8 # 0.5
 unflag_before_finetune: True
 iter_period: 1  # 5
 
@@ -55,3 +56,6 @@ lmbda: 0.00001
 
 # ===== Hardware setup ===== #
 workers: 4
+
+skip_sanity_checks: False
+skip_fine_tune: False

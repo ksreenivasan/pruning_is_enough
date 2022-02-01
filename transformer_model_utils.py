@@ -1,5 +1,5 @@
 from utils.builder import get_builder
-# from args_helper import parser_args
+from args_helper import parser_args
 # from utils.net_utils import prune
 import torch.nn as nn
 import collections.abc
@@ -133,6 +133,8 @@ class Block(nn.Module):
         self.mlp = Mlp(builder, in_features=dim, hidden_features=mlp_hidden_dim, act_layer=act_layer, drop=drop)
 
     def forward(self, x, src_mask, src_key_padding_mask=None):
+        if parser_args.mflag:
+            import ipdb; ipdb.set_trace()
         x = x + self.attn(self.norm1(x), attention_mask=src_mask)
         x = x + self.mlp(self.norm2(x))
         return x

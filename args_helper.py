@@ -29,7 +29,7 @@ class ArgsHelper:
         )
         parser.add_argument(
             "--config",
-            default='configs/hypercube/transformer/transformer_base.yml',
+            default='configs/sr/resnet20/resnet20_sr.yml', #'configs/hypercube/transformer/transformer_base.yml',
             help="Config file to use"
         )
         parser.add_argument(

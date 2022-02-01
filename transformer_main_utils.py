@@ -19,7 +19,7 @@ from utils.builder import get_builder
 from utils.schedulers import get_scheduler
 from args_helper import parser_args
 from main_utils import switch_to_wt, set_gpu, get_optimizer, dotdict
-from utils.net_utils import prune, get_prune_rate, round_model, get_regularization_loss
+from utils.net_utils import prune, redraw, get_prune_rate, round_model, get_regularization_loss
 from SmartRatio import SmartRatio
 
 
@@ -98,6 +98,13 @@ def train(parser_args, epoch, ntokens, train_data, model, optimizer, criterion, 
         # Starting each batch, we detach the hidden state from how it was previously produced.
         # If we didn't, the model would try backpropagating all the way to start of the dataset.
         model.zero_grad()
+        if parser_args.algo in ['hc', 'hc_iter', 'pt'] and i % parser_args.project_freq == 0 and not parser_args.differentiate_clamp:
+            for name, params in model.named_parameters():
+                if "score" in name:
+                    scores = params
+                    with torch.no_grad():
+                        scores.data = torch.clamp(scores.data, 0.0, 1.0)
+
         output = model(data)
         output = output.view(-1, ntokens)
         loss = criterion(output, targets)
@@ -148,7 +155,7 @@ def train(parser_args, epoch, ntokens, train_data, model, optimizer, criterion, 
             start_time = time.time()
 
 
-def finetune(parser_args, ntokens, model, criterion, train_data, val_data, test_data, old_epoch_list, old_val_acc_list, old_test_acc_list, old_model_sparsity_list):
+def finetune(parser_args, ntokens, model, criterion, train_data, val_data, test_data, old_epoch_list, old_val_acc_list, old_test_acc_list, old_model_sparsity_list, name_prefix=None):
 
     model = switch_to_wt(model)
     parser_args.regularization = False
@@ -159,8 +166,10 @@ def finetune(parser_args, ntokens, model, criterion, train_data, val_data, test_
     model_sparsity_list = copy.deepcopy(old_model_sparsity_list)
     test_acc_list = copy.deepcopy(old_test_acc_list)
 
+    avg_sparsity = print_nonzeros(model) 
+
     if parser_args.unflag_before_finetune:
-        model = round_model(model, round_scheme="all_ones", noise=parser_args.noise, ratio=parser_args.noise_ratio, rank=parser_args.gpu, name_prefix=None)
+        model = round_model(model, round_scheme="all_ones", noise=parser_args.noise, ratio=parser_args.noise_ratio, rank=parser_args.gpu)
 
     optimizer = get_optimizer(parser_args, model, finetune_flag=True)
     scheduler = get_scheduler(optimizer, parser_args.fine_tune_lr_policy) 
@@ -175,7 +184,6 @@ def finetune(parser_args, ntokens, model, criterion, train_data, val_data, test_
         val_acc_list.append(val_loss)
         test_loss = evaluate(parser_args, model, ntokens, criterion, test_data)
         test_acc_list.append(test_loss)
-        avg_sparsity = -1
         model_sparsity_list.append(avg_sparsity)
         print('-' * 89)
         print('| end of epoch {:3d} | time: {:5.2f}s | valid loss {:5.2f} | '
@@ -235,7 +243,7 @@ def do_sanity_checks(parser_args, ntokens, model, criterion, train_data, val_dat
 
     print("Sanity Check 2: Mask Reshuffle")
     cp_model = copy.deepcopy(model)
-    cp_model = redraw(model, shuffle=False, reinit=True, invert=False, chg_mask=True, chg_weight=False)
+    cp_model = redraw(model, shuffle=True, reinit=False, invert=False, chg_mask=True, chg_weight=False)
     finetune(parser_args, ntokens, cp_model, criterion, train_data, val_data, test_data, epoch_list, val_acc_list, test_acc_list, model_sparsity_list, name_prefix='mask_shuffle')
 
 

@@ -68,12 +68,10 @@ def main_worker(gpu):
                                            val_loss, math.exp(val_loss)))
         print('-' * 89)
         # Save the model if the validation loss is the best we've seen so far.
-        if not best_val_loss or val_loss < best_val_loss:
-            with open(os.path.join("results", parser_args.subfolder, "train_model.pt"), 'wb') as f:
-                torch.save(model, f)
-            best_val_loss = val_loss
+        with open(os.path.join("results", parser_args.subfolder, "train_model.pt"), 'wb') as f:
+            torch.save(model, f)
 
-        if not parser_args.weight_training and parser_args.algo in ['hc_iter', 'global_ep_iter'] and epoch % (parser_args.iter_period) == 0 and epoch != 1:
+        if not parser_args.weight_training and parser_args.algo in ['hc_iter', 'global_ep_iter'] and epoch % (parser_args.iter_period) == 0 and epoch != 0:
             prune(model)
         cp_model = round_model(model, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio, rank=parser_args.gpu)
         avg_sparsity = print_nonzeros(cp_model)
@@ -86,8 +84,8 @@ def main_worker(gpu):
         result_df.to_csv("results/{}/acc_and_sparsity.csv".format(parser_args.subfolder), index=False)
 
     # Load the best saved model.
-    with open(os.path.join("results", parser_args.subfolder, "train_model.pt"), 'rb') as f:
-        model = torch.load(f)
+    # with open(os.path.join("results", parser_args.subfolder, "train_model.pt"), 'rb') as f:
+    #     model = torch.load(f)
 
     # Run on test data.
     test_loss = evaluate(parser_args, model, ntokens, criterion, test_data)
@@ -95,11 +93,14 @@ def main_worker(gpu):
     print('| End of training | test loss {:5.2f} | test ppl {:8.2f}'.format(
         test_loss, math.exp(test_loss)))
     print('=' * 89)
+
     if not parser_args.skip_fine_tune:
-        finetune(parser_args, ntokens, model, criterion, train_data, val_data, test_data, epoch_list, val_acc_list, test_acc_list, model_sparsity_list)
+        cp_model = copy.deepcopy(model)
+        finetune(parser_args, ntokens, cp_model, criterion, train_data, val_data, test_data, epoch_list, val_acc_list, test_acc_list, model_sparsity_list)
     
     if not parser_args.skip_sanity_checks:
-        do_sanity_checks(parser_args, ntokens, model, criterion, train_data, val_data, test_data, epoch_list, val_acc_list, test_acc_list, model_sparsity_list)
+        cp_model = copy.deepcopy(model)
+        do_sanity_checks(parser_args, ntokens, cp_model, criterion, train_data, val_data, test_data, epoch_list, val_acc_list, test_acc_list, model_sparsity_list)
 
 
 if __name__ == "__main__":

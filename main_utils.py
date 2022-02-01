@@ -192,6 +192,9 @@ def test_random_subnet(model, data, criterion, parser_args, result_root, smart_r
                             }
         smart_ratio_args = dotdict(smart_ratio_args)
         model = SmartRatio(model, smart_ratio_args, parser_args)
+        # # NOTE: temporarily added for code checking
+        # torch.save(model.state_dict(), result_root + 'init_model_{}.pth'.format(smart_ratio)) 
+        # return
         model = set_gpu(parser_args, model)
         # this model modify `flag` to represent the sparsity,
         # and `score` are all ones.
