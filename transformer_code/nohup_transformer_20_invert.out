@@ -1,0 +1,323 @@
+nohup: ignoring input
+=> Reading YAML config from configs/hypercube/transformer/transformer_invert.yml
+Namespace(algo='hc_iter', alpha=1.0, alpha_prime=1.0, arch='transformer', batch_size=20, bias=False, bn_type='NonAffineBatchNorm', bottom_k_on_forward=False, checkpoint_at_prune=False, chg_mask=False, chg_weight=False, ckpt_interval=-1, config='configs/hypercube/transformer/transformer_invert.yml', conv_type='SubnetConv', data='transformer_data/wikitext-2', data_dir='../data', dataset='MNIST', differentiate_clamp=False, dist_backend='nccl', epochs=6, evaluate=False, evaluate_only=False, fine_tune_lr=5.0, fine_tune_lr_policy='multistep_lr', fine_tune_optimizer='sgd', fine_tune_wd=0.0, first_layer_dense=False, first_layer_type=None, fixed_init=False, flips=None, freeze_weights=True, gamma=0.1, gpu=2, hc_period=1, hc_quantized=True, hc_warmup=9999, hidden_size=500, how_to_connect='prob', how_to_prune='random', imp_no_rewind=False, imp_resume_round=-1, imp_rewind_iter=1000, imp_rewind_model='short_imp/Liu_checkpoint_model_correct.pth', init='signed_constant', interpolate='prob', invert_sanity_check=True, iter_period=1, iter_start=0, label_smoothing=None, lam_finetune_loss=-1, last_layer_dense=False, lmbda=1e-05, load_ckpt=None, log_dir=None, log_interval=2, loss='cross-entropy-loss', lr=5.0, lr_adjust=50, lr_gamma=0.25, lr_policy='multistep_lr', max_iter=100000, metric='loss', milestones=[50, 100, 150, 200], mixed_precision=0, mode='fan_in', mode_connect=False, mode_connect_filename=None, momentum=0.0, multiprocessing_distributed=False, name=None, nesterov=False, no_bn_decay=False, no_cuda=False, noise=True, noise_ratio=0, nonlinearity='relu', num_round=1, num_step_finetune=10, num_test=1, num_trial=1, num_workers=4, optimizer='sgd', override_prune_rate=False, plot_hc_convergence=False, pretrained=None, pretrained2=None, print_freq=10, project_freq=1, prune_rate=0.5, prune_type='BottomK', pruning_strategy=None, quantize_threshold=0.5, random_subnet=False, rank=-1, regularization='L2', reinit=False, results_filename=None, resume=None, rewind_score=False, rewind_to_epoch=-1, round='naive', run_idx=None, save_every=-1, save_model=False, save_plot_data=False, scale_fan=False, score_init='unif', score_init_constant=None, seed=42, seed_fixed_init=24, shift=0.0, shuffle=False, skip_fine_tune=False, skip_sanity_checks=True, smart_ratio=-1, start_epoch=None, start_from_nothing=False, subfolder='transformer_20_invert', submask_size=1, target_sparsity=20.0, td=0.99, temp=100000, trainer='default', transformer_bptt=35, transformer_clip=0.25, transformer_dropout=0.2, transformer_emsize=200, transformer_nhead=2, transformer_nhid=200, transformer_nlayers=2, trial_num=1, unflag_before_finetune=True, warmup_length=0, wd=0.0005, weight_training=False, width=1.0, width_mult=1.0, workers=4, world_size=-1, **{'compare-rounding': False})
+Seeded everything: 42
+Use GPU: 2 for training
+transformer_data/wikitext-2/train.txt
+transformer_data/wikitext-2/valid.txt
+transformer_data/wikitext-2/test.txt
+==> Conv Type: SubnetConv
+==> BN Type: NonAffineBatchNorm
+Computing prune_rate for target_sparsity 20.0 with iter_period 1
+Setting prune_rate to 0.27522033632230447
+| epoch   0 |   200/ 2983 batches | lr 5.00 | ms/batch 78.08 | loss 15.97 | ppl 8604938.76
+| epoch   0 |   400/ 2983 batches | lr 5.00 | ms/batch 63.02 | loss 10.49 | ppl 36126.24
+| epoch   0 |   600/ 2983 batches | lr 5.00 | ms/batch 61.54 | loss  8.33 | ppl  4148.66
+| epoch   0 |   800/ 2983 batches | lr 5.00 | ms/batch 62.48 | loss  7.99 | ppl  2954.24
+| epoch   0 |  1000/ 2983 batches | lr 5.00 | ms/batch 60.69 | loss  7.61 | ppl  2020.09
+| epoch   0 |  1200/ 2983 batches | lr 5.00 | ms/batch 63.16 | loss  7.65 | ppl  2091.16
+| epoch   0 |  1400/ 2983 batches | lr 5.00 | ms/batch 62.45 | loss  7.44 | ppl  1704.49
+| epoch   0 |  1600/ 2983 batches | lr 5.00 | ms/batch 61.15 | loss  7.15 | ppl  1276.59
+| epoch   0 |  1800/ 2983 batches | lr 5.00 | ms/batch 62.03 | loss  7.34 | ppl  1541.30
+| epoch   0 |  2000/ 2983 batches | lr 5.00 | ms/batch 61.00 | loss  7.18 | ppl  1318.77
+| epoch   0 |  2200/ 2983 batches | lr 5.00 | ms/batch 62.18 | loss  7.40 | ppl  1630.97
+| epoch   0 |  2400/ 2983 batches | lr 5.00 | ms/batch 62.96 | loss  7.33 | ppl  1530.59
+| epoch   0 |  2600/ 2983 batches | lr 5.00 | ms/batch 63.22 | loss  7.36 | ppl  1568.33
+| epoch   0 |  2800/ 2983 batches | lr 5.00 | ms/batch 63.38 | loss  7.61 | ppl  2011.40
+-----------------------------------------------------------------------------------------
+| end of epoch   0 | time: 195.13s | valid loss  7.01 | valid ppl  1112.44
+-----------------------------------------------------------------------------------------
+Pruning Model:
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA 0.00039456048398278654
+Rounding model with scheme: naive
+transformer_encoder.layers.0.attn.query.flag | nonzeros =   36857 /   40000 ( 92.14%) | total_pruned =    3143 | shape = (200, 200)
+transformer_encoder.layers.0.attn.key.flag | nonzeros =   36846 /   40000 ( 92.11%) | total_pruned =    3154 | shape = (200, 200)
+transformer_encoder.layers.0.attn.value.flag | nonzeros =   19876 /   40000 ( 49.69%) | total_pruned =   20124 | shape = (200, 200)
+transformer_encoder.layers.0.mlp.fc1.flag | nonzeros =   36142 /   40000 ( 90.36%) | total_pruned =    3858 | shape = (200, 200)
+transformer_encoder.layers.0.mlp.fc2.flag | nonzeros =   36094 /   40000 ( 90.23%) | total_pruned =    3906 | shape = (200, 200)
+transformer_encoder.layers.1.attn.query.flag | nonzeros =   36846 /   40000 ( 92.11%) | total_pruned =    3154 | shape = (200, 200)
+transformer_encoder.layers.1.attn.key.flag | nonzeros =   36877 /   40000 ( 92.19%) | total_pruned =    3123 | shape = (200, 200)
+transformer_encoder.layers.1.attn.value.flag | nonzeros =   20324 /   40000 ( 50.81%) | total_pruned =   19676 | shape = (200, 200)
+transformer_encoder.layers.1.mlp.fc1.flag | nonzeros =   35757 /   40000 ( 89.39%) | total_pruned =    4243 | shape = (200, 200)
+transformer_encoder.layers.1.mlp.fc2.flag | nonzeros =   35832 /   40000 ( 89.58%) | total_pruned =    4168 | shape = (200, 200)
+alive: 331451, pruned : 68549, total: 400000, ( 82.86% remained)
+Model avg sparsity: 0.8286275
+| epoch   1 |   200/ 2983 batches | lr 5.00 | ms/batch 63.24 | loss  8.53 | ppl  5056.67
+| epoch   1 |   400/ 2983 batches | lr 5.00 | ms/batch 62.21 | loss  8.14 | ppl  3432.73
+| epoch   1 |   600/ 2983 batches | lr 5.00 | ms/batch 61.47 | loss  7.77 | ppl  2362.42
+| epoch   1 |   800/ 2983 batches | lr 5.00 | ms/batch 61.82 | loss  7.99 | ppl  2939.63
+| epoch   1 |  1000/ 2983 batches | lr 5.00 | ms/batch 61.96 | loss  7.74 | ppl  2292.90
+| epoch   1 |  1200/ 2983 batches | lr 5.00 | ms/batch 62.40 | loss  7.90 | ppl  2686.49
+| epoch   1 |  1400/ 2983 batches | lr 5.00 | ms/batch 61.39 | loss  7.67 | ppl  2150.45
+| epoch   1 |  1600/ 2983 batches | lr 5.00 | ms/batch 60.65 | loss  7.39 | ppl  1625.43
+| epoch   1 |  1800/ 2983 batches | lr 5.00 | ms/batch 62.43 | loss  7.55 | ppl  1898.51
+| epoch   1 |  2000/ 2983 batches | lr 5.00 | ms/batch 62.32 | loss  7.42 | ppl  1666.74
+| epoch   1 |  2200/ 2983 batches | lr 5.00 | ms/batch 62.79 | loss  7.58 | ppl  1960.38
+| epoch   1 |  2400/ 2983 batches | lr 5.00 | ms/batch 61.75 | loss  7.53 | ppl  1859.35
+| epoch   1 |  2600/ 2983 batches | lr 5.00 | ms/batch 61.33 | loss  7.53 | ppl  1862.96
+| epoch   1 |  2800/ 2983 batches | lr 5.00 | ms/batch 62.67 | loss  7.73 | ppl  2265.67
+-----------------------------------------------------------------------------------------
+| end of epoch   1 | time: 194.81s | valid loss  7.08 | valid ppl  1185.60
+-----------------------------------------------------------------------------------------
+Rounding model with scheme: naive
+transformer_encoder.layers.0.attn.query.flag | nonzeros =   36857 /   40000 ( 92.14%) | total_pruned =    3143 | shape = (200, 200)
+transformer_encoder.layers.0.attn.key.flag | nonzeros =   36846 /   40000 ( 92.11%) | total_pruned =    3154 | shape = (200, 200)
+transformer_encoder.layers.0.attn.value.flag | nonzeros =   19876 /   40000 ( 49.69%) | total_pruned =   20124 | shape = (200, 200)
+transformer_encoder.layers.0.mlp.fc1.flag | nonzeros =   36142 /   40000 ( 90.36%) | total_pruned =    3858 | shape = (200, 200)
+transformer_encoder.layers.0.mlp.fc2.flag | nonzeros =   36094 /   40000 ( 90.23%) | total_pruned =    3906 | shape = (200, 200)
+transformer_encoder.layers.1.attn.query.flag | nonzeros =   36846 /   40000 ( 92.11%) | total_pruned =    3154 | shape = (200, 200)
+transformer_encoder.layers.1.attn.key.flag | nonzeros =   36877 /   40000 ( 92.19%) | total_pruned =    3123 | shape = (200, 200)
+transformer_encoder.layers.1.attn.value.flag | nonzeros =   20324 /   40000 ( 50.81%) | total_pruned =   19676 | shape = (200, 200)
+transformer_encoder.layers.1.mlp.fc1.flag | nonzeros =   35757 /   40000 ( 89.39%) | total_pruned =    4243 | shape = (200, 200)
+transformer_encoder.layers.1.mlp.fc2.flag | nonzeros =   35832 /   40000 ( 89.58%) | total_pruned =    4168 | shape = (200, 200)
+alive: 331451, pruned : 68549, total: 400000, ( 82.86% remained)
+Model avg sparsity: 0.8286275
+| epoch   2 |   200/ 2983 batches | lr 5.00 | ms/batch 61.20 | loss  7.63 | ppl  2052.01
+| epoch   2 |   400/ 2983 batches | lr 5.00 | ms/batch 61.87 | loss  7.56 | ppl  1910.73
+| epoch   2 |   600/ 2983 batches | lr 5.00 | ms/batch 62.47 | loss  7.41 | ppl  1651.81
+| epoch   2 |   800/ 2983 batches | lr 5.00 | ms/batch 62.72 | loss  7.73 | ppl  2281.82
+| epoch   2 |  1000/ 2983 batches | lr 5.00 | ms/batch 62.51 | loss  7.58 | ppl  1957.25
+| epoch   2 |  1200/ 2983 batches | lr 5.00 | ms/batch 60.30 | loss  7.77 | ppl  2374.73
+| epoch   2 |  1400/ 2983 batches | lr 5.00 | ms/batch 62.00 | loss  7.56 | ppl  1922.95
+| epoch   2 |  1600/ 2983 batches | lr 5.00 | ms/batch 62.79 | loss  7.35 | ppl  1553.50
+| epoch   2 |  1800/ 2983 batches | lr 5.00 | ms/batch 62.69 | loss  7.49 | ppl  1787.09
+| epoch   2 |  2000/ 2983 batches | lr 5.00 | ms/batch 62.75 | loss  7.39 | ppl  1617.84
+| epoch   2 |  2200/ 2983 batches | lr 5.00 | ms/batch 60.19 | loss  7.55 | ppl  1901.93
+| epoch   2 |  2400/ 2983 batches | lr 5.00 | ms/batch 61.72 | loss  7.47 | ppl  1761.61
+| epoch   2 |  2600/ 2983 batches | lr 5.00 | ms/batch 62.16 | loss  7.52 | ppl  1836.90
+| epoch   2 |  2800/ 2983 batches | lr 5.00 | ms/batch 62.77 | loss  7.70 | ppl  2205.00
+-----------------------------------------------------------------------------------------
+| end of epoch   2 | time: 194.34s | valid loss  7.07 | valid ppl  1180.83
+-----------------------------------------------------------------------------------------
+Pruning Model:
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA 5.868438374134755e-11
+Rounding model with scheme: naive
+transformer_encoder.layers.0.attn.query.flag | nonzeros =   30599 /   40000 ( 76.50%) | total_pruned =    9401 | shape = (200, 200)
+transformer_encoder.layers.0.attn.key.flag | nonzeros =   30624 /   40000 ( 76.56%) | total_pruned =    9376 | shape = (200, 200)
+transformer_encoder.layers.0.attn.value.flag | nonzeros =   13084 /   40000 ( 32.71%) | total_pruned =   26916 | shape = (200, 200)
+transformer_encoder.layers.0.mlp.fc1.flag | nonzeros =   30333 /   40000 ( 75.83%) | total_pruned =    9667 | shape = (200, 200)
+transformer_encoder.layers.0.mlp.fc2.flag | nonzeros =   30225 /   40000 ( 75.56%) | total_pruned =    9775 | shape = (200, 200)
+transformer_encoder.layers.1.attn.query.flag | nonzeros =   30685 /   40000 ( 76.71%) | total_pruned =    9315 | shape = (200, 200)
+transformer_encoder.layers.1.attn.key.flag | nonzeros =   30649 /   40000 ( 76.62%) | total_pruned =    9351 | shape = (200, 200)
+transformer_encoder.layers.1.attn.value.flag | nonzeros =   15959 /   40000 ( 39.90%) | total_pruned =   24041 | shape = (200, 200)
+transformer_encoder.layers.1.mlp.fc1.flag | nonzeros =   30109 /   40000 ( 75.27%) | total_pruned =    9891 | shape = (200, 200)
+transformer_encoder.layers.1.mlp.fc2.flag | nonzeros =   30043 /   40000 ( 75.11%) | total_pruned =    9957 | shape = (200, 200)
+alive: 272310, pruned : 127690, total: 400000, ( 68.08% remained)
+Model avg sparsity: 0.680775
+| epoch   3 |   200/ 2983 batches | lr 5.00 | ms/batch 63.71 | loss  8.45 | ppl  4667.58
+| epoch   3 |   400/ 2983 batches | lr 5.00 | ms/batch 62.55 | loss  8.40 | ppl  4430.40
+| epoch   3 |   600/ 2983 batches | lr 5.00 | ms/batch 62.73 | loss  8.21 | ppl  3693.75
+| epoch   3 |   800/ 2983 batches | lr 5.00 | ms/batch 62.56 | loss  8.48 | ppl  4805.02
+| epoch   3 |  1000/ 2983 batches | lr 5.00 | ms/batch 60.33 | loss  8.30 | ppl  4011.72
+| epoch   3 |  1200/ 2983 batches | lr 5.00 | ms/batch 63.06 | loss  8.52 | ppl  5000.04
+| epoch   3 |  1400/ 2983 batches | lr 5.00 | ms/batch 63.38 | loss  8.29 | ppl  3970.62
+| epoch   3 |  1600/ 2983 batches | lr 5.00 | ms/batch 62.99 | loss  8.01 | ppl  3017.19
+| epoch   3 |  1800/ 2983 batches | lr 5.00 | ms/batch 61.91 | loss  8.19 | ppl  3621.47
+| epoch   3 |  2000/ 2983 batches | lr 5.00 | ms/batch 60.57 | loss  8.04 | ppl  3105.07
+| epoch   3 |  2200/ 2983 batches | lr 5.00 | ms/batch 62.57 | loss  8.29 | ppl  4001.39
+| epoch   3 |  2400/ 2983 batches | lr 5.00 | ms/batch 63.05 | loss  8.20 | ppl  3630.90
+| epoch   3 |  2600/ 2983 batches | lr 5.00 | ms/batch 62.19 | loss  8.22 | ppl  3727.23
+| epoch   3 |  2800/ 2983 batches | lr 5.00 | ms/batch 62.17 | loss  8.36 | ppl  4282.92
+-----------------------------------------------------------------------------------------
+| end of epoch   3 | time: 195.41s | valid loss  7.68 | valid ppl  2154.12
+-----------------------------------------------------------------------------------------
+Pruning Model:
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA 2.041767667752218e-14
+Rounding model with scheme: naive
+transformer_encoder.layers.0.attn.query.flag | nonzeros =   25219 /   40000 ( 63.05%) | total_pruned =   14781 | shape = (200, 200)
+transformer_encoder.layers.0.attn.key.flag | nonzeros =   25079 /   40000 ( 62.70%) | total_pruned =   14921 | shape = (200, 200)
+transformer_encoder.layers.0.attn.value.flag | nonzeros =    8678 /   40000 ( 21.70%) | total_pruned =   31322 | shape = (200, 200)
+transformer_encoder.layers.0.mlp.fc1.flag | nonzeros =   25099 /   40000 ( 62.75%) | total_pruned =   14901 | shape = (200, 200)
+transformer_encoder.layers.0.mlp.fc2.flag | nonzeros =   25040 /   40000 ( 62.60%) | total_pruned =   14960 | shape = (200, 200)
+transformer_encoder.layers.1.attn.query.flag | nonzeros =   25223 /   40000 ( 63.06%) | total_pruned =   14777 | shape = (200, 200)
+transformer_encoder.layers.1.attn.key.flag | nonzeros =   25097 /   40000 ( 62.74%) | total_pruned =   14903 | shape = (200, 200)
+transformer_encoder.layers.1.attn.value.flag | nonzeros =   14759 /   40000 ( 36.90%) | total_pruned =   25241 | shape = (200, 200)
+transformer_encoder.layers.1.mlp.fc1.flag | nonzeros =   24974 /   40000 ( 62.44%) | total_pruned =   15026 | shape = (200, 200)
+transformer_encoder.layers.1.mlp.fc2.flag | nonzeros =   24939 /   40000 ( 62.35%) | total_pruned =   15061 | shape = (200, 200)
+alive: 224107, pruned : 175893, total: 400000, ( 56.03% remained)
+Model avg sparsity: 0.5602675
+| epoch   4 |   200/ 2983 batches | lr 5.00 | ms/batch 63.73 | loss  8.36 | ppl  4291.59
+| epoch   4 |   400/ 2983 batches | lr 5.00 | ms/batch 62.72 | loss  8.39 | ppl  4385.89
+| epoch   4 |   600/ 2983 batches | lr 5.00 | ms/batch 61.55 | loss  8.16 | ppl  3512.62
+| epoch   4 |   800/ 2983 batches | lr 5.00 | ms/batch 61.71 | loss  8.45 | ppl  4694.88
+| epoch   4 |  1000/ 2983 batches | lr 5.00 | ms/batch 63.18 | loss  8.35 | ppl  4223.28
+| epoch   4 |  1200/ 2983 batches | lr 5.00 | ms/batch 62.97 | loss  8.53 | ppl  5084.51
+| epoch   4 |  1400/ 2983 batches | lr 5.00 | ms/batch 62.75 | loss  8.36 | ppl  4253.19
+| epoch   4 |  1600/ 2983 batches | lr 5.00 | ms/batch 61.76 | loss  8.11 | ppl  3343.03
+| epoch   4 |  1800/ 2983 batches | lr 5.00 | ms/batch 61.15 | loss  8.29 | ppl  3980.88
+| epoch   4 |  2000/ 2983 batches | lr 5.00 | ms/batch 62.68 | loss  8.14 | ppl  3435.81
+| epoch   4 |  2200/ 2983 batches | lr 5.00 | ms/batch 62.95 | loss  8.40 | ppl  4463.53
+| epoch   4 |  2400/ 2983 batches | lr 5.00 | ms/batch 62.39 | loss  8.29 | ppl  3996.02
+| epoch   4 |  2600/ 2983 batches | lr 5.00 | ms/batch 61.11 | loss  8.35 | ppl  4239.67
+| epoch   4 |  2800/ 2983 batches | lr 5.00 | ms/batch 60.72 | loss  8.45 | ppl  4694.18
+-----------------------------------------------------------------------------------------
+| end of epoch   4 | time: 195.27s | valid loss  7.88 | valid ppl  2633.69
+-----------------------------------------------------------------------------------------
+Pruning Model:
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA 7.10687195244021e-18
+Rounding model with scheme: naive
+transformer_encoder.layers.0.attn.query.flag | nonzeros =   20714 /   40000 ( 51.78%) | total_pruned =   19286 | shape = (200, 200)
+transformer_encoder.layers.0.attn.key.flag | nonzeros =   20651 /   40000 ( 51.63%) | total_pruned =   19349 | shape = (200, 200)
+transformer_encoder.layers.0.attn.value.flag | nonzeros =    8496 /   40000 ( 21.24%) | total_pruned =   31504 | shape = (200, 200)
+transformer_encoder.layers.0.mlp.fc1.flag | nonzeros =   20819 /   40000 ( 52.05%) | total_pruned =   19181 | shape = (200, 200)
+transformer_encoder.layers.0.mlp.fc2.flag | nonzeros =   20757 /   40000 ( 51.89%) | total_pruned =   19243 | shape = (200, 200)
+transformer_encoder.layers.1.attn.query.flag | nonzeros =   20735 /   40000 ( 51.84%) | total_pruned =   19265 | shape = (200, 200)
+transformer_encoder.layers.1.attn.key.flag | nonzeros =   20656 /   40000 ( 51.64%) | total_pruned =   19344 | shape = (200, 200)
+transformer_encoder.layers.1.attn.value.flag | nonzeros =   14571 /   40000 ( 36.43%) | total_pruned =   25429 | shape = (200, 200)
+transformer_encoder.layers.1.mlp.fc1.flag | nonzeros =   20821 /   40000 ( 52.05%) | total_pruned =   19179 | shape = (200, 200)
+transformer_encoder.layers.1.mlp.fc2.flag | nonzeros =   20689 /   40000 ( 51.72%) | total_pruned =   19311 | shape = (200, 200)
+alive: 188909, pruned : 211091, total: 400000, ( 47.23% remained)
+Model avg sparsity: 0.4722725
+| epoch   5 |   200/ 2983 batches | lr 5.00 | ms/batch 61.68 | loss  8.35 | ppl  4239.79
+| epoch   5 |   400/ 2983 batches | lr 5.00 | ms/batch 63.94 | loss  8.40 | ppl  4460.25
+| epoch   5 |   600/ 2983 batches | lr 5.00 | ms/batch 61.01 | loss  8.13 | ppl  3397.19
+| epoch   5 |   800/ 2983 batches | lr 5.00 | ms/batch 63.01 | loss  8.48 | ppl  4806.13
+| epoch   5 |  1000/ 2983 batches | lr 5.00 | ms/batch 63.01 | loss  8.34 | ppl  4193.42
+| epoch   5 |  1200/ 2983 batches | lr 5.00 | ms/batch 61.67 | loss  8.59 | ppl  5358.54
+| epoch   5 |  1400/ 2983 batches | lr 5.00 | ms/batch 62.67 | loss  8.37 | ppl  4317.60
+| epoch   5 |  1600/ 2983 batches | lr 5.00 | ms/batch 61.59 | loss  8.13 | ppl  3395.11
+| epoch   5 |  1800/ 2983 batches | lr 5.00 | ms/batch 62.74 | loss  8.25 | ppl  3827.33
+| epoch   5 |  2000/ 2983 batches | lr 5.00 | ms/batch 62.66 | loss  8.14 | ppl  3444.38
+| epoch   5 |  2200/ 2983 batches | lr 5.00 | ms/batch 61.22 | loss  8.39 | ppl  4421.59
+| epoch   5 |  2400/ 2983 batches | lr 5.00 | ms/batch 63.32 | loss  8.31 | ppl  4050.37
+| epoch   5 |  2600/ 2983 batches | lr 5.00 | ms/batch 60.65 | loss  8.37 | ppl  4297.51
+| epoch   5 |  2800/ 2983 batches | lr 5.00 | ms/batch 62.14 | loss  8.46 | ppl  4712.14
+-----------------------------------------------------------------------------------------
+| end of epoch   5 | time: 194.90s | valid loss  7.91 | valid ppl  2716.98
+-----------------------------------------------------------------------------------------
+Pruning Model:
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA 2.530343676264186e-21
+Rounding model with scheme: naive
+transformer_encoder.layers.0.attn.query.flag | nonzeros =   17420 /   40000 ( 43.55%) | total_pruned =   22580 | shape = (200, 200)
+transformer_encoder.layers.0.attn.key.flag | nonzeros =   17549 /   40000 ( 43.87%) | total_pruned =   22451 | shape = (200, 200)
+transformer_encoder.layers.0.attn.value.flag | nonzeros =    8484 /   40000 ( 21.21%) | total_pruned =   31516 | shape = (200, 200)
+transformer_encoder.layers.0.mlp.fc1.flag | nonzeros =   17634 /   40000 ( 44.09%) | total_pruned =   22366 | shape = (200, 200)
+transformer_encoder.layers.0.mlp.fc2.flag | nonzeros =   17520 /   40000 ( 43.80%) | total_pruned =   22480 | shape = (200, 200)
+transformer_encoder.layers.1.attn.query.flag | nonzeros =   17447 /   40000 ( 43.62%) | total_pruned =   22553 | shape = (200, 200)
+transformer_encoder.layers.1.attn.key.flag | nonzeros =   17576 /   40000 ( 43.94%) | total_pruned =   22424 | shape = (200, 200)
+transformer_encoder.layers.1.attn.value.flag | nonzeros =   14534 /   40000 ( 36.34%) | total_pruned =   25466 | shape = (200, 200)
+transformer_encoder.layers.1.mlp.fc1.flag | nonzeros =   17776 /   40000 ( 44.44%) | total_pruned =   22224 | shape = (200, 200)
+transformer_encoder.layers.1.mlp.fc2.flag | nonzeros =   17500 /   40000 ( 43.75%) | total_pruned =   22500 | shape = (200, 200)
+alive: 163440, pruned : 236560, total: 400000, ( 40.86% remained)
+Model avg sparsity: 0.4086
+=========================================================================================
+| End of training | test loss  7.84 | test ppl  2542.52
+=========================================================================================
+Switching to weight training by switching off requires_grad for scores and switching it on for weights.
+transformer_encoder.layers.0.attn.query.flag | nonzeros =   17420 /   40000 ( 43.55%) | total_pruned =   22580 | shape = (200, 200)
+transformer_encoder.layers.0.attn.key.flag | nonzeros =   17549 /   40000 ( 43.87%) | total_pruned =   22451 | shape = (200, 200)
+transformer_encoder.layers.0.attn.value.flag | nonzeros =    8484 /   40000 ( 21.21%) | total_pruned =   31516 | shape = (200, 200)
+transformer_encoder.layers.0.mlp.fc1.flag | nonzeros =   17634 /   40000 ( 44.09%) | total_pruned =   22366 | shape = (200, 200)
+transformer_encoder.layers.0.mlp.fc2.flag | nonzeros =   17520 /   40000 ( 43.80%) | total_pruned =   22480 | shape = (200, 200)
+transformer_encoder.layers.1.attn.query.flag | nonzeros =   17447 /   40000 ( 43.62%) | total_pruned =   22553 | shape = (200, 200)
+transformer_encoder.layers.1.attn.key.flag | nonzeros =   17576 /   40000 ( 43.94%) | total_pruned =   22424 | shape = (200, 200)
+transformer_encoder.layers.1.attn.value.flag | nonzeros =   14534 /   40000 ( 36.34%) | total_pruned =   25466 | shape = (200, 200)
+transformer_encoder.layers.1.mlp.fc1.flag | nonzeros =   17776 /   40000 ( 44.44%) | total_pruned =   22224 | shape = (200, 200)
+transformer_encoder.layers.1.mlp.fc2.flag | nonzeros =   17500 /   40000 ( 43.75%) | total_pruned =   22500 | shape = (200, 200)
+alive: 163440, pruned : 236560, total: 400000, ( 40.86% remained)
+Rounding model with scheme: all_ones
+| epoch   6 |   200/ 2983 batches | lr 5.00 | ms/batch 55.95 | loss  7.38 | ppl  1597.19
+| epoch   6 |   400/ 2983 batches | lr 5.00 | ms/batch 56.31 | loss  6.90 | ppl   992.56
+| epoch   6 |   600/ 2983 batches | lr 5.00 | ms/batch 55.99 | loss  6.37 | ppl   584.09
+| epoch   6 |   800/ 2983 batches | lr 5.00 | ms/batch 55.46 | loss  6.65 | ppl   776.23
+| epoch   6 |  1000/ 2983 batches | lr 5.00 | ms/batch 56.04 | loss  6.41 | ppl   607.00
+| epoch   6 |  1200/ 2983 batches | lr 5.00 | ms/batch 55.59 | loss  6.52 | ppl   681.29
+| epoch   6 |  1400/ 2983 batches | lr 5.00 | ms/batch 55.57 | loss  6.48 | ppl   650.86
+| epoch   6 |  1600/ 2983 batches | lr 5.00 | ms/batch 56.36 | loss  6.07 | ppl   430.78
+| epoch   6 |  1800/ 2983 batches | lr 5.00 | ms/batch 55.41 | loss  6.11 | ppl   452.11
+| epoch   6 |  2000/ 2983 batches | lr 5.00 | ms/batch 55.69 | loss  5.96 | ppl   385.83
+| epoch   6 |  2200/ 2983 batches | lr 5.00 | ms/batch 56.27 | loss  5.95 | ppl   384.06
+| epoch   6 |  2400/ 2983 batches | lr 5.00 | ms/batch 55.36 | loss  6.12 | ppl   456.79
+| epoch   6 |  2600/ 2983 batches | lr 5.00 | ms/batch 55.09 | loss  5.96 | ppl   388.21
+| epoch   6 |  2800/ 2983 batches | lr 5.00 | ms/batch 55.87 | loss  5.94 | ppl   378.88
+-----------------------------------------------------------------------------------------
+| end of epoch   6 | time: 186.86s | valid loss  5.81 | valid ppl   335.25
+-----------------------------------------------------------------------------------------
+| epoch   7 |   200/ 2983 batches | lr 5.00 | ms/batch 55.62 | loss  5.80 | ppl   331.52
+| epoch   7 |   400/ 2983 batches | lr 5.00 | ms/batch 55.07 | loss  6.07 | ppl   434.07
+| epoch   7 |   600/ 2983 batches | lr 5.00 | ms/batch 55.34 | loss  5.50 | ppl   244.87
+| epoch   7 |   800/ 2983 batches | lr 5.00 | ms/batch 54.30 | loss  5.89 | ppl   362.14
+| epoch   7 |  1000/ 2983 batches | lr 5.00 | ms/batch 55.65 | loss  5.66 | ppl   287.06
+| epoch   7 |  1200/ 2983 batches | lr 5.00 | ms/batch 55.58 | loss  5.87 | ppl   355.52
+| epoch   7 |  1400/ 2983 batches | lr 5.00 | ms/batch 54.77 | loss  5.84 | ppl   343.00
+| epoch   7 |  1600/ 2983 batches | lr 5.00 | ms/batch 54.79 | loss  5.47 | ppl   237.84
+| epoch   7 |  1800/ 2983 batches | lr 5.00 | ms/batch 55.31 | loss  5.51 | ppl   246.86
+| epoch   7 |  2000/ 2983 batches | lr 5.00 | ms/batch 53.98 | loss  5.40 | ppl   220.37
+| epoch   7 |  2200/ 2983 batches | lr 5.00 | ms/batch 55.16 | loss  5.39 | ppl   218.32
+| epoch   7 |  2400/ 2983 batches | lr 5.00 | ms/batch 55.54 | loss  5.60 | ppl   269.55
+| epoch   7 |  2600/ 2983 batches | lr 5.00 | ms/batch 54.18 | loss  5.58 | ppl   265.19
+| epoch   7 |  2800/ 2983 batches | lr 5.00 | ms/batch 54.31 | loss  5.46 | ppl   234.37
+-----------------------------------------------------------------------------------------
+| end of epoch   7 | time: 184.14s | valid loss  5.57 | valid ppl   263.47
+-----------------------------------------------------------------------------------------
+| epoch   8 |   200/ 2983 batches | lr 5.00 | ms/batch 55.56 | loss  5.31 | ppl   201.58
+| epoch   8 |   400/ 2983 batches | lr 5.00 | ms/batch 54.43 | loss  5.58 | ppl   265.87
+| epoch   8 |   600/ 2983 batches | lr 5.00 | ms/batch 54.78 | loss  5.11 | ppl   165.94
+| epoch   8 |   800/ 2983 batches | lr 5.00 | ms/batch 53.45 | loss  5.52 | ppl   250.07
+| epoch   8 |  1000/ 2983 batches | lr 5.00 | ms/batch 55.35 | loss  5.25 | ppl   191.06
+| epoch   8 |  1200/ 2983 batches | lr 5.00 | ms/batch 55.36 | loss  5.53 | ppl   252.73
+| epoch   8 |  1400/ 2983 batches | lr 5.00 | ms/batch 55.28 | loss  5.58 | ppl   266.03
+| epoch   8 |  1600/ 2983 batches | lr 5.00 | ms/batch 54.11 | loss  5.22 | ppl   185.23
+| epoch   8 |  1800/ 2983 batches | lr 5.00 | ms/batch 55.35 | loss  5.23 | ppl   185.96
+| epoch   8 |  2000/ 2983 batches | lr 5.00 | ms/batch 53.73 | loss  5.10 | ppl   164.18
+| epoch   8 |  2200/ 2983 batches | lr 5.00 | ms/batch 55.36 | loss  5.10 | ppl   163.30
+| epoch   8 |  2400/ 2983 batches | lr 5.00 | ms/batch 56.31 | loss  5.35 | ppl   209.77
+| epoch   8 |  2600/ 2983 batches | lr 5.00 | ms/batch 55.72 | loss  5.41 | ppl   222.64
+| epoch   8 |  2800/ 2983 batches | lr 5.00 | ms/batch 54.48 | loss  5.08 | ppl   160.38
+-----------------------------------------------------------------------------------------
+| end of epoch   8 | time: 181.44s | valid loss  5.48 | valid ppl   239.97
+-----------------------------------------------------------------------------------------
+| epoch   9 |   200/ 2983 batches | lr 1.25 | ms/batch 55.51 | loss  5.05 | ppl   155.50
+| epoch   9 |   400/ 2983 batches | lr 1.25 | ms/batch 55.28 | loss  5.33 | ppl   205.43
+| epoch   9 |   600/ 2983 batches | lr 1.25 | ms/batch 53.93 | loss  4.78 | ppl   118.61
+| epoch   9 |   800/ 2983 batches | lr 1.25 | ms/batch 54.51 | loss  5.26 | ppl   191.98
+| epoch   9 |  1000/ 2983 batches | lr 1.25 | ms/batch 54.70 | loss  4.94 | ppl   140.12
+| epoch   9 |  1200/ 2983 batches | lr 1.25 | ms/batch 55.36 | loss  5.20 | ppl   181.56
+| epoch   9 |  1400/ 2983 batches | lr 1.25 | ms/batch 55.34 | loss  5.12 | ppl   166.99
+| epoch   9 |  1600/ 2983 batches | lr 1.25 | ms/batch 55.18 | loss  4.74 | ppl   114.56
+| epoch   9 |  1800/ 2983 batches | lr 1.25 | ms/batch 53.89 | loss  4.92 | ppl   136.85
+| epoch   9 |  2000/ 2983 batches | lr 1.25 | ms/batch 53.93 | loss  4.78 | ppl   118.79
+| epoch   9 |  2200/ 2983 batches | lr 1.25 | ms/batch 55.41 | loss  4.83 | ppl   124.82
+| epoch   9 |  2400/ 2983 batches | lr 1.25 | ms/batch 59.54 | loss  4.94 | ppl   139.86
+| epoch   9 |  2600/ 2983 batches | lr 1.25 | ms/batch 55.50 | loss  5.02 | ppl   152.14
+| epoch   9 |  2800/ 2983 batches | lr 1.25 | ms/batch 55.91 | loss  4.66 | ppl   105.25
+-----------------------------------------------------------------------------------------
+| end of epoch   9 | time: 181.18s | valid loss  5.34 | valid ppl   208.04
+-----------------------------------------------------------------------------------------
+| epoch  10 |   200/ 2983 batches | lr 1.25 | ms/batch 47.37 | loss  4.90 | ppl   134.11
+| epoch  10 |   400/ 2983 batches | lr 1.25 | ms/batch 50.42 | loss  5.16 | ppl   174.23
+| epoch  10 |   600/ 2983 batches | lr 1.25 | ms/batch 55.43 | loss  4.68 | ppl   107.56
+| epoch  10 |   800/ 2983 batches | lr 1.25 | ms/batch 52.40 | loss  5.15 | ppl   172.61
+| epoch  10 |  1000/ 2983 batches | lr 1.25 | ms/batch 54.90 | loss  4.85 | ppl   127.42
+| epoch  10 |  1200/ 2983 batches | lr 1.25 | ms/batch 55.35 | loss  5.10 | ppl   164.18
+| epoch  10 |  1400/ 2983 batches | lr 1.25 | ms/batch 55.01 | loss  5.02 | ppl   151.94
+| epoch  10 |  1600/ 2983 batches | lr 1.25 | ms/batch 54.89 | loss  4.65 | ppl   104.11
+| epoch  10 |  1800/ 2983 batches | lr 1.25 | ms/batch 54.43 | loss  4.80 | ppl   121.61
+| epoch  10 |  2000/ 2983 batches | lr 1.25 | ms/batch 52.50 | loss  4.66 | ppl   106.05
+| epoch  10 |  2200/ 2983 batches | lr 1.25 | ms/batch 55.41 | loss  4.74 | ppl   114.82
+| epoch  10 |  2400/ 2983 batches | lr 1.25 | ms/batch 55.69 | loss  4.85 | ppl   128.01
+| epoch  10 |  2600/ 2983 batches | lr 1.25 | ms/batch 54.82 | loss  4.92 | ppl   136.44
+| epoch  10 |  2800/ 2983 batches | lr 1.25 | ms/batch 55.13 | loss  4.65 | ppl   104.82
+-----------------------------------------------------------------------------------------
+| end of epoch  10 | time: 180.68s | valid loss  5.32 | valid ppl   205.17
+-----------------------------------------------------------------------------------------
+| epoch  11 |   200/ 2983 batches | lr 1.25 | ms/batch 55.68 | loss  4.77 | ppl   118.31
+| epoch  11 |   400/ 2983 batches | lr 1.25 | ms/batch 55.87 | loss  5.07 | ppl   159.83
+| epoch  11 |   600/ 2983 batches | lr 1.25 | ms/batch 55.78 | loss  4.60 | ppl    99.42
+| epoch  11 |   800/ 2983 batches | lr 1.25 | ms/batch 53.84 | loss  5.05 | ppl   156.23
+| epoch  11 |  1000/ 2983 batches | lr 1.25 | ms/batch 54.04 | loss  4.70 | ppl   109.56
+| epoch  11 |  1200/ 2983 batches | lr 1.25 | ms/batch 55.39 | loss  5.05 | ppl   155.41
+| epoch  11 |  1400/ 2983 batches | lr 1.25 | ms/batch 55.58 | loss  4.96 | ppl   142.67
+| epoch  11 |  1600/ 2983 batches | lr 1.25 | ms/batch 55.80 | loss  4.62 | ppl   101.95
+| epoch  11 |  1800/ 2983 batches | lr 1.25 | ms/batch 55.41 | loss  4.80 | ppl   121.77
+| epoch  11 |  2000/ 2983 batches | lr 1.25 | ms/batch 53.53 | loss  4.63 | ppl   102.50
+| epoch  11 |  2200/ 2983 batches | lr 1.25 | ms/batch 54.61 | loss  4.70 | ppl   110.05
+| epoch  11 |  2400/ 2983 batches | lr 1.25 | ms/batch 55.06 | loss  4.87 | ppl   130.41
+| epoch  11 |  2600/ 2983 batches | lr 1.25 | ms/batch 54.74 | loss  4.87 | ppl   130.19
+| epoch  11 |  2800/ 2983 batches | lr 1.25 | ms/batch 50.51 | loss  4.59 | ppl    98.40
+-----------------------------------------------------------------------------------------
+| end of epoch  11 | time: 178.25s | valid loss  5.32 | valid ppl   203.67
+-----------------------------------------------------------------------------------------
+=========================================================================================
+| End of training | test loss  5.23 | test ppl   186.83
+=========================================================================================
