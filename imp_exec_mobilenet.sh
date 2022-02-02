@@ -2,13 +2,15 @@
 
 # ===== warm short IMP ===== #
 
-subfd="long_warm_imp_mobilenet"
+# subfd="long_warm_imp_mobilenet"
+subfd="no_rewind_long_warm_imp_mobilenet"
 n_gpu=2
 
 python imp_main.py \
 --config configs/imp/mobilenet.yml \
---epochs 6000 \
+--imp-rounds 20 \
 --gpu $n_gpu \
+--imp-no-rewind \
 --subfolder $subfd
 
 # for sanity check

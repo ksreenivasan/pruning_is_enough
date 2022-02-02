@@ -2,12 +2,13 @@
 
 # ===== warm short IMP ===== #
 
-subfd="long_warm_imp_wide_resnet"
+subfd="no_rewind_long_warm_imp_wide_resnet"
 n_gpu=0
 
 python imp_main.py \
 --config configs/imp/wideresnet.yml \
---epochs 3000 \
+--imp-rounds 20 \
+--imp-no-rewind \
 --gpu $n_gpu \
 --subfolder $subfd
 

@@ -2,12 +2,13 @@
 
 # ===== warm short IMP ===== #
 
-subfd="long_warm_imp_vgg_200ep"
+subfd="no_rewind_long_warm_imp_vgg_200ep"
 n_gpu=0
 
 python imp_main.py \
 --config configs/imp/vgg.yml \
---epochs 5000 \
+--imp-rounds 20 \
+--imp-no-rewind \
 --gpu $n_gpu \
 --subfolder $subfd
 

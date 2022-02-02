@@ -2,14 +2,14 @@
 
 # ===== warm short IMP ===== #
 
-subfd="long_warm_imp_tiny_imagenet"
+subfd="no_rewind_long_warm_imp_tiny_imagenet"
 n_gpu=1
 
 python imp_main.py \
 --config configs/imp/resnet18.yml \
---imp-resume-round 20 \
---epochs 6000 \
+--imp-rounds 20 \
 --gpu $n_gpu \
+--imp-no-rewind \
 --subfolder $subfd
 
 # for sanity check

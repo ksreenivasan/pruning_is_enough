@@ -1,14 +1,17 @@
 # ===== warm short IMP ===== #
 
-subfd="short_warm_imp"
+subfd="no_rewind_long_warm_imp"
 n_gpu=1
 
 python imp_main.py \
 --config configs/imp/resnet20.yml \
---imp_rewind_iter 1000 \
+--imp-no-rewind \
+--imp-rounds 20 \
 --gpu $n_gpu \
 --subfolder $subfd
 
+
+:<<BLOCK
 for i in 14 13 7 3 1 0
 do
     python imp_sanity.py \
@@ -18,6 +21,7 @@ do
     --imp-rewind-model results/$subfd/Liu_checkpoint_model_correct.pth \
     --gpu $n_gpu
 done
+BLOCK
 
 
 # IMP

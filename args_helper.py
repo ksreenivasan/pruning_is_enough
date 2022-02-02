@@ -808,6 +808,12 @@ class ArgsHelper:
             help="if set True, we run IMP algorithm without rewinding to previous states"
         )
         parser.add_argument(
+            "--imp-rounds",
+            type=int,
+            default=-1,
+            help="if set > 0, then ignore the epochs statement, and calculate epochs based on rounds * iter / round"
+        )
+        parser.add_argument(
             "--smart_ratio", 
             type=float,
             default=-1

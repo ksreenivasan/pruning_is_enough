@@ -112,7 +112,10 @@ def IMP_train(parser_args, data, device):
         parser_args.imp_resume_round = 0
         mask, mask_bias = None, None
 
-    n_round = parser_args.epochs // parser_args.iter_period  # number of round (number of pruning happens)
+    if parser_args.imp_rounds > 0:
+        n_round = parser_args.imp_rounds
+    else:
+        n_round = parser_args.epochs // parser_args.iter_period  # number of round (number of pruning happens)
     n_epoch = parser_args.iter_period  # number of epoch per round
     print("{} round, each round takes {} epochs".format(n_round, n_epoch))
 
@@ -261,10 +264,10 @@ def IMP_train(parser_args, data, device):
             comp1 = print_nonzeros(model)
         # optimizer, scheduler = get_optimizer_and_scheduler(parser_args)
         optimizer = get_optimizer(parser_args, model)
-        # scheduler = get_scheduler(optimizer, parser_args.lr_policy, gamma=parser_args.lr_gamma)
+        scheduler = get_scheduler(optimizer, parser_args.lr_policy, gamma=parser_args.lr_gamma)
         # NOTE: hard code
-        if n_epoch in [6]:
-            scheduler = get_scheduler(optimizer, parser_args.lr_policy, milestones=[3,], gamma=parser_args.lr_gamma)
+        # if n_epoch in [6]:
+        #     scheduler = get_scheduler(optimizer, parser_args.lr_policy, milestones=[3,], gamma=parser_args.lr_gamma)
         # elif n_epoch == 200: 
             # scheduler = get_scheduler(optimizer, parser_args.lr_policy, milestones=[100, 150], gamma=parser_args.lr_gamma)
 

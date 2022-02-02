@@ -12,6 +12,10 @@ def get_scheduler(optimizer, policy='multistep_lr', milestones=[80, 120], gamma=
         milestones = [50, 80]
         max_epochs = 100
 
+    if parser_args.epochs in [150, 160]:
+        milestones = [80, 120]
+        max_epochs = parser_args.epochs
+
     if parser_args.epochs == 200:
         milestones = [100, 150]
         max_epochs = 200
