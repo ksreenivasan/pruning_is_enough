@@ -56,29 +56,20 @@ BLOCK
 #python main.py --config configs/ep/conv4/conv4_sc_ep.yml 
 
 ## WideResNet28
+# python main.py \
+# --config configs/ep/wideresnet28/wideresnet28_ep_target_sparsity_0_21.yml > wideresnet_ep_21_log 2>&1
+
 :<<BLOCK
 python main.py \
---config configs/hypercube/wideresnet28/wideresnet28_weight_training.yml > wideresnet_wt_log 2>&1
+--config configs/ep/wideresnet28/wideresnet28_ep_target_sparsity_0_02.yml > wideresnet_ep_2_log 2>&1
+
+python main.py \
+--config configs/ep/wideresnet28/wideresnet28_ep_target_sparsity_0_014.yml > wideresnet_ep_014_log 2>&1
+
+python main.py \
+--config configs/ep/wideresnet28/wideresnet28_ep_target_sparsity_0_0059.yml > wideresnet_ep_05_log 2>&1
 BLOCK
 
+python main.py \
+--config configs/hypercube/wideresnet28/wideresnet28_quantized_iter_hc_target_sparsity_0_21_noreg.yml > wideresnet_hc_21_log 2>&1
 
-# Running trials in parallel
-# NOTE: make sure to delete/comment subfolder from the config file or else it may not work
-conf_file="configs/hypercube/wideresnet28/wideresnet28_weight_training.yml"
-log_root="wideresnet28_"
-log_end="_log"
-subfolder_root="wideresnet28_results_trial_"
-
-for trial in 2 3
-do
-    python main.py \
-    --config "$conf_file" \
-    --trial-num $trial \
-    --subfolder "$subfolder_root$trial" > "$log_root$trial$log_end" 2>&1 &
-
-    python main.py \
-    --config "$conf_file" \
-    --trial-num $trial \
-    --invert-sanity-check \
-    --subfolder "invert_$subfolder_root$trial" > "invert_$log_root$trial$log_end" 2>&1 &
-done

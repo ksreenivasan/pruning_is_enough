@@ -64,10 +64,10 @@ BLOCK
 
 # Running trials in parallel
 # NOTE: make sure to delete/comment subfolder from the config file or else it may not work
-conf_file="configs/hypercube/wideresnet28/wideresnet28_weight_training.yml"
-log_root="wideresnet28_"
+conf_file="configs/hypercube/resnet20/resnet20_target_sparsity_50.yml"
+log_root="resnet20_sp50_"
 log_end="_log"
-subfolder_root="wideresnet28_results_trial_"
+subfolder_root="resnet20_sp50_results_trial_"
 
 for trial in 2 3
 do
