@@ -49,6 +49,7 @@ def redraw(model, mask, mask_bias, device, shuffle=False, reinit=False, chg_mask
             elif reinit:
                 init.kaiming_normal_(weight)
             elif not (shuffle and reinit):
+                # then this is just the finetuning, where no change needs to be made to the weight or the mask
                 pass
             else:
                 raise NotImplementedError
