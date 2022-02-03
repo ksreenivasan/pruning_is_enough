@@ -235,11 +235,11 @@ def main():
     if not parser_args.imp_no_rewind:
         pass
         # reinit
-        # sanity_check(parser_args, data, device, shuffle=False, reinit=True, chg_mask=False, chg_weight=False)
+        sanity_check(parser_args, data, device, shuffle=False, reinit=True, chg_mask=False, chg_weight=False)
         # shuffle mask
-        # sanity_check(parser_args, data, device, shuffle=True, reinit=False, chg_mask=True, chg_weight=False)
+        sanity_check(parser_args, data, device, shuffle=True, reinit=False, chg_mask=True, chg_weight=False)
         # shuffle weights
-        # sanity_check(parser_args, data, device, shuffle=True, reinit=False, chg_mask=False, chg_weight=True)
+        sanity_check(parser_args, data, device, shuffle=True, reinit=False, chg_mask=False, chg_weight=True)
 
 
 

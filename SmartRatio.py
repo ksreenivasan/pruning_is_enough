@@ -8,8 +8,6 @@ import copy
 import types
 import math
 
-import pdb
-
 from utils.net_utils import get_layers
 
 # def count_total_parameters(net):
