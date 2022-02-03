@@ -211,12 +211,12 @@ def test_random_subnet(model, data, criterion, parser_args, result_root, smart_r
     # switch to weight training mode (turn on the requires_grad for weight/bias, and turn off the requires_grad for other parameters)
     model = switch_to_wt(model)
     # TODO: temporarily added
-    train, validate, modifier = get_trainer(parser_args)
-    writer = None
-    avg_sparsity = get_model_sparsity(model)
-    acc1, acc5, acc10 = validate(data.val_loader, model, criterion, parser_args, writer, 0)
-    print("sparsity: {}, acc {}".format(avg_sparsity, acc1))
-    return
+    # train, validate, modifier = get_trainer(parser_args)
+    # writer = None
+    # avg_sparsity = get_model_sparsity(model)
+    # acc1, acc5, acc10 = validate(data.val_loader, model, criterion, parser_args, writer, 0)
+    # print("sparsity: {}, acc {}".format(avg_sparsity, acc1))
+    # return
 
     model_filename = result_root + "random_subnet_inited_{}_ckpt.pt".format(parser_args.prune_rate)
     print("Writing init model to {}".format(model_filename))
@@ -228,15 +228,7 @@ def test_random_subnet(model, data, criterion, parser_args, result_root, smart_r
     # TODO: Change this to use finetune() (I think this is possible)
     # Liu: Yes I also think so
     optimizer = get_optimizer(parser_args, model, finetune_flag=True)
-    if parser_args.epochs in [150, 160]:
-        scheduler = get_scheduler(optimizer, parser_args.fine_tune_lr_policy, milestones=[
-                                  80, 120], gamma=0.1)  # NOTE: hard-coded
-    elif parser_args.epochs == 50:
-        scheduler = get_scheduler(optimizer, parser_args.fine_tune_lr_policy, milestones=[
-                                  20, 40], gamma=0.1)  # NOTE: hard-coded
-    else:
-        scheduler = get_scheduler(optimizer, parser_args.fine_tune_lr_policy, milestones=[
-                                  20, 40], gamma=0.1)  # NOTE: hard-coded
+    scheduler = get_scheduler(optimizer, parser_args.fine_tune_lr_policy)
     train, validate, modifier = get_trainer(parser_args)
 
     # check the performance of loaded model (after rounding)
