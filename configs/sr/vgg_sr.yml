@@ -1,0 +1,46 @@
+# subfolder: sr
+algo: 'hc_iter'
+random_subnet: True
+# smart_ratio: 0.98 # 2% sparsity
+
+# Architecture
+arch: vgg16
+
+# ===== Dataset ===== #
+dataset: CIFAR10
+name: vgg_cifar10_sc
+
+# ===== Learning Rate Policy ======== #
+optimizer: sgd
+# doesn't matter
+# lr: 0.1
+# lr_policy: cosine_lr
+fine_tune_lr: 0.1
+fine_tune_lr_policy: multistep_lr # cosine_lr
+fine_tune_wd: 0.0001
+
+# ===== Network training config ===== #
+epochs: 200 #150
+momentum: 0.9
+batch_size: 128 # 256
+bias: False
+
+# ===== Sparsity =========== #
+conv_type: SubnetConv
+bn_type: NonAffineBatchNorm
+init: kaiming_normal # signed_constant
+mode: fan_in
+nonlinearity: relu
+# prune_rate: 0.5
+scale_fan: True
+freeze_weights: True
+
+# ===== Hardware setup ===== #
+workers: 4
+# gpu: 3
+
+# ===== Checkpointing ===== #
+checkpoint_at_prune: True
+
+# ==== sanity check ==== #
+skip_sanity_checks: True

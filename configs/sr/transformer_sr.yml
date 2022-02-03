@@ -1,0 +1,61 @@
+subfolder: transformer
+arch: 'transformer'
+algo: 'hc_iter'
+seed: 42
+random_subnet: True
+# smart_ratio: 0.98 # 2% sparsity
+
+
+# ===== Data ===== #
+data: transformer_data/wikitext-2
+batch_size: 20
+
+# ===== Architecture ===== #
+transformer_nhid: 200
+
+# ===== Training ===== #
+epochs: 6
+optimizer: sgd
+lr: 5.
+lr_policy: multistep_lr
+lr_gamma: 0.25
+wd: 0.0
+
+# ===== Network ===== #
+bias: False 
+conv_type: SubnetConv
+bn_type: NonAffineBatchNorm
+init: signed_constant
+score_init: unif
+scale_fan: False
+
+# ===== Finetune ===== #
+fine_tune_optimizer: sgd
+fine_tune_lr: 5.
+fine_tune_wd: 0.0
+fine_tune_lr_policy: multistep_lr 
+fine_tune_lr_gamma: 0.25
+momentum: 0.
+
+# ===== Sparsity ===== #
+freeze_weights: True
+prune_type: BottomK
+target_sparsity: 0.5
+unflag_before_finetune: True
+iter_period: 1  # 5
+
+# ===== Rounding ===== #
+round: naive 
+noise: True
+noise_ratio: 0
+
+# ===== Quantization ===== #
+hc_quantized: True
+quantize_threshold: 0.5
+
+# ===== Regularization ===== #
+regularization: L2
+lmbda: 0.00001
+
+# ===== Hardware setup ===== #
+workers: 4
