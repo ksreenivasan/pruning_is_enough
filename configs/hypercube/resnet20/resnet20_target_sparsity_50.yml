@@ -1,4 +1,4 @@
-# subfolder: target_sparsity_50
+subfolder: target_sparsity_50
 # random_subnet_per_layer_ratio: []
 # random_subnet: True
 

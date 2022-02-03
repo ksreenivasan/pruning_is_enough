@@ -1,0 +1,36 @@
+# IMP algorithm
+algo: 'imp'
+seed: 42
+
+# Architecture
+arch: ResNet50
+
+# ===== Dataset ===== #
+dataset: TinyImageNet
+
+# ===== Learning Rate Policy ======== #
+optimizer: sgd  #
+lr: 0.1  #
+lr_policy: multistep_lr  #
+lr_gamma: 0.1  #
+nesterov: True
+
+# ===== Network training config ===== #
+iter_period: 150  #
+wd: 0.0005  #
+momentum: 0.9  #
+batch_size: 256  #
+bias: False  # yes
+
+# ===== Sparsity =========== #
+conv_type: SubnetConv
+bn_type: NonAffineBatchNorm  # yes
+prune_rate: 0.2
+init: kaiming_normal  #
+imp_rewind_iter: 1000  #
+
+
+# ===== Hardware setup ===== #
+workers: 4
+# gpu: 2
+

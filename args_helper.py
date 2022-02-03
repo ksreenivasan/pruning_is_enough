@@ -792,7 +792,8 @@ class ArgsHelper:
             help="which iterations to rewind to"
         )
         parser.add_argument(
-            "--imp-resume-round", 
+            "--imp-resume-round",
+            default=-1,
             type=int, 
             help="which round to resume to"
         )
@@ -801,9 +802,22 @@ class ArgsHelper:
             default="short_imp/Liu_checkpoint_model_correct.pth"
         )
         parser.add_argument(
-            "--smart-ratio", 
+            "--imp-no-rewind",
+            action="store_true",
+            default=False,
+            help="if set True, we run IMP algorithm without rewinding to previous states"
+        )
+        parser.add_argument(
+            "--imp-rounds",
+            type=int,
+            default=-1,
+            help="if set > 0, then ignore the epochs statement, and calculate epochs based on rounds * iter / round"
+        )
+        parser.add_argument(
+            "--smart_ratio", 
             type=float,
-            default=-1
+            default=-1,
+            help="the pruning weights in [0, 1]. E.g. smart_ratio = 0.98 will end up with a 2\% weight remaining model"
         )
         parser.add_argument(
             "--bottom-k-on-forward",
@@ -847,6 +861,20 @@ class ArgsHelper:
             default=0,
             help="Use mixed precision or not"
         )
+        parser.add_argument('--transformer_emsize', type=int, default=200,
+                    help='size of word embeddings')
+        parser.add_argument('--transformer_nhid', type=int, default=200,
+                    help='number of hidden units per layer')
+        parser.add_argument('--transformer_nlayers', type=int, default=2,
+                    help='number of layers')
+        parser.add_argument('--transformer_clip', type=float, default=0.25,
+                    help='gradient clipping')
+        parser.add_argument('--transformer_bptt', type=int, default=35,
+                    help='sequence length')
+        parser.add_argument('--transformer_dropout', type=float, default=0.2,
+                    help='dropout applied to layers (0 = no dropout)')
+        parser.add_argument('--transformer_nhead', type=int, default=2,
+                    help='the number of heads in the encoder/decoder of the transformer model')
       
         parser.add_argument(
             "--only-sanity",
