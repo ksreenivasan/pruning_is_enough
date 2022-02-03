@@ -25,15 +25,15 @@ from main_utils import get_model, get_dataset, get_optimizer, switch_to_wt, set_
 from utils.utils import set_seed
 from utils.schedulers import get_scheduler
 
-if parser_args.arch in ['transformer']:
-    from transformer_main_utils import print_nonzeros as print_nonzeros_transformer
-    from transformer_main_utils import train as train_transformer
-    from transformer_main_utils import batchify, evaluate
-    import transformer_data 
-    import transformer_model
-    from utils.builder import get_builder
-    import time
-    import math
+# if parser_args.arch in ['transformer']:
+#     from transformer_main_utils import print_nonzeros as print_nonzeros_transformer
+#     from transformer_main_utils import train as train_transformer
+#     from transformer_main_utils import batchify, evaluate
+#     import transformer_data 
+#     import transformer_model
+#     from utils.builder import get_builder
+#     import time
+#     import math
 
 
 def IMP_train(parser_args, data, device):
@@ -57,6 +57,7 @@ def IMP_train(parser_args, data, device):
 
     # weight initialization
     if parser_args.arch in ['transformer']:
+        # since the transformer code is not ready, just leave the code piece here, it will never go into this branch
         corpus = transformer_data.Corpus(parser_args.data)
         ntokens = len(corpus.dictionary)
         model = transformer_model.TransformerModel(get_builder(), ntokens, parser_args.transformer_emsize, parser_args.transformer_nhead, parser_args.transformer_nhid, parser_args.transformer_nlayers, parser_args.transformer_dropout).to(device)
@@ -222,6 +223,7 @@ def IMP_train(parser_args, data, device):
 
     
     def print_nonzeros(model):
+        # this function assume the mask has already been multiplied to the weights
         nonzero = 0
         total = 0
         for name, p in model.named_parameters():
@@ -287,6 +289,7 @@ def IMP_train(parser_args, data, device):
 
         for idx_epoch in range(n_epoch):  # in total will run total_iter # of iterations, so total_epoch is not accurate
             if parser_args.arch in ['transformer']:
+                # since the transformer code is not ready, just leave the code piece here, it will never go into this branch
                 epoch_start_time = time.time()
                 train_transformer(parser_args, idx_epoch, ntokens, train_data, model, optimizer, criterion, mask, mask_bias)
                 if scheduler is not None:
@@ -380,6 +383,7 @@ def main():
     set_seed(parser_args.seed)
 
     if parser_args.arch in ['transformer']:
+        # since the transformer code is not ready, just leave the code piece here, it will never go into this branch
         data = None
     else:
         data = get_dataset(parser_args)

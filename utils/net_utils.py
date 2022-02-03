@@ -424,7 +424,6 @@ def prune(model, update_thresholds_only=False, update_scores=False):
         # if invert_sanity_check, then threshold is based on sorted scores in descending order, and we prune all scores ABOVE it
         scores_threshold = torch.sort(
             torch.abs(agg_scores), descending=parser_args.invert_sanity_check).values[number_of_weights_to_prune-1].item()
-        print("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA", scores_threshold)
 
         if parser_args.bias:
             bias_scores_threshold = torch.sort(

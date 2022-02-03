@@ -115,7 +115,7 @@ class SubnetConv(nn.Conv2d):
         self.scores_prune_threshold = -np.inf
         self.bias_scores_prune_threshold = -np.inf
         
-        if parser_args.algo in ['hc', 'hc_iter', 'transformer']:
+        if parser_args.algo in ['hc', 'hc_iter']:
             if parser_args.random_subnet:
                 self.scores.data = torch.bernoulli(parser_args.prune_rate * torch.ones_like(self.scores.data))
                 self.bias_scores.data = torch.bernoulli(parser_args.prune_rate * torch.ones_like(self.bias_scores.data))

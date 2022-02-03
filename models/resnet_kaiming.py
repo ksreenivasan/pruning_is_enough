@@ -49,6 +49,9 @@ class BasicBlock(nn.Module):
 
 class ResNet(nn.Module):
     def __init__(self, builder, block, num_blocks, times=1):
+        # the times is added, because in smart ratio paper, by default they use twice the channel as standard implementation.
+        # so to reproduce the result in their paper, we create this resnet32_double, and set times=2 here
+        # by default times is always 1.
         super(ResNet, self).__init__()
         self.in_planes = 16 * times
         self.builder = builder

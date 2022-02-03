@@ -122,9 +122,9 @@ def train(train_loader, model, criterion, optimizer, epoch, args, writer, scaler
 def validate(val_loader, model, criterion, args, writer, epoch):
     batch_time = AverageMeter("Time", ":6.3f", write_val=False)
     losses = AverageMeter("Loss", ":.3f", write_val=False)
-    top1 = AverageMeter("Acc@1", ":6.4f", write_val=False)
-    top5 = AverageMeter("Acc@5", ":6.4f", write_val=False)
-    top10 = AverageMeter("Acc@10", ":6.4f", write_val=False)
+    top1 = AverageMeter("Acc@1", ":6.2f", write_val=False)
+    top5 = AverageMeter("Acc@5", ":6.2f", write_val=False)
+    top10 = AverageMeter("Acc@10", ":6.2f", write_val=False)
     progress = ProgressMeter(
         len(val_loader), [batch_time, losses, top1, top5, top10], prefix="Test: "
     )

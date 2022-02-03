@@ -75,6 +75,7 @@ def redraw(model, mask, mask_bias, device, shuffle=False, reinit=False, chg_mask
                 elif reinit:
                     init.kaiming_normal_(weight)
                 elif not (shuffle and reinit):
+                    # then this is just the finetuning, where no change needs to be made to the weight or the mask
                     pass
                 else:
                     raise NotImplementedError
@@ -233,7 +234,7 @@ def main():
     # finetune: all False
     sanity_check(parser_args, data, device, shuffle=False, reinit=False, chg_mask=False, chg_weight=False)
     if not parser_args.imp_no_rewind:
-        pass
+        # then do the sanity check
         # reinit
         sanity_check(parser_args, data, device, shuffle=False, reinit=True, chg_mask=False, chg_weight=False)
         # shuffle mask
