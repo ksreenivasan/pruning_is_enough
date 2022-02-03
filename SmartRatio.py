@@ -29,11 +29,11 @@ from utils.net_utils import get_layers
 def SmartRatio(model, sr_args, parser_args):
     ## TODO: current method assumes we are not using bias. We need to add lines for bias_scores, bias_flag, bias... 
 
-    if 'vgg' in parser_args.arch:
+    if 'vgg' in parser_args.arch.lower():
         resnet_flag = False
-    elif 'resnet' in parser_args.arch or 'Resnet' in parser_args.arch or 'ResNet' in parser_args.arch:
+    elif 'resnet' in parser_args.arch.lower():
         resnet_flag = True
-    elif 'transformer' in parser_args.arch or 'Mobile' in parser_args.arch:
+    elif 'transformer' in parser_args.arch.lower() or 'mobile' in parser_args.arch.lower():
         resnet_flag = True  # NOTE: hard code
     else:
         raise NotImplementedError("Smart Ratio only works for vgg and resnet")
@@ -119,7 +119,7 @@ def SmartRatio(model, sr_args, parser_args):
 
         print(layer_idx, torch.sum(layer.flag.data)/layer.flag.data.view(-1).size()[0])
     """
-    # Liu: modify this part to have exact number per layer (instead of Bernoulli sampling)
+    # This part is modified to have exact number per layer (instead of Bernoulli sampling)
     layer_idx = 0
     conv_layers, linear_layers = get_layers(arch=parser_args.arch, model=model)
     for layer in conv_layers:

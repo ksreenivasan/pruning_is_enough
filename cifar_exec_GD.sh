@@ -75,7 +75,6 @@ python main.py --config configs/hypercube/mobilenetV2/sparsity_20_3lam6.yml > lo
 
 
 ### ResNet-20
-<<<<<<< HEAD
 #python main.py --config configs/ep/resnet20/resnet20_sc_ep.yml 
 #TODO: add global_ep yml here
 #python main.py --config configs/ep/resnet20/resnet20_global_ep_iter.yml #> cifar_log 2>&1
@@ -85,9 +84,6 @@ python main.py --config configs/hypercube/mobilenetV2/sparsity_20_3lam6.yml > lo
 #python main.py --config configs/sr/resnet20/resnet20_sr.yml # ResNet-20
 #python main.py --config configs/sr/resnet32/resnet32_sr.yml # ResNet-32
 #python main.py --config configs/training/resnet20/cifar10_resnet20_training.yml
-=======
-python main.py --config configs/training/resnet20/cifar10_resnet20_training.yml
->>>>>>> master
 #python main.py --config configs/hypercube/resnet20/error_bar/resnet20_sparsity_3_72_t1.yml #> log_hc_sparsity_3_72_t1 2>&1
 
 

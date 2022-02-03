@@ -29,7 +29,7 @@ class ArgsHelper:
         )
         parser.add_argument(
             "--config",
-            default='configs/sr/resnet20/resnet20_sr.yml', #'configs/hypercube/transformer/transformer_base.yml',
+            default='configs/hypercube/resnet20/resnet20_quantized_iter_hc_target_sparsity_1_4_highreg.yml',
             help="Config file to use"
         )
         parser.add_argument(
@@ -816,7 +816,8 @@ class ArgsHelper:
         parser.add_argument(
             "--smart_ratio", 
             type=float,
-            default=-1
+            default=-1,
+            help="the pruning weights in [0, 1]. E.g. smart_ratio = 0.98 will end up with a 2\% weight remaining model"
         )
         parser.add_argument(
             "--bottom-k-on-forward",
