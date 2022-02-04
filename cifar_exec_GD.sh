@@ -31,7 +31,7 @@ n_gpu=2
 subfolder=find_SRv3_sp_1_44
 python main.py \
     --config $config_file \
-    --target_sparsity 1.44 \
+    --target-sparsity 1.44 \
     --subfolder $subfolder \
     --gpu $n_gpu
 

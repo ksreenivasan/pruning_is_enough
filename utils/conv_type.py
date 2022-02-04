@@ -67,6 +67,7 @@ class GetSubnet(autograd.Function):
             bias_out = torch.bernoulli(bias_scores)
 
         elif parser_args.algo == 'pt_sr':
+            #import pdb; pdb.set_trace()
             scores = torch.clamp(scores, 0, 1)
             bias_scores = torch.clamp(bias_scores, 0, 1)
             out = torch.bernoulli(scores)
@@ -111,11 +112,19 @@ class SubnetConv(nn.Conv2d):
 
         # initialize the layer_score (scalar) or score vector
         if parser_args.algo == 'pt_sr':
+            #import pdb; pdb.set_trace()
             if parser_args.arch.lower() == 'resnet20':
-                self.layer_score = nn.Parameter(torch.Tensor([parser_args.init_sr[parser_args.current_layer]])) # load pre-defined initial smart ratio
+                #self.layer_score = nn.Parameter(torch.Tensor([parser_args.init_sr[parser_args.current_layer]]))
+                self.layer_score = nn.Parameter(torch.Tensor([parser_args.init_sr[parser_args.current_layer]]).to("cuda:{}".format(parser_args.gpu))) # load pre-defined initial smart ratio
                 parser_args.current_layer += 1
             else:
                 raise NotImplementedError
+            self.scores = torch.Tensor(self.weight.size())
+            if parser_args.bias:
+                self.bias_scores = torch.Tensor(self.bias.size())
+            else:
+                # dummy variable just so other things don't break
+                self.bias_scores = torch.Tensor(1)
         else:
             self.scores = nn.Parameter(torch.Tensor(self.weight.size()))
             if parser_args.bias:
@@ -124,8 +133,6 @@ class SubnetConv(nn.Conv2d):
                 # dummy variable just so other things don't break
                 self.bias_scores = nn.Parameter(torch.Tensor(1))
         
-        
-
         # prune scores below this for global EP in bottom-k
         self.scores_prune_threshold = -np.inf
         self.bias_scores_prune_threshold = -np.inf
@@ -154,11 +161,12 @@ class SubnetConv(nn.Conv2d):
                 m = Beta(torch.ones_like(self.bias_scores.data)*alpha, torch.ones_like(self.bias_scores.data)*beta)
                 self.bias_scores.data = m.sample()
         elif parser_args.algo in ['pt_sr']:
-            self.scores = self.layer_score * torch.ones_like(self.weight)
+            #self.scores.data = self.layer_score.data * torch.ones_like(self.weight.to("cuda:{}".format(parser_args.gpu)))
+            self.scores = self.layer_score * torch.ones_like(self.weight.to("cuda:{}".format(parser_args.gpu)))
             if parser_args.bias:
-                self.bias_scores = self.layer_score * torch.ones_like(self.bias)
+                self.bias_scores.data = self.layer_score.data * torch.ones_like(self.bias)
             else:
-                self.bias_scores = torch.Tensor(1)
+                self.bias_scores.data = self.layer_score.data
         else:
             nn.init.kaiming_uniform_(self.scores, a=math.sqrt(5))
             nn.init.uniform_(self.bias_scores, a=-1.0, b=1.0) # can't do kaiming here. picking U[-1, 1] for no real reason
