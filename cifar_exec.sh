@@ -69,17 +69,16 @@ log_root="pt_sr_debug_"
 log_end="_log"
 subfolder_root="pt_sr_debug_"
 
-#for trial in 1
-#do
-trial=1
-python main.py \
---config "$conf_file" \
---trial-num $trial \
---subfolder "$subfolder_root$trial" # > "$log_root$trial$log_end" 2>&1
+for trial in 1
+do
+    python main.py \
+    --config "$conf_file" \
+    --trial-num $trial \
+    --subfolder "$subfolder_root$trial" > "$log_root$trial$log_end" 2>&1
 
-#    python main.py \
-#    --config "$conf_file" \
-#    --trial-num $trial \
-#    --invert-sanity-check \
-#    --subfolder "invert_$subfolder_root$trial" > "invert_$log_root$trial$log_end" 2>&1 &
-#done
+    #    python main.py \
+    #    --config "$conf_file" \
+    #    --trial-num $trial \
+    #    --invert-sanity-check \
+    #    --subfolder "invert_$subfolder_root$trial" > "invert_$log_root$trial$log_end" 2>&1 &
+done
