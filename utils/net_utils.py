@@ -49,7 +49,13 @@ def get_layers(arch='Conv4', model=None):
                     conv_layers.append(layer[basic_block_id].shortcut[0])
                 '''
         linear_layers = [model.fc]
-
+    elif arch in ['resnet32', 'resnet32_double']:
+        conv_layers = [model.conv1]
+        for layer in [model.layer1, model.layer2, model.layer3]:
+            for basic_block_id in [0, 1, 2, 3, 4]:
+                conv_layers.append(layer[basic_block_id].conv1)
+                conv_layers.append(layer[basic_block_id].conv2)
+        linear_layers = [model.fc]
     elif arch == 'cResNet18':
         conv_layers = [model.conv1]
         for layer in [model.layer1, model.layer2, model.layer3, model.layer4]:
@@ -80,7 +86,6 @@ def get_layers(arch='Conv4', model=None):
                 # if len(layer[basic_block_id].shortcut) > 0:
                 #     conv_layers.append(layer[basic_block_id].shortcut[0])
         linear_layers = [model.fc]
-
     elif arch == 'ResNet101':
         conv_layers = [model.conv1]
         for layer in [model.layer1, model.layer2, model.layer3, model.layer4]:
@@ -90,7 +95,6 @@ def get_layers(arch='Conv4', model=None):
                 conv_layers.append(layer[basic_block_id].conv3)
 
         linear_layers = [model.fc]
-
 
     elif arch == 'vgg16':
         conv_layers = []
@@ -111,6 +115,17 @@ def get_layers(arch='Conv4', model=None):
                 if layer[basic_block_id].convShortcut:
                     conv_layers.append(layer[basic_block_id].convShortcut)
         linear_layers = [model.fc]
+    
+    elif arch == 'transformer':
+        conv_layers = []
+        linear_layers = []
+        for layer in model.transformer_encoder.layers:
+            linear_layers.append(layer.attn.query)
+            linear_layers.append(layer.attn.key)
+            linear_layers.append(layer.attn.value)
+            linear_layers.append(layer.mlp.fc1)
+            linear_layers.append(layer.mlp.fc2)
+        # linear_layers.append(model.decoder)
     return (conv_layers, linear_layers)
 
 
@@ -341,7 +356,6 @@ def round_model(model, round_scheme, noise=False, ratio=0.0, rank=None):
 
 
 """
-# @deprecated
 def get_score_sparsity_hc(model):
     sparsity = []
     numer = 0
@@ -426,10 +440,10 @@ def prune(model, update_thresholds_only=False, update_scores=False):
         else:
             for layer in (conv_layers + linear_layers):
                 if parser_args.invert_sanity_check:
-                    layer.flag.data = (layer.flag.data + torch.lt(layer.scores,
+                    layer.flag.data = (layer.flag.data + torch.lt(layer.scores.abs(),  # TODO
                                        torch.ones_like(layer.scores)*scores_threshold).int() == 2).int()
                 else:
-                    layer.flag.data = (layer.flag.data + torch.gt(layer.scores,
+                    layer.flag.data = (layer.flag.data + torch.gt(layer.scores.abs(),  # TODO
                                        torch.ones_like(layer.scores)*scores_threshold).int() == 2).int()
                 if update_scores:
                     layer.scores.data = layer.scores.data * layer.flag.data
@@ -497,7 +511,7 @@ def get_layer_sparsity(layer, threshold=0):
         # assume the model is rounded, compute effective scores
         eff_scores = layer.scores * layer.flag
         if parser_args.bias:
-            eff_bias = layer.bias_scores * layer.bias_flag
+            eff_bias_scores = layer.bias_scores * layer.bias_flag
         num_middle = torch.sum(torch.gt(eff_scores,
                                torch.ones_like(eff_scores)*threshold) *
                                torch.lt(eff_scores,

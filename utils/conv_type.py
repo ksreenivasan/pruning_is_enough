@@ -163,7 +163,7 @@ class SubnetConv(nn.Conv2d):
         return self.scores.abs()
 
     def forward(self, x):
-        if parser_args.algo in ['hc', 'hc_iter']:
+        if parser_args.algo in ['hc', 'hc_iter', 'transformer']:
             # don't need a mask here. the scores are directly multiplied with weights
             if parser_args.differentiate_clamp:
                 self.scores.data = torch.clamp(self.scores.data, 0.0, 1.0)
