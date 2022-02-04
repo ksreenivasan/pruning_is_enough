@@ -99,16 +99,19 @@ class GetSubnet(autograd.Function):
 
 class GetRandomSubnet(autograd.Function):
     @staticmethod
-    def forward(ctx, layer_weight_ratio, layer_bias_ratio, weights):
+    def forward(ctx, layer_weight_ratio, layer_bias_ratio, weights, bias):
         out = torch.bernoulli(layer_weight_ratio * torch.ones_like(weights))
-        bias_out = torch.bernoulli(layer_bias_ratio * torch.ones_like(weights))
+        if parser_args.bias:
+            bias_out = torch.bernoulli(layer_bias_ratio * torch.ones_like(bias))
+        else:
+            bias_out = torch.Tensor([0])
 
         return out, bias_out
 
     @staticmethod
     def backward(ctx, g_1, g_2):
         # send the gradient g straight-through on the backward pass.
-        return g_1, g_2, None
+        return g_1, g_2, None, None
 
 
 # Not learning weights, finding subnet
@@ -135,7 +138,7 @@ class SubnetConv(nn.Conv2d):
         if parser_args.algo == 'pt_sr':
             #self.layer_score = nn.Parameter(torch.Tensor([parser_args.init_sr[parser_args.current_layer]]))
             self.layer_weight_ratio = nn.Parameter(torch.Tensor(1))
-            self.layer_weight_ratio = 0.5
+            self.layer_weight_ratio.data = torch.Tensor([0.5])
             # do this in a better way. until then, let it be 0.5
             # self.layer_weight_ratio.data = parser_args.init_sr[parser_args.current_layer]
             # parser_args.current_layer += 1
@@ -149,9 +152,9 @@ class SubnetConv(nn.Conv2d):
 
             # no gradients for scores anymore
             self.scores.data = torch.ones_like(self.scores)
-            self.bias_scores = torch.ones_like(self.bias_scores)
             self.scores.requires_grad = False
             if parser_args.bias:
+                self.bias_scores = torch.ones_like(self.bias_scores)
                 self.bias_scores.requires_grad = False
         
         # prune scores below this for global EP in bottom-k
@@ -181,13 +184,6 @@ class SubnetConv(nn.Conv2d):
                 self.scores.data = m.sample()
                 m = Beta(torch.ones_like(self.bias_scores.data)*alpha, torch.ones_like(self.bias_scores.data)*beta)
                 self.bias_scores.data = m.sample()
-        elif parser_args.algo in ['pt_sr']:
-            #self.scores.data = self.layer_score.data * torch.ones_like(self.weight.to("cuda:{}".format(parser_args.gpu)))
-            self.scores = self.layer_score * torch.ones_like(self.weight.to("cuda:{}".format(parser_args.gpu)))
-            if parser_args.bias:
-                self.bias_scores.data = self.layer_score.data * torch.ones_like(self.bias)
-            else:
-                self.bias_scores.data = self.layer_score.data
         else:
             nn.init.kaiming_uniform_(self.scores, a=math.sqrt(5))
             nn.init.uniform_(self.bias_scores, a=-1.0, b=1.0) # can't do kaiming here. picking U[-1, 1] for no real reason
@@ -232,7 +228,7 @@ class SubnetConv(nn.Conv2d):
         elif parser_args.algo in ['global_ep', 'global_ep_iter']:
             subnet, bias_subnet = GetSubnet.apply(self.scores.abs(), self.bias_scores.abs(), 0, self.scores_prune_threshold, self.bias_scores_prune_threshold)
         elif parser_args.algo in ['pt_sr']:
-            subnet, bias_subnet = GetRandomSubnet.apply(self.layer_weight_ratio, self.layer_bias_ratio, self.weight)
+            subnet, bias_subnet = GetRandomSubnet.apply(self.layer_weight_ratio, self.layer_bias_ratio, self.weight, self.bias)
         else:
             # ep, global_ep, global_ep_iter, pt, pt_sr etc
             subnet, bias_subnet = GetSubnet.apply(self.scores.abs(), self.bias_scores.abs(), parser_args.prune_rate)
@@ -247,7 +243,6 @@ class SubnetConv(nn.Conv2d):
                 b = self.bias * bias_subnet
             else:
                 b = self.bias
-        
         x = F.conv2d(
             x, w, b, self.stride, self.padding, self.dilation, self.groups
         )

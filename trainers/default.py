@@ -79,6 +79,7 @@ def train(train_loader, model, criterion, optimizer, epoch, args, writer, scaler
         loss += regularization_loss
 
         # measure accuracy and record loss
+        # import ipdb; ipdb.set_trace()
         acc1, acc5, acc10 = accuracy(output, target, topk=(1, 5, 10))
         losses.update(loss.item(), images.size(0))
         top1.update(acc1.item(), images.size(0))

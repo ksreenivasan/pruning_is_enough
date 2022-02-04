@@ -33,7 +33,7 @@ mode: fan_in
 nonlinearity: relu
 scale_fan: False
 freeze_weights: True
-#target_sparsity: 1.44
+target_sparsity: 1.44
 
 # ===== Hardware setup ===== #
 workers: 4
