@@ -87,7 +87,25 @@ def SmartRatio(model, sr_args, parser_args):
     scale = (num_weights * keep_ratio - lin_term) / conv_term
     p_arr[:-1] = scale * np.array(p_arr[:-1])
     print("p_arr", p_arr)
-    #print(sum(p_arr))
+    print(sum(p_arr))
+
+    # if we use modified version of smart ratio
+    if parser_args.sr_version == 2:
+        if parser_args.arch.lower() != 'resnet20':
+            raise NotImplementedError
+
+        # followed the result in https://github.com/ksreenivasan/results_repo_pruning/blob/master/per_layer_sparsity_resnet20/hc_iter.csv
+        if parser_args.smart_ratio == 0.9856: # 1.44% sparsity
+            p_arr[0], p_arr[-1] = 0.3449074074074074, 0.259375 
+
+        elif parser_args.smart_ratio == 0.9628: # 3.72% sparsity
+            p_arr[0], p_arr[-1] = 0.4143518518518518, 0.546875
+
+        else:
+            raise NotImplementedError
+
+    print("p_arr", p_arr)
+    print(sum(p_arr))
 
     # sometimes, if the prune_ratio is too small, some layer's keep ratio may be larger than 1
     ExtraNum = 0
@@ -108,6 +126,8 @@ def SmartRatio(model, sr_args, parser_args):
         if ExtraNum == 0:
             break
 
+    print("p_arr", p_arr)
+    print(sum(p_arr))
 
     # 4. Randomly set the mask of each layer 
     """

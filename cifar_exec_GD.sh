@@ -1,11 +1,49 @@
 
+# SRv1
+#config_file="configs/sr/resnet20/resnet20_sr.yml"
+#subfolder=tmp
+
+# SRv2, SRv3
+config_file="configs/sr/resnet20/resnet20_srV2.yml"
+n_gpu=2
+subfolder=SRv2_sp_3_72
+
+
+:<<BLOCK
+python main.py \
+    --config $config_file \
+    --smart_ratio 0.9856 \
+    --subfolder $subfolder \
+    --gpu $n_gpu
+BLOCK
+
+python main.py \
+    --config $config_file \
+    --smart_ratio 0.9628 \
+    --subfolder $subfolder \
+    --gpu $n_gpu
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 # Running trials in parallel
+:<<BLOCK
 conf_file="configs/ablation_hc/resnet20_1_4_normal.yml"
 log_root="hc_resnet20_1_4_"
 log_end="_log"
 subfolder_root="hc_resnet20_1_4_results_"
 
-#:<<BLOCK
 for trial in 2
 do
     python main.py \
@@ -16,10 +54,10 @@ do
 #    --config "$conf_file" --subfolder "invert_$subfolder_root$trial" \
 #    --trial-num "$trial" --invert-sanity-check --skip-sanity-checks > "invert_$log_root$trial$log_end" 2>&1 &
 done
-#BLOCK
+BLOCK
 
 
-
+:<<BLOCK
 conf_file="configs/ablation_hc/resnet20_1_4_unflag_False.yml"
 log_root="hc_resnet20_1_4_unflag_False_"
 log_end="_log"
@@ -31,7 +69,7 @@ do
     --config "$conf_file" --subfolder "$subfolder_root$trial" \
     --trial-num "$trial" > "$log_root$trial$log_end" 2>&1 #&
 done
-
+BLOCK
 
 
 
