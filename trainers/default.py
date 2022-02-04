@@ -49,9 +49,9 @@ def train(train_loader, model, criterion, optimizer, epoch, args, writer, scaler
         if args.algo in ['global_ep', 'global_ep_iter']:
             prune(model, update_thresholds_only=True)
 
-        if args.algo in ['hc', 'hc_iter', 'pt'] and i % args.project_freq == 0 and not args.differentiate_clamp:
+        if args.algo in ['hc', 'hc_iter', 'pt', 'pt_sr'] and i % args.project_freq == 0 and not args.differentiate_clamp:
             for name, params in model.named_parameters():
-                if "score" in name:
+                if "score" in name or "layer_weight_ratio" in name or "layer_bias_ratio" in name:
                     scores = params
                     with torch.no_grad():
                         scores.data = torch.clamp(scores.data, 0.0, 1.0)
@@ -79,7 +79,6 @@ def train(train_loader, model, criterion, optimizer, epoch, args, writer, scaler
         loss += regularization_loss
 
         # measure accuracy and record loss
-        # import ipdb; ipdb.set_trace()
         acc1, acc5, acc10 = accuracy(output, target, topk=(1, 5, 10))
         losses.update(loss.item(), images.size(0))
         top1.update(acc1.item(), images.size(0))
@@ -110,9 +109,9 @@ def train(train_loader, model, criterion, optimizer, epoch, args, writer, scaler
     # update score thresholds for global ep
     if args.algo in ['global_ep', 'global_ep_iter']:
         prune(model, update_thresholds_only=True)
-    if args.algo in ['hc', 'hc_iter', 'pt'] and not args.differentiate_clamp:
+    if args.algo in ['hc', 'hc_iter', 'pt', 'pt_sr'] and not args.differentiate_clamp:
         for name, params in model.named_parameters():
-            if "score" in name:
+            if "score" in name or "layer_weight_ratio" in name or "layer_bias_ratio" in name:
                 scores = params
                 with torch.no_grad():
                     scores.data = torch.clamp(scores.data, 0.0, 1.0)
