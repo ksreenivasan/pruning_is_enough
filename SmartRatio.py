@@ -86,8 +86,8 @@ def SmartRatio(model, sr_args, parser_args):
     print("conv_term:", conv_term, "lin_term:", lin_term)
     scale = (num_weights * keep_ratio - lin_term) / conv_term
     p_arr[:-1] = scale * np.array(p_arr[:-1])
-    print("p_arr", p_arr)
-    print(sum(p_arr))
+    #print("p_arr", p_arr)
+    #print(sum(p_arr))
 
     # if we use modified version of smart ratio
     if parser_args.sr_version >= 2:    
@@ -107,8 +107,8 @@ def SmartRatio(model, sr_args, parser_args):
             raise NotImplementedError
     
 
-    print("p_arr", p_arr)
-    print(sum(p_arr))
+    #print("p_arr", p_arr)
+    #print(sum(p_arr))
 
     # sometimes, if the prune_ratio is too small, some layer's keep ratio may be larger than 1
     ExtraNum = 0

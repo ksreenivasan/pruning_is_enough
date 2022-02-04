@@ -46,6 +46,8 @@ def main_worker(gpu, ngpus_per_node):
 
     if not os.path.isdir(result_root):
         os.mkdir(result_root)
+    if parser_args.algo == 'pt_sr':
+        init_smart_ratio(parser_args)        
     model = get_model(parser_args)
     print_model(model, parser_args)
 
