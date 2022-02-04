@@ -90,19 +90,22 @@ def SmartRatio(model, sr_args, parser_args):
     print(sum(p_arr))
 
     # if we use modified version of smart ratio
-    if parser_args.sr_version == 2:
+    if parser_args.sr_version >= 2:    
         if parser_args.arch.lower() != 'resnet20':
             raise NotImplementedError
-
-        # followed the result in https://github.com/ksreenivasan/results_repo_pruning/blob/master/per_layer_sparsity_resnet20/hc_iter.csv
-        if parser_args.smart_ratio == 0.9856: # 1.44% sparsity
-            p_arr[0], p_arr[-1] = 0.3449074074074074, 0.259375 
-
-        elif parser_args.smart_ratio == 0.9628: # 3.72% sparsity
-            p_arr[0], p_arr[-1] = 0.4143518518518518, 0.546875
-
+        if parser_args.sr_version == 2:
+            # followed the result in https://github.com/ksreenivasan/results_repo_pruning/blob/master/per_layer_sparsity_resnet20/hc_iter.csv
+            if parser_args.smart_ratio == 0.9856: # 1.44% sparsity
+                p_arr[0], p_arr[-1] = 0.3449074074074074, 0.259375 
+            elif parser_args.smart_ratio == 0.9628: # 3.72% sparsity
+                p_arr[0], p_arr[-1] = 0.4143518518518518, 0.546875
+            else:
+                raise NotImplementedError
+        elif parser_args.sr_version == 3:
+            raise NotImplementedError
         else:
             raise NotImplementedError
+    
 
     print("p_arr", p_arr)
     print(sum(p_arr))

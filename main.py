@@ -74,7 +74,7 @@ def main_worker(gpu, ngpus_per_node):
         #     model = model.module
     if parser_args.random_subnet: 
         test_random_subnet(model, data, criterion, parser_args, result_root, parser_args.smart_ratio) 
-        return
+        exit()
         
 
     best_acc1, best_acc5, best_acc10, best_train_acc1, best_train_acc5, best_train_acc10 = 0.0, 0.0, 0.0, 0.0, 0.0, 0.0

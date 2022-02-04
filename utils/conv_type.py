@@ -111,6 +111,9 @@ class SubnetConv(nn.Conv2d):
             # dummy variable just so other things don't break
             self.bias_scores = nn.Parameter(torch.Tensor(1))
         
+        # initialize the random 
+
+
         # prune scores below this for global EP in bottom-k
         self.scores_prune_threshold = -np.inf
         self.bias_scores_prune_threshold = -np.inf
