@@ -85,6 +85,7 @@ def train(train_loader, model, criterion, optimizer, epoch, args, writer, scaler
         top5.update(acc5.item(), images.size(0))
         top10.update(acc10.item(), images.size(0))
 
+        print("I am here")
         # compute gradient and do SGD step
         optimizer.zero_grad()
         if scaler is None:
