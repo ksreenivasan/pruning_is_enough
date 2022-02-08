@@ -13,7 +13,7 @@ name: resnet20_cifar10_sc
 
 # ===== Learning Rate Policy ======== #
 optimizer: sgd
-lr: 0.0000001
+lr: 0.000001 #0.0000001
 lr_policy: cosine_lr
 #fine_tune_lr: 0.1
 #fine_tune_lr_policy: multistep_lr # cosine_lr

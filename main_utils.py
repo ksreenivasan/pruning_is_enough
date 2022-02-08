@@ -34,6 +34,7 @@ from utils.net_utils import (
     LabelSmoothing,
     round_model,
     get_model_sparsity,
+    save_layerwise_sparsity,
     prune,
     redraw,
     get_layers,

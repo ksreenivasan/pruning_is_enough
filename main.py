@@ -135,6 +135,7 @@ def main_worker(gpu, ngpus_per_node):
         return
 
 
+    sparsity_df = pd.DataFrame()     # save the sparsity pattern (for pt_sr)
     # Start training
     for epoch in range(parser_args.start_epoch, parser_args.epochs):
         if parser_args.multiprocessing_distributed:
@@ -203,6 +204,10 @@ def main_worker(gpu, ngpus_per_node):
                 cp_model = round_model(model, parser_args.round, noise=parser_args.noise,
                                        ratio=parser_args.noise_ratio, rank=parser_args.gpu)
                 avg_sparsity = get_model_sparsity(cp_model)
+            elif parser_args.algo in ['pt_sr']:
+                avg_sparsity = get_model_sparsity(model)
+                if epoch in [1, 10, 30, 70, parser_args.epochs - 1]:
+                    save_layerwise_sparsity(model, epoch, sparsity_df)
             else:
                 avg_sparsity = get_model_sparsity(model)
         else:
@@ -280,6 +285,10 @@ def main_worker(gpu, ngpus_per_node):
 
     # save checkpoint before fine-tuning
     torch.save(model.state_dict(), result_root + 'model_before_finetune.pth')
+
+    # save trained sparsity pattern for pt_sr
+    if parser_args.algo in ['pt_sr']:
+        sparsity_df.to_csv(result_root + 'sparsity_pattern.csv', index=False)
 
     # finetune weights
     cp_model = copy.deepcopy(model)

@@ -113,8 +113,8 @@ def SmartRatio(model, sr_args, parser_args):
             raise NotImplementedError
 
         root = 'per_layer_sparsity_resnet20/'
+        hc = pd.read_csv(root + 'hc_iter.csv')
         if parser_args.sr_version == 2:
-            hc = pd.read_csv(root + 'hc_iter.csv')
             if parser_args.smart_ratio == 0.9856: # 1.44% sparsity 
                 p_arr[0], p_arr[-1] = hc['1_4'].array[0]/100, hc['1_4'].array[-1]/100
             elif parser_args.smart_ratio == 0.9628: # 3.72% sparsity
@@ -122,12 +122,20 @@ def SmartRatio(model, sr_args, parser_args):
             else:
                 raise NotImplementedError
         elif parser_args.sr_version == 3:
+            print("Check whether we are using desired csv file")
+            import pdb; pdb.set_trace()
             srV3 = pd.read_csv(root + 'smart_ratio_v3_lr1e-8_manual.csv')
             if parser_args.smart_ratio == 0.9856: # 1.44% sparsity
                 #import pdb; pdb.set_trace() 
                 p_arr = srV3['{}.0'.format(parser_args.srV3_epoch)].tolist() 
             else:
                 raise NotImplementedError
+        elif parser_args.sr_version == 4:
+            if parser_args.smart_ratio == 0.9856: # 1.44% sparsity 
+                p_arr[0], p_arr[-1] = 1, 1
+            else:
+                raise NotImplementedError
+
         else:
             raise NotImplementedError
     

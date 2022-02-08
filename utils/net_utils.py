@@ -505,12 +505,19 @@ def get_model_sparsity(model, threshold=0):
 
     return 100*numer/denom
 
-def save_model_sparsity(model):
+def save_layerwise_sparsity(model, epoch, df):
     if isinstance(model, nn.parallel.DistributedDataParallel):
         model = model.module
     conv_layers, linear_layers = get_layers(parser_args.arch, model)
     
-
+    if parser_args.bias:
+        raise NotImplementedError
+    p_arr = []
+    for layer in [*conv_layers, *linear_layers]:
+        w_numer, w_denom, b_numer, b_denom = get_layer_sparsity(layer)
+        p_arr.append(w_numer/w_denom)
+    df[epoch] = p_arr
+ 
 
 # returns num_nonzero elements, total_num_elements so that it is easier to compute
 # average sparsity in the end
