@@ -136,12 +136,8 @@ class SubnetConv(nn.Conv2d):
 
         # initialize the layer_score (scalar) or score vector
         if parser_args.algo == 'pt_sr':
-            #self.layer_score = nn.Parameter(torch.Tensor([parser_args.init_sr[parser_args.current_layer]]))
             self.layer_weight_ratio = nn.Parameter(torch.Tensor(1))
             self.layer_weight_ratio.data = torch.Tensor([0.5])
-            # do this in a better way. until then, let it be 0.5
-            # self.layer_weight_ratio.data = parser_args.init_sr[parser_args.current_layer]
-            # parser_args.current_layer += 1
             
             if parser_args.bias:
                 self.layer_bias_ratio = nn.Parameter(torch.Tensor(1))

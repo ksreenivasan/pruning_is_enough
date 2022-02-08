@@ -58,6 +58,7 @@ def print_layers(parser_args, model):
     i = 0
     for layer in [*conv_layers, *linear_layers]:
         i += 1
+        #print(i, layer, layer.layer_weight_ratio.data)
         print(i, layer)
 
 
@@ -1133,21 +1134,37 @@ def print_num_dataset(data):
     print(num_train, num_val, num_test)
 
 
-def init_smart_ratio(parser_args):
+# initialize the layer_weight_ratio for pt_sr
+def init_layer_weight_ratio(model, parser_args):
     if parser_args.arch.lower() == 'resnet20':
+        
+        # load smart ratio
+        sr = pd.read_csv("per_layer_sparsity_resnet20/smart_ratio.csv")
+        #import pdb; pdb.set_trace()
         if parser_args.target_sparsity == 3.72:
-            parser_args.init_sr = np.array([41.43518518518518,  24.305555555555557, 21.875, 19.57465277777778, 17.36111111111111, 
-            15.321180555555555, 13.411458333333334, 11.631944444444445, 9.971788194444445, 8.441840277777779, 
-            7.03125, 5.750868055555555, 4.600694444444445, 3.5807291666666665, 2.685546875, 
-            1.9178602430555556, 1.2776692708333333, 0.7676866319444444, 0.3824869791666667, 54.6875])/100
+            p_arr = (sr['3.72'].array)/100
         elif parser_args.target_sparsity == 1.44:
-            parser_args.init_sr = np.array([34.49074074074074, 9.114583333333334, 8.203125, 7.335069444444445, 6.510416666666667, 
-            5.729166666666667, 5.034722222222222, 4.361979166666667, 3.7434895833333335, 3.1575520833333335, 
-            2.63671875, 2.1592881944444446, 1.7252604166666667, 1.3400607638888888, 1.0064019097222223, 
-            0.7188585069444444, 0.4774305555555556, 0.2875434027777778, 0.1437717013888889, 25.9375])/100
+            p_arr = (sr['1.44'].array)/100
         else:
             raise NotImplementedError
-        #parser_args.init_sr = torch.from_numpy(parser_args.init_sr).cuda()
+
+        # optionally, change the smart ratio
+        hc = pd.read_csv("per_layer_sparsity_resnet20/hc_iter.csv")
+        if parser_args.target_sparsity == 3.72:
+            p_arr[0], p_arr[-1] = hc['3_72'].array[0]/100, hc['3_72'].array[-1]/100
+        elif parser_args.target_sparsity == 1.44:
+            p_arr[0], p_arr[-1] = hc['1_4'].array[0]/100, hc['1_4'].array[-1]/100
+        else:
+            raise NotImplementedError
+        
+        # for each layer, set the initial layer_weight_ratio
+        conv_layers, linear_layers = get_layers(parser_args.arch, model)
+        i = 0
+        for layer in [*conv_layers, *linear_layers]:
+            layer.layer_weight_ratio.data = torch.tensor([p_arr[i]]).float()
+            i += 1
+            print(i, layer.layer_weight_ratio.item())
+
     else:
         raise NotImplementedError
 

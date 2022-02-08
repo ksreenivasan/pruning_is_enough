@@ -46,9 +46,9 @@ def main_worker(gpu, ngpus_per_node):
 
     if not os.path.isdir(result_root):
         os.mkdir(result_root)
-    if parser_args.algo == 'pt_sr':
-        init_smart_ratio(parser_args)        
     model = get_model(parser_args)
+    if parser_args.algo == 'pt_sr':
+        init_layer_weight_ratio(model, parser_args)
     print_model(model, parser_args)
 
     if parser_args.weight_training:
@@ -161,6 +161,8 @@ def main_worker(gpu, ngpus_per_node):
         )
         train_time.update((time.time() - start_train) / 60)
         scheduler.step()
+
+
 
         # evaluate on validation set
         start_validation = time.time()
