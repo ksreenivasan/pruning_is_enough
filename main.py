@@ -47,6 +47,8 @@ def main_worker(gpu, ngpus_per_node):
     if not os.path.isdir(result_root):
         os.mkdir(result_root)
     model = get_model(parser_args)
+    if parser_args.algo == 'pt_sr':
+        init_layer_weight_ratio(model, parser_args)
     print_model(model, parser_args)
 
     if parser_args.weight_training:
@@ -74,7 +76,7 @@ def main_worker(gpu, ngpus_per_node):
         #     model = model.module
     if parser_args.random_subnet: 
         test_random_subnet(model, data, criterion, parser_args, result_root, parser_args.smart_ratio) 
-        return
+        exit()
         
 
     best_acc1, best_acc5, best_acc10, best_train_acc1, best_train_acc5, best_train_acc10 = 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
@@ -159,6 +161,8 @@ def main_worker(gpu, ngpus_per_node):
         )
         train_time.update((time.time() - start_train) / 60)
         scheduler.step()
+
+
 
         # evaluate on validation set
         start_validation = time.time()

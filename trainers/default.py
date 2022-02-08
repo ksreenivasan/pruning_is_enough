@@ -49,9 +49,9 @@ def train(train_loader, model, criterion, optimizer, epoch, args, writer, scaler
         if args.algo in ['global_ep', 'global_ep_iter']:
             prune(model, update_thresholds_only=True)
 
-        if args.algo in ['hc', 'hc_iter', 'pt'] and i % args.project_freq == 0 and not args.differentiate_clamp:
+        if args.algo in ['hc', 'hc_iter', 'pt', 'pt_sr'] and i % args.project_freq == 0 and not args.differentiate_clamp:
             for name, params in model.named_parameters():
-                if "score" in name:
+                if "score" in name or "layer_weight_ratio" in name or "layer_bias_ratio" in name:
                     scores = params
                     with torch.no_grad():
                         scores.data = torch.clamp(scores.data, 0.0, 1.0)
@@ -85,6 +85,7 @@ def train(train_loader, model, criterion, optimizer, epoch, args, writer, scaler
         top5.update(acc5.item(), images.size(0))
         top10.update(acc10.item(), images.size(0))
 
+        #print("I am here")
         # compute gradient and do SGD step
         optimizer.zero_grad()
         if scaler is None:
@@ -109,9 +110,9 @@ def train(train_loader, model, criterion, optimizer, epoch, args, writer, scaler
     # update score thresholds for global ep
     if args.algo in ['global_ep', 'global_ep_iter']:
         prune(model, update_thresholds_only=True)
-    if args.algo in ['hc', 'hc_iter', 'pt'] and not args.differentiate_clamp:
+    if args.algo in ['hc', 'hc_iter', 'pt', 'pt_sr'] and not args.differentiate_clamp:
         for name, params in model.named_parameters():
-            if "score" in name:
+            if "score" in name or "layer_weight_ratio" in name or "layer_bias_ratio" in name:
                 scores = params
                 with torch.no_grad():
                     scores.data = torch.clamp(scores.data, 0.0, 1.0)

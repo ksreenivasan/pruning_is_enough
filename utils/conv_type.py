@@ -66,6 +66,13 @@ class GetSubnet(autograd.Function):
             out = torch.bernoulli(scores)
             bias_out = torch.bernoulli(bias_scores)
 
+        # elif parser_args.algo == 'pt_sr':
+        #     #import pdb; pdb.set_trace()
+        #     scores = torch.clamp(scores, 0, 1)
+        #     bias_scores = torch.clamp(bias_scores, 0, 1)
+        #     out = torch.bernoulli(scores)
+        #     bias_out = torch.bernoulli(bias_scores)
+
         elif parser_args.algo in ['hc', 'hc_iter']:
             # round scores to {0, 1}
             # NOTE: doing this EP style where the scores are unchanged, but mask is computed
@@ -90,6 +97,23 @@ class GetSubnet(autograd.Function):
         return g_1, g_2, None, None, None
 
 
+class GetRandomSubnet(autograd.Function):
+    @staticmethod
+    def forward(ctx, layer_weight_ratio, layer_bias_ratio, weights, bias):
+        out = torch.bernoulli(layer_weight_ratio * torch.ones_like(weights))
+        if parser_args.bias:
+            bias_out = torch.bernoulli(layer_bias_ratio * torch.ones_like(bias))
+        else:
+            bias_out = torch.Tensor([0])
+
+        return out, bias_out
+
+    @staticmethod
+    def backward(ctx, g_1, g_2):
+        # send the gradient g straight-through on the backward pass.
+        return g_1, g_2, None, None
+
+
 # Not learning weights, finding subnet
 class SubnetConv(nn.Conv2d):
     def __init__(self, *args, **kwargs):
@@ -103,13 +127,31 @@ class SubnetConv(nn.Conv2d):
             # dummy variable just so other things don't break
             self.bias_flag = nn.Parameter(torch.Tensor(1))
 
-        # initialize the scores
         self.scores = nn.Parameter(torch.Tensor(self.weight.size()))
         if parser_args.bias:
             self.bias_scores = nn.Parameter(torch.Tensor(self.bias.size()))
         else:
             # dummy variable just so other things don't break
             self.bias_scores = nn.Parameter(torch.Tensor(1))
+
+        # initialize the layer_score (scalar) or score vector
+        if parser_args.algo == 'pt_sr':
+            self.layer_weight_ratio = nn.Parameter(torch.Tensor(1))
+            self.layer_weight_ratio.data = torch.Tensor([0.5])
+            
+            if parser_args.bias:
+                self.layer_bias_ratio = nn.Parameter(torch.Tensor(1))
+                self.layer_bias_ratio = 0.5
+            else:
+                # dummy variable just so other things don't break
+                self.layer_bias_ratio = torch.Tensor(1)
+
+            # no gradients for scores anymore
+            self.scores.data = torch.ones_like(self.scores)
+            self.scores.requires_grad = False
+            if parser_args.bias:
+                self.bias_scores = torch.ones_like(self.bias_scores)
+                self.bias_scores.requires_grad = False
         
         # prune scores below this for global EP in bottom-k
         self.scores_prune_threshold = -np.inf
@@ -181,10 +223,12 @@ class SubnetConv(nn.Conv2d):
             pass
         elif parser_args.algo in ['global_ep', 'global_ep_iter']:
             subnet, bias_subnet = GetSubnet.apply(self.scores.abs(), self.bias_scores.abs(), 0, self.scores_prune_threshold, self.bias_scores_prune_threshold)
+        elif parser_args.algo in ['pt_sr']:
+            subnet, bias_subnet = GetRandomSubnet.apply(self.layer_weight_ratio, self.layer_bias_ratio, self.weight, self.bias)
         else:
-            # ep, global_ep, global_ep_iter, pt etc
+            # ep, global_ep, global_ep_iter, pt, pt_sr etc
             subnet, bias_subnet = GetSubnet.apply(self.scores.abs(), self.bias_scores.abs(), parser_args.prune_rate)
-        
+
         if parser_args.algo in ['imp']:
             # no STE, no subnet. Mask is handled outside
             w = self.weight
@@ -195,7 +239,6 @@ class SubnetConv(nn.Conv2d):
                 b = self.bias * bias_subnet
             else:
                 b = self.bias
-        
         x = F.conv2d(
             x, w, b, self.stride, self.padding, self.dilation, self.groups
         )

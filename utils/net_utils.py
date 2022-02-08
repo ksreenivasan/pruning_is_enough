@@ -13,6 +13,7 @@ import torch.nn as nn
 
 from utils.mask_layers import MaskLinear, MaskConv
 from utils.conv_type import GetSubnet as GetSubnetConv
+from utils.conv_type import GetRandomSubnet as GetRandomSubnetConv
 from utils.conv_type import SubnetConv
 
 
@@ -500,8 +501,15 @@ def get_model_sparsity(model, threshold=0):
         if parser_args.bias:
             numer += b_numer
             denom += b_denom
-    # print('Overall sparsity: {}/{} ({:.2f} %)'.format((int)(numer), denom, 100*numer/denom))
+    # print('Overall sparsity: {}/{} ({:.2f} %)'.format((int)(numer), denom, 100*numer/denom)) 
+
     return 100*numer/denom
+
+def save_model_sparsity(model):
+    if isinstance(model, nn.parallel.DistributedDataParallel):
+        model = model.module
+    conv_layers, linear_layers = get_layers(parser_args.arch, model)
+    
 
 
 # returns num_nonzero elements, total_num_elements so that it is easier to compute
@@ -527,6 +535,26 @@ def get_layer_sparsity(layer, threshold=0):
             ).item(), eff_bias_scores.detach().flatten().numel()
         else:
             b_numer, b_denom = 0, 0
+
+    elif parser_args.algo in ['pt_sr']:
+        weight_mask, bias_mask = GetRandomSubnetConv.apply(layer.layer_weight_ratio, layer.layer_bias_ratio, layer.weight, layer.bias)
+        w_numer, w_denom = weight_mask.sum().item(), weight_mask.flatten().numel()
+        if parser_args.bias:
+            b_numer, b_denom = bias_mask.sum().item(), bias_mask.flatten().numel()
+        else:
+            b_numer, b_denom = 0, 0
+        print(int(w_numer), w_denom, w_numer/w_denom)
+
+        '''
+        w_numer = layer.layer_weight_ratio.data * layer.weight.data.flatten().numel()
+        w_denom = layer.weight.data.flatten().numel()
+        if parser_args.bias:
+            b_numer = layer.layer_bias_ratio.data * layer.bias.data.flatten().numel()
+            b_denom = layer.bias.data.flatten().numel()
+        else:
+            b_numer, b_denom = 0, 0
+        '''
+
 
     elif parser_args.algo in ['global_ep', 'ep', 'global_ep_iter'] or parser_args.bottom_k_on_forward:
         if parser_args.algo == 'ep':

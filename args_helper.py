@@ -904,6 +904,31 @@ class ArgsHelper:
             type=int,
             help="smart ratio version number (1, 2, ...)",
         )
+        parser.add_argument(
+            "--srV3-epoch",
+            default=160,
+            type=int,
+            help="number of intermediate epochs used for loading srV3",
+        )
+
+        '''
+        parser.add_argument(
+            "--current-layer",
+            default=0,
+            type=int,
+            help="current layer index",
+        )
+        '''
+        # parser.add_argument(
+        #     "--pt-sr-init",
+        #     type=list,
+        #     default=[],
+        #     nargs="+",
+        #     metavar="M",
+        #     help="List of initial sparsity pattern for pt-sr (resnet20)"
+        # )
+
+
 
         if jupyter_mode:
             args = parser.parse_args("")
