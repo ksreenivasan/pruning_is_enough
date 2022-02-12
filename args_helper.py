@@ -910,6 +910,12 @@ class ArgsHelper:
             type=int,
             help="number of intermediate epochs used for loading srV3",
         )
+        parser.add_argument(
+            "--sr_seq",
+            default=None,
+            type=str,
+            help="sequence to test for smart ratio",
+        )
 
         '''
         parser.add_argument(

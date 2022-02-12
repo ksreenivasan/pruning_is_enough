@@ -1,4 +1,77 @@
 
+######################################################
+##########   ResNet-18   #############################
+######################################################
+
+# weight training
+:<<BLOCK
+conf_file="configs/training/resnet18/cifar10_resnet18_training.yml"
+subfolder_root="resnet18_cifar10_wt_"
+log_end="_log"
+
+python main.py \
+    --config "$conf_file" \
+    --subfolder "$subfolder_root" > "$subfolder_root$log_end" 2>&1 &
+BLOCK
+
+# smart ratio
+:<<BLOCK
+conf_file="configs/sr/resnet18/cifar10_resnet18_sr.yml"
+subfolder_root="resnet18_cifar10_sr_"
+log_end="_log"
+
+for sr in 0.95 0.98 0.995
+do
+    python main.py \
+    --config "$conf_file" \
+    --smart_ratio "$sr" \
+    --subfolder "$subfolder_root$sr" > "$subfolder_root$sr$log_end" 2>&1 #&
+done
+BLOCK
+
+# Gem-Miner (hypercube)
+:<<BLOCK
+
+# 5% sparsity
+#conf_file="configs/hypercube/resnet18/cifar10/sparsity_5_85lam6.yml"
+#subfolder_root="resnet18_cifar10_hc_sparsity_5_real_"
+
+#conf_file="configs/hypercube/resnet18/cifar10/sparsity_5_85lam6_iter_20.yml"
+#subfolder_root="resnet18_cifar10_hc_sparsity_5_iter_20"
+
+#conf_file="configs/hypercube/resnet18/cifar10/sparsity_5_85lam6_iter_20_multistep_0_1.yml"
+#subfolder_root="resnet18_cifar10_hc_sparsity_5_iter_20_multistep_0_1"
+
+#conf_file="configs/hypercube/resnet18/cifar10/sparsity_5_85lam6_iter_20_cosine_0_1.yml"
+#subfolder_root="resnet18_cifar10_hc_sparsity_5_iter_20_cosine_0_1"
+
+conf_file="configs/hypercube/resnet18/cifar10/sparsity_5_85lam6_iter_20_adam.yml"
+subfolder_root="resnet18_cifar10_hc_sparsity_5_iter_20_adam"
+
+
+
+# 2% sparsity
+#conf_file="configs/hypercube/resnet18/cifar10/sparsity_2_9lam6_iter_20.yml"
+#subfolder_root="resnet18_cifar10_hc_sparsity_2_real_"
+
+# 0.5% sparsity
+#conf_file="configs/hypercube/resnet18/cifar10/sparsity_0_5_1lam5.yml"
+#subfolder_root="resnet18_cifar10_hc_sparsity_0_5_real_"
+
+log_end="_log"
+
+python main.py \
+--config "$conf_file" \
+--subfolder "$subfolder_root" > "$subfolder_root$log_end" 2>&1 #&
+BLOCK
+
+
+
+######################################################
+##########   ResNet-20   #############################
+######################################################
+
+
 # SRv1: original SR (in Jason Lee's paper)
 #config_file="configs/sr/resnet20/resnet20_sr.yml"
 #subfolder=tmp
@@ -43,7 +116,8 @@ log_root="srV3_1e-6_real_"
 log_end="_log"
 subfolder_root="srV3_1e-6_real_"
 
-for epoch in 10 30 70 160
+
+for epoch in 10 30 70 149 #160
 do
     python main.py \
     --config "$conf_file" \
@@ -51,11 +125,11 @@ do
     --srV3-epoch $epoch \
     --subfolder "$subfolder_root$epoch" > "$log_root$epoch$log_end" 2>&1 &
 done
-BLOCK
+#BLOCK
 
 
 # SRv4: original SR + change 1st/last layer sparsity to 100%
-#:<<BLOCK
+:<<BLOCK
 config_file="configs/sr/resnet20/resnet20_srV4.yml"
 n_gpu=2
 subfolder=SRv4_sp_1_44
@@ -65,4 +139,32 @@ python main.py \
     --smart_ratio 0.9856 \
     --subfolder $subfolder \
     --gpu $n_gpu
-#BLOCK
+BLOCK
+
+
+# SRv5: grid search
+group=0
+n_gpu=2
+
+config_file="configs/sr/resnet20/resnet20_sr_grid.yml"
+subfolder=SR_grid_sp_1_44_
+COUNTER=24*$group+0
+input="per_layer_sparsity_resnet20/grid_search_saved_$group.csv"
+while IFS= read -r line
+do
+	COUNTER=$((COUNTER + 1))
+	echo "$COUNTER"
+	echo "$line"
+	python main.py \
+    	--config $config_file \
+    	--smart_ratio 0.9856 \
+    	--subfolder $subfolder$COUNTER \
+    	--gpu $n_gpu \
+		--sr_seq $line
+done < "$input"
+
+
+
+
+
+

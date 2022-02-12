@@ -45,6 +45,11 @@ def SmartRatio(model, sr_args, parser_args):
     model = copy.deepcopy(model)  # .eval()
     model.zero_grad()
 
+	# 0. if the sr_seq is pre-defined, use it
+	if parser_args.sr_seq is not None:
+
+	else:
+
     # 1. Compute the number of weights to be retrained
     conv_layers, linear_layers = get_layers(parser_args.arch, model)
     m_arr = []
