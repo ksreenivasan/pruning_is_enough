@@ -42,13 +42,18 @@ def SmartRatio(model, sr_args, parser_args):
 	keep_ratio = 1-parser_args.smart_ratio
 	linear_keep_ratio = sr_args.linear_keep_ratio
 
+	#import pdb; pdb.set_trace()
 	model = copy.deepcopy(model)  # .eval()
 	model.zero_grad()
 
 	# 0. if the sr_seq is pre-defined, use it
 	if parser_args.sr_seq is not None:
 		p_arr_str = parser_args.sr_seq
-		import pdb; pdb.set_trace()
+		print(p_arr_str)
+		p_arr = [float(e)/100 for e in p_arr_str.split(",")]
+		#print(p_arr)	
+	#	print(p_arr_str.split(","))
+	#	print(p_arr_str.split("\r"))
 	else:
 
 		# 1. Compute the number of weights to be retrained
