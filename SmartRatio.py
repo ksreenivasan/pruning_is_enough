@@ -123,12 +123,14 @@ def SmartRatio(model, sr_args, parser_args):
                 raise NotImplementedError
         elif parser_args.sr_version == 3:
             print("Check whether we are using desired csv file")
-            import pdb; pdb.set_trace()
-            srV3 = pd.read_csv(root + 'smart_ratio_v3_lr1e-8_manual.csv')
-            if parser_args.smart_ratio == 0.9856: # 1.44% sparsity
-                #import pdb; pdb.set_trace() 
-                p_arr = srV3['{}.0'.format(parser_args.srV3_epoch)].tolist() 
-            else:
+            filename = 'smart_ratio_v3_lr1e-6.csv' # 'smart_ratio_v3_lr1e-8_manual.csv'
+            print("filename: ", filename)
+            #import pdb; pdb.set_trace()
+            srV3 = pd.read_csv(root + filename)
+            p_arr = srV3['{}'.format(parser_args.srV3_epoch)].tolist() 
+            #p_arr = srV3['{}.0'.format(parser_args.srV3_epoch)].tolist() 
+
+            if not parser_args.smart_ratio == 0.9856: # 1.44% sparsity
                 raise NotImplementedError
         elif parser_args.sr_version == 4:
             if parser_args.smart_ratio == 0.9856: # 1.44% sparsity 
