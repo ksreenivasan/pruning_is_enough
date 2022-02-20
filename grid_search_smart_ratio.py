@@ -16,11 +16,11 @@ sparsity_candidate = [0.1, 0.2, 0.5, 1, 2, 5, 10, 20, 50]
 
 
 # 1. load imp sparsity pattern
-#imp_sp = pd.read_csv("per_layer_sparsity_resnet20/imp.csv")
-#init_sp = imp_sp["1.44"].tolist()
+imp_sp = pd.read_csv("per_layer_sparsity_resnet20/imp.csv")
+init_sp = imp_sp["1.44"].tolist()
 
-hc_sp = pd.read_csv("per_layer_sparsity_resnet20/hc_iter.csv")
-init_sp = hc_sp["1_4"].tolist()
+#hc_sp = pd.read_csv("per_layer_sparsity_resnet20/hc_iter.csv")
+#init_sp = hc_sp["1_4"].tolist()
 
 print(init_sp)
 
