@@ -289,6 +289,7 @@ def main_worker(gpu, ngpus_per_node):
     # save trained sparsity pattern for pt_sr
     if parser_args.algo in ['pt_sr']:
         sparsity_df.to_csv(result_root + 'sparsity_pattern.csv', index=False)
+        sparsity_df.to_csv('per_layer_sparsity_resnet20/smart_ratio_v{}_lr1e-6.csv'.format(parser_args.sr_version), index=False) # hard-coded
 
     # finetune weights
     cp_model = copy.deepcopy(model)

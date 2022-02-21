@@ -1,7 +1,7 @@
 # subfolder: sr
 algo: 'pt_sr'
 #random_subnet: True
-sr_version: 3
+sr_version: 6
 # smart_ratio: 0.98 # 2% sparsity
 
 # Architecture

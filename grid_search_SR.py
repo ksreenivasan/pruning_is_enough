@@ -37,7 +37,7 @@ print('best_idx: {}, best_acc: {}, best_sparsity: {:.2f}'.format(best_idx, best_
 
 
 # save the optimal grid search result (sparsity pattern)
-#best_idx = 113 # for DEBUG
+#best_idx = 22 # for DEBUG
 group = int(best_idx/24)
 line_idx = best_idx % 24
 
