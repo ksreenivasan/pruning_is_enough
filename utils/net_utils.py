@@ -96,7 +96,7 @@ def get_layers(arch='Conv4', model=None):
 
         linear_layers = [model.fc]
 
-    elif arch == 'vgg16':
+    elif arch in ['vgg16', 'tinyvgg16']:
         conv_layers = []
         for i in range(len(model.features)):
             if isinstance(model.features[i], SubnetConv):
