@@ -1,28 +1,29 @@
 
 # SRv1
-#config_file="configs/sr/resnet20/resnet20_sr.yml"
-#subfolder=tmp
+config_file="configs/sr/resnet20/resnet20_sr.yml"
+subfolder=tmp
+n_gpu=0
 
 # SRv2, SRv3
+:<<BLOCK
 config_file="configs/sr/resnet20/resnet20_srV2.yml"
 n_gpu=2
 subfolder=SRv2_sp_3_72
+BLOCK
 
-
-:<<BLOCK
 python main.py \
     --config $config_file \
     --smart_ratio 0.9856 \
     --subfolder $subfolder \
     --gpu $n_gpu
-BLOCK
 
+:<<BLOCK
 python main.py \
     --config $config_file \
     --smart_ratio 0.9628 \
     --subfolder $subfolder \
     --gpu $n_gpu
-
+BLOCK
 
 
 
@@ -104,7 +105,7 @@ python main.py --config configs/hypercube/mobilenetV2/sparsity_20.yml > log_mobi
 BLOCK
 #python main.py --config configs/hypercube/mobilenetV2/sparsity_5_7lam6.yml > log_mobilev2_HC_sparsity_5_7lam6 2>&1 
 #python main.py --config configs/hypercube/mobilenetV2/sparsity_1_4.yml > log_mobilev2_HC_sparsity_1_4 2>&1 
-python main.py --config configs/hypercube/mobilenetV2/sparsity_20_3lam6.yml > log_mobilev2_HC_sparsity_20_3lam6 2>&1 
+#python main.py --config configs/hypercube/mobilenetV2/sparsity_20_3lam6.yml > log_mobilev2_HC_sparsity_20_3lam6 2>&1 
 
 #python main.py --config configs/hypercube/mobilenetV2/sparsity_20_1lam6.yml > log_mobilev2_HC_sparsity_20_1lam6 2>&1 
 #python main.py --config configs/hypercube/mobilenetV2/sparsity_20_3lam6.yml > log_mobilev2_HC_sparsity_20_3lam6 2>&1 
