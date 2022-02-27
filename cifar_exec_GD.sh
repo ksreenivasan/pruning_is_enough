@@ -1,4 +1,23 @@
 
+:<<BLOCK
+# VGG16, bias=True, Affine-BN
+config_file="configs/hypercube/vgg16/vgg_bias_affine.yml"
+subfolder_root="vgg_bias_affine_True_hc_sparsity_"
+log_end="_log"
+
+
+sp_list=(50 5 2.5 1.4)
+for sp in ${sp_list[@]}
+do
+    python main.py \
+    --config "$config_file" --subfolder "$subfolder_root$sp" \
+    --target-sparsity "$sp" #> "$subfloder_root$sp$log_end" 2>&1 &
+done
+
+BLOCK
+
+
+:<<BLOCK
 # SRv1
 config_file="configs/sr/resnet20/resnet20_sr.yml"
 subfolder=tmp
@@ -11,13 +30,13 @@ n_gpu=2
 subfolder=SRv2_sp_3_72
 BLOCK
 
+:<<BLOCK
 python main.py \
     --config $config_file \
     --smart_ratio 0.9856 \
     --subfolder $subfolder \
     --gpu $n_gpu
 
-:<<BLOCK
 python main.py \
     --config $config_file \
     --smart_ratio 0.9628 \
