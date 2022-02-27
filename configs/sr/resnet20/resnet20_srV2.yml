@@ -1,6 +1,7 @@
 # subfolder: sr
 algo: 'hc_iter'
 random_subnet: True
+sr_version: 2
 # smart_ratio: 0.98 # 2% sparsity
 
 # Architecture
@@ -37,7 +38,7 @@ freeze_weights: True
 
 # ===== Hardware setup ===== #
 workers: 4
-#gpu: 0
+# gpu: 3
 
 # ===== Checkpointing ===== #
 checkpoint_at_prune: True

@@ -898,6 +898,13 @@ class ArgsHelper:
             help="directory(s) to access for only sanity check",
         )
 
+        parser.add_argument(
+            "--sr-version",
+            default=1,
+            type=int,
+            help="smart ratio version number (1, 2, ...)",
+        )
+
         if jupyter_mode:
             args = parser.parse_args("")
         else:

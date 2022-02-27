@@ -1,4 +1,4 @@
-#subfolder: target_sparsity_5_without_unflag
+subfolder: target_sparsity_5_without_unflag
 
 # Hypercube optimization
 algo: 'hc_iter'

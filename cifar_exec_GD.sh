@@ -1,26 +1,76 @@
 
-# Running trials in parallel
-conf_file="configs/final_hc/mobilenet_1_4.yml"
-log_root="hc_mobilenet_1_4_"
-log_end="_log"
-subfolder_root="hc_mobilenet_1_4_results_"
+# SRv1
+config_file="configs/sr/resnet20/resnet20_sr.yml"
+subfolder=tmp
+n_gpu=0
 
-for trial in 2 3
+# SRv2, SRv3
+:<<BLOCK
+config_file="configs/sr/resnet20/resnet20_srV2.yml"
+n_gpu=2
+subfolder=SRv2_sp_3_72
+BLOCK
+
+python main.py \
+    --config $config_file \
+    --smart_ratio 0.9856 \
+    --subfolder $subfolder \
+    --gpu $n_gpu
+
+:<<BLOCK
+python main.py \
+    --config $config_file \
+    --smart_ratio 0.9628 \
+    --subfolder $subfolder \
+    --gpu $n_gpu
+BLOCK
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# Running trials in parallel
+:<<BLOCK
+conf_file="configs/ablation_hc/resnet20_1_4_normal.yml"
+log_root="hc_resnet20_1_4_"
+log_end="_log"
+subfolder_root="hc_resnet20_1_4_results_"
+
+for trial in 2
 do
     python main.py \
     --config "$conf_file" --subfolder "$subfolder_root$trial" \
-    --trial-num "$trial" > "$log_root$trial$log_end" 2>&1 &
+    --trial-num "$trial" > "$log_root$trial$log_end" 2>&1 #&
 
 #    python main.py \
 #    --config "$conf_file" --subfolder "invert_$subfolder_root$trial" \
 #    --trial-num "$trial" --invert-sanity-check --skip-sanity-checks > "invert_$log_root$trial$log_end" 2>&1 &
 done
+BLOCK
 
 
+:<<BLOCK
+conf_file="configs/ablation_hc/resnet20_1_4_unflag_False.yml"
+log_root="hc_resnet20_1_4_unflag_False_"
+log_end="_log"
+subfolder_root="hc_resnet20_1_4_unflag_False_results_"
 
-
-
-
+for trial in 1 2
+do
+    python main.py \
+    --config "$conf_file" --subfolder "$subfolder_root$trial" \
+    --trial-num "$trial" > "$log_root$trial$log_end" 2>&1 #&
+done
+BLOCK
 
 
 
@@ -55,7 +105,7 @@ python main.py --config configs/hypercube/mobilenetV2/sparsity_20.yml > log_mobi
 BLOCK
 #python main.py --config configs/hypercube/mobilenetV2/sparsity_5_7lam6.yml > log_mobilev2_HC_sparsity_5_7lam6 2>&1 
 #python main.py --config configs/hypercube/mobilenetV2/sparsity_1_4.yml > log_mobilev2_HC_sparsity_1_4 2>&1 
-python main.py --config configs/hypercube/mobilenetV2/sparsity_20_3lam6.yml > log_mobilev2_HC_sparsity_20_3lam6 2>&1 
+#python main.py --config configs/hypercube/mobilenetV2/sparsity_20_3lam6.yml > log_mobilev2_HC_sparsity_20_3lam6 2>&1 
 
 #python main.py --config configs/hypercube/mobilenetV2/sparsity_20_1lam6.yml > log_mobilev2_HC_sparsity_20_1lam6 2>&1 
 #python main.py --config configs/hypercube/mobilenetV2/sparsity_20_3lam6.yml > log_mobilev2_HC_sparsity_20_3lam6 2>&1 
