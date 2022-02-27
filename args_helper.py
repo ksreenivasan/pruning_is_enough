@@ -347,6 +347,11 @@ class ArgsHelper:
             help="First layer dense or sparse"
         )
         parser.add_argument(
+            "--dense-training",
+            action="store_true",
+            help="Train the network without pruning, and checkpoint along the way"
+        )
+        parser.add_argument(
             "--last-layer-dense",
             action="store_true",
             help="Last layer dense or sparse"
@@ -796,6 +801,18 @@ class ArgsHelper:
             default=-1,
             type=int, 
             help="which round to resume to"
+        )
+        parser.add_argument(
+            "--imp-resume-epoch",
+            default=-1,
+            type=int, 
+            help="which epoch to resume to"
+        )
+        parser.add_argument(
+            "--imp-resume-iter",
+            default=-1,
+            type=int, 
+            help="which iter to resume to"
         )
         parser.add_argument(
             "--imp-rewind-model", 
