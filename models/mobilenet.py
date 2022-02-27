@@ -108,6 +108,9 @@ class MobileNet_base(nn.Module):
 def MobileNetV2():
     return MobileNet_base(get_builder())
 
+def tinyMobileNetV2(num_classes=200):
+    return MobileNet_base(get_builder(), num_classes=num_classes)
+
 '''
 class BlockNormal(nn.Module):
     def __init__(self, in_planes, out_planes, expansion, stride):
