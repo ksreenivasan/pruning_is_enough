@@ -2,7 +2,7 @@
 
 # Hypercube optimization
 algo: 'hc_iter'
-#iter_period: 5
+iter_period: 5
 
 # Architecture
 arch: vgg16
@@ -13,7 +13,7 @@ name: vgg16_quantized_iter_hc
 
 # ===== Learning Rate Policy ======== #
 optimizer: adam
-lr: 0.01 #0.01
+#lr: 0.01 #0.01
 lr_policy: cosine_lr #constant_lr #multistep_lr
 fine_tune_lr: 0.05
 fine_tune_lr_policy: multistep_lr
@@ -52,7 +52,7 @@ lmbda: 0.000001 # 1e-6
 
 # ===== Hardware setup ===== #
 workers: 4
-gpu: 1
+gpu: 0
 
 # ===== Checkpointing ===== #
 checkpoint_at_prune: False

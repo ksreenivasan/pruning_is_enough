@@ -1,7 +1,7 @@
 
 
 # VGG16, 0.5%, bf_ft_acc vs af_ft_acc
-#:<<BLOCK
+:<<BLOCK
 config_file="configs/hypercube/vgg16/vgg.yml"
 subfolder_root="vgg_bf_af_relation_"
 con="_"
@@ -18,7 +18,7 @@ do
         --target-sparsity "$sp" --lr "$lr" > "$subfolder_root$sp$con$lr$log_end" 2>&1 &
     done
 done
-#BLOCK
+BLOCK
 
 
 
@@ -58,7 +58,7 @@ BLOCK
 
 
 # EP
-:<<BLOCK
+#:<<BLOCK
 conf_file="configs/ep/resnet18/resnet18_sc_ep.yml"
 subfolder_root="resnet18_cifar10_ep_"
 log_end="_log"
@@ -71,7 +71,7 @@ do
     --subfolder "$subfolder_root$pr" > "$subfolder_root$pr$log_end" 2>&1 &
 done
 
-BLOCK
+#BLOCK
 
 
 # smart ratio
