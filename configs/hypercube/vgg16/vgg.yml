@@ -2,7 +2,7 @@
 
 # Hypercube optimization
 algo: 'hc_iter'
-iter_period: 5
+#iter_period: 5
 
 # Architecture
 arch: vgg16
@@ -52,7 +52,7 @@ lmbda: 0.000001 # 1e-6
 
 # ===== Hardware setup ===== #
 workers: 4
-#gpu: 0
+gpu: 1
 
 # ===== Checkpointing ===== #
 checkpoint_at_prune: False

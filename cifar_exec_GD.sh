@@ -1,4 +1,25 @@
 
+
+# VGG16, 0.5%, bf_ft_acc vs af_ft_acc
+config_file="configs/hypercube/vgg16/vgg.yml"
+subfolder_root="vgg_bf_af_relation_"
+con="_"
+log_end="_log"
+sp_list=(1.4) #(0.5 1.4)
+t_list=(100)  # 5 20 50 100
+for sp in ${sp_list[@]}
+do
+    for t in ${t_list[@]}
+    do
+        python main.py \
+        --config "$config_file" --subfolder "$subfolder_root$sp$con$t" \
+        --target-sparsity "$sp" --iter-period "$t" > "$subfolder_root$sp$con$t$log_end" 2>&1 &
+    done
+done
+
+
+
+
 :<<BLOCK
 # VGG16, bias=True, Affine-BN
 config_file="configs/hypercube/vgg16/vgg_bias_affine.yml"
