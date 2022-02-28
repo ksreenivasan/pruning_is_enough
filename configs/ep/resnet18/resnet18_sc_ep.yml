@@ -13,10 +13,10 @@ lr: 0.1
 lr_policy: cosine_lr
 
 # ===== Network training config ===== #
-epochs: 100
+epochs: 200
 wd: 0.0005
 momentum: 0.9
-batch_size: 256
+batch_size: 128
 
 # ===== Sparsity =========== #
 conv_type: SubnetConv
@@ -24,7 +24,7 @@ bn_type: NonAffineBatchNorm
 init: signed_constant
 mode: fan_in
 nonlinearity: relu
-prune_rate: 0.05
+#prune_rate: 0.05
 scale_fan: False
 freeze_weights: True
 

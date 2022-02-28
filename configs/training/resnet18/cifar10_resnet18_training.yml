@@ -1,36 +1,39 @@
-# IMP algorithm
-algo: 'imp'
-seed: 42
+#subfolder: resnet18_cifar10_weight_training
+trial_num: 1
+
+
+# algorithm
+algo: 'hc_iter'
+weight_training: True
 
 # Architecture
-arch: MobileNetV2
+arch: cResNet18
 
 # ===== Dataset ===== #
 dataset: CIFAR10
+name: resnet18_cifar10_training
 
 # ===== Learning Rate Policy ======== #
 optimizer: sgd
 lr: 0.1
-lr_policy: multistep_lr
-lr_gamma: 0.1
+lr_policy: cosine_lr #multistep_lr #cosine_lr #constant_lr
 
 # ===== Network training config ===== #
-# epochs: 300
-wd: 0.00004
+epochs: 200
+wd: 0.0005
 momentum: 0.9
 batch_size: 128
-bias: False 
+
 
 # ===== Sparsity =========== #
 conv_type: SubnetConv
 bn_type: NonAffineBatchNorm
-prune_rate: 0.2
+freeze_weights: True
+prune_rate: -1
 init: kaiming_normal
-iter_period: 300 # 5
-imp_rewind_iter: 1000
-
+scale_fan: True
 
 # ===== Hardware setup ===== #
 workers: 4
-gpu: 2
+gpu: 1
 
