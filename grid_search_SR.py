@@ -13,10 +13,6 @@ best_idx = 0
 best_acc = 0
 best_sp = 0
 for idx in range(1, 145):
-<<<<<<< HEAD
-#for idx in range(1, 49):
-=======
->>>>>>> 9bf119c02e447a7fd0b09b9bbd2a70405c81623c
 
 	path = 'results/SR_grid_sp_1_44_{}'.format(idx)
 	csv_files = glob.glob(os.path.join(path, "*/**.csv"))
