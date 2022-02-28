@@ -67,7 +67,7 @@ do
     python main.py \
     --config "$conf_file" \
     --prune-rate "$pr" \
-    --subfolder "$subfolder_root$sr" #> "$subfolder_root$sr$log_end" 2>&1 &
+    --subfolder "$subfolder_root$pr" > "$subfolder_root$pr$log_end" 2>&1 &
 done
 
 #BLOCK
