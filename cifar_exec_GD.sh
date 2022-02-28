@@ -30,7 +30,7 @@ done
 BLOCK
 
 # Gem-Miner (hypercube)
-:<<BLOCK
+#:<<BLOCK
 
 # 5% sparsity
 #conf_file="configs/hypercube/resnet18/cifar10/sparsity_5_85lam6.yml"
@@ -45,9 +45,20 @@ BLOCK
 #conf_file="configs/hypercube/resnet18/cifar10/sparsity_5_85lam6_iter_20_cosine_0_1.yml"
 #subfolder_root="resnet18_cifar10_hc_sparsity_5_iter_20_cosine_0_1"
 
-conf_file="configs/hypercube/resnet18/cifar10/sparsity_5_85lam6_iter_20_adam.yml"
-subfolder_root="resnet18_cifar10_hc_sparsity_5_iter_20_adam"
+#conf_file="configs/hypercube/resnet18/cifar10/sparsity_5_85lam6_iter_20_adam.yml"
+#subfolder_root="resnet18_cifar10_hc_sparsity_5_iter_20_adam"
 
+#conf_file="configs/hypercube/resnet18/cifar10/sparsity_5_1lam6_iter_20_adam.yml"
+#subfolder_root="resnet18_cifar10_hc_sparsity_5_iter_20_adam_1lam6"
+
+#conf_file="configs/hypercube/resnet18/cifar10/sparsity_5_3lam6_iter_20_adam.yml"
+#subfolder_root="resnet18_cifar10_hc_sparsity_5_iter_20_adam_3lam6"
+
+#conf_file="configs/hypercube/resnet18/cifar10/sparsity_5_1lam6_iter_20_adam_1e4.yml"
+#subfolder_root="resnet18_cifar10_hc_sparsity_5_iter_20_adam_1lam6_1e4"
+
+conf_file="configs/hypercube/resnet18/cifar10/sparsity_5_1lam6_iter_20_adam_1e3.yml"
+subfolder_root="resnet18_cifar10_hc_sparsity_5_iter_20_adam_1lam6_1e3"
 
 
 # 2% sparsity
@@ -57,6 +68,9 @@ subfolder_root="resnet18_cifar10_hc_sparsity_5_iter_20_adam"
 # 0.5% sparsity
 #conf_file="configs/hypercube/resnet18/cifar10/sparsity_0_5_1lam5.yml"
 #subfolder_root="resnet18_cifar10_hc_sparsity_0_5_real_"
+
+#conf_file="configs/hypercube/resnet18/cifar10/sparsity_0_5_85lam6_iter_20_adam.yml"
+#subfolder_root="resnet18_cifar10_hc_sparsity_0_5_iter_20_adam_85lam6"
 
 log_end="_log"
 
@@ -143,7 +157,8 @@ BLOCK
 
 
 # SRv5: grid search
-group=0
+:<<BLOCK
+group=1
 n_gpu=2
 
 config_file="configs/sr/resnet20/resnet20_sr_grid.yml"
@@ -162,7 +177,7 @@ do
     	--gpu $n_gpu \
 		--sr_seq $line
 done < "$input"
-
+BLOCK
 
 
 

@@ -12,7 +12,8 @@ import pdb
 best_idx = 0
 best_acc = 0
 best_sp = 0
-for idx in range(1, 49):
+for idx in range(1, 145):
+#for idx in range(1, 49):
 
 	path = 'results/SR_grid_sp_1_44_{}'.format(idx)
 	csv_files = glob.glob(os.path.join(path, "*/**.csv"))
