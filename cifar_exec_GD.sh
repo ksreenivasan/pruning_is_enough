@@ -213,7 +213,7 @@ BLOCK
 
 
 ## Step 2: train the model from the obtained smart ratio
-#:<<BLOCK
+:<<BLOCK
 conf_file="configs/sr/resnet20/resnet20_srV6.yml"
 log_root="srV6_1e-6_real_"
 log_end="_log"
@@ -228,6 +228,6 @@ do
     --srV3-epoch $epoch \
     --subfolder "$subfolder_root$epoch" > "$log_root$epoch$log_end" 2>&1 &
 done
-#BLOCK
+BLOCK
 
 
