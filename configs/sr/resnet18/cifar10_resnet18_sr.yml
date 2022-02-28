@@ -11,11 +11,11 @@ dataset: CIFAR10
 name: resnet18_cifar10_sc
 
 # ===== Learning Rate Policy ======== #
-optimizer: sgd
+optimizer: adam # sgd
 # doesn't matter
 # lr: 0.1
 # lr_policy: cosine_lr
-fine_tune_lr: 0.1
+fine_tune_lr: 0.001 # 0.1
 fine_tune_lr_policy: cosine_lr #multistep_lr # cosine_lr
 
 # ===== Network training config ===== #

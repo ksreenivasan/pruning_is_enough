@@ -45,7 +45,7 @@ BLOCK
 ######################################################
 
 # weight training
-#:<<BLOCK
+:<<BLOCK
 conf_file="configs/training/resnet18/cifar10_resnet18_training.yml"
 subfolder_root="resnet18_cifar10_wt_"
 log_end="_log"
@@ -53,7 +53,25 @@ log_end="_log"
 python main.py \
     --config "$conf_file" \
     --subfolder "$subfolder_root" #> "$subfolder_root$log_end" 2>&1 &
+BLOCK
+
+
+# EP
+#:<<BLOCK
+conf_file="configs/ep/resnet18/resnet18_sc_ep.yml"
+subfolder_root="resnet18_cifar10_ep_"
+log_end="_log"
+
+for pr in 0.05 0.02 0.005
+do
+    python main.py \
+    --config "$conf_file" \
+    --prune-rate "$pr" \
+    --subfolder "$subfolder_root$sr" #> "$subfolder_root$sr$log_end" 2>&1 &
+done
+
 #BLOCK
+
 
 # smart ratio
 :<<BLOCK
@@ -66,7 +84,7 @@ do
     python main.py \
     --config "$conf_file" \
     --smart_ratio "$sr" \
-    --subfolder "$subfolder_root$sr" > "$subfolder_root$sr$log_end" 2>&1 #&
+    --subfolder "$subfolder_root$sr" > "$subfolder_root$sr$log_end" 2>&1 &
 done
 BLOCK
 
