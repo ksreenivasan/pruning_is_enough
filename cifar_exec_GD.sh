@@ -1,6 +1,7 @@
 
 
 # VGG16, 0.5%, bf_ft_acc vs af_ft_acc
+:<<BLOCK
 config_file="configs/hypercube/vgg16/vgg.yml"
 subfolder_root="vgg_bf_af_relation_"
 con="_"
@@ -16,7 +17,7 @@ do
         --target-sparsity "$sp" --iter-period "$t" > "$subfolder_root$sp$con$t$log_end" 2>&1 &
     done
 done
-
+BLOCK
 
 
 
@@ -38,32 +39,58 @@ done
 BLOCK
 
 
-:<<BLOCK
-# SRv1
-config_file="configs/sr/resnet20/resnet20_sr.yml"
-subfolder=tmp
-n_gpu=0
 
-# SRv2, SRv3
-:<<BLOCK
-config_file="configs/sr/resnet20/resnet20_srV2.yml"
-n_gpu=2
-subfolder=SRv2_sp_3_72
-BLOCK
+######################################################
+##########   ResNet-18   #############################
+######################################################
 
-:<<BLOCK
-python main.py \
-    --config $config_file \
-    --smart_ratio 0.9856 \
-    --subfolder $subfolder \
-    --gpu $n_gpu
+# weight training
+#:<<BLOCK
+conf_file="configs/training/resnet18/cifar10_resnet18_training.yml"
+subfolder_root="resnet18_cifar10_wt_"
+log_end="_log"
 
 python main.py \
-    --config $config_file \
-    --smart_ratio 0.9628 \
-    --subfolder $subfolder \
-    --gpu $n_gpu
+    --config "$conf_file" \
+    --subfolder "$subfolder_root" #> "$subfolder_root$log_end" 2>&1 &
+#BLOCK
+
+# smart ratio
+:<<BLOCK
+conf_file="configs/sr/resnet18/cifar10_resnet18_sr.yml"
+subfolder_root="resnet18_cifar10_sr_"
+log_end="_log"
+
+for sr in 0.95 0.98 0.995
+do
+    python main.py \
+    --config "$conf_file" \
+    --smart_ratio "$sr" \
+    --subfolder "$subfolder_root$sr" > "$subfolder_root$sr$log_end" 2>&1 #&
+done
 BLOCK
+
+# Gem-Miner (hypercube)
+:<<BLOCK
+
+# 5% sparsity
+#conf_file="configs/hypercube/resnet18/cifar10/sparsity_5_85lam6.yml"
+#subfolder_root="resnet18_cifar10_hc_sparsity_5_real_"
+
+#conf_file="configs/hypercube/resnet18/cifar10/sparsity_5_85lam6_iter_20.yml"
+#subfolder_root="resnet18_cifar10_hc_sparsity_5_iter_20"
+
+#conf_file="configs/hypercube/resnet18/cifar10/sparsity_5_85lam6_iter_20_multistep_0_1.yml"
+#subfolder_root="resnet18_cifar10_hc_sparsity_5_iter_20_multistep_0_1"
+
+#conf_file="configs/hypercube/resnet18/cifar10/sparsity_5_85lam6_iter_20_cosine_0_1.yml"
+#subfolder_root="resnet18_cifar10_hc_sparsity_5_iter_20_cosine_0_1"
+
+conf_file="configs/hypercube/resnet18/cifar10/sparsity_5_85lam6_iter_20_adam.yml"
+subfolder_root="resnet18_cifar10_hc_sparsity_5_iter_20_adam"
+
+
+
 
 
 
