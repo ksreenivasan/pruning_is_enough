@@ -1,23 +1,24 @@
 
 
 # VGG16, 0.5%, bf_ft_acc vs af_ft_acc
-:<<BLOCK
+#:<<BLOCK
 config_file="configs/hypercube/vgg16/vgg.yml"
 subfolder_root="vgg_bf_af_relation_"
 con="_"
 log_end="_log"
-sp_list=(1.4) #(0.5 1.4)
-t_list=(100)  # 5 20 50 100
+sp_list=(0.5) #(0.5 1.4)
+lr_list=(0.01 0.001 0.0001 0.00001)
+#t_list=(100)  # 5 20 50 100
 for sp in ${sp_list[@]}
 do
-    for t in ${t_list[@]}
+    for lr in ${lr_list[@]}
     do
         python main.py \
-        --config "$config_file" --subfolder "$subfolder_root$sp$con$t" \
-        --target-sparsity "$sp" --iter-period "$t" > "$subfolder_root$sp$con$t$log_end" 2>&1 &
+        --config "$config_file" --subfolder "$subfolder_root$sp$con$lr" \
+        --target-sparsity "$sp" --lr "$lr" > "$subfolder_root$sp$con$lr$log_end" 2>&1 &
     done
 done
-BLOCK
+#BLOCK
 
 
 
@@ -57,7 +58,7 @@ BLOCK
 
 
 # EP
-#:<<BLOCK
+:<<BLOCK
 conf_file="configs/ep/resnet18/resnet18_sc_ep.yml"
 subfolder_root="resnet18_cifar10_ep_"
 log_end="_log"
@@ -70,7 +71,7 @@ do
     --subfolder "$subfolder_root$sr" #> "$subfolder_root$sr$log_end" 2>&1 &
 done
 
-#BLOCK
+BLOCK
 
 
 # smart ratio
