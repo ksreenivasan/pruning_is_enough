@@ -1139,24 +1139,37 @@ def print_num_dataset(data):
 def init_layer_weight_ratio(model, parser_args):
     if parser_args.arch.lower() == 'resnet20':
         
-        # load smart ratio
-        sr = pd.read_csv("per_layer_sparsity_resnet20/smart_ratio.csv")
-        #import pdb; pdb.set_trace()
-        if parser_args.target_sparsity == 3.72:
-            p_arr = (sr['3.72'].array)/100
-        elif parser_args.target_sparsity == 1.44:
-            p_arr = (sr['1.44'].array)/100
-        else:
-            raise NotImplementedError
+        if parser_args.algo != 'pt_sr':
+            raise ValueError
 
-        # optionally, change the smart ratio
-        hc = pd.read_csv("per_layer_sparsity_resnet20/hc_iter.csv")
-        if parser_args.target_sparsity == 3.72:
-            p_arr[0], p_arr[-1] = hc['3_72'].array[0]/100, hc['3_72'].array[-1]/100
-        elif parser_args.target_sparsity == 1.44:
-            p_arr[0], p_arr[-1] = hc['1_4'].array[0]/100, hc['1_4'].array[-1]/100
-        else:
-            raise NotImplementedError
+        if parser_args.sr_version == 3:
+            # load smart ratio
+            sr = pd.read_csv("per_layer_sparsity_resnet20/smart_ratio.csv")
+            #import pdb; pdb.set_trace()
+            if parser_args.target_sparsity == 3.72:
+                p_arr = (sr['3.72'].array)/100
+            elif parser_args.target_sparsity == 1.44:
+                p_arr = (sr['1.44'].array)/100
+            else:
+                raise NotImplementedError
+
+
+            # optionally, change the smart ratio
+            hc = pd.read_csv("per_layer_sparsity_resnet20/hc_iter.csv")
+            if parser_args.target_sparsity == 3.72:
+                p_arr[0], p_arr[-1] = hc['3_72'].array[0]/100, hc['3_72'].array[-1]/100
+            elif parser_args.target_sparsity == 1.44:
+                p_arr[0], p_arr[-1] = hc['1_4'].array[0]/100, hc['1_4'].array[-1]/100
+            else:
+                raise NotImplementedError
+        
+        if parser_args.sr_version == 6:
+            # optionally, change the smart ratio
+            grid = pd.read_csv("per_layer_sparsity_resnet20/grid_best.csv")
+            if parser_args.target_sparsity == 1.44:
+                p_arr = (grid['1_4'].array)/100
+            else:
+                raise NotImplementedError
         
         # for each layer, set the initial layer_weight_ratio
         conv_layers, linear_layers = get_layers(parser_args.arch, model)

@@ -38,7 +38,7 @@ freeze_weights: True
 
 # ===== Hardware setup ===== #
 workers: 4
-gpu: 2
+gpu: 1
 
 # ===== Checkpointing ===== #
 checkpoint_at_prune: True

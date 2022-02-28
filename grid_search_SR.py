@@ -13,7 +13,10 @@ best_idx = 0
 best_acc = 0
 best_sp = 0
 for idx in range(1, 145):
+<<<<<<< HEAD
 #for idx in range(1, 49):
+=======
+>>>>>>> 9bf119c02e447a7fd0b09b9bbd2a70405c81623c
 
 	path = 'results/SR_grid_sp_1_44_{}'.format(idx)
 	csv_files = glob.glob(os.path.join(path, "*/**.csv"))
@@ -35,3 +38,19 @@ for idx in range(1, 145):
 			best_sp = curr_sp
 
 print('best_idx: {}, best_acc: {}, best_sparsity: {:.2f}'.format(best_idx, best_acc, best_sp))
+
+
+# save the optimal grid search result (sparsity pattern)
+#best_idx = 22 # for DEBUG
+group = int(best_idx/24)
+line_idx = best_idx % 24
+
+PATH = 'per_layer_sparsity_resnet20/grid_search_saved_{}.csv'.format(group)
+df = pd.read_csv(PATH)
+if line_idx == 0:
+    best_pattern = df.columns.tolist()
+else:
+    best_pattern = df.values.tolist()[line_idx-1]
+
+print(best_pattern)
+

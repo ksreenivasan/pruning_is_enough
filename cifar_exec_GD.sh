@@ -1,4 +1,10 @@
 
+
+
+
+
+
+
 ######################################################
 ##########   ResNet-18   #############################
 ######################################################
@@ -85,6 +91,20 @@ BLOCK
 ##########   ResNet-20   #############################
 ######################################################
 
+# turn on bias, affine batch-norm
+:<<BLOCK
+config_file="configs/hypercube/resnet20/bias_AffineBN_True/sparsity_1_44.yml"
+subfolder_root="resnet20_bias_affine_True_hc_sparsity_1_44"
+log_end="_log"
+
+python main.py \
+--config "$config_file" \
+--subfolder "$subfolder_root" > "$subfolder_root$log_end" 2>&1 #&
+BLOCK
+
+
+
+
 
 # SRv1: original SR (in Jason Lee's paper)
 #config_file="configs/sr/resnet20/resnet20_sr.yml"
@@ -158,9 +178,10 @@ BLOCK
 
 # SRv5: grid search
 :<<BLOCK
-group=1
-n_gpu=2
+group=4
+n_gpu=1
 
+# step 1. do the grid search
 config_file="configs/sr/resnet20/resnet20_sr_grid.yml"
 subfolder=SR_grid_sp_1_44_
 COUNTER=24*$group+0
@@ -179,7 +200,46 @@ do
 done < "$input"
 BLOCK
 
+# step 2. check the best accuracy among different runs
+#python grid_search_SR.py 
 
 
+
+# SRv6: Start from SRv5, finetune p_i for each layer
+
+#echo "first, get SRv5 info"
+
+## Step 1: fine-tune ratio
+:<<BLOCK
+config_file="configs/sr/resnet20/resnet20_find_srV6.yml"
+n_gpu=1
+subfolder=find_SRv6_sp_1_44_debug_lr_1e-6
+python main.py \
+    --config $config_file \
+    --target-sparsity 1.44 \
+    --subfolder $subfolder \
+    --gpu $n_gpu
+BLOCK
+
+
+
+
+## Step 2: train the model from the obtained smart ratio
+:<<BLOCK
+conf_file="configs/sr/resnet20/resnet20_srV6.yml"
+log_root="srV6_1e-6_real_"
+log_end="_log"
+subfolder_root="srV6_1e-6_real_"
+
+
+for epoch in 10 30 70 149 #160
+do
+    python main.py \
+    --config "$conf_file" \
+    --smart_ratio 0.9856 \
+    --srV3-epoch $epoch \
+    --subfolder "$subfolder_root$epoch" > "$log_root$epoch$log_end" 2>&1 &
+done
+BLOCK
 
 
