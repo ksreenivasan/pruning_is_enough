@@ -1,29 +1,114 @@
 
-# SRv1
-config_file="configs/sr/resnet20/resnet20_sr.yml"
-subfolder=tmp
-n_gpu=0
 
-# SRv2, SRv3
+# VGG16, 0.5%, bf_ft_acc vs af_ft_acc
 :<<BLOCK
-config_file="configs/sr/resnet20/resnet20_srV2.yml"
-n_gpu=2
-subfolder=SRv2_sp_3_72
+config_file="configs/hypercube/vgg16/vgg.yml"
+subfolder_root="vgg_bf_af_relation_"
+con="_"
+log_end="_log"
+sp_list=(1.4) #(0.5 1.4)
+t_list=(100)  # 5 20 50 100
+for sp in ${sp_list[@]}
+do
+    for t in ${t_list[@]}
+    do
+        python main.py \
+        --config "$config_file" --subfolder "$subfolder_root$sp$con$t" \
+        --target-sparsity "$sp" --iter-period "$t" > "$subfolder_root$sp$con$t$log_end" 2>&1 &
+    done
+done
 BLOCK
 
-python main.py \
-    --config $config_file \
-    --smart_ratio 0.9856 \
-    --subfolder $subfolder \
-    --gpu $n_gpu
+
 
 :<<BLOCK
-python main.py \
-    --config $config_file \
-    --smart_ratio 0.9628 \
-    --subfolder $subfolder \
-    --gpu $n_gpu
+# VGG16, bias=True, Affine-BN
+config_file="configs/hypercube/vgg16/vgg_bias_affine.yml"
+subfolder_root="vgg_bias_affine_True_hc_sparsity_"
+log_end="_log"
+
+
+sp_list=(50 5 2.5 1.4)
+for sp in ${sp_list[@]}
+do
+    python main.py \
+    --config "$config_file" --subfolder "$subfolder_root$sp" \
+    --target-sparsity "$sp" #> "$subfloder_root$sp$log_end" 2>&1 &
+done
+
 BLOCK
+
+
+
+######################################################
+##########   ResNet-18   #############################
+######################################################
+
+# weight training
+:<<BLOCK
+conf_file="configs/training/resnet18/cifar10_resnet18_training.yml"
+subfolder_root="resnet18_cifar10_wt_"
+log_end="_log"
+
+python main.py \
+    --config "$conf_file" \
+    --subfolder "$subfolder_root" #> "$subfolder_root$log_end" 2>&1 &
+BLOCK
+
+
+# EP
+#:<<BLOCK
+conf_file="configs/ep/resnet18/resnet18_sc_ep.yml"
+subfolder_root="resnet18_cifar10_ep_"
+log_end="_log"
+
+for pr in 0.05 0.02 0.005
+do
+    python main.py \
+    --config "$conf_file" \
+    --prune-rate "$pr" \
+    --subfolder "$subfolder_root$sr" #> "$subfolder_root$sr$log_end" 2>&1 &
+done
+
+#BLOCK
+
+
+# smart ratio
+:<<BLOCK
+conf_file="configs/sr/resnet18/cifar10_resnet18_sr.yml"
+subfolder_root="resnet18_cifar10_sr_"
+log_end="_log"
+
+for sr in 0.95 0.98 0.995
+do
+    python main.py \
+    --config "$conf_file" \
+    --smart_ratio "$sr" \
+    --subfolder "$subfolder_root$sr" > "$subfolder_root$sr$log_end" 2>&1 &
+done
+BLOCK
+
+# Gem-Miner (hypercube)
+:<<BLOCK
+
+# 5% sparsity
+#conf_file="configs/hypercube/resnet18/cifar10/sparsity_5_85lam6.yml"
+#subfolder_root="resnet18_cifar10_hc_sparsity_5_real_"
+
+#conf_file="configs/hypercube/resnet18/cifar10/sparsity_5_85lam6_iter_20.yml"
+#subfolder_root="resnet18_cifar10_hc_sparsity_5_iter_20"
+
+#conf_file="configs/hypercube/resnet18/cifar10/sparsity_5_85lam6_iter_20_multistep_0_1.yml"
+#subfolder_root="resnet18_cifar10_hc_sparsity_5_iter_20_multistep_0_1"
+
+#conf_file="configs/hypercube/resnet18/cifar10/sparsity_5_85lam6_iter_20_cosine_0_1.yml"
+#subfolder_root="resnet18_cifar10_hc_sparsity_5_iter_20_cosine_0_1"
+
+conf_file="configs/hypercube/resnet18/cifar10/sparsity_5_85lam6_iter_20_adam.yml"
+subfolder_root="resnet18_cifar10_hc_sparsity_5_iter_20_adam"
+
+
+
 
 
 

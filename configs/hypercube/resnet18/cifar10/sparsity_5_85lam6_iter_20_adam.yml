@@ -1,26 +1,27 @@
-#subfolder: vgg16_HC_runs
+#subfolder: resnet18_cifar10_hc_sparsity_5_7lam6
+trial_num: 1
 
 # Hypercube optimization
 algo: 'hc_iter'
-#iter_period: 5
+iter_period: 20
 
 # Architecture
-arch: vgg16
+arch: cResNet18
 
 # ===== Dataset ===== #
 dataset: CIFAR10
-name: vgg16_quantized_iter_hc
+name: resnet18_cifar10_hc
 
 # ===== Learning Rate Policy ======== #
 optimizer: adam
 lr: 0.01 #0.01
 lr_policy: cosine_lr #constant_lr #multistep_lr
-fine_tune_lr: 0.05
+fine_tune_lr: 0.01
 fine_tune_lr_policy: multistep_lr
 
 # ===== Network training config ===== #
 epochs: 200
-wd: 0.0
+wd: 0.0 
 momentum: 0.9
 batch_size: 128
 
@@ -30,17 +31,16 @@ bn_type: NonAffineBatchNorm
 freeze_weights: True
 prune_type: BottomK
 # enter target sparsity here
-#target_sparsity: 5
-# decide if you want to "unflag"
+target_sparsity: 5.0
 unflag_before_finetune: True
-init: signed_constant #signed_constant
+init: signed_constant
 score_init: unif #skew #half #bimodal #skew # bern
 scale_fan: False #True
 
 # ===== Rounding ===== #
-round: naive
+round: naive 
 noise: True
-noise_ratio: 0
+noise_ratio: 0 
 
 # ===== Quantization ===== #
 hc_quantized: True
@@ -48,7 +48,7 @@ quantize_threshold: 0.5
 
 # ===== Regularization ===== #
 regularization: L2
-lmbda: 0.000001 # 1e-6
+lmbda: 0.0000085
 
 # ===== Hardware setup ===== #
 workers: 4
@@ -58,4 +58,4 @@ gpu: 1
 checkpoint_at_prune: False
 
 # ==== sanity check ==== #
-skip_sanity_checks: False
+skip_sanity_checks: True
