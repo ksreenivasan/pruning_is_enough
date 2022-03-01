@@ -63,8 +63,8 @@ BLOCK
 #conf_file="configs/hypercube/resnet18/cifar10/sparsity_5_1lam6_iter_20_adam_1e4.yml"
 #subfolder_root="resnet18_cifar10_hc_sparsity_5_iter_20_adam_1lam6_1e4"
 
-conf_file="configs/hypercube/resnet18/cifar10/sparsity_5_1lam6_iter_20_adam_1e3.yml"
-subfolder_root="resnet18_cifar10_hc_sparsity_5_iter_20_adam_1lam6_1e3"
+#conf_file="configs/hypercube/resnet18/cifar10/sparsity_5_1lam6_iter_20_adam_1e3.yml"
+#subfolder_root="resnet18_cifar10_hc_sparsity_5_iter_20_adam_1lam6_1e3"
 
 
 # 2% sparsity
@@ -78,12 +78,38 @@ subfolder_root="resnet18_cifar10_hc_sparsity_5_iter_20_adam_1lam6_1e3"
 #conf_file="configs/hypercube/resnet18/cifar10/sparsity_0_5_85lam6_iter_20_adam.yml"
 #subfolder_root="resnet18_cifar10_hc_sparsity_0_5_iter_20_adam_85lam6"
 
+
+###########################################################################
+####### Sanity check
+###########################################################################
+
+# 5% sparsity
+#conf_file="configs/hypercube/resnet18/cifar10/sparsity_5_3lam6_iter_20_adam.yml"
+#subfolder_root="sanity_check_resnet18_cifar10_hc_sparsity_5"
+# 2% sparsity
+#conf_file="configs/hypercube/resnet18/cifar10/sparsity_5_85lam6_iter_20_adam.yml"
+#subfolder_root="sanity_check_resnet18_cifar10_hc_sparsity_2"
+# 0.5% sparsity
+#conf_file="configs/hypercube/resnet18/cifar10/sparsity_0_5_85lam6_iter_20_adam.yml"
+#subfolder_root="sanity_check_resnet18_cifar10_hc_sparsity_0_5"
+
+#### invert score
+# 5% sparsity
+#conf_file="configs/hypercube/resnet18/cifar10/sparsity_5_3lam6_iter_20_adam_invert.yml"
+#subfolder_root="sanity_check_resnet18_cifar10_hc_sparsity_5_invert"
+# 2% sparsity
+#conf_file="configs/hypercube/resnet18/cifar10/sparsity_5_85lam6_iter_20_adam_invert.yml"
+#subfolder_root="sanity_check_resnet18_cifar10_hc_sparsity_2_invert"
+# 0.5% sparsity
+conf_file="configs/hypercube/resnet18/cifar10/sparsity_0_5_85lam6_iter_20_adam_invert.yml"
+subfolder_root="sanity_check_resnet18_cifar10_hc_sparsity_0_5_invert"
+
 log_end="_log"
 
 python main.py \
 --config "$conf_file" \
 --subfolder "$subfolder_root" > "$subfolder_root$log_end" 2>&1 #&
-BLOCK
+#BLOCK
 
 
 
