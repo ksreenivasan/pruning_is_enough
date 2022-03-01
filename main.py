@@ -257,7 +257,8 @@ def main_worker(gpu, ngpus_per_node):
             parser_args.prune_rate = sum_pr / count
             writer.add_scalar("pr/average", parser_args.prune_rate, epoch)
 
-        writer.add_scalar("test/lr", cur_lr, epoch)
+        if writer is not None:
+            writer.add_scalar("test/lr", cur_lr, epoch)
         end_epoch = time.time()
 
         if parser_args.algo in ['hc', 'hc_iter']:

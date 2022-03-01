@@ -15,6 +15,7 @@ name: mobilenetV2_hc
 # ===== Learning Rate Policy ======== #
 optimizer: sgd
 lr: 0.1 #0.01
+wd: 0.0
 lr_policy: cosine_lr #constant_lr #multistep_lr
 fine_tune_lr: 0.1
 fine_tune_lr_policy: multistep_lr
@@ -32,7 +33,7 @@ freeze_weights: True
 prune_type: BottomK
 # enter target sparsity here
 target_sparsity: 5.0
-#unflag_before_finetune: True
+unflag_before_finetune: True
 init: signed_constant
 score_init: unif #skew #half #bimodal #skew # bern
 scale_fan: False #True
@@ -48,7 +49,7 @@ quantize_threshold: 0.5
 
 # ===== Regularization ===== #
 regularization: L2
-lmbda: 0
+lmbda: 0.00000001
 
 # ===== Hardware setup ===== #
 workers: 4
