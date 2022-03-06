@@ -26,7 +26,7 @@ def get_layers(arch='Conv4', model=None):
                        model.convs[5], model.convs[7]]
         linear_layers = [model.linear[0], model.linear[2], model.linear[4]]
 
-    elif arch == 'MobileNetV2':
+    elif arch in ['MobileNetV2', 'tinyMobileNetV2']:
         conv_layers = [model.conv1]
         for i in range(len(model.layers)):
             conv_layers.append(model.layers[i].conv1)

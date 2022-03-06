@@ -8,6 +8,7 @@ from models.vgg import vgg16, tinyvgg16
 #### TODO: delete below ones (merge with above code)
 from models.resnet_cifar import cResNet18, cResNet50 
 from models.resnet_tiny import TinyResNet18 
+from models.mobilenet import tinyMobileNetV2
 
 __all__ = [
     "tinyvgg16",
@@ -20,6 +21,7 @@ __all__ = [
     "resnet20",
     "resnet32",
     "resnet32_double",
+    "tinyMobileNetV2",
     "MobileNetV2",
     "FC",
     "Conv2",
