@@ -1,12 +1,46 @@
 
 
+# TinyImageNet, MobilenetV2
+
+
+# Weight training (WT)
+#python main.py --config configs/training/mobilenetV2/tiny_adam.yml #> log_tiny_mobile_wt_adam_0001_multi 2>&1 
+python main.py --config configs/training/mobilenetV2/tiny_sgd.yml #> log_tiny_mobile_wt_sgd_01_multi 2>&1 
+
+# smart ratio (SR)
+####### go to SR after getting the best result for WT
+#python main.py --config configs/sr/tiny_sr_mobilenet.yml --smart_ratio 0.95 #> log_tiny_mobile_sr 2>&1  
+
+
+# Gem-Miner (GM)
+:<<BLOCK
+gpu=2
+sp=1.4
+lmbda=0.00008 #(0.00008 0.00003)
+subfolder="tiny_mobile_sp_1_4_lam_8e5"
+
+python main.py --config configs/hypercube/tinyImageNet/mobilenetV2/sparsity_1_4.yml \
+			--gpu $gpu --target-sparsity $sp --lmbda $lmbda --subfolder "$subfolder" > "$subfolder" 2>&1
+
+BLOCK
+#python main.py --config configs/hypercube/tinyImageNet/mobilenetV2/sparsity_1_4.yml > tiny_mobile_1_4_lam_8e5 2>&1 
+#python main.py --config configs/hypercube/tinyImageNet/mobilenetV2/sparsity_5_GD.yml > tiny_mobile_5 2>&1 
+
+
+
+
+#python main.py --config configs/hypercube/resnet18/resnet18_sparsity_1_4_adam_5lam6.yml # resnet18, check code
+
+
+
+
 # TinyImageNet, ResNet-50
 
 # Weight training
 #python main.py --config configs/training/resnet50/tiny_resnet50_training_adam_001_multi.yml > log_tiny_res50_wt_adam_001_multi 2>&1 # this is current best
 #python main.py --config configs/training/resnet50/tiny_resnet50_training_adam_001_cosine.yml > log_tiny_res50_wt_adam_001_cosine 2>&1 # this is current best
 #python main.py --config configs/training/resnet50/tiny_resnet50_training_adam_0001_cosine.yml > log_tiny_res50_wt_adam_0001_cosine 2>&1 # this is current best
-python main.py --config configs/training/resnet50/tiny_resnet50_training_sgd_multi.yml > log_tiny_res50_wt_sgd_multi 2>&1 # this is current best
+#python main.py --config configs/training/resnet50/tiny_resnet50_training_sgd_multi.yml #> log_tiny_res50_wt_sgd_multi 2>&1 # this is current best
 
 
 

@@ -1,0 +1,40 @@
+
+subfolder: tiny_mobile_weight_training_sgd
+trial_num: 1
+
+
+# algorithm
+algo: 'hc_iter'
+
+# Architecture
+arch: tinyMobileNetV2
+
+# ===== Dataset ===== #
+dataset: TinyImageNet
+name: tiny_mobile_training
+
+# ===== Learning Rate Policy ======== #
+optimizer: sgd
+lr: 0.1
+lr_policy: multistep_lr #cosine_lr #constant_lr
+
+# ===== Network training config ===== #
+epochs: 300
+wd: 0.00004
+momentum: 0.9
+batch_size: 128
+
+weight_training: True
+
+# ===== Sparsity =========== #
+conv_type: SubnetConv
+bn_type: NonAffineBatchNorm
+freeze_weights: True
+prune_rate: -1
+init: kaiming_normal
+scale_fan: True
+
+# ===== Hardware setup ===== #
+workers: 4
+gpu: 1
+
