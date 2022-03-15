@@ -38,3 +38,7 @@ scale_fan: True
 workers: 4
 gpu: 1
 
+# ==== sanity check ==== #
+skip_fine_tune: True
+skip_sanity_checks: True
+

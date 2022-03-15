@@ -2,10 +2,9 @@
 
 # TinyImageNet, MobilenetV2
 
-
 # Weight training (WT)
 #python main.py --config configs/training/mobilenetV2/tiny_adam.yml #> log_tiny_mobile_wt_adam_0001_multi 2>&1 
-python main.py --config configs/training/mobilenetV2/tiny_sgd.yml #> log_tiny_mobile_wt_sgd_01_multi 2>&1 
+#python main.py --config configs/training/mobilenetV2/tiny_sgd.yml > log_tiny_mobile_wt_sgd_01_multi 2>&1 
 
 # smart ratio (SR)
 ####### go to SR after getting the best result for WT
@@ -13,16 +12,16 @@ python main.py --config configs/training/mobilenetV2/tiny_sgd.yml #> log_tiny_mo
 
 
 # Gem-Miner (GM)
-:<<BLOCK
-gpu=2
+#:<<BLOCK
+gpu=0
 sp=1.4
-lmbda=0.00008 #(0.00008 0.00003)
-subfolder="tiny_mobile_sp_1_4_lam_8e5"
+lmbda=0.00001 #(0.00008 0.00003)
+subfolder="tiny_mobile_sp_1_4_lam_1e5"
 
-python main.py --config configs/hypercube/tinyImageNet/mobilenetV2/sparsity_1_4.yml \
+python main.py --config configs/hypercube/tinyImageNet/mobilenetV2/adam.yml \
 			--gpu $gpu --target-sparsity $sp --lmbda $lmbda --subfolder "$subfolder" > "$subfolder" 2>&1
 
-BLOCK
+#BLOCK
 #python main.py --config configs/hypercube/tinyImageNet/mobilenetV2/sparsity_1_4.yml > tiny_mobile_1_4_lam_8e5 2>&1 
 #python main.py --config configs/hypercube/tinyImageNet/mobilenetV2/sparsity_5_GD.yml > tiny_mobile_5 2>&1 
 
