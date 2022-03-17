@@ -1,0 +1,46 @@
+# subfolder: sr
+algo: 'hc_iter'
+random_subnet: True
+# smart_ratio: 0.98 # 2% sparsity
+
+# Architecture
+arch: tinyMobileNetV2
+
+# ===== Dataset ===== #
+dataset: TinyImageNet
+name: tiny_mobilenetV2_sr
+
+# ===== Learning Rate Policy ======== #
+optimizer: sgd
+# doesn't matter
+# lr: 0.1
+# lr_policy: cosine_lr
+fine_tune_lr: 0.1
+fine_tune_lr_policy: multistep_lr # cosine_lr
+fine_tune_wd: 0.00004
+
+# ===== Network training config ===== #
+epochs: 300 #150
+momentum: 0.9
+batch_size: 128
+
+# ===== Sparsity =========== #
+conv_type: SubnetConv
+bn_type: NonAffineBatchNorm
+freeze_weights: True
+
+init: kaiming_normal # signed_constant
+mode: fan_in
+nonlinearity: relu
+# prune_rate: 0.5
+scale_fan: True
+
+# ===== Hardware setup ===== #
+workers: 4
+# gpu: 3
+
+# ===== Checkpointing ===== #
+checkpoint_at_prune: False
+
+# ==== sanity check ==== #
+skip_sanity_checks: True

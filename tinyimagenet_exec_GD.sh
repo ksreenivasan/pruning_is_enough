@@ -8,23 +8,44 @@
 
 # smart ratio (SR)
 ####### go to SR after getting the best result for WT
-#python main.py --config configs/sr/tiny_sr_mobilenet.yml --smart_ratio 0.95 #> log_tiny_mobile_sr 2>&1  
+gpu=1
+python main.py --config configs/sr/tiny_sr_mobilenet.yml --gpu $gpu --smart_ratio 0.95 #> log_tiny_mobile_sr 2>&1  
 
 
 # Gem-Miner (GM)
 #:<<BLOCK
 gpu=0
 sp=1.4
-lmbda=0.00001 #(0.00008 0.00003)
-subfolder="tiny_mobile_sp_1_4_lam_1e5"
+lmbda=0.000009 #(0.00008 0.00003)
+subfolder="tiny_mobile_sp_1_4_lam_9e6_sgd"
 
-python main.py --config configs/hypercube/tinyImageNet/mobilenetV2/adam.yml \
+python main.py --config configs/hypercube/tinyImageNet/mobilenetV2/sgd.yml \
 			--gpu $gpu --target-sparsity $sp --lmbda $lmbda --subfolder "$subfolder" > "$subfolder" 2>&1
 
 #BLOCK
-#python main.py --config configs/hypercube/tinyImageNet/mobilenetV2/sparsity_1_4.yml > tiny_mobile_1_4_lam_8e5 2>&1 
-#python main.py --config configs/hypercube/tinyImageNet/mobilenetV2/sparsity_5_GD.yml > tiny_mobile_5 2>&1 
 
+
+# Edge-Popup (EP)
+:<<BLOCK
+gpu=1
+subfolder="tiny_mobile_ep_sp_5_sgd" 
+python main.py --config configs/ep/tinyImageNet/mobilenetV2/sparsity_5.yml \
+			--gpu $gpu --subfolder "$subfolder"  > "$subfolder" 2>&1
+BLOCK
+
+:<<BLOCK
+gpu=1
+subfolder="tiny_mobile_ep_sp_20_sgd"
+python main.py --config configs/ep/tinyImageNet/mobilenetV2/sparsity_20.yml \
+			--gpu $gpu --subfolder "$subfolder"  > "$subfolder" 2>&1
+BLOCK
+
+:<<BLOCK
+gpu=0
+subfolder="tiny_mobile_ep_sp_1_4_sgd"
+python main.py --config configs/ep/tinyImageNet/mobilenetV2/sparsity_1_4.yml \
+			--gpu $gpu --subfolder "$subfolder"  > "$subfolder" 2>&1
+BLOCK
 
 
 
