@@ -272,7 +272,7 @@ def finetune(model, parser_args, data, criterion, old_epoch_list, old_test_acc_b
         parser_args)
 
     optimizer = get_optimizer(parser_args, model, finetune_flag=True)
-    scheduler = get_scheduler(optimizer, policy=parser_args.fine_tune_lr_policy)
+    scheduler = get_scheduler(optimizer, policy=parser_args.fine_tune_lr_policy, gamma=parser_args.fine_tune_lr_gamma)
     ''' 
     if parser_args.epochs == 150:
         scheduler = get_scheduler(optimizer, parser_args.fine_tune_lr_policy, milestones=[

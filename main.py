@@ -64,7 +64,7 @@ def main_worker(gpu, ngpus_per_node):
         model2 = None
     optimizer = get_optimizer(parser_args, model)
     data = get_dataset(parser_args)
-    scheduler = get_scheduler(optimizer, parser_args.lr_policy)
+    scheduler = get_scheduler(optimizer, policy=parser_args.lr_policy, gamma=parser_args.gamma)
     #lr_policy = get_policy(parser_args.lr_policy)(optimizer, parser_args)
     if parser_args.label_smoothing is None:
         criterion = nn.CrossEntropyLoss().cuda()

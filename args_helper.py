@@ -743,6 +743,12 @@ class ArgsHelper:
             help="Learning rate for fine-tuning weights"
         )
         parser.add_argument(
+            "--fine-tune-lr-gamma",
+            type=float,
+            default=0.1,
+            help="Learning rate decay for multi-step"
+        )
+        parser.add_argument(
             "--fine-tune-wd",
             type=float,
             default=0.0001,
