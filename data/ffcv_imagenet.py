@@ -11,6 +11,15 @@ from torch.utils.data.sampler import SubsetRandomSampler
 from args_helper import parser_args
 import numpy as np
 from pathlib import Path
+from typing import List
+
+from ffcv.pipeline.operation import Operation
+from ffcv.loader import Loader, OrderOption
+from ffcv.transforms import ToTensor, ToDevice, Squeeze, NormalizeImage, \
+    RandomHorizontalFlip, ToTorchImage
+from ffcv.fields.rgb_image import CenterCropRGBImageDecoder, \
+    RandomResizedCropRGBImageDecoder
+from ffcv.fields.basics import IntDecoder
 
 import torch.multiprocessing
 torch.multiprocessing.set_sharing_strategy("file_system")
@@ -123,3 +132,22 @@ class FfcvImageNet:
                         },
                         distributed=distributed)
         return loader
+
+    def get_resolution(self, epoch=0, min_res=160, max_res=192, end_ramp=76, start_ramp=65):
+        # this seems to be a hack to get good accuracy and is only between epochs
+        # 65 and 76. So, for now just return max_res. always.
+
+        return max_res
+
+        assert min_res <= max_res
+
+        if epoch <= start_ramp:
+            return min_res
+
+        if epoch >= end_ramp:
+            return max_res
+
+        # otherwise, linearly interpolate to the nearest multiple of 32
+        interp = np.interp([epoch], [start_ramp, end_ramp], [min_res, max_res])
+        final_res = int(np.round(interp[0] / 32)) * 32
+        return final_res
