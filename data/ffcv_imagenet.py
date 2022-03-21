@@ -13,9 +13,9 @@ from args_helper import parser_args
 import torch.multiprocessing
 torch.multiprocessing.set_sharing_strategy("file_system")
 
-class ImageNet:
+class FfcvImageNet:
     def __init__(self, args):
-        super(ImageNet, self).__init__()
+        super(FfcvImageNet, self).__init__()
 
         # data_root = os.path.join(parser_args.data, "imagenet")
         # put ffcv path here
@@ -24,23 +24,28 @@ class ImageNet:
         use_cuda = torch.cuda.is_available()
 
         # Data loading code
-        kwargs = {"num_workers": args.num_workers, "pin_memory": True} if use_cuda else {}
+        train_dataset = os.path.join(data_root, "train_500_0.50_90.ffcv")
+        val_dataset = os.path.join(data_root, "val_500_0.50_90.ffcv")
 
         # Data loading code
-        traindir = os.path.join(data_root, "train")
-        valdir = os.path.join(data_root, "val")
-
-        normalize = transforms.Normalize(
-            mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
-        )
+        kwargs = {"num_workers": 1, "in_memory": 1,
+                  "distributed": False, "resolution": 256}
 
         IMAGENET_MEAN = np.array([0.485, 0.456, 0.406]) * 255
         IMAGENET_STD = np.array([0.229, 0.224, 0.225]) * 255
         DEFAULT_CROP_RATIO = 224/256
 
-
-        self.train_loader = self.create_train_loader()
-        self.val_loader = self.create_val_loader()
+        self.train_loader = self.create_train_loader(train_dataset,
+                                kwargs['num_workers'],
+                                parser_args.batch_size,
+                                kwargs['distributed'],
+                                kwargs['in_memory'])
+        self.val_loader = self.create_val_loader(val_dataset,
+                                kwargs['num_workers'],
+                                parser_args.batch_size,
+                                kwargs['resolution'],
+                                kwargs['distributed'],
+                                )
         # madry does this but I don't think we need to
         # self.model, self.scaler = self.create_model_and_scaler()
 
