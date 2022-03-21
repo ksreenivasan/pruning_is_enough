@@ -6,14 +6,28 @@
 #python main.py --config configs/training/mobilenetV2/tiny_adam.yml #> log_tiny_mobile_wt_adam_0001_multi 2>&1 
 #python main.py --config configs/training/mobilenetV2/tiny_sgd.yml > log_tiny_mobile_wt_sgd_01_multi 2>&1 
 
+# IMP
+#:<<BLOCK
+gpu=1
+subfolder="tiny_mobile_renda"
+python imp_main.py --config configs/imp/tiny_mobilenet.yml --imp-rounds 20 --imp-no-rewind --gpu $gpu --subfolder "$subfolder" > "$subfolder" 2>&1
+#BLOCK
+
+# IMP
+:<<BLOCK
+gpu=1
+subfolder="tiny_mobile_imp"
+python imp_main.py --config configs/imp/tiny_mobilenet.yml --imp-rounds 20 --gpu $gpu --subfolder "$subfolder" > "$subfolder" 2>&1
+BLOCK
+
 # smart ratio (SR)
 ####### go to SR after getting the best result for WT
-#:<<BLOCK
+:<<BLOCK
 gpu=0
 subfolder="tiny_mobile_sr_20_gamma_0_05"
 python main.py --config configs/sr/tiny_sr_mobilenet.yml --gpu $gpu --smart_ratio 0.8 --fine-tune-lr-gamma 0.05 --subfolder "$subfolder" > "$subfolder" 2>&1
 #python main.py --config configs/sr/tiny_sr_mobilenet.yml --gpu $gpu --smart_ratio 0.8 --subfolder "$subfolder" > "$subfolder" 2>&1
-#BLOCK
+BLOCK
 
 # Gem-Miner (GM)
 :<<BLOCK

@@ -1,43 +1,40 @@
-# subfolder: sr
-algo: 'hc_iter'
-random_subnet: True
-# smart_ratio: 0.98 # 2% sparsity
+#subfolder: EP_sparsity_1_4
+algo: 'ep'
+override_prune_rate: True
 
 # Architecture
-arch: TinyResNet18
-name: TinyResNet18_smart_ratio
+arch: tinyMobileNetV2
 
 # ===== Dataset ===== #
 dataset: TinyImageNet
+name: mobileV2_tiny
 
 # ===== Learning Rate Policy ======== #
 optimizer: sgd
-# doesn't matter
-# lr: 0.1
-# lr_policy: cosine_lr
-fine_tune_lr: 0.2
-fine_tune_lr_policy: multistep_lr # cosine_lr
-fine_tune_wd: 0.0001
+lr: 0.1
+lr_policy: cosine_lr
+fine_tune_lr: 0.1
+fine_tune_lr_policy: multistep_lr
 
 # ===== Network training config ===== #
-epochs: 300 #150
+epochs: 300 
+fine_tune_wd: 0.00004
 momentum: 0.9
-batch_size: 128
-bias: False
+batch_size: 128 #256
 
 # ===== Sparsity =========== #
 conv_type: SubnetConv
 bn_type: NonAffineBatchNorm
-init: kaiming_normal # signed_constant
+init: signed_constant
 mode: fan_in
 nonlinearity: relu
-# prune_rate: 0.5
+prune_rate: 0.014
 scale_fan: True
 freeze_weights: True
 
 # ===== Hardware setup ===== #
 workers: 4
-# gpu: 3
+#gpu: 0
 
 # ===== Checkpointing ===== #
 checkpoint_at_prune: False
