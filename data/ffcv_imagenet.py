@@ -108,7 +108,7 @@ class FfcvImageNet:
         val_path = Path(val_dataset)
         assert val_path.is_file()
         res_tuple = (resolution, resolution)
-        cropper = CenterCropRGBImageDecoder(res_tuple, ratio=DEFAULT_CROP_RATIO)
+        cropper = CenterCropRGBImageDecoder(res_tuple, ratio=self.DEFAULT_CROP_RATIO)
         image_pipeline = [
             cropper,
             ToTensor(),
