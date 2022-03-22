@@ -21,6 +21,10 @@ from ffcv.fields.rgb_image import CenterCropRGBImageDecoder, \
     RandomResizedCropRGBImageDecoder
 from ffcv.fields.basics import IntDecoder
 
+torch.backends.cudnn.benchmark = True
+torch.autograd.profiler.emit_nvtx(False)
+torch.autograd.profiler.profile(False)
+
 import torch.multiprocessing
 torch.multiprocessing.set_sharing_strategy("file_system")
 
@@ -71,7 +75,7 @@ class FfcvImageNet:
             self.decoder,
             RandomHorizontalFlip(),
             ToTensor(),
-            ToDevice(ch.device(parser_args.gpu), non_blocking=True),
+            ToDevice(torch.device(parser_args.gpu), non_blocking=True),
             ToTorchImage(),
             NormalizeImage(IMAGENET_MEAN, IMAGENET_STD, np.float16)
         ]
@@ -80,7 +84,7 @@ class FfcvImageNet:
             IntDecoder(),
             ToTensor(),
             Squeeze(),
-            ToDevice(ch.device(parser_args.gpu), non_blocking=True)
+            ToDevice(torch.device(parser_args.gpu), non_blocking=True)
         ]
 
         order = OrderOption.RANDOM if distributed else OrderOption.QUASI_RANDOM
@@ -108,7 +112,7 @@ class FfcvImageNet:
         image_pipeline = [
             cropper,
             ToTensor(),
-            ToDevice(ch.device(parser_args.gpu), non_blocking=True),
+            ToDevice(torch.device(parser_args.gpu), non_blocking=True),
             ToTorchImage(),
             NormalizeImage(IMAGENET_MEAN, IMAGENET_STD, np.float16)
         ]
@@ -117,7 +121,7 @@ class FfcvImageNet:
             IntDecoder(),
             ToTensor(),
             Squeeze(),
-            ToDevice(ch.device(parser_args.gpu),
+            ToDevice(torch.device(parser_args.gpu),
             non_blocking=True)
         ]
 
