@@ -42,9 +42,9 @@ class FfcvImageNet:
         kwargs = {"num_workers": 1, "in_memory": 1,
                   "distributed": False, "resolution": 256}
 
-        IMAGENET_MEAN = np.array([0.485, 0.456, 0.406]) * 255
-        IMAGENET_STD = np.array([0.229, 0.224, 0.225]) * 255
-        DEFAULT_CROP_RATIO = 224/256
+        self.IMAGENET_MEAN = np.array([0.485, 0.456, 0.406]) * 255
+        self.IMAGENET_STD = np.array([0.229, 0.224, 0.225]) * 255
+        self.DEFAULT_CROP_RATIO = 224/256
 
         self.train_loader = self.create_train_loader(train_dataset,
                                 kwargs['num_workers'],
@@ -73,7 +73,7 @@ class FfcvImageNet:
             ToTensor(),
             ToDevice(ch.device(parser_args.gpu), non_blocking=True),
             ToTorchImage(),
-            NormalizeImage(IMAGENET_MEAN, IMAGENET_STD, np.float16)
+            NormalizeImage(self.IMAGENET_MEAN, self.IMAGENET_STD, np.float16)
         ]
 
         label_pipeline: List[Operation] = [
@@ -110,7 +110,7 @@ class FfcvImageNet:
             ToTensor(),
             ToDevice(ch.device(parser_args.gpu), non_blocking=True),
             ToTorchImage(),
-            NormalizeImage(IMAGENET_MEAN, IMAGENET_STD, np.float16)
+            NormalizeImage(self.IMAGENET_MEAN, self.IMAGENET_STD, np.float16)
         ]
 
         label_pipeline = [
