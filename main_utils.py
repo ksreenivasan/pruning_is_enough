@@ -985,6 +985,13 @@ def get_model(parser_args):
         if parser_args.freeze_weights:
             freeze_model_weights(model)
 
+    # TODO: hacky. fix this. @sreeniva
+    if parser_args.arch == "ResNet18":
+        # make half precision
+        model = model.half()
+        for name, params in model.named_parameters():
+            params.data = params.half()
+
     return model
 
 

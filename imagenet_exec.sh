@@ -28,4 +28,4 @@ conf_file="configs/hypercube/resnet18/imagenet/resnet18_sparsity_10.yml"
 log_root="resnet18_ffcv"
 log_end="_log"
 python main.py \
-    --config "$conf_file" > "$log_root$log_end" 2>&1 &
+    --config "$conf_file" #> "$log_root$log_end" 2>&1 &
