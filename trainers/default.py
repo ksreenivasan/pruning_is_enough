@@ -7,11 +7,11 @@ import pdb
 from utils.eval_utils import accuracy
 from utils.logging import AverageMeter, ProgressMeter
 from utils.net_utils import get_regularization_loss, prune, get_layers
+from torch.cuda.amp import autocast
 
 from torch import optim
 
 __all__ = ["train", "validate", "modifier"]
-
 
 
 def train(train_loader, model, criterion, optimizer, epoch, args, writer, scaler=None):
@@ -67,7 +67,7 @@ def train(train_loader, model, criterion, optimizer, epoch, args, writer, scaler
 
         if args.lam_finetune_loss > 0:
             raise NotImplementedError  # please check finetune_loss repo
-
+        
         regularization_loss = torch.tensor(0)
         if args.regularization:
             regularization_loss =\
@@ -76,7 +76,9 @@ def train(train_loader, model, criterion, optimizer, epoch, args, writer, scaler
                                         alpha_prime=args.alpha_prime)
 
         #print('regularization_loss: ', regularization_loss)
-        loss += regularization_loss
+
+        with torch.cuda.amp.autocast(enabled=args.mixed_precision): # mixed precision
+            loss += regularization_loss
 
         # measure accuracy and record loss
         acc1, acc5, acc10 = accuracy(output, target, topk=(1, 5, 10))
@@ -91,6 +93,8 @@ def train(train_loader, model, criterion, optimizer, epoch, args, writer, scaler
             loss.backward()
             optimizer.step()
         else:
+            with torch.cuda.amp.autocast(enabled=args.mixed_precision): # mixed precision
+                output = model(images)
             scaler.scale(loss).backward()
             scaler.step(optimizer)
             scaler.update()

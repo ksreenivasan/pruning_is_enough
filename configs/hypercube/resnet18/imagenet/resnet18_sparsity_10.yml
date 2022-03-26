@@ -27,6 +27,7 @@ epochs: 50
 wd: 0.0 
 momentum: 0.9
 batch_size: 128
+mixed_precision: True
 
 # ===== Sparsity =========== #
 conv_type: SubnetConv
