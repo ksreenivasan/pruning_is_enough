@@ -6,6 +6,20 @@
 #python main.py --config configs/training/mobilenetV2/tiny_adam.yml #> log_tiny_mobile_wt_adam_0001_multi 2>&1 
 #python main.py --config configs/training/mobilenetV2/tiny_sgd.yml > log_tiny_mobile_wt_sgd_01_multi 2>&1 
 
+# IMP
+:<<BLOCK
+gpu=1
+subfolder="tiny_mobile_renda"
+python imp_main.py --config configs/imp/tiny_mobilenet.yml --imp-rounds 20 --imp-no-rewind --gpu $gpu --subfolder "$subfolder" > "$subfolder" 2>&1
+BLOCK
+
+# IMP
+:<<BLOCK
+gpu=1
+subfolder="tiny_mobile_imp"
+python imp_main.py --config configs/imp/tiny_mobilenet.yml --imp-rounds 20 --gpu $gpu --subfolder "$subfolder" > "$subfolder" 2>&1
+BLOCK
+
 # smart ratio (SR)
 ####### go to SR after getting the best result for WT
 :<<BLOCK
@@ -25,6 +39,30 @@ subfolder="tiny_mobile_gm_sp_20_lam_3e6_sgd_unflag_F"
 python main.py --config configs/hypercube/tinyImageNet/mobilenetV2/sgd_unflag_F.yml \
 			--gpu $gpu --target-sparsity $sp --lmbda $lmbda --subfolder "$subfolder" > "$subfolder" 2>&1
 #BLOCK
+
+
+
+# Gem-Miner (GM) - Sanity checks!
+:<<BLOCK
+gpu=0
+subfolder="tiny_mobile_gm_sp_20_sanity"
+
+python main.py --config configs/hypercube/tinyImageNet/mobilenetV2/sparsity_20_sgd_w_sanity.yml \
+			--gpu $gpu --subfolder "$subfolder" > "$subfolder" 2>&1
+
+gpu=0
+subfolder="tiny_mobile_gm_sp_3_6_sanity"
+
+python main.py --config configs/hypercube/tinyImageNet/mobilenetV2/sparsity_3_6_adam_w_sanity.yml \
+			--gpu $gpu --subfolder "$subfolder" > "$subfolder" 2>&1
+
+BLOCK
+
+gpu=0
+subfolder="tiny_mobile_gm_sp_1_4_sanity"
+
+python main.py --config configs/hypercube/tinyImageNet/mobilenetV2/sparsity_1_4_sgd_w_sanity.yml \
+			--gpu $gpu --subfolder "$subfolder" #> "$subfolder" 2>&1
 
 
 # Edge-Popup (EP)
