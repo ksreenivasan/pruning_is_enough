@@ -16,8 +16,8 @@ optimizer: sgd
 # lr: 0.1
 # lr_policy: cosine_lr
 fine_tune_lr: 0.1
-fine_tune_lr_policy: multistep_lr # cosine_lr
-fine_tune_wd: 0.00004
+fine_tune_lr_policy: cosine_lr #multistep_lr # cosine_lr
+fine_tune_wd: 0 #0.00004
 
 # ===== Network training config ===== #
 epochs: 300 #150
