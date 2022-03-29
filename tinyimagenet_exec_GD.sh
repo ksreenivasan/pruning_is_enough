@@ -30,7 +30,7 @@ python main.py --config configs/sr/tiny_sr_mobilenet.yml --gpu $gpu --smart_rati
 BLOCK
 
 # Gem-Miner (GM)
-#:<<BLOCK
+:<<BLOCK
 gpu=1
 sp=20
 lmbda=0.000003 #(0.00008 0.00003)
@@ -38,7 +38,7 @@ subfolder="tiny_mobile_gm_sp_20_lam_3e6_sgd_unflag_F"
 
 python main.py --config configs/hypercube/tinyImageNet/mobilenetV2/sgd_unflag_F.yml \
 			--gpu $gpu --target-sparsity $sp --lmbda $lmbda --subfolder "$subfolder" > "$subfolder" 2>&1
-#BLOCK
+BLOCK
 
 
 
@@ -46,23 +46,24 @@ python main.py --config configs/hypercube/tinyImageNet/mobilenetV2/sgd_unflag_F.
 :<<BLOCK
 gpu=0
 subfolder="tiny_mobile_gm_sp_20_sanity"
-
 python main.py --config configs/hypercube/tinyImageNet/mobilenetV2/sparsity_20_sgd_w_sanity.yml \
 			--gpu $gpu --subfolder "$subfolder" > "$subfolder" 2>&1
 
 gpu=0
 subfolder="tiny_mobile_gm_sp_3_6_sanity"
-
 python main.py --config configs/hypercube/tinyImageNet/mobilenetV2/sparsity_3_6_adam_w_sanity.yml \
+			--gpu $gpu --subfolder "$subfolder" > "$subfolder" 2>&1
+
+gpu=1
+subfolder="tiny_mobile_gm_sp_1_4_sanity"
+python main.py --config configs/hypercube/tinyImageNet/mobilenetV2/sparsity_1_4_sgd_w_sanity.yml \
 			--gpu $gpu --subfolder "$subfolder" > "$subfolder" 2>&1
 
 BLOCK
 
-gpu=0
-subfolder="tiny_mobile_gm_sp_1_4_sanity"
 
-python main.py --config configs/hypercube/tinyImageNet/mobilenetV2/sparsity_1_4_sgd_w_sanity.yml \
-			--gpu $gpu --subfolder "$subfolder" #> "$subfolder" 2>&1
+
+
 
 
 # Edge-Popup (EP)
