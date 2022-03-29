@@ -61,9 +61,23 @@ python main.py --config configs/hypercube/tinyImageNet/mobilenetV2/sparsity_1_4_
 
 BLOCK
 
+gpu=0
+subfolder="tiny_mobile_gm_sp_20_invert"
+python main.py --config configs/hypercube/tinyImageNet/mobilenetV2/sparsity_20_sgd_w_invert.yml \
+			--gpu $gpu --subfolder "$subfolder" #> "$subfolder" 2>&1
+:<<BLOCK
 
+gpu=0
+subfolder="tiny_mobile_gm_sp_3_6_invert"
+python main.py --config configs/hypercube/tinyImageNet/mobilenetV2/sparsity_3_6_adam_w_invert.yml \
+			--gpu $gpu --subfolder "$subfolder" > "$subfolder" 2>&1
 
+gpu=1
+subfolder="tiny_mobile_gm_sp_1_4_invert"
+python main.py --config configs/hypercube/tinyImageNet/mobilenetV2/sparsity_1_4_sgd_w_invert.yml \
+			--gpu $gpu --subfolder "$subfolder" > "$subfolder" 2>&1
 
+BLOCK
 
 
 # Edge-Popup (EP)
