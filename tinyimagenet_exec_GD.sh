@@ -6,12 +6,12 @@
 #python main.py --config configs/training/mobilenetV2/tiny_adam.yml #> log_tiny_mobile_wt_adam_0001_multi 2>&1 
 #python main.py --config configs/training/mobilenetV2/tiny_sgd.yml > log_tiny_mobile_wt_sgd_01_multi 2>&1 
 
-# IMP
-:<<BLOCK
+# Renda
+#:<<BLOCK
 gpu=1
-subfolder="tiny_mobile_renda"
-python imp_main.py --config configs/imp/tiny_mobilenet.yml --imp-rounds 20 --imp-no-rewind --gpu $gpu --subfolder "$subfolder" > "$subfolder" 2>&1
-BLOCK
+subfolder="tiny_mobile_renda_new"
+python imp_main.py --config configs/imp/tiny_mobilenet.yml --imp-rounds 20 --imp-no-rewind --gpu $gpu --subfolder "$subfolder" #> "$subfolder" 2>&1
+#BLOCK
 
 # IMP
 :<<BLOCK
