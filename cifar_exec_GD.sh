@@ -59,16 +59,16 @@ BLOCK
 # Renda 
 #:<<BLOCK
 conf_file="configs/imp/resnet18_cifar.yml"
-subfolder_root="resnet18_cifar10_renda_"
+subfolder_root="resnet18_cifar10_renda_new"
 log_end="_log"
 gpu=1
 
+    #--imp-no-rewind \
 python imp_main.py \
     --config "$conf_file" \
-    --imp-rounds 20 \
-    --imp-no-rewind \
+    --imp-rounds 30 \
     --gpu $gpu \
-    --subfolder "$subfolder_root" > "$subfolder_root$log_end" 2>&1 &
+    --subfolder "$subfolder_root" #> "$subfolder_root$log_end" 2>&1 &
 #BLOCK
 
 
