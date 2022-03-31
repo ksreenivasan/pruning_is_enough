@@ -56,9 +56,25 @@ python main.py \
     --subfolder "$subfolder_root" #> "$subfolder_root$log_end" 2>&1 &
 BLOCK
 
+# Renda 
+#:<<BLOCK
+conf_file="configs/imp/resnet18_cifar.yml"
+subfolder_root="resnet18_cifar10_renda_new"
+log_end="_log"
+gpu=1
+
+    #--imp-no-rewind \
+python imp_main.py \
+    --config "$conf_file" \
+    --imp-rounds 30 \
+    --gpu $gpu \
+    --subfolder "$subfolder_root" #> "$subfolder_root$log_end" 2>&1 &
+#BLOCK
+
+
 
 # EP
-#:<<BLOCK
+:<<BLOCK
 conf_file="configs/ep/resnet18/resnet18_sc_ep.yml"
 subfolder_root="resnet18_cifar10_ep_"
 log_end="_log"
@@ -71,7 +87,7 @@ do
     --subfolder "$subfolder_root$pr" > "$subfolder_root$pr$log_end" 2>&1 &
 done
 
-#BLOCK
+BLOCK
 
 
 # smart ratio
