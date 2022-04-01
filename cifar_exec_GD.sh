@@ -58,8 +58,8 @@ BLOCK
 
 # Renda 
 #:<<BLOCK
-conf_file="configs/imp/resnet18_cifar.yml"
-subfolder_root="resnet18_cifar10_renda_new"
+conf_file="configs/imp/resnet18_cifar_liu.yml"
+subfolder_root="resnet18_cifar10_imp_debug"
 log_end="_log"
 gpu=1
 
