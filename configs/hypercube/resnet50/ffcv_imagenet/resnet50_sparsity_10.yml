@@ -23,7 +23,7 @@ fine_tune_lr: 0.4
 fine_tune_lr_policy: multistep_lr
 
 # ===== Network training config ===== #
-epochs: 44
+epochs: 88
 wd: 0.0 
 momentum: 0.9
 batch_size: 100

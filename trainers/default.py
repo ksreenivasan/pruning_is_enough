@@ -57,13 +57,9 @@ def train(train_loader, model, criterion, optimizer, epoch, args, writer, scaler
                         scores.data = torch.clamp(scores.data, 0.0, 1.0)
 
         # compute output
-        if scaler is None:
+        with torch.cuda.amp.autocast(enabled=args.mixed_precision): # mixed precision
             output = model(images)
             loss = criterion(output, target)
-        else:
-            with torch.cuda.amp.autocast(enabled=True): # mixed precision
-                output = model(images)
-                loss = criterion(output, target)
 
         if args.lam_finetune_loss > 0:
             raise NotImplementedError  # please check finetune_loss repo
