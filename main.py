@@ -267,7 +267,7 @@ def main_worker(gpu, ngpus_per_node):
 
         if parser_args.algo in ['hc', 'hc_iter']:
             results_df = pd.DataFrame({'epoch': epoch_list, 'test_acc_before_rounding': test_acc_before_round_list,
-                                      'test_acc': test_acc_list, 'val_acc': val_acc_list, 'train_acc_list': train_acc_list, 'regularization_loss': reg_loss_list, 'model_sparsity': model_sparsity_list})
+                                      'test_acc': test_acc_list, 'val_acc': val_acc_list, 'train_acc': train_acc_list, 'regularization_loss': reg_loss_list, 'model_sparsity': model_sparsity_list})
         else:
             results_df = pd.DataFrame(
                 {'epoch': epoch_list, 'test_acc': test_acc_list, 'model_sparsity': model_sparsity_list})
