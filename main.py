@@ -135,6 +135,10 @@ def main_worker(gpu, ngpus_per_node):
 
     # Start training
     for epoch in range(parser_args.start_epoch, parser_args.epochs):
+        if parser_args.only_finetune:
+            print("Skipping pruning and going straight to finetune!!!")
+            break
+
         if parser_args.multiprocessing_distributed:
             data.train_loader.sampler.set_epoch(epoch)
         #lr_policy(epoch, iteration=None)
@@ -273,6 +277,10 @@ def main_worker(gpu, ngpus_per_node):
             results_filename = result_root + 'acc_and_sparsity.csv'
         print("Writing results into: {}".format(results_filename))
         results_df.to_csv(results_filename, index=False)
+
+    if parser_args.resume:
+        print("Loading checkpoint before finetune")
+        best_acc1 = resume(parser_args, model, optimizer)
 
     # save checkpoint before fine-tuning
     torch.save(model.state_dict(), result_root + 'model_before_finetune.pth')
