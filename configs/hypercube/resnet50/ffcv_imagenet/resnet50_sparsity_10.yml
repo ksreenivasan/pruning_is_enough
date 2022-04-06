@@ -19,7 +19,7 @@ data: /workspace/ffcv-imagenet/data/
 optimizer: sgd
 lr: 0.4 #0.01
 lr_policy: cosine_lr #constant_lr #multistep_lr
-fine_tune_lr: 0.4
+fine_tune_lr: 0.001
 fine_tune_lr_policy: multistep_lr
 
 # ===== Network training config ===== #
