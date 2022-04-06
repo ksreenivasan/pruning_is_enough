@@ -5,6 +5,7 @@ from torchvision import transforms
 import random
 from torch.utils.data.sampler import SubsetRandomSampler
 from args_helper import parser_args
+from torch.utils.data import random_split
 
 
 class CIFAR10:
@@ -22,7 +23,7 @@ class CIFAR10:
             mean=[0.491, 0.482, 0.447], std=[0.247, 0.243, 0.262]
         )
 
-        train_dataset = torchvision.datasets.CIFAR10(
+        dataset = torchvision.datasets.CIFAR10(
             root=data_root,
             train=True,
             download=True,
@@ -35,6 +36,11 @@ class CIFAR10:
                 ]
             ),
         )
+
+        val_size = 5000
+        train_size = len(dataset) - val_size
+        train_dataset, validation_dataset = random_split(dataset, [train_size, val_size])
+
         self.train_loader = torch.utils.data.DataLoader(
             train_dataset, batch_size=parser_args.batch_size, shuffle=True, **kwargs
         )
@@ -45,6 +51,11 @@ class CIFAR10:
             download=True,
             transform=transforms.Compose([transforms.ToTensor(), normalize]),
         )
+
         self.val_loader = torch.utils.data.DataLoader(
             test_dataset, batch_size=parser_args.batch_size, shuffle=False, **kwargs
+        )
+
+        self.actual_val_loader = torch.utils.data.DataLoader(
+            validation_dataset, batch_size=parser_args.batch_size, shuffle=True, **kwargs
         )
