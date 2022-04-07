@@ -1,4 +1,4 @@
-subfolder: ffcv_imagenet_resnet50
+subfolder: regular_imagenet_resnet50
 # trial_num: 1
 #lam_finetune_loss: 1
 #num_step_finetune: 5
@@ -11,9 +11,9 @@ iter_period: 5
 arch: ResNet50
 
 # ===== Dataset ===== #
-dataset: FfcvImageNet
-name: resnet18_ffcv
-data: /workspace/ffcv-imagenet/data/
+dataset: ImageNet
+name: resnet50_imagenet
+data: /data/imagenet/
 
 # ===== Learning Rate Policy ======== #
 optimizer: sgd
@@ -23,10 +23,10 @@ fine_tune_lr: 0.001
 fine_tune_lr_policy: multistep_lr
 
 # ===== Network training config ===== #
-epochs: 88
+epochs: 10
 wd: 0.0 
 momentum: 0.9
-batch_size: 100
+batch_size: 64
 mixed_precision: True
 
 # ===== Sparsity =========== #
@@ -35,7 +35,7 @@ bn_type: NonAffineBatchNorm
 freeze_weights: True
 prune_type: BottomK
 # enter target sparsity here
-target_sparsity: 10
+target_sparsity: 5
 # decide if you want to "unflag"
 unflag_before_finetune: False
 init: signed_constant
@@ -53,7 +53,7 @@ quantize_threshold: 0.5
 
 # ===== Regularization ===== #
 regularization: L2
-lmbda: 0.000001 # 1e-4 #0.00005 # 5e-5
+lmbda: 0.0000001 # 1e-4 #0.00005 # 5e-5
 
 # ===== Hardware setup ===== #
 workers: 4
