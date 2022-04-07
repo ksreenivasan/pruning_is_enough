@@ -96,7 +96,7 @@ def main_worker(gpu, ngpus_per_node):
     epoch_list, test_acc_before_round_list, test_acc_list, reg_loss_list, model_sparsity_list, val_acc_list, train_acc_list = [], [], [], [], [], [], []
 
     # Save the initial model
-    torch.save(model.state_dict(), result_root + 'init_model.pth')
+    #torch.save(model.state_dict(), result_root + 'init_model.pth')
 
     # compute prune_rate to reach target_sparsity
     if not parser_args.override_prune_rate:
@@ -280,7 +280,7 @@ def main_worker(gpu, ngpus_per_node):
         results_df.to_csv(results_filename, index=False)
 
     # save checkpoint before fine-tuning
-    torch.save(model.state_dict(), result_root + 'model_before_finetune.pth')
+    #torch.save(model.state_dict(), result_root + 'model_before_finetune.pth')
 
     # finetune weights
     cp_model = copy.deepcopy(model)
@@ -292,8 +292,7 @@ def main_worker(gpu, ngpus_per_node):
         eval_and_print(validate, data.val_loader, cp_model, criterion,
                        parser_args, writer=None, description='final model after finetuning')
         # save checkpoint after fine-tuning
-        torch.save(cp_model.state_dict(), result_root +
-                   'model_after_finetune.pth')
+        #torch.save(cp_model.state_dict(), result_root + 'model_after_finetune.pth')
     else:
         print("Skipping finetuning!!!")
 

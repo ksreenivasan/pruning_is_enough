@@ -208,16 +208,16 @@ def test_random_subnet(model, data, criterion, parser_args, result_root, smart_r
         model = redraw(model, shuffle=parser_args.shuffle, reinit=parser_args.reinit, chg_mask=parser_args.chg_mask, chg_weight=parser_args.chg_weight)  
 
     model_filename = result_root + 'model_before_finetune.pth'
-    print("Writing init model to {}".format(model_filename))
-    torch.save(model.state_dict(), model_filename)
+    #print("Writing init model to {}".format(model_filename))
+    #torch.save(model.state_dict(), model_filename)
 
     old_epoch_list, old_test_acc_before_round_list, old_test_acc_list, old_reg_loss_list, old_model_sparsity_list = [], [], [], [], []
     model = finetune(model, parser_args, data, criterion, old_epoch_list, old_test_acc_before_round_list, old_test_acc_list, old_reg_loss_list, old_model_sparsity_list, result_root, shuffle=False, reinit=False, invert=False, chg_mask=False, chg_weight=False)
 
     # save checkpoint for later debug
     model_filename = result_root +  'model_after_finetune.pth'
-    print("Writing final model to {}".format(model_filename))
-    torch.save(model.state_dict(), model_filename)
+    #print("Writing final model to {}".format(model_filename))
+    #torch.save(model.state_dict(), model_filename)
 
 
 def eval_and_print(validate, data_loader, model, criterion, parser_args, writer=None, epoch=parser_args.start_epoch, description='model'):
