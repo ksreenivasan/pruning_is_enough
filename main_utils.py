@@ -88,14 +88,14 @@ def print_model(model, parser_args):
     #exit()
 
 
-def do_sanity_checks(model, parser_args, data, criterion, epoch_list, test_acc_before_round_list, test_acc_list,
+def do_sanity_checks(model, parser_args, data, criterion, epoch_list, test_acc_before_round_list, test_acc_list, val_acc_list, train_acc_list,
                      reg_loss_list, model_sparsity_list, result_root):
 
     print("Beginning Sanity Checks:")
     # do the sanity check for shuffled mask/weights, reinit weights
     print("Sanity Check 1: Weight Reinit")
     cp_model = copy.deepcopy(model)
-    cp_model = finetune(cp_model, parser_args, data, criterion, epoch_list, test_acc_before_round_list, test_acc_list,
+    cp_model = finetune(cp_model, parser_args, data, criterion, epoch_list, test_acc_before_round_list, test_acc_list, val_acc_list, train_acc_list,
                         reg_loss_list, model_sparsity_list, result_root, reinit=True, chg_weight=True)
 
     '''
@@ -106,7 +106,7 @@ def do_sanity_checks(model, parser_args, data, criterion, epoch_list, test_acc_b
     '''
     print("Sanity Check 2: Mask Reshuffle")
     cp_model = copy.deepcopy(model)
-    cp_model = finetune(cp_model, parser_args, data, criterion, epoch_list, test_acc_before_round_list, test_acc_list,
+    cp_model = finetune(cp_model, parser_args, data, criterion, epoch_list, test_acc_before_round_list, test_acc_list, val_acc_list, train_acc_list,
                         reg_loss_list, model_sparsity_list, result_root, shuffle=True, chg_mask=True)
 
     # this doesn't work. removing it.
@@ -230,10 +230,12 @@ def eval_and_print(validate, data_loader, model, criterion, parser_args, writer=
     return acc1
 
 
-def finetune(model, parser_args, data, criterion, old_epoch_list, old_test_acc_before_round_list, old_test_acc_list, old_reg_loss_list, old_model_sparsity_list, result_root, shuffle=False, reinit=False, invert=False, chg_mask=False, chg_weight=False):
+def finetune(model, parser_args, data, criterion, old_epoch_list, old_test_acc_before_round_list, old_test_acc_list, old_val_acc_list, old_train_acc_list, old_reg_loss_list, old_model_sparsity_list, result_root, shuffle=False, reinit=False, invert=False, chg_mask=False, chg_weight=False):
     epoch_list = copy.deepcopy(old_epoch_list)
     test_acc_before_round_list = copy.deepcopy(old_test_acc_before_round_list)
     test_acc_list = copy.deepcopy(old_test_acc_list)
+    val_acc_list = copy.deepcopy(old_val_acc_list)
+    train_acc_list = copy.deepcopy(old_train_acc_list)
     reg_loss_list = copy.deepcopy(old_reg_loss_list)
     model_sparsity_list = copy.deepcopy(old_model_sparsity_list)
 
@@ -296,10 +298,16 @@ def finetune(model, parser_args, data, criterion, old_epoch_list, old_test_acc_b
     # check the performance of loaded model (after rounding)
     acc1, acc5, acc10 = validate(
         data.val_loader, model, criterion, parser_args, writer, parser_args.epochs-1)
+    val_acc1, val_acc5, val_acc10 = validate(
+        data.actual_val_loader, model, criterion, parser_args, writer, parser_args.epochs-1)
+    train_acc1, train_acc5, train_acc10 = validate(
+        data.train_loader, model, criterion, parser_args, writer, parser_args.epochs-1)
     avg_sparsity = post_round_sparsity
     epoch_list.append(parser_args.epochs-1)
     test_acc_before_round_list.append(-1)
     test_acc_list.append(acc1)
+    val_acc_list.append(val_acc1)
+    train_acc_list.append(train_acc1)
     reg_loss_list.append(0.0)
     model_sparsity_list.append(avg_sparsity)
 
@@ -324,6 +332,8 @@ def finetune(model, parser_args, data, criterion, old_epoch_list, old_test_acc_b
         start_validation = time.time()
         acc1, acc5, acc10 = validate(
             data.val_loader, model, criterion, parser_args, writer, epoch)
+        val_acc1, val_acc5, val_acc10 = validate(
+            data.actual_val_loader, model, criterion, parser_args, writer, epoch)
         validation_time.update((time.time() - start_validation) / 60)
         # copy & paste the sparsity of prev. epoch
         avg_sparsity = model_sparsity_list[-1]
@@ -332,6 +342,8 @@ def finetune(model, parser_args, data, criterion, old_epoch_list, old_test_acc_b
         epoch_list.append(epoch)
         test_acc_before_round_list.append(-1)
         test_acc_list.append(acc1)
+        val_acc_list.append(val_acc1)
+        train_acc_list.append(train_acc1)
         reg_loss_list.append(reg_loss)
         model_sparsity_list.append(avg_sparsity)
 
@@ -343,7 +355,7 @@ def finetune(model, parser_args, data, criterion, old_epoch_list, old_test_acc_b
         writer.add_scalar("test/lr", cur_lr, epoch)
         end_epoch = time.time()
 
-        results_df = pd.DataFrame({'epoch': epoch_list, 'test_acc_before_rounding': test_acc_before_round_list, 'test_acc': test_acc_list,
+        results_df = pd.DataFrame({'epoch': epoch_list, 'test_acc_before_rounding': test_acc_before_round_list, 'test_acc': test_acc_list, 'val_acc': val_acc_list, 'train_acc': train_acc_list,
                                    'regularization_loss': reg_loss_list, 'model_sparsity': model_sparsity_list})
         if not chg_mask and not chg_weight:
             results_filename = result_root + 'acc_and_sparsity.csv'

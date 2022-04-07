@@ -922,6 +922,12 @@ class ArgsHelper:
             default=False,
             help="Enable this to skip pruning and jump to finetune. Typically paired with --resume"
         )
+        parser.add_argument(
+            "--use-full-data",
+            action="store_true",
+            default=False,
+            help="Enable this use full train data and not leave anything for validation"
+        )
 
         if jupyter_mode:
             args = parser.parse_args("")
