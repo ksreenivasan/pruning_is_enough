@@ -3,6 +3,8 @@ from main_utils import *
 
 def main():
     print(parser_args)
+    print("\n\nBeginning of process.")
+    print_time()
     set_seed(parser_args.seed * parser_args.trial_num)
     #set_seed(parser_args.seed + parser_args.trial_num - 1)
 
@@ -282,6 +284,9 @@ def main_worker(gpu, ngpus_per_node):
     # save checkpoint before fine-tuning
     #torch.save(model.state_dict(), result_root + 'model_before_finetune.pth')
 
+    print("\n\nHigh accuracy subnetwork found! Rest is just finetuning")
+    print_time()
+
     # finetune weights
     cp_model = copy.deepcopy(model)
     if not parser_args.skip_fine_tune:
@@ -302,6 +307,9 @@ def main_worker(gpu, ngpus_per_node):
 
     else:
         print("Skipping sanity checks!!!")
+
+    print("\n\nEnd of process. Exiting")
+    print_time()
 
     if parser_args.multiprocessing_distributed:
         cleanup_distributed()

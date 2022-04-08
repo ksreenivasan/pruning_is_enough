@@ -1143,3 +1143,11 @@ def print_num_dataset(data):
         num_test += label.size()[0]
 
     print(num_train, num_val, num_test)
+
+
+def print_time():
+    print("\n\n--------------------------------------")
+    print("TIME: The current time is: {}".format(time.ctime()))
+    print("TIME: The current time in seconds is: {}".format(time.time()))
+    print("--------------------------------------\n\n")
+

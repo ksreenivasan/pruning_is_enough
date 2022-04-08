@@ -61,4 +61,4 @@ workers: 4
 checkpoint_at_prune: False
 
 # ==== sanity check ==== #
-skip_sanity_checks: True
+# skip_sanity_checks: True
