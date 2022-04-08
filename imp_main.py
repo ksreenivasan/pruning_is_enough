@@ -21,7 +21,7 @@ from imp_mask import Mask
 
 # for merge the code into parent directory
 from args_helper import parser_args
-from main_utils import get_model, get_dataset, get_optimizer, switch_to_wt, set_gpu
+from main_utils import get_model, get_dataset, get_optimizer, switch_to_wt, set_gpu, print_time
 from utils.utils import set_seed
 from utils.schedulers import get_scheduler
 
@@ -233,6 +233,9 @@ def IMP_train(parser_args, data, device):
         optimizer = get_optimizer(parser_args, model)
         scheduler = get_scheduler(optimizer, parser_args.lr_policy, gamma=parser_args.lr_gamma)
         
+        print("\n\nFound ticket for sparsity: {}.".format(print_nonzeros(comp1)))
+        print_time()
+
         # save the model and mask right after prune
         PATH_model = os.path.join(dest_dir, "round_{}_model.pth".format(idx_round))
         torch.save({
@@ -297,6 +300,10 @@ def IMP_train(parser_args, data, device):
             'model_state_dict': model.state_dict(),
             'optimizer_state_dict': optimizer.state_dict()
         }, PATH_model_after)
+
+        print("\n\nTrained ticket for sparsity: {}.".format(print_nonzeros(comp1)))
+        print_time()
+
     return
                     
 
@@ -309,6 +316,9 @@ def main():
     kwargs = {'num_workers': 1, 'pin_memory': True} if use_cuda else {}
     set_seed(parser_args.seed)
 
+    print("\n\nBeginning of process.")
+    print_time()
+
     if parser_args.arch in ['transformer']:
         # since the transformer code is not ready, just leave the code piece here, it will never go into this branch
         data = None
@@ -316,6 +326,9 @@ def main():
         data = get_dataset(parser_args)
 
     IMP_train(parser_args, data, device)
+
+    print("\n\nEnd of process. Exiting")
+    print_time()
 
 
 
