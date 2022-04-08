@@ -70,7 +70,7 @@ class TinyImageNet:
 
         self.val_loader = torch.utils.data.DataLoader(
             datasets.ImageFolder(
-                testdir,  # valdir, #TODO: change here
+                testdir,  
                 transforms.Compose(
                     [
                         transforms.ToTensor(),
@@ -83,9 +83,9 @@ class TinyImageNet:
             **kwargs
         )
 
-        self.test_loader = torch.utils.data.DataLoader(
+        self.actual_val_loader = torch.utils.data.DataLoader(
             datasets.ImageFolder(
-                testdir,
+                valdir,
                 transforms.Compose(
                     [
                         transforms.ToTensor(),
