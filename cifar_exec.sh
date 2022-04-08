@@ -101,7 +101,7 @@ do
     --subfolder "$subfolder_root$trial" > "$log_root$trial$log_end" 2>&1 &
 
     python main.py \
-    --config "$conf_file" \
+    --config "$conf_file$conf_end" \
     --trial-num $trial \
     --invert-sanity-check \
     --use-full-data \
