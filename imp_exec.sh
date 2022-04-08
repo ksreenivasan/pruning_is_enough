@@ -1,14 +1,13 @@
 # ===== warm short IMP ===== #
 
-subfd="no_rewind_long_warm_imp_resnet20"
+subfd="imp_resnet20_sp0_59"
 # subfd="cifar_resnet_check_sparse_mask_1_4_at_init"
-n_gpu=1
+n_gpu=0
 python imp_main.py \
 --config configs/imp/resnet20.yml \
---imp-no-rewind \
---imp-rounds 20 \
+--imp-rounds 30 \
 --gpu $n_gpu \
---subfolder $subfd
+--subfolder $subfd > imp_log 2>&1
 
 
 

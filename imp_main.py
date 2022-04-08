@@ -233,7 +233,7 @@ def IMP_train(parser_args, data, device):
         optimizer = get_optimizer(parser_args, model)
         scheduler = get_scheduler(optimizer, parser_args.lr_policy, gamma=parser_args.lr_gamma)
         
-        print("\n\nFound ticket for sparsity: {}.".format(print_nonzeros(comp1)))
+        print("\n\nFound ticket for sparsity: {}%".format(comp1))
         print_time()
 
         # save the model and mask right after prune
@@ -301,7 +301,7 @@ def IMP_train(parser_args, data, device):
             'optimizer_state_dict': optimizer.state_dict()
         }, PATH_model_after)
 
-        print("\n\nTrained ticket for sparsity: {}.".format(print_nonzeros(comp1)))
+        print("\n\nTrained ticket for sparsity: {}%".format(comp1))
         print_time()
 
     return
