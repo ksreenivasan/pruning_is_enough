@@ -2,11 +2,11 @@
 ## REBUTTAL
 # Final run on full data
 # # NOTE: make sure to delete/comment subfolder from the config file or else it may not work
-conf_file="configs/param_tuning/tinyimgnet/resnet50_5/conf1"
+conf_file="configs/param_tuning/tinyimgnet/resnet50_0_5/conf1"
 conf_end=".yml"
-log_root="tinyimagenet_resnet50_5_"
+log_root="tinyimagenet_resnet50_0_5_"
 log_end="_log"
-subfolder_root="tinyimagenet_resnet50_5_"
+subfolder_root="tinyimagenet_resnet50_0_5_"
 
 for trial in 1
 do

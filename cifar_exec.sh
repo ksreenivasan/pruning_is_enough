@@ -61,16 +61,16 @@ python main.py \
 --config configs/hypercube/wideresnet28/wideresnet28_weight_training.yml > wideresnet_wt_log 2>&1
 BLOCK
 
-:<<BLOCK
+# :<<BLOCK
 # Using validation to figure out hyperparams
 # NOTE: make sure to delete/comment subfolder from the config file or else it may not work
-conf_file="configs/conf"
+conf_file="configs/param_tuning/wideresnet28_5_5/conf"
 conf_end=".yml"
-log_root="resnet20_059_val_debug"
+log_root="wideresnet28_5_5_val_debug_"
 log_end="_log"
-subfolder_root="resnet20_059_val_debug_"
+subfolder_root="wideresnet28_5_5_val_debug_"
 
-for trial in 4 5 6
+for trial in 5
 do
     python main.py \
     --config "$conf_file$trial$conf_end" \
@@ -82,8 +82,9 @@ do
     #--invert-sanity-check \
     #--subfolder "invert_$subfolder_root$trial" > "invert_$log_root$trial$log_end" 2>&1 &
 done
-BLOCK
+# BLOCK
 
+:<<BLOCK
 # Final run on full data
 # NOTE: make sure to delete/comment subfolder from the config file or else it may not work
 conf_file="configs/param_tuning/resnet20_059_KS/conf4"
@@ -108,3 +109,4 @@ do
     --skip-sanity-checks \
     --subfolder "invert_$subfolder_root$trial" > "invert_$log_root$trial$log_end" 2>&1 &
 done
+BLOCK
