@@ -50,8 +50,8 @@ regularization: L2
 lmbda: 0.00001 
 
 # ===== Hardware setup ===== #
-workers: 4
-#gpu: 2
+workers: 6
+gpu: 0
 
 # ===== Checkpointing ===== #
 checkpoint_at_prune: False

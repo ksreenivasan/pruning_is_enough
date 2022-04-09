@@ -64,13 +64,13 @@ BLOCK
 # :<<BLOCK
 # Using validation to figure out hyperparams
 # NOTE: make sure to delete/comment subfolder from the config file or else it may not work
-conf_file="configs/param_tuning/wideresnet28_5_5/conf"
+conf_file="configs/param_tuning/wideresnet28_1_4/conf"
 conf_end=".yml"
-log_root="wideresnet28_5_5_val_debug_"
+log_root="wideresnet28_1_4_val_debug_"
 log_end="_log"
-subfolder_root="wideresnet28_5_5_val_debug_"
+subfolder_root="wideresnet28_1_4_val_debug_"
 
-for trial in 5
+for trial in 2
 do
     python main.py \
     --config "$conf_file$trial$conf_end" \
