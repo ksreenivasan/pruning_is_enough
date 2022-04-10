@@ -87,11 +87,11 @@ BLOCK
 #:<<BLOCK
 # Final run on full data
 # NOTE: make sure to delete/comment subfolder from the config file or else it may not work
-conf_file="configs/param_tuning/wideresnet28_2_3/conf2"
+conf_file="configs/param_tuning/wideresnet28_20/conf2"
 conf_end=".yml"
-log_root="wideresnet28_sp2_3_"
+log_root="wideresnet28_sp20_"
 log_end="_log"
-subfolder_root="wideresnet28_sp2_3_"
+subfolder_root="wideresnet28_sp20_"
 
 for trial in 1 2 3
 do
