@@ -50,12 +50,12 @@ regularization: L2
 lmbda: 0.000005 
 
 # ===== Hardware setup ===== #
-workers: 4
-#gpu: 2
+workers: 6
+gpu: 0
 
 # ===== Checkpointing ===== #
 checkpoint_at_prune: False
 
 # ==== sanity check ==== #
-skip_sanity_checks: True
+# skip_sanity_checks: True
 #invert_sanity_check: True
