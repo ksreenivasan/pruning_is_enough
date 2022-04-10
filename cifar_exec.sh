@@ -87,13 +87,13 @@ BLOCK
 #:<<BLOCK
 # Final run on full data
 # NOTE: make sure to delete/comment subfolder from the config file or else it may not work
-conf_file="configs/param_tuning/wideresnet28_20/conf2"
+conf_file="configs/param_tuning/mobile_5/conf3"
 conf_end=".yml"
-log_root="wideresnet28_sp20_"
+log_root="mobilenet_sp5_"
 log_end="_log"
-subfolder_root="wideresnet28_sp20_"
+subfolder_root="mobilenet_sp5_"
 
-for trial in 1 2 3
+for trial in 1 2
 do
     python main.py \
     --config "$conf_file$conf_end" \
