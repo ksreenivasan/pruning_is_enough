@@ -6,7 +6,7 @@ It has been widely observed that large neural networks can be pruned to a small 
 
 ### Depdendencies (tentative)
 ---
-Tested stable depdencises:
+Tested stable dependencies:
 * python 3.6.5 (Anaconda)
 * PyTorch 1.1.0
 * torchvision 0.2.2
