@@ -61,39 +61,40 @@ python main.py \
 --config configs/hypercube/wideresnet28/wideresnet28_weight_training.yml > wideresnet_wt_log 2>&1
 BLOCK
 
-:<<BLOCK
+#:<<BLOCK
 # Using validation to figure out hyperparams
 # NOTE: make sure to delete/comment subfolder from the config file or else it may not work
-conf_file="configs/param_tuning/wideresnet28_1_4/conf"
+conf_file="configs/hypercube/resnet32/resnet32_sparsity_5_v2"
 conf_end=".yml"
-log_root="wideresnet28_1_4_val_debug_"
+log_root="resnet32_sp5_v2_"
 log_end="_log"
-subfolder_root="wideresnet28_1_4_val_debug_"
+subfolder_root="resnet32_sp5_v2_"
 
-for trial in 2
+for trial in 1
 do
     python main.py \
-    --config "$conf_file$trial$conf_end" \
+    --config "$conf_file$conf_end" \
     --subfolder "$subfolder_root$trial" > "$log_root$trial$log_end" 2>&1 &
 
     #python main.py \
-    #--config "$conf_file" \
+    #--config "$conf_file$conf_end" \
     #--trial-num $trial \
     #--invert-sanity-check \
+    #--skip-sanity-checks \
     #--subfolder "invert_$subfolder_root$trial" > "invert_$log_root$trial$log_end" 2>&1 &
 done
-BLOCK
+#BLOCK
 
-#:<<BLOCK
+:<<BLOCK
 # Final run on full data
 # NOTE: make sure to delete/comment subfolder from the config file or else it may not work
-conf_file="configs/param_tuning/mobile_5/conf3"
+conf_file="configs/param_tuning/resnet20_13_34/conf2"
 conf_end=".yml"
-log_root="mobilenet_sp5_"
+log_root="resnet20_sp13_34_"
 log_end="_log"
-subfolder_root="mobilenet_sp5_"
+subfolder_root="resnet20_sp13_34_"
 
-for trial in 1 2
+for trial in 1
 do
     python main.py \
     --config "$conf_file$conf_end" \
@@ -109,4 +110,4 @@ do
     --skip-sanity-checks \
     --subfolder "invert_$subfolder_root$trial" > "invert_$log_root$trial$log_end" 2>&1 &
 done
-#BLOCK
+BLOCK
