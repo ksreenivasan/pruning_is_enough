@@ -8,9 +8,9 @@ from args_helper import parser_args
 from torch.utils.data import random_split
 
 
-class CIFAR10:
+class CIFAR100:
     def __init__(self, args):
-        super(CIFAR10, self).__init__()
+        super(CIFAR100, self).__init__()
 
         data_root = os.path.join(parser_args.data, "cifar100")
 

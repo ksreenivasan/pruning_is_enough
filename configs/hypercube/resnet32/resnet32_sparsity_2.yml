@@ -8,7 +8,7 @@ iter_period: 5
 arch: resnet32
 
 # ===== Dataset ===== #
-dataset: CIFAR10
+dataset: CIFAR100
 name: resnet20_quantized_iter_hc
 
 # ===== Learning Rate Policy ======== #
@@ -52,7 +52,7 @@ regularization: L2
 lmbda: 0.00001 # 1e-4
 
 # ===== Hardware setup ===== #
-workers: 4
+workers: 6
 gpu: 0
 
 # ===== Checkpointing ===== #
