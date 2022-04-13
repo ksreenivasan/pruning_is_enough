@@ -28,6 +28,8 @@ torch.autograd.profiler.profile(False)
 import torch.multiprocessing
 torch.multiprocessing.set_sharing_strategy("file_system")
 
+from torch.utils.data import random_split
+
 class FfcvImageNet:
     def __init__(self, args):
         super(FfcvImageNet, self).__init__()
@@ -39,22 +41,40 @@ class FfcvImageNet:
         use_cuda = torch.cuda.is_available()
 
         # Data loading code
-        train_dataset = os.path.join(data_root, "train_500_0.50_90.ffcv")
+        dataset = os.path.join(data_root, "train_500_0.50_90.ffcv")
         val_dataset = os.path.join(data_root, "val_500_0.50_90.ffcv")
 
         # Data loading code
-        kwargs = {"num_workers": 1, "in_memory": 1,
+        kwargs = {"num_workers": 6, "in_memory": 1,
                   "distributed": False, "resolution": 256}
 
         self.IMAGENET_MEAN = np.array([0.485, 0.456, 0.406]) * 255
         self.IMAGENET_STD = np.array([0.229, 0.224, 0.225]) * 255
         self.DEFAULT_CROP_RATIO = 224/256
 
+        if parser_args.use_full_data:
+            train_dataset = dataset
+            # use_full_data => we are not tuning hyperparameters
+            actual_val_dataset = val_dataset
+        else:
+            # this will break right now. But where is the test set even?
+            val_size = 5000
+            train_size = len(dataset) - val_size
+            train_dataset, actual_val_dataset = random_split(dataset, [train_size, val_size])
+
+
         self.train_loader = self.create_train_loader(train_dataset,
                                 kwargs['num_workers'],
                                 parser_args.batch_size,
                                 kwargs['distributed'],
-                                kwargs['in_memory'])
+                                kwargs['in_memory']
+                                )
+        self.actual_val_loader = self.create_train_loader(actual_val_dataset,
+                                kwargs['num_workers'],
+                                parser_args.batch_size,
+                                kwargs['distributed'],
+                                kwargs['in_memory']
+                                )
         self.val_loader = self.create_val_loader(val_dataset,
                                 kwargs['num_workers'],
                                 parser_args.batch_size,

@@ -4,11 +4,15 @@ docker run --gpus all --ipc=host --name kartik_imagenet -it -v /hdd1/ILSVRC2012:
 
 sudo docker pull nvcr.io/nvidia/pytorch:22.01-py3
 
-# to fix dependencies for ffcv
-apt-get install ffmpeg libsm6 libxext6  -y
-
 # clone repo
 git clone git@github.com:libffcv/ffcv-imagenet.git
+
+conda create -y -n ffcv python=3.9 cupy pkg-config compilers libjpeg-turbo opencv pytorch torchvision cudatoolkit=11.3 numba -c pytorch -c conda-forge
+conda activate ffcv
+pip install ffcv
+
+# to fix dependencies for ffcv
+apt-get install ffmpeg libsm6 libxext6  -y
 
 # install dependencies
 cd ffcv-imagenet
