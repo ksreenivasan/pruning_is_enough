@@ -24,8 +24,8 @@ done
 
 BLOCK
 
-conf_file="configs/hypercube/resnet50/ffcv_imagenet/resnet50_sparsity_20.yml"
-log_root="resnet50_ffcv_sp20"
+conf_file="configs/hypercube/resnet50/ffcv_imagenet/resnet50_sparsity_50.yml"
+log_root="resnet50_ffcv_sp50"
 log_end="_log"
 python main.py \
     --config "$conf_file" > "$log_root$log_end" 2>&1 &
