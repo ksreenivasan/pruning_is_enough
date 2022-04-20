@@ -14,7 +14,7 @@ __all__ = ["train", "validate", "modifier"]
 
 
 
-def train(train_loader, model, criterion, optimizer, epoch, args, writer, scaler=None):
+def train(train_loader, model, criterion, optimizer, epoch, mixup_fn, args, writer, scaler=None):
     batch_time = AverageMeter("Time", ":6.3f")
     data_time = AverageMeter("Data", ":6.3f")
     losses = AverageMeter("Loss", ":.3f")
@@ -44,6 +44,10 @@ def train(train_loader, model, criterion, optimizer, epoch, args, writer, scaler
             images = images.cuda(args.gpu, non_blocking=True)
 
         target = target.cuda(args.gpu, non_blocking=True)
+
+        if mixup_fn is not None:
+            target_orig = target        # when training ViT, keep a copy the original targets to monitor training accuracy
+            images, target = mixup_fn(images, target)
 
         # update score thresholds for global ep
         if args.algo in ['global_ep', 'global_ep_iter']:
@@ -79,7 +83,10 @@ def train(train_loader, model, criterion, optimizer, epoch, args, writer, scaler
         loss += regularization_loss
 
         # measure accuracy and record loss
-        acc1, acc5, acc10 = accuracy(output, target, topk=(1, 5, 10))
+        if 'deit' in args.arch:
+            acc1, acc5, acc10 = accuracy(output, target_orig, topk=(1, 5, 10))
+        else:
+            acc1, acc5, acc10 = accuracy(output, target, topk=(1, 5, 10))
         losses.update(loss.item(), images.size(0))
         top1.update(acc1.item(), images.size(0))
         top5.update(acc5.item(), images.size(0))
@@ -147,7 +154,10 @@ def validate(val_loader, model, criterion, args, writer, epoch):
             # compute output
             output = model(images)
 
-            loss = criterion(output, target)
+            if 'deit' in args.arch:
+                loss = criterion(output.transpose(0, 1), target)        # loss functions from the timm library are slightly different than torch.nn
+            else:
+                loss = criterion(output, target)
 
             # measure accuracy and record loss
             acc1, acc5, acc10 = accuracy(output, target, topk=(1, 5, 10))

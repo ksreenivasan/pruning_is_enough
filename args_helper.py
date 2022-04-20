@@ -19,7 +19,7 @@ class ArgsHelper:
         parser.add_argument(
             "--log-dir",
             default=None,
-            help="Where to save the runs. If None use ./runs"   
+            help="Where to save the runs. If None use ./runs"
             )
         parser.add_argument(
             "--name",
@@ -135,6 +135,21 @@ class ArgsHelper:
             help="Nesterov acceleration (default: False)"
         )
         parser.add_argument(
+            "--eps",
+            type=float,
+            default=1e-8,
+            metavar="E",
+            help="Epsilon value for AdamW (default: 1e-8)"
+        )
+        parser.add_argument(
+            "--betas",
+            type=float,
+            default=(0.9, 0.999),
+            nargs='+',
+            metavar="B",
+            help="Beta values for AdamW (default: (0.9, 0.999))"
+        )
+        parser.add_argument(
             "--milestones",
             type=list,
             default=[50, 100, 150, 200],
@@ -177,13 +192,13 @@ class ArgsHelper:
             help="pruning algo to use |ep|pt_hack|pt_reg|hc|ep+greedy|greedy+ep|hc_iter|global_ep|global_ep_iter|imp"
         )
         parser.add_argument(
-            "--iter_start", 
-            type=int, 
+            "--iter_start",
+            type=int,
             default=0,
             help="starting epoch for iterative pruning"
         )
         parser.add_argument(
-            "--iter-period", 
+            "--iter-period",
             type=int,
             default=5,
             help="period [epochs] for iterative pruning"
@@ -192,7 +207,7 @@ class ArgsHelper:
             "--optimizer",
             type=str,
             default='sgd',
-            help="optimizer option to use |sgd|adam|"
+            help="optimizer option to use |sgd|adam|adamw|"
         )
         parser.add_argument(
             '--evaluate-only',
@@ -359,7 +374,7 @@ class ArgsHelper:
         parser.add_argument(
             "--label-smoothing",
             type=float,
-            help="Label smoothing to use, default 0.0",
+            help="Label smoothing to use, default 0.0",     # NOTE: default smoothing for ViT should be 0.1
             default=None,
         )
         parser.add_argument(
@@ -506,13 +521,13 @@ class ArgsHelper:
             metavar="W",
             help="Number of workers"
         )
-        parser.add_argument(    
+        parser.add_argument(
             "--shift",
             type=float,
             default=0.0,
             help="shift portion"
-        )   
-        parser.add_argument(    
+        )
+        parser.add_argument(
             "--num-trial",
             type=int,
             default=1,
@@ -791,31 +806,31 @@ class ArgsHelper:
         )
         # added parser args for IMP
         parser.add_argument(
-            "--imp_rewind_iter", 
-            default=1000, 
-            type=int, 
+            "--imp_rewind_iter",
+            default=1000,
+            type=int,
             help="which iterations to rewind to"
         )
         parser.add_argument(
             "--imp-resume-round",
             default=-1,
-            type=int, 
+            type=int,
             help="which round to resume to"
         )
         parser.add_argument(
             "--imp-resume-epoch",
             default=-1,
-            type=int, 
+            type=int,
             help="which epoch to resume to"
         )
         parser.add_argument(
             "--imp-resume-iter",
             default=-1,
-            type=int, 
+            type=int,
             help="which iter to resume to"
         )
         parser.add_argument(
-            "--imp-rewind-model", 
+            "--imp-rewind-model",
             default="short_imp/Liu_checkpoint_model_correct.pth"
         )
         parser.add_argument(
@@ -831,7 +846,7 @@ class ArgsHelper:
             help="if set > 0, then ignore the epochs statement, and calculate epochs based on rounds * iter / round"
         )
         parser.add_argument(
-            "--smart_ratio", 
+            "--smart_ratio",
             type=float,
             default=-1,
             help="the pruning weights in [0, 1]. E.g. smart_ratio = 0.98 will end up with a 2\% weight remaining model"
@@ -892,14 +907,14 @@ class ArgsHelper:
                     help='dropout applied to layers (0 = no dropout)')
         parser.add_argument('--transformer_nhead', type=int, default=2,
                     help='the number of heads in the encoder/decoder of the transformer model')
-      
+
         parser.add_argument(
             "--only-sanity",
             action="store_true",
             default=False,
             help="Only run sanity checks on the files in specific directory or subdirectories"
         )
-        
+
         parser.add_argument(
             "--invert-sanity-check",
             action="store_true",
@@ -920,6 +935,129 @@ class ArgsHelper:
             default=1,
             type=int,
             help="smart ratio version number (1, 2, ...)",
+        )
+
+        # for ViT
+        parser.add_argument(
+            '--input-size',
+            default=224,
+            type=int,
+            help='images input size'
+        )
+
+        parser.add_argument(
+            '--drop',
+            type=float,
+            default=0.0,
+            metavar='PCT',
+            help='Dropout rate (default: 0.)'
+        )
+        parser.add_argument(
+            '--drop-path',
+            type=float,
+            default=0.1,
+            metavar='PCT',
+            help='Drop path rate (default: 0.1)'
+        )
+
+        # augmentation params
+        parser.add_argument(
+            '--color-jitter',
+            type=float,
+            default=0.4,
+            metavar='PCT',
+            help='Color jitter factor (default: 0.4)'
+        )
+        parser.add_argument(
+            '--aa',
+            type=str,
+            default='rand-m9-mstd0.5-inc1',
+            metavar='NAME',
+            help='Use AutoAugment policy. "v0" or "original". (default: rand-m9-mstd0.5-inc1)'
+        ),
+        parser.add_argument(
+            '--train-interpolation',
+            type=str,
+            default='bicubic',
+            help='Training interpolation (random, bilinear, bicubic default: "bicubic")'
+        )
+        parser.add_argument(
+            '--repeated-aug',
+            action='store_true'
+        )
+        parser.add_argument(
+            '--no-repeated-aug',
+            action='store_false',
+            dest='repeated_aug'
+        )
+        parser.set_defaults(
+            repeated_aug=True
+        )
+
+        # mixup params
+        parser.add_argument(
+            '--mixup',
+            type=float,
+            default=0.8,
+            help='mixup alpha, mixup enabled if > 0. (default: 0.8)'
+        )
+        parser.add_argument(
+            '--cutmix',
+            type=float,
+            default=1.0,
+            help='cutmix alpha, cutmix enabled if > 0. (default: 1.0)'
+        )
+        parser.add_argument(
+            '--cutmix-minmax',
+            type=float,
+            nargs='+',
+            default=None,
+            help='cutmix min/max ratio, overrides alpha and enables cutmix if set (default: None)'
+        )
+        parser.add_argument(
+            '--mixup-prob',
+            type=float,
+            default=1.0,
+            help='Probability of performing mixup or cutmix when either/both is enabled'
+        )
+        parser.add_argument(
+            '--mixup-switch-prob',
+            type=float,
+            default=0.5,
+            help='Probability of switching to cutmix when both mixup and cutmix enabled'
+        )
+        parser.add_argument(
+            '--mixup-mode',
+            type=str,
+            default='batch',
+            help='How to apply mixup/cutmix params. Per "batch", "pair", or "elem"'
+        )
+
+        # random erase params
+        parser.add_argument(
+            '--reprob',
+            type=float,
+            default=0.25,
+            metavar='PCT',
+            help='Random erase prob (default: 0.25)'
+        )
+        parser.add_argument(
+            '--remode',
+            type=str,
+            default='pixel',
+            help='Random erase mode (default: "pixel")'
+        )
+        parser.add_argument(
+            '--recount',
+            type=int,
+            default=1,
+            help='Random erase count (default: 1)'
+        )
+        parser.add_argument(
+            '--resplit',
+            action='store_true',
+            default=False,
+            help='Do not random erase first (clean) augmentation split'
         )
 
         if jupyter_mode:

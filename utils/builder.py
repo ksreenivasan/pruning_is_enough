@@ -53,6 +53,15 @@ class Builder(object):
                 padding=3,
                 bias=parser_args.bias,
             )
+        elif kernel_size == 16:  # used for vision transformers
+            conv = conv_layer(
+                in_planes,
+                out_planes,
+                kernel_size=16,
+                stride=stride,
+                padding=0,
+                bias=parser_args.bias,
+            )
         else:
             return None
 
@@ -83,6 +92,11 @@ class Builder(object):
     def conv5x5(self, in_planes, out_planes, stride=1, first_layer=False):
         """5x5 convolution with padding"""
         c = self.conv(5, in_planes, out_planes, stride=stride, first_layer=first_layer)
+        return c
+
+    def conv16x16(self, in_planes, out_planes, stride=16, first_layer=False):
+        """5x5 convolution with padding"""
+        c = self.conv(16, in_planes, out_planes, stride=stride, first_layer=first_layer)
         return c
 
     def batchnorm(self, planes, last_bn=False, first_layer=False):

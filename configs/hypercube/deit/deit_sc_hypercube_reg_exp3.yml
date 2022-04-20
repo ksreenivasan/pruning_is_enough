@@ -1,0 +1,55 @@
+# Hypercube optimization
+algo: 'hc'
+
+# Architecture
+arch: ResNet50
+
+# ===== Dataset ===== #
+dataset: ImageNet
+data: /workspace/datasets/ILSVRC2012
+name: resnet50_imagenet_hypercube_reg_exp3
+
+# ===== Learning Rate Policy ======== #
+optimizer: adam
+lr: 0.01
+lr_policy: cosine_lr
+#bias: True
+#lr_policy: multistep_lr
+#lr_gamma: 0.5
+#lr_adjust: 50 #30
+
+
+# ===== Network training config ===== #
+epochs: 150
+wd: 0.0 #0.0001
+momentum: 0.9
+batch_size: 64
+
+# ===== Sparsity =========== #
+conv_type: SubnetConv
+bn_type: NonAffineBatchNorm
+freeze_weights: True
+prune_rate: 0.0
+init: signed_constant
+score_init: unif
+scale_fan: False #True
+
+
+# ===== Rounding ===== #
+round: naive
+noise: True
+noise_ratio: 0
+
+
+# ===== Regularization ===== #
+regularization: var_red_2
+lmbda: 0.000001
+
+
+# ===== Hardware setup ===== #
+num_workers: 10
+gpu: 0
+multiprocessing_distributed: True
+dist_backend: nccl
+world_size: 1
+rank: 0

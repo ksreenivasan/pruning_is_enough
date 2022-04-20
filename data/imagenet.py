@@ -5,6 +5,8 @@ from torchvision import datasets, transforms
 
 import torch.multiprocessing
 
+from .utils import build_transform
+
 torch.multiprocessing.set_sharing_strategy("file_system")
 
 class ImageNet:
@@ -27,17 +29,31 @@ class ImageNet:
             mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
         )
 
-        train_dataset = datasets.ImageFolder(
-            traindir,
-            transforms.Compose(
+        if 'deit' in args.arch:     # special transform for ViT models
+            train_transform = build_transform(True, args)
+            val_transform = build_transform(False, args)
+            drop_last = True
+        else:
+            train_transform = transforms.Compose(
                 [
                     transforms.RandomResizedCrop(224),
                     transforms.RandomHorizontalFlip(),
                     transforms.ToTensor(),
                     normalize,
                 ]
-            ),
-        )
+            )
+
+            val_transform = transforms.Compose(
+                [
+                    transforms.Resize(256),
+                    transforms.CenterCrop(224),
+                    transforms.ToTensor(),
+                    normalize,
+                ]
+            )
+            drop_last = False
+
+        train_dataset = datasets.ImageFolder(traindir, transform=train_transform)
 
         if args.multiprocessing_distributed:
             train_sampler = torch.utils.data.distributed.DistributedSampler(train_dataset)
@@ -50,20 +66,13 @@ class ImageNet:
             batch_size=args.batch_size,
             shuffle=(train_sampler is None),
             sampler=train_sampler,
+            drop_last=drop_last,
             **kwargs
         )
 
         self.val_loader = torch.utils.data.DataLoader(
             datasets.ImageFolder(
-                valdir,
-                transforms.Compose(
-                    [
-                        transforms.Resize(256),
-                        transforms.CenterCrop(224),
-                        transforms.ToTensor(),
-                        normalize,
-                    ]
-                ),
+                valdir, transform=val_transform
             ),
             batch_size=args.batch_size,
             shuffle=False,

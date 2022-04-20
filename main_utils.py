@@ -65,7 +65,7 @@ def print_model(model, parser_args):
     #from torchsummary import summary
     #summary(model.cuda(), (3,32,32)) # for cifar
     # check the model architecture
-    
+
     num_params = 0
     if parser_args.algo == 'training':
         for name, param in model.named_parameters():
@@ -181,19 +181,19 @@ class dotdict(dict):
 
 
 #def test_smart_ratio(model, data, criterion, parser_args, result_root):
-  
+
 
 
 def test_random_subnet(model, data, criterion, parser_args, result_root, smart_ratio=-1):
 
     if smart_ratio != -1:
         # get a randomly pruned model with SmartRatio
-        smart_ratio_args = {'linear_keep_ratio': 0.3, 
+        smart_ratio_args = {'linear_keep_ratio': 0.3,
                             }
         smart_ratio_args = dotdict(smart_ratio_args)
         model = SmartRatio(model, smart_ratio_args, parser_args)
         # # NOTE: temporarily added for code checking
-        # torch.save(model.state_dict(), result_root + 'init_model_{}.pth'.format(smart_ratio)) 
+        # torch.save(model.state_dict(), result_root + 'init_model_{}.pth'.format(smart_ratio))
         # return
         model = set_gpu(parser_args, model)
         # this model modify `flag` to represent the sparsity,
@@ -201,11 +201,11 @@ def test_random_subnet(model, data, criterion, parser_args, result_root, smart_r
 
     else:
         # round the score (in the model itself)
-        model = round_model(model, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio, rank=parser_args.gpu)    
-        
+        model = round_model(model, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio, rank=parser_args.gpu)
+
         # TODO: CHANGE THIS BACK once the finetune from checkpoints code is fixed
         # NOTE: this part is hard coded
-        model = redraw(model, shuffle=parser_args.shuffle, reinit=parser_args.reinit, chg_mask=parser_args.chg_mask, chg_weight=parser_args.chg_weight)  
+        model = redraw(model, shuffle=parser_args.shuffle, reinit=parser_args.reinit, chg_mask=parser_args.chg_mask, chg_weight=parser_args.chg_weight)
 
     model_filename = result_root + 'model_before_finetune.pth'
     print("Writing init model to {}".format(model_filename))
@@ -273,7 +273,7 @@ def finetune(model, parser_args, data, criterion, old_epoch_list, old_test_acc_b
 
     optimizer = get_optimizer(parser_args, model, finetune_flag=True)
     scheduler = get_scheduler(optimizer, policy=parser_args.fine_tune_lr_policy)
-    ''' 
+    '''
     if parser_args.epochs == 150:
         scheduler = get_scheduler(optimizer, parser_args.fine_tune_lr_policy, milestones=[
                                   80, 120], gamma=0.1)  # NOTE: hard-coded
@@ -1028,6 +1028,14 @@ def get_optimizer(optimizer_args, model, finetune_flag=False):
         optimizer = torch.optim.Adam(
             filter(lambda p: p.requires_grad, model.parameters()), lr=opt_lr,
             weight_decay=opt_wd
+        )
+    elif opt_algo == "adamw":
+        optimizer = torch.optim.AdamW(
+            filter(lambda p: p.requires_grad, model.parameters()),
+            lr=opt_lr,
+            eps=optimizer_args.eps,
+            weight_decay=opt_wd,
+            betas=optimizer_args.betas
         )
 
     return optimizer

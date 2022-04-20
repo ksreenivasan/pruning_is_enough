@@ -36,7 +36,7 @@ def get_layers(arch='Conv4', model=None):
                 conv_layers.append(model.layers[i].shortcut[0])
         conv_layers.append(model.conv2)
         linear_layers = [model.linear]
-        
+
     elif arch == 'resnet20':
         conv_layers = [model.conv1]
         for layer in [model.layer1, model.layer2, model.layer3]:
@@ -115,7 +115,7 @@ def get_layers(arch='Conv4', model=None):
                 if layer[basic_block_id].convShortcut:
                     conv_layers.append(layer[basic_block_id].convShortcut)
         linear_layers = [model.fc]
-    
+
     elif arch == 'transformer':
         conv_layers = []
         linear_layers = []
@@ -126,6 +126,17 @@ def get_layers(arch='Conv4', model=None):
             linear_layers.append(layer.mlp.fc1)
             linear_layers.append(layer.mlp.fc2)
         # linear_layers.append(model.decoder)
+
+    elif 'deit' in arch:
+        conv_layers = [model.patch_embed.proj]
+        linear_layers = []
+        for i in range(len(model.blocks)):
+            linear_layers.append(model.blocks[i].attn.qkv)
+            linear_layers.append(model.blocks[i].attn.proj)
+            linear_layers.append(model.blocks[i].mlp.fc1)
+            linear_layers.append(model.blocks[i].mlp.fc2)
+        linear_layers.append(model.head)
+
     return (conv_layers, linear_layers)
 
 
@@ -342,7 +353,7 @@ def round_model(model, round_scheme, noise=False, ratio=0.0, rank=None):
             else:
                 print("INVALID ROUNDING")
                 print("EXITING")
-            '''    
+            '''
             if noise:
                 delta = torch.bernoulli(torch.ones_like(params.data)*ratio)
                 params.data = (params.data + delta) % 2

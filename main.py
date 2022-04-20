@@ -1,3 +1,7 @@
+
+from timm.data import Mixup
+from timm.loss import LabelSmoothingCrossEntropy, SoftTargetCrossEntropy
+
 from main_utils import *
 
 
@@ -66,16 +70,40 @@ def main_worker(gpu, ngpus_per_node):
     data = get_dataset(parser_args)
     scheduler = get_scheduler(optimizer, parser_args.lr_policy)
     #lr_policy = get_policy(parser_args.lr_policy)(optimizer, parser_args)
-    if parser_args.label_smoothing is None:
-        criterion = nn.CrossEntropyLoss().cuda()
+
+    # data augmentation for ViT
+    mixup_fn = None
+    mixup_active = False
+    if 'deit' in parser_args.arch:
+        mixup_active = parser_args.mixup > 0 or args.cutmix > 0. or args.cutmix_minmax is not None
+        if mixup_active:
+            num_classes = 10        # MNIST, CIFAR10
+            if parser_args.dataset.lower() == 'imagenet':
+                num_classes = 1000
+            elif parser_args.dataset.lower() == 'tinyimagenet':
+                num_classes = 200
+            elif parser_args.dataset.lower() == 'cifar100':
+                num_classes = 100
+
+            mixup_fn = Mixup(
+                mixup_alpha=parser_args.mixup, cutmix_alpha=parser_args.cutmix, cutmix_minmax=parser_args.cutmix_minmax,
+                prob=parser_args.mixup_prob, switch_prob=parser_args.mixup_switch_prob, mode=parser_args.mixup_mode,
+                label_smoothing=parser_args.label_smoothing, num_classes=num_classes)
+
+    if mixup_active:
+        # smoothing is handled with mixup label transform
+        criterion = SoftTargetCrossEntropy().cuda()
+    elif parser_args.label_smoothing:
+        criterion = LabelSmoothing(smoothing=parser_args.label_smoothing).cuda()
     else:
-        criterion = LabelSmoothing(smoothing=parser_args.label_smoothing)
+        criterion = nn.CrossEntropyLoss().cuda()
+    #else:
         # if isinstance(model, nn.parallel.DistributedDataParallel):
         #     model = model.module
-    if parser_args.random_subnet: 
-        test_random_subnet(model, data, criterion, parser_args, result_root, parser_args.smart_ratio) 
+    if parser_args.random_subnet:
+        test_random_subnet(model, data, criterion, parser_args, result_root, parser_args.smart_ratio)
         return
-        
+
 
     best_acc1, best_acc5, best_acc10, best_train_acc1, best_train_acc5, best_train_acc10 = 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
     # optionally resume from a checkpoint
@@ -109,7 +137,7 @@ def main_worker(gpu, ngpus_per_node):
     #    print_num_dataset(data)
     if not parser_args.weight_training:
         print_layers(parser_args, model)
-    
+
 
 
     if parser_args.mixed_precision:
@@ -120,18 +148,17 @@ def main_worker(gpu, ngpus_per_node):
     if parser_args.only_sanity:
         dirs = os.listdir(parser_args.sanity_folder)
         for path in dirs:
-            parser_args.results_root = parser_args.sanity_folder +'/'+ path +'/' 
+            parser_args.results_root = parser_args.sanity_folder +'/'+ path +'/'
             parser_args.resume =parser_args.results_root + '/model_before_finetune.pth'
             resume(parser_args, model, optimizer)
-            
+
             do_sanity_checks(model, parser_args, data, criterion, epoch_list, test_acc_before_round_list,
                          test_acc_list, reg_loss_list, model_sparsity_list, parser_args.results_root)
-            
+
             #cp_model = round_model(model, round_scheme="all_ones", noise=parser_args.noise,
             #            ratio=parser_args.noise_ratio, rank=parser_args.gpu)
             #print(get_model_sparsity(cp_model))
         return
-
 
     # Start training
     for epoch in range(parser_args.start_epoch, parser_args.epochs):
@@ -155,7 +182,7 @@ def main_worker(gpu, ngpus_per_node):
         # train for one epoch
         start_train = time.time()
         train_acc1, train_acc5, train_acc10, reg_loss = train(
-            data.train_loader, model, criterion, optimizer, epoch, parser_args, writer=writer, scaler=scaler
+            data.train_loader, model, criterion, optimizer, epoch, mixup_fn, parser_args, writer=writer, scaler=scaler
         )
         train_time.update((time.time() - start_train) / 60)
         scheduler.step()

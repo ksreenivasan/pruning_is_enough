@@ -1,0 +1,65 @@
+# Hypercube optimization
+algo: 'hc'
+
+# Architecture
+arch: deit_small_patch16_224
+
+# ===== Dataset ===== #
+dataset: ImageNet
+#data: /workspace/datasets/ILSVRC2012
+#data: /media/alliot/Datasets/ILSVRC2012
+data: /home/alliot/ILSVRC2012
+name: deit_imagenet_hypercube_reg_exp1
+
+# ===== Learning Rate Policy ======== #
+optimizer: adamw
+lr: 0.00025
+lr_policy: cosine_lr
+#lr_policy: multistep_lr
+#lr_gamma: 0.5
+#lr_adjust: 50 #30
+
+
+# ===== Network training config ===== #
+epochs: 300
+wd: 0.05
+momentum: 0.9
+batch_size: 256
+
+label_smoothing: 0.1
+drop: 0
+drop-path: 0.1
+repeated_aug: True
+mixup: 0.8
+cutmix: 1.0
+reprob: 0.25
+
+
+# ===== Sparsity =========== #
+conv_type: SubnetConv
+bn_type: NonAffineBatchNorm
+freeze_weights: True
+prune_rate: 0.0
+init: signed_constant
+score_init: unif
+scale_fan: False #True
+
+
+# ===== Rounding ===== #
+round: naive
+noise: True
+noise_ratio: 0
+
+
+# ===== Regularization ===== #
+regularization: var_red_2
+lmbda: 0.0001 #0.000001
+
+
+# ===== Hardware setup ===== #
+num_workers: 12
+gpu: 0
+multiprocessing_distributed: False
+dist_backend: nccl
+world_size: 1
+rank: 0
