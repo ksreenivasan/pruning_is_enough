@@ -936,6 +936,12 @@ class ArgsHelper:
             type=int,
             help="smart ratio version number (1, 2, ...)",
         )
+        parser.add_argument(
+            "--use-full-data",
+            action="store_true",
+            default=False,
+            help="Enable this use full train data and not leave anything for validation"
+        )
 
         # for ViT
         parser.add_argument(

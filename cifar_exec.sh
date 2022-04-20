@@ -61,24 +61,52 @@ python main.py \
 --config configs/hypercube/wideresnet28/wideresnet28_weight_training.yml > wideresnet_wt_log 2>&1
 BLOCK
 
-
-# Running trials in parallel
+:<<BLOCK
+# Using validation to figure out hyperparams
 # NOTE: make sure to delete/comment subfolder from the config file or else it may not work
-conf_file="configs/hypercube/wideresnet28/wideresnet28_weight_training.yml"
-log_root="wideresnet28_"
+conf_file="configs/param_tuning/wideresnet28_1_4/conf"
+conf_end=".yml"
+log_root="wideresnet28_1_4_val_debug_"
 log_end="_log"
-subfolder_root="wideresnet28_results_trial_"
+subfolder_root="wideresnet28_1_4_val_debug_"
 
-for trial in 2 3
+for trial in 2
 do
     python main.py \
-    --config "$conf_file" \
+    --config "$conf_file$trial$conf_end" \
+    --subfolder "$subfolder_root$trial" > "$log_root$trial$log_end" 2>&1 &
+
+    #python main.py \
+    #--config "$conf_file" \
+    #--trial-num $trial \
+    #--invert-sanity-check \
+    #--subfolder "invert_$subfolder_root$trial" > "invert_$log_root$trial$log_end" 2>&1 &
+done
+BLOCK
+
+#:<<BLOCK
+# Final run on full data
+# NOTE: make sure to delete/comment subfolder from the config file or else it may not work
+conf_file="configs/param_tuning/mobile_5/conf3"
+conf_end=".yml"
+log_root="mobilenet_sp5_"
+log_end="_log"
+subfolder_root="mobilenet_sp5_"
+
+for trial in 1 2
+do
+    python main.py \
+    --config "$conf_file$conf_end" \
     --trial-num $trial \
+    --use-full-data \
     --subfolder "$subfolder_root$trial" > "$log_root$trial$log_end" 2>&1 &
 
     python main.py \
-    --config "$conf_file" \
+    --config "$conf_file$conf_end" \
     --trial-num $trial \
     --invert-sanity-check \
+    --use-full-data \
+    --skip-sanity-checks \
     --subfolder "invert_$subfolder_root$trial" > "invert_$log_root$trial$log_end" 2>&1 &
 done
+#BLOCK

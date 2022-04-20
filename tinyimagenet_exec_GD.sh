@@ -1,4 +1,45 @@
 
+## REBUTTAL
+# Final run on full data
+# # NOTE: make sure to delete/comment subfolder from the config file or else it may not work
+conf_file="configs/param_tuning/tinyimgnet/resnet18_0_5/conf1"
+conf_end=".yml"
+log_root="tiny_resnet18_0_5"
+log_end="_log"
+subfolder_root="tiny_resnet18_0_5_"
+
+for trial in 1 2 3
+do
+    python main.py \
+    --config "$conf_file$conf_end" \
+    --trial-num $trial \
+    --use-full-data \
+    --subfolder "$subfolder_root$trial" #> "$log_root$trial$log_end" 2>&1 &
+
+    python main.py \
+    --config "$conf_file$conf_end" \
+    --trial-num $trial \
+    --invert-sanity-check \
+    --use-full-data \
+    --skip-sanity-checks \
+    --subfolder "invert_$subfolder_root$trial" #> "invert_$log_root$trial$log_end" 2>&1 &
+done
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 # TinyImageNet, ResNet-50
 
@@ -6,7 +47,7 @@
 #python main.py --config configs/training/resnet50/tiny_resnet50_training_adam_001_multi.yml > log_tiny_res50_wt_adam_001_multi 2>&1 # this is current best
 #python main.py --config configs/training/resnet50/tiny_resnet50_training_adam_001_cosine.yml > log_tiny_res50_wt_adam_001_cosine 2>&1 # this is current best
 #python main.py --config configs/training/resnet50/tiny_resnet50_training_adam_0001_cosine.yml > log_tiny_res50_wt_adam_0001_cosine 2>&1 # this is current best
-python main.py --config configs/training/resnet50/tiny_resnet50_training_sgd_multi.yml > log_tiny_res50_wt_sgd_multi 2>&1 # this is current best
+#python main.py --config configs/training/resnet50/tiny_resnet50_training_sgd_multi.yml > log_tiny_res50_wt_sgd_multi 2>&1 # this is current best
 
 
 

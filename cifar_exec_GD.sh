@@ -1,4 +1,127 @@
 
+# REBUTTAL
+# NOTE: make sure to delete/comment subfolder from the config file or else it may not work
+#:<<BLOCK
+conf_file="configs/param_tuning/vgg_1_4/conf"
+conf_end=".yml"
+log_root="vgg_1_4_val"
+log_end="_log"
+subfolder_root="vgg_1_4_val"
+gpu=1
+
+for trial in 1 6
+do
+    python main.py \
+    --config "$conf_file$trial$conf_end" \
+    --trial-num $trial \
+    --gpu $gpu \
+    --subfolder "$subfolder_root$trial" > "$log_root$trial$log_end" 2>&1 #&
+done
+
+#BLOCK
+# Final run on full data
+# # NOTE: make sure to delete/comment subfolder from the config file or else it may not work
+# conf_file="configs/param_tuning/resnet20_059_KS/conf4"
+# conf_end=".yml"
+# log_root="resnet20_059_"
+# log_end="_log"
+# subfolder_root="resnet20_059_"
+
+# for trial in 1 2 3
+# do
+#     python main.py \
+#     --config "$conf_file$conf_end" \
+#     --trial-num $trial \
+#     --use-full-data \
+#     --subfolder "$subfolder_root$trial" > "$log_root$trial$log_end" 2>&1 &
+
+#     python main.py \
+#     --config "$conf_file" \
+#     --trial-num $trial \
+#     --invert-sanity-check \
+#     --use-full-data \
+#     --skip-sanity-checks \
+#     --subfolder "invert_$subfolder_root$trial" > "invert_$log_root$trial$log_end" 2>&1 &
+# done
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+:<<BLOCK
+# Using validation to figure out hyperparams
+# NOTE: make sure to delete/comment subfolder from the config file or else it may not work
+conf_file="configs/conf"
+conf_end=".yml"
+log_root="resnet20_059_val_debug"
+log_end="_log"
+subfolder_root="resnet20_059_val_debug_"
+
+for trial in 4 5 6
+do
+    python main.py \
+    --config "$conf_file$trial$conf_end" \
+    --subfolder "$subfolder_root$trial" > "$log_root$trial$log_end" 2>&1 &
+
+    #python main.py \
+    #--config "$conf_file" \
+    #--trial-num $trial \
+    #--invert-sanity-check \
+    #--subfolder "invert_$subfolder_root$trial" > "invert_$log_root$trial$log_end" 2>&1 &
+done
+BLOCK
+
+# # Final run on full data
+# # NOTE: make sure to delete/comment subfolder from the config file or else it may not work
+# conf_file="configs/param_tuning/resnet20_059_KS/conf4"
+# conf_end=".yml"
+# log_root="resnet20_059_"
+# log_end="_log"
+# subfolder_root="resnet20_059_"
+
+# for trial in 1 2 3
+# do
+#     python main.py \
+#     --config "$conf_file$conf_end" \
+#     --trial-num $trial \
+#     --use-full-data \
+#     --subfolder "$subfolder_root$trial" > "$log_root$trial$log_end" 2>&1 &
+
+#     python main.py \
+#     --config "$conf_file" \
+#     --trial-num $trial \
+#     --invert-sanity-check \
+#     --use-full-data \
+#     --skip-sanity-checks \
+#     --subfolder "invert_$subfolder_root$trial" > "invert_$log_root$trial$log_end" 2>&1 &
+# done
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 # VGG16, 0.5%, bf_ft_acc vs af_ft_acc
 :<<BLOCK
@@ -57,19 +180,19 @@ python main.py \
 BLOCK
 
 # Renda 
-#:<<BLOCK
+:<<BLOCK
 conf_file="configs/imp/resnet18_cifar.yml"
-subfolder_root="resnet18_cifar10_renda_"
+subfolder_root="resnet18_cifar10_renda_updated"
 log_end="_log"
-gpu=1
+gpu=0
 
 python imp_main.py \
     --config "$conf_file" \
-    --imp-rounds 20 \
+    --imp-rounds 30 \
     --imp-no-rewind \
     --gpu $gpu \
     --subfolder "$subfolder_root" > "$subfolder_root$log_end" 2>&1 &
-#BLOCK
+BLOCK
 
 
 

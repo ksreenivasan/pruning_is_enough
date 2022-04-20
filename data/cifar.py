@@ -5,6 +5,7 @@ from torchvision import transforms
 import random
 from torch.utils.data.sampler import SubsetRandomSampler
 from args_helper import parser_args
+from torch.utils.data import random_split
 
 
 class CIFAR10:
@@ -46,9 +47,6 @@ class CIFAR10:
             download=True,
             transform=train_transform
         )
-        self.train_loader = torch.utils.data.DataLoader(
-            train_dataset, batch_size=parser_args.batch_size, shuffle=True, drop_last=drop_last, **kwargs
-        )
 
         test_dataset = torchvision.datasets.CIFAR10(
             root=data_root,
@@ -56,6 +54,24 @@ class CIFAR10:
             download=True,
             transform=val_transform,
         )
+
+        if parser_args.use_full_data:
+            #train_dataset = dataset
+            # use_full_data => we are not tuning hyperparameters
+            validation_dataset = test_dataset
+        else:
+            val_size = 5000
+            train_size = len(dataset) - val_size
+            train_dataset, validation_dataset = random_split(train_dataset, [train_size, val_size])
+
+        self.train_loader = torch.utils.data.DataLoader(
+            train_dataset, batch_size=parser_args.batch_size, shuffle=True, drop_last=drop_last, **kwargs
+        )
+
         self.val_loader = torch.utils.data.DataLoader(
             test_dataset, batch_size=parser_args.batch_size, shuffle=False, **kwargs
+        )
+
+        self.actual_val_loader = torch.utils.data.DataLoader(
+            validation_dataset, batch_size=parser_args.batch_size, shuffle=True, **kwargs
         )

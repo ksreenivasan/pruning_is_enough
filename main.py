@@ -7,6 +7,8 @@ from main_utils import *
 
 def main():
     print(parser_args)
+    print("\n\nBeginning of process.")
+    print_time()
     set_seed(parser_args.seed * parser_args.trial_num)
     #set_seed(parser_args.seed + parser_args.trial_num - 1)
 
@@ -121,10 +123,10 @@ def main_worker(gpu, ngpus_per_node):
     end_epoch = time.time()
     parser_args.start_epoch = parser_args.start_epoch or 0
     acc1 = None
-    epoch_list, test_acc_before_round_list, test_acc_list, reg_loss_list, model_sparsity_list = [], [], [], [], []
+    epoch_list, test_acc_before_round_list, test_acc_list, reg_loss_list, model_sparsity_list, val_acc_list, train_acc_list = [], [], [], [], [], [], []
 
     # Save the initial model
-    torch.save(model.state_dict(), result_root + 'init_model.pth')
+    #torch.save(model.state_dict(), result_root + 'init_model.pth')
 
     # compute prune_rate to reach target_sparsity
     if not parser_args.override_prune_rate:
@@ -203,6 +205,9 @@ def main_worker(gpu, ngpus_per_node):
             acc_avg /= parser_args.num_test
             acc1 = acc_avg
             print('Acc after rounding: {}'.format(acc1))
+            val_acc1, val_acc5, val_acc10 = validate(
+                    data.actual_val_loader, cp_model, criterion, parser_args, writer, epoch)
+            print('Validation Acc after rounding: {}'.format(val_acc1))
         else:
             acc1, acc5, acc10 = validate(
                 data.val_loader, model, criterion, parser_args, writer, epoch)
@@ -253,6 +258,8 @@ def main_worker(gpu, ngpus_per_node):
             # no before rounding for EP/weight training
             test_acc_before_round_list.append(-1)
         test_acc_list.append(acc1)
+        val_acc_list.append(val_acc1)
+        train_acc_list.append(train_acc1)
         reg_loss_list.append(reg_loss)
         model_sparsity_list.append(avg_sparsity)
 
@@ -289,7 +296,7 @@ def main_worker(gpu, ngpus_per_node):
 
         if parser_args.algo in ['hc', 'hc_iter']:
             results_df = pd.DataFrame({'epoch': epoch_list, 'test_acc_before_rounding': test_acc_before_round_list,
-                                      'test_acc': test_acc_list, 'regularization_loss': reg_loss_list, 'model_sparsity': model_sparsity_list})
+                                      'test_acc': test_acc_list, 'val_acc': val_acc_list, 'train_acc': train_acc_list, 'regularization_loss': reg_loss_list, 'model_sparsity': model_sparsity_list})
         else:
             results_df = pd.DataFrame(
                 {'epoch': epoch_list, 'test_acc': test_acc_list, 'model_sparsity': model_sparsity_list})
@@ -302,29 +309,34 @@ def main_worker(gpu, ngpus_per_node):
         results_df.to_csv(results_filename, index=False)
 
     # save checkpoint before fine-tuning
-    torch.save(model.state_dict(), result_root + 'model_before_finetune.pth')
+    #torch.save(model.state_dict(), result_root + 'model_before_finetune.pth')
+
+    print("\n\nHigh accuracy subnetwork found! Rest is just finetuning")
+    print_time()
 
     # finetune weights
     cp_model = copy.deepcopy(model)
     if not parser_args.skip_fine_tune:
         print("Beginning fine-tuning")
         cp_model = finetune(cp_model, parser_args, data, criterion, epoch_list,
-                            test_acc_before_round_list, test_acc_list, reg_loss_list, model_sparsity_list, result_root)
+                            test_acc_before_round_list, test_acc_list, val_acc_list, train_acc_list, reg_loss_list, model_sparsity_list, result_root)
         # print out the final acc
         eval_and_print(validate, data.val_loader, cp_model, criterion,
                        parser_args, writer=None, description='final model after finetuning')
         # save checkpoint after fine-tuning
-        torch.save(cp_model.state_dict(), result_root +
-                   'model_after_finetune.pth')
+        #torch.save(cp_model.state_dict(), result_root + 'model_after_finetune.pth')
     else:
         print("Skipping finetuning!!!")
 
     if not parser_args.skip_sanity_checks:
         do_sanity_checks(model, parser_args, data, criterion, epoch_list, test_acc_before_round_list,
-                         test_acc_list, reg_loss_list, model_sparsity_list, result_root)
+                         test_acc_list, val_acc_list, train_acc_list, reg_loss_list, model_sparsity_list, result_root)
 
     else:
         print("Skipping sanity checks!!!")
+
+    print("\n\nEnd of process. Exiting")
+    print_time()
 
     if parser_args.multiprocessing_distributed:
         cleanup_distributed()

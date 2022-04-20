@@ -1,0 +1,67 @@
+
+# algorithm
+algo: 'hc_iter'
+iter_period: 5
+
+
+# Architecture
+arch: ResNet50
+
+# ===== Dataset ===== #
+dataset: Caltech101
+name: resnet50_caltech101_HC
+transfer_learning: True
+
+# ===== Learning Rate Policy ======== #
+optimizer: adam
+lr: 0.001
+lr_policy: cosine_lr #cosine_lr #constant_lr
+fine_tune_optimizer: adam
+fine_tune_lr: 0.0001
+fine_tune_lr_policy: multistep_lr #cosine_lr #constant_lr
+
+# ===== Network training config ===== #
+epochs: 50 #5
+wd: 0
+momentum: 0.9
+batch_size: 16
+
+
+# ===== Sparsity =========== #
+conv_type: SubnetConv
+bn_type: AffineBatchNorm #NonAffineBatchNorm
+freeze_weights: True
+prune_type: BottomK
+target_sparsity: 5
+# decide if you want to "unflag"
+unflag_before_finetune: True
+init: signed_constant
+score_init: unif #skew #half #bimodal #skew # bern
+scale_fan: False
+
+# ===== Rounding ===== #
+round: naive
+noise: True
+noise_ratio: 0
+
+# ===== Quantization ===== #
+hc_quantized: True
+quantize_threshold: 0.5
+
+# ===== Regularization ===== #
+regularization: L2
+lmbda: 0.000002
+
+
+# ===== Hardware setup ===== #
+workers: 4
+#gpu: 0
+
+
+# ===== Checkpointing ===== #
+checkpoint_at_prune: False
+
+# ==== sanity check ==== #
+#skip_sanity_checks: True
+
+
