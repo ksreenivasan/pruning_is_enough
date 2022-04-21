@@ -62,7 +62,12 @@ class ResNet(nn.Module):
         self.layer2 = self._make_layer(block, 32 * times, num_blocks[1], stride=2)
         self.layer3 = self._make_layer(block, 64 * times, num_blocks[2], stride=2)
         # self.avgpool = nn.AdaptiveAvgPool2d(1)
-        self.fc = builder.conv1x1(64 * block.expansion * times, 10) # 10 = num_classes for cifar10
+
+        num_classes = 10
+        if parser_args.dataset == "CIFAR100":
+            num_classes = 100
+
+        self.fc = builder.conv1x1(64 * block.expansion * times, num_classes) # 10 = num_classes for cifar10
 
         self.prunable_layer_names, self.prunable_biases = self.get_prunable_param_names()
 

@@ -1,14 +1,14 @@
-#subfolder: target_sparsity_20_without_unflag
+# subfolder: target_sparsity_2
 
 # Hypercube optimization
 algo: 'hc_iter'
 iter_period: 5
 
 # Architecture
-arch: resnet20
+arch: resnet32
 
 # ===== Dataset ===== #
-dataset: CIFAR10
+dataset: CIFAR100
 name: resnet20_quantized_iter_hc
 
 # ===== Learning Rate Policy ======== #
@@ -19,7 +19,7 @@ fine_tune_lr: 0.01
 fine_tune_lr_policy: multistep_lr
 
 # ===== Network training config ===== #
-epochs: 150
+epochs: 150 
 wd: 0.0 
 momentum: 0.9
 batch_size: 128
@@ -30,12 +30,13 @@ bn_type: NonAffineBatchNorm
 freeze_weights: True
 prune_type: BottomK
 # enter target sparsity here
-target_sparsity: 20.0
+target_sparsity: 2
 # decide if you want to "unflag"
-#unflag_before_finetune: True
+unflag_before_finetune: True
 init: signed_constant
 score_init: unif #skew #half #bimodal #skew # bern
 scale_fan: False #True
+
 
 # ===== Rounding ===== #
 round: naive 
@@ -48,7 +49,7 @@ quantize_threshold: 0.5
 
 # ===== Regularization ===== #
 regularization: L2
-lmbda: 0.000005 # 5e-6
+lmbda: 0.00001 # 1e-4
 
 # ===== Hardware setup ===== #
 workers: 6
@@ -58,4 +59,4 @@ gpu: 0
 checkpoint_at_prune: False
 
 # ==== sanity check ==== #
-# skip_sanity_checks: True
+skip_sanity_checks: False
