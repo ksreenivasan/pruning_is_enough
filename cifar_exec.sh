@@ -64,11 +64,11 @@ BLOCK
 #:<<BLOCK
 # Using validation to figure out hyperparams
 # NOTE: make sure to delete/comment subfolder from the config file or else it may not work
-conf_file="configs/hypercube/resnet32/resnet32_sparsity_5_v2"
+conf_file="configs/training/resnet32/cifar100_resnet32_training"
 conf_end=".yml"
-log_root="resnet32_sp5_v2_"
+log_root="resnet32_wt_"
 log_end="_log"
-subfolder_root="resnet32_sp5_v2_"
+subfolder_root="resnet32_wt_"
 
 for trial in 1
 do
