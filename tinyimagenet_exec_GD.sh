@@ -9,8 +9,8 @@
 # Renda
 #:<<BLOCK
 gpu=1
-subfolder="tiny_mobile_renda_new"
-python imp_main.py --config configs/imp/tiny_mobilenet.yml --imp-rounds 20 --imp-no-rewind --gpu $gpu --subfolder "$subfolder" #> "$subfolder" 2>&1
+subfolder="tiny_mobile_renda_updated"
+python imp_main.py --config configs/imp/tiny_mobilenet.yml --imp-rounds 20 --imp-no-rewind --gpu $gpu --subfolder "$subfolder" > "$subfolder" 2>&1
 #BLOCK
 
 # IMP
