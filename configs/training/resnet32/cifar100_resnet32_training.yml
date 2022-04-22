@@ -37,5 +37,4 @@ skip_fine_tune: True
 
 # ===== Hardware setup ===== #
 workers: 4
-gpu: 3
-
+#gpu: 3

@@ -1,7 +1,52 @@
 
+
+## NeurIPS prep
+
+
+#:<<BLOCK
+# Using validation to figure out hyperparams
+# NOTE: make sure to delete/comment subfolder from the config file or else it may not work
+#conf_file="configs/training/resnet32/cifar100_resnet32_training"
+#conf_file="configs/sr/resnet32/cifar100_resnet32_sr"
+#conf_file="configs/sr/resnet32/cifar100_resnet32_sr_debug"
+#conf_file="configs/imp/resnet32_cifar100"
+#conf_file="configs/imp/mobilenet"
+#conf_file="configs/hypercube/resnet32/double/sparsity_5"
+conf_file="configs/ep/resnet32/cifar100_sparsity_2"
+conf_end=".yml"
+log_root="resnet32_cifar100_ep_2_"
+log_end="_log"
+subfolder_root="resnet32_cifar100_ep_2_"
+
+for trial in 1
+do
+    python main.py \
+    --gpu 0 \
+    --config "$conf_file$conf_end" \
+    --subfolder "$subfolder_root$trial" > "$log_root$trial$log_end" 2>&1 &
+
+    #--smart_ratio 0.98 \
+    
+    #python main.py \
+    #--config "$conf_file$conf_end" \
+    #--trial-num $trial \
+    #--invert-sanity-check \
+    #--skip-sanity-checks \
+    #--subfolder "invert_$subfolder_root$trial" > "invert_$log_root$trial$log_end" 2>&1 &
+done
+#BLOCK
+
+
+
+
+
+
+
+
+
 # REBUTTAL
 # NOTE: make sure to delete/comment subfolder from the config file or else it may not work
-#:<<BLOCK
+:<<BLOCK
 conf_file="configs/param_tuning/vgg_1_4/conf"
 conf_end=".yml"
 log_root="vgg_1_4_val"
@@ -18,7 +63,7 @@ do
     --subfolder "$subfolder_root$trial" > "$log_root$trial$log_end" 2>&1 #&
 done
 
-#BLOCK
+BLOCK
 # Final run on full data
 # # NOTE: make sure to delete/comment subfolder from the config file or else it may not work
 # conf_file="configs/param_tuning/resnet20_059_KS/conf4"
