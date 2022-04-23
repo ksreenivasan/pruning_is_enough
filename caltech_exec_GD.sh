@@ -1,7 +1,7 @@
 # ResNet50_tf (changed the output size)
 
 # Weight training
-#python main.py --config configs/training/resnet50/caltech_resnet50_training_1FC.yml #> log_caltech_wt_50epoch_1FC 2>&1
+python main.py --config configs/training/resnet50/caltech_resnet50_training_1FC.yml #> log_caltech_wt_50epoch_1FC 2>&1
 #python main.py --config configs/training/resnet50/caltech_resnet50_training_2FC.yml #> log_caltech_wt_50epoch_2FC 2>&1
 
 
