@@ -66,8 +66,10 @@ class Caltech101:
 		])
 
 		# divide the data into train, validation, and test set
-		(X, x_val , Y, y_val) = train_test_split(data, labels, test_size=0.2,  stratify=labels,random_state=42)
-		(x_train, x_test, y_train, y_test) = train_test_split(X, Y, test_size=0.25, random_state=42)
+		(X, x_test , Y, y_test) = train_test_split(data, labels, test_size=0.2,  stratify=labels,random_state=42)
+		(x_train, x_val, y_train, y_val) = train_test_split(X, Y, test_size=0.25, random_state=42)
+		#(X, x_val , Y, y_val) = train_test_split(data, labels, test_size=0.2,  stratify=labels,random_state=42)
+		#(x_train, x_test, y_train, y_test) = train_test_split(X, Y, test_size=0.25, random_state=42)
 		print(f"x_train examples: {x_train.shape}\nx_test examples: {x_test.shape}\nx_val examples: {x_val.shape}")
 
 
@@ -76,7 +78,8 @@ class Caltech101:
 		test_data = CustomDataset(x_test, y_test, val_transform)       
 
 		self.train_loader = DataLoader(train_data, batch_size=parser_args.batch_size, shuffle=True, num_workers=4)
-		self.val_loader = DataLoader(val_data, batch_size=parser_args.batch_size, shuffle=True, num_workers=4)
+		self.val_loader = DataLoader(test_data, batch_size=parser_args.batch_size, shuffle=True, num_workers=4)
+		#self.val_loader = DataLoader(val_data, batch_size=parser_args.batch_size, shuffle=True, num_workers=4)
 		self.num_classes = len(lb.classes_)
 
 		#valLoader = DataLoader(val_data, batch_size=parser_args.batch_size, shuffle=True, num_workers=4)

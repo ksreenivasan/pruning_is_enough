@@ -895,6 +895,7 @@ class ArgsHelper:
             type=int,
             default=0,
             help="Use W=UV decomposition or not"
+        )
         parser.add_argument('--transformer_emsize', type=int, default=200,
                     help='size of word embeddings')
         parser.add_argument('--transformer_nhid', type=int, default=200,
@@ -910,6 +911,7 @@ class ArgsHelper:
         parser.add_argument('--transformer_nhead', type=int, default=2,
                     help='the number of heads in the encoder/decoder of the transformer model')
       
+
         parser.add_argument(
             "--only-sanity",
             action="store_true",
