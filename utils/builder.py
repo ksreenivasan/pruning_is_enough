@@ -6,7 +6,7 @@ import torch.nn as nn
 
 import utils.conv_type
 import utils.bn_type
-
+from utils.linear_type import SubnetLinear
 
 class Builder(object):
     def __init__(self, conv_layer, bn_layer, first_layer=None):
@@ -69,6 +69,11 @@ class Builder(object):
         """1x1 convolution with padding"""
         c = self.conv(1, in_planes, out_planes, stride=stride, first_layer=first_layer)
         return c
+
+    def linear(self, in_planes, out_planes):
+        l = SubnetLinear(in_planes, out_planes, bias=parser_args.bias)
+        self._init_conv(l)
+        return l
 
     def conv7x7(self, in_planes, out_planes, stride=1, first_layer=False):
         """7x7 convolution with padding"""

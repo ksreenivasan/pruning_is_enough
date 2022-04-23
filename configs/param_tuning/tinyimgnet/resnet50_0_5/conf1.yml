@@ -1,0 +1,63 @@
+#subfolder: resnet50_HC_50
+
+# Hypercube optimization
+algo: 'hc_iter'
+iter_period: 5
+
+# Architecture
+arch: ResNet50
+
+# ===== Dataset ===== #
+dataset: TinyImageNet
+name: tiny_resnet50_HC
+
+# ===== Learning Rate Policy ======== #
+optimizer: adam
+lr: 0.01
+lr_policy: cosine_lr
+fine_tune_lr: 0.1
+fine_tune_lr_policy: multistep_lr
+fine_tune_optimizer: sgd
+nesterov: True
+
+# ===== Network training config ===== #
+epochs: 150
+wd: 0.0 #0.0001
+momentum: 0.9
+batch_size: 128
+
+# ===== Sparsity =========== #
+conv_type: SubnetConv
+bn_type: NonAffineBatchNorm
+freeze_weights: True
+prune_type: BottomK
+
+target_sparsity: 0.5
+
+unflag_before_finetune: True
+init: signed_constant
+score_init: unif
+scale_fan: False #True
+
+# ===== Rounding ===== #
+round: naive
+noise: True
+noise_ratio: 0
+
+# ===== Quantization ===== #
+hc_quantized: True
+quantize_threshold: 0.5
+
+# ===== Regularization ===== #
+regularization: L2
+lmbda: 0.000001 #0.000001 #0.000001
+
+# ===== Hardware setup ===== #
+workers: 6
+gpu: 0
+
+# ===== Checkpointing ===== #
+checkpoint_at_prune: False
+
+# ==== sanity check ==== #
+#skip_sanity_checks: False

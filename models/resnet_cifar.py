@@ -81,10 +81,29 @@ class ResNet(nn.Module):
         self.layer4 = self._make_layer(block, 512, num_blocks[3], stride=2)
         self.avgpool = nn.AdaptiveAvgPool2d(1)
 
+        num_classes = 10
+        if parser_args.dataset == "CIFAR100":
+            num_classes = 100
+
         if parser_args.last_layer_dense:
-            self.fc = nn.Conv2d(512 * block.expansion, 10, 1)
+            self.fc = nn.Conv2d(512 * block.expansion, num_classes, 1)
         else:
-            self.fc = builder.conv1x1(512 * block.expansion, 10)
+            self.fc = builder.conv1x1(512 * block.expansion, num_classes)
+            
+        self.prunable_layer_names, self.prunable_biases = self.get_prunable_param_names()
+
+    def get_prunable_param_names(model):
+            prunable_weights = [name + '.weight' for name, module in model.named_modules() if
+                    isinstance(module, torch.nn.modules.conv.Conv2d) or
+                    isinstance(module, torch.nn.modules.linear.Linear)]
+            if parser_args.bias:
+                prunable_biases = [name + '.bias' for name, module in model.named_modules() if
+                    isinstance(module, torch.nn.modules.conv.Conv2d) or
+                    isinstance(module, torch.nn.modules.linear.Linear)]
+            else:
+                prunable_biases = [""]
+
+            return prunable_weights, prunable_biases
 
     def _make_layer(self, block, planes, num_blocks, stride):
         strides = [stride] + [1] * (num_blocks - 1)

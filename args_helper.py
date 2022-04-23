@@ -10,8 +10,6 @@ class ArgsHelper:
     def parse_arguments(self, jupyter_mode=False):
         parser = argparse.ArgumentParser(description="Pruning random networks")
 
-
-
         # Config/Hyperparameters
         parser.add_argument(
             "--data",
@@ -31,7 +29,7 @@ class ArgsHelper:
         )
         parser.add_argument(
             "--config",
-            default='configs/hypercube/resnet20/resnet20_quantized_hypercube_reg_bottom_K.yml',
+            default='configs/hypercube/resnet20/resnet20_quantized_iter_hc_target_sparsity_1_4_highreg.yml',
             help="Config file to use"
         )
         parser.add_argument(
@@ -353,6 +351,11 @@ class ArgsHelper:
             "--first-layer-dense",
             action="store_true",
             help="First layer dense or sparse"
+        )
+        parser.add_argument(
+            "--dense-training",
+            action="store_true",
+            help="Train the network without pruning, and checkpoint along the way"
         )
         parser.add_argument(
             "--last-layer-dense",
@@ -800,18 +803,44 @@ class ArgsHelper:
             help="which iterations to rewind to"
         )
         parser.add_argument(
-            "--imp-resume-round", 
+            "--imp-resume-round",
+            default=-1,
             type=int, 
             help="which round to resume to"
+        )
+        parser.add_argument(
+            "--imp-resume-epoch",
+            default=-1,
+            type=int, 
+            help="which epoch to resume to"
+        )
+        parser.add_argument(
+            "--imp-resume-iter",
+            default=-1,
+            type=int, 
+            help="which iter to resume to"
         )
         parser.add_argument(
             "--imp-rewind-model", 
             default="short_imp/Liu_checkpoint_model_correct.pth"
         )
         parser.add_argument(
-            "--smart-ratio", 
+            "--imp-no-rewind",
+            action="store_true",
+            default=False,
+            help="if set True, we run IMP algorithm without rewinding to previous states"
+        )
+        parser.add_argument(
+            "--imp-rounds",
+            type=int,
+            default=-1,
+            help="if set > 0, then ignore the epochs statement, and calculate epochs based on rounds * iter / round"
+        )
+        parser.add_argument(
+            "--smart_ratio", 
             type=float,
-            default=-1
+            default=-1,
+            help="the pruning weights in [0, 1]. E.g. smart_ratio = 0.98 will end up with a 2\% weight remaining model"
         )
         parser.add_argument(
             "--bottom-k-on-forward",
@@ -866,8 +895,55 @@ class ArgsHelper:
             type=int,
             default=0,
             help="Use W=UV decomposition or not"
+        parser.add_argument('--transformer_emsize', type=int, default=200,
+                    help='size of word embeddings')
+        parser.add_argument('--transformer_nhid', type=int, default=200,
+                    help='number of hidden units per layer')
+        parser.add_argument('--transformer_nlayers', type=int, default=2,
+                    help='number of layers')
+        parser.add_argument('--transformer_clip', type=float, default=0.25,
+                    help='gradient clipping')
+        parser.add_argument('--transformer_bptt', type=int, default=35,
+                    help='sequence length')
+        parser.add_argument('--transformer_dropout', type=float, default=0.2,
+                    help='dropout applied to layers (0 = no dropout)')
+        parser.add_argument('--transformer_nhead', type=int, default=2,
+                    help='the number of heads in the encoder/decoder of the transformer model')
+      
+        parser.add_argument(
+            "--only-sanity",
+            action="store_true",
+            default=False,
+            help="Only run sanity checks on the files in specific directory or subdirectories"
+        )
+        
+        parser.add_argument(
+            "--invert-sanity-check",
+            action="store_true",
+            default=False,
+            help="Enable this to run the inverted sanity check (for HC)"
         )
 
+        parser.add_argument(
+            "--sanity-folder",
+            default=None,
+            type=str,
+            metavar="PATH",
+            help="directory(s) to access for only sanity check",
+        )
+
+        parser.add_argument(
+            "--sr-version",
+            default=1,
+            type=int,
+            help="smart ratio version number (1, 2, ...)",
+        )
+        parser.add_argument(
+            "--use-full-data",
+            action="store_true",
+            default=False,
+            help="Enable this use full train data and not leave anything for validation"
+        )
 
         if jupyter_mode:
             args = parser.parse_args("")

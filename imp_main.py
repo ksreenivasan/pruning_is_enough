@@ -21,7 +21,7 @@ from imp_mask import Mask
 
 # for merge the code into parent directory
 from args_helper import parser_args
-from main_utils import get_model, get_dataset, get_optimizer, switch_to_wt
+from main_utils import get_model, get_dataset, get_optimizer, switch_to_wt, set_gpu, print_time
 from utils.utils import set_seed
 from utils.schedulers import get_scheduler
 
@@ -39,25 +39,68 @@ def IMP_train(parser_args, data, device):
    
     use_amp = True
 
-    assert parser_args.imp_rewind_iter // 391 < parser_args.iter_period  # NOTE: hard code, needs to modify later
-
-    # weight initialization
-    model = get_model(parser_args)
-    model = switch_to_wt(model).to(device)
-
-    n_round = parser_args.epochs // parser_args.iter_period  # number of round (number of pruning happens)
-    n_epoch = parser_args.iter_period  # number of epoch per round
-    
-    # Optimizer and criterion
-    criterion = nn.CrossEntropyLoss().to(device)
-    optimizer = get_optimizer(parser_args, model)
-    # NOTE: hard code, just to make sure my code runs correctly
-    scheduler = get_scheduler(optimizer, parser_args.lr_policy, milestones=[80, 120], gamma=parser_args.lr_gamma)
-
-    scaler = torch.cuda.amp.GradScaler(enabled=use_amp)
+    if not parser_args.imp_no_rewind:
+        assert parser_args.imp_rewind_iter // 391 < parser_args.iter_period  # NOTE: hard code, needs to modify later
     dest_dir = os.path.join("results", parser_args.subfolder)
     if not os.path.exists(dest_dir):
         os.mkdir(dest_dir)
+
+    # weight initialization
+    model = get_model(parser_args)
+    criterion = nn.CrossEntropyLoss().to(device)
+
+    model = switch_to_wt(model).to(device)
+
+    if parser_args.imp_no_rewind:
+        rewind_state_dict = None
+    elif parser_args.imp_rewind_iter == 0:  # handle the case where rewind to initial weights
+        rewind_state_dict = copy.deepcopy(model.state_dict())
+        PATH_model = os.path.join(dest_dir, "Liu_checkpoint_model_correct.pth")
+        torch.save({
+                    'model_state_dict': model.state_dict(),
+        }, PATH_model)
+    else:  # rewind to early training phase
+        pass
+
+    # resume at some point
+    if parser_args.imp_resume_round > 0:
+        ckpt = torch.load(os.path.join(dest_dir, "Liu_checkpoint_model_correct.pth"), map_location='cpu')
+        model.load_state_dict(ckpt["model_state_dict"])
+        rewind_state_dict = copy.deepcopy(model.state_dict())
+        # load mask
+        PATH_mask = "results/{}/round_{}_mask.npy".format(parser_args.subfolder, parser_args.imp_resume_round)
+        mask = np.load(PATH_mask, allow_pickle=True)[()]
+        if parser_args.bias:
+            PATH_mask_bias = os.path.join(dest_dir, "round_{}_mask_bias.npy".format(parser_args.imp_resume_round))
+            mask_bias = np.load(PATH_mask_bias, allow_pickle=True)[()]
+        else:
+            mask_bias = None
+        # load csv file
+        result_df = pd.read_csv(os.path.join(dest_dir, "LTH_cifar10_resnet20.csv"))
+        finish_index = parser_args.iter_period * parser_args.imp_resume_round
+        test_acc_list = result_df["test"].tolist()[:finish_index]
+        n_act_list = result_df["nact"].tolist()[:finish_index]
+        before_acc_list = result_df["before"].tolist()[:finish_index]
+    else:
+        test_acc_list, n_act_list = [], []
+        if parser_args.arch in ['transformer']:
+            before_val_acc_list, before_test_acc_list, val_acc_list = [], [], []
+        else:
+            before_acc_list = []
+        parser_args.imp_resume_round = 0
+        mask, mask_bias = None, None
+
+    if parser_args.imp_rounds > 0:
+        n_round = parser_args.imp_rounds
+    else:
+        n_round = parser_args.epochs // parser_args.iter_period  # number of round (number of pruning happens)
+    n_epoch = parser_args.iter_period  # number of epoch per round
+    parser_args.epochs = parser_args.iter_period
+    print("{} round, each round takes {} epochs".format(n_round, n_epoch))
+
+    # Optimizer and criterion
+    optimizer = get_optimizer(parser_args, model)
+    scaler = torch.cuda.amp.GradScaler(enabled=use_amp)
 
 
     # ======================================
@@ -113,12 +156,29 @@ def IMP_train(parser_args, data, device):
         # ========= Update =========
         for name, weight in model.named_parameters():
             if name in model.prunable_layer_names:
-                weight.data = new_mask[name].to(device) * rewind_state_dict[name].data
+                if parser_args.imp_no_rewind:
+                    weight.data = new_mask[name].to(device) * weight.data
+                else:
+                    weight.data = new_mask[name].to(device) * rewind_state_dict[name].data
             if parser_args.bias:
                 if name in model.prunable_biases:
-                    weight.data = new_mask_bias[name].to(device) * rewind_state_dict[name].data
+                    if parser_args.imp_no_rewind:
+                        weight.data = new_mask_bias[name].to(device) * weight.data
+                    else:
+                        weight.data = new_mask_bias[name].to(device) * rewind_state_dict[name].data
 
         return model, new_mask, new_mask_bias
+
+
+    def put_mask_on(model, mask, mask_bias):
+        for name, weight in model.named_parameters():
+            if name in model.prunable_layer_names:
+                weight.data = mask[name].to(device) * weight.data
+            if parser_args.bias:
+                if name in model.prunable_biases:
+                    weight.data = mask_bias[name].to(device) * weight.data
+
+        return model
 
     
     def test(model, device, test_loader):
@@ -136,7 +196,8 @@ def IMP_train(parser_args, data, device):
         return test_acc
 
     
-    def print_nonzeros(model, mask):
+    def print_nonzeros(model):
+        # this function assume the mask has already been multiplied to the weights
         nonzero = 0
         total = 0
         for name, p in model.named_parameters():
@@ -155,24 +216,27 @@ def IMP_train(parser_args, data, device):
     # =              Training              =
     # ======================================
     
-    test_acc_list, n_act_list = [], []
-    before_acc_list = []
-    mask, mask_bias = None, None
     counter = 0
-    for idx_round in range(n_round):
-        if idx_round > 0:
+    for idx_round in range(parser_args.imp_resume_round, n_round):
+        if idx_round > parser_args.imp_resume_round:
             # model, mask = prune_by_percentile_global(parser_args.prune_perct, model, rewind_state_dict, mask)
             model, mask, mask_bias = prune_by_percentile_global(parser_args.prune_rate, model, rewind_state_dict, mask, mask_bias)
-        before_acc = test(model, device, data.val_loader)
-        # optimizer, scheduler = get_optimizer_and_scheduler(parser_args)
-        optimizer = get_optimizer(parser_args, model)
-        scheduler = get_scheduler(optimizer, parser_args.lr_policy, milestones=[80, 120], gamma=parser_args.lr_gamma)
+        elif parser_args.imp_resume_round > 0:
+            assert mask is not None
+            model = put_mask_on(model, mask, mask_bias)
+        else:
+            pass
+
         print(f"\n--- Pruning Level [{idx_round}/{n_round}]: ---")
+        before_acc = test(model, device, data.val_loader)
+        comp1 = print_nonzeros(model)
+        optimizer = get_optimizer(parser_args, model)
+        scheduler = get_scheduler(optimizer, parser_args.lr_policy, gamma=parser_args.lr_gamma)
+        
+        print("\n\nFound ticket for sparsity: {}%".format(comp1))
+        print_time()
 
-        # Print the table of Nonzeros in each layer
-        comp1 = print_nonzeros(model, mask)
-
-        # save the model
+        # save the model and mask right after prune
         PATH_model = os.path.join(dest_dir, "round_{}_model.pth".format(idx_round))
         torch.save({
             'model_state_dict': model.state_dict(),
@@ -182,7 +246,10 @@ def IMP_train(parser_args, data, device):
             PATH_mask = os.path.join(dest_dir, "round_{}_mask.npy".format(idx_round))
             np.save(PATH_mask, mask, allow_pickle=True)
 
-        
+            if parser_args.bias:
+                PATH_mask_bias = os.path.join(dest_dir, "round_{}_mask_bias.npy".format(idx_round))
+                np.save(PATH_mask_bias, mask_bias, allow_pickle=True)
+
         for idx_epoch in range(n_epoch):  # in total will run total_iter # of iterations, so total_epoch is not accurate
             # Training
             model.train()
@@ -208,9 +275,10 @@ def IMP_train(parser_args, data, device):
                         if name in model.prunable_layer_names:
                             tensor = param.data.detach()
                             param.data = tensor * mask[name].to(device).float()
-                if idx_round == 0 and counter == parser_args.imp_rewind_iter:
-                    rewind_state_dict = copy.deepcopy(model.state_dict())
-                    PATH_model = os.path.join(dest_dir, "Liu_checkpoint_model_correct.pth".format(idx_round))
+                if idx_round == 0 and counter == parser_args.imp_rewind_iter and (not parser_args.imp_no_rewind):
+                    PATH_model = os.path.join(dest_dir, "Liu_checkpoint_model_correct.pth")
+                    assert counter > 0
+                    rewind_state_dict = copy.deepcopy(model.state_dict())                    
                     torch.save({
                                 'model_state_dict': model.state_dict(),
                                 'optimizer_state_dict': optimizer.state_dict()
@@ -223,8 +291,8 @@ def IMP_train(parser_args, data, device):
             print('Train Epoch: {}/{} Loss: {:.4f} Test Acc: {:.2f}'.format(idx_epoch, n_epoch, train_loss.item(), test_acc))
             if scheduler is not None:
                 scheduler.step()
-            
             result_df = pd.DataFrame({'test': test_acc_list, 'nact': n_act_list, "before": before_acc_list})
+
             result_df.to_csv("{}/LTH_cifar10_resnet20.csv".format(dest_dir), index=False)
         # save the model
         PATH_model_after = os.path.join(dest_dir, "round_{}_finish_model.pth".format(idx_round))
@@ -232,6 +300,10 @@ def IMP_train(parser_args, data, device):
             'model_state_dict': model.state_dict(),
             'optimizer_state_dict': optimizer.state_dict()
         }, PATH_model_after)
+
+        print("\n\nTrained ticket for sparsity: {}%".format(comp1))
+        print_time()
+
     return
                     
 
@@ -244,9 +316,19 @@ def main():
     kwargs = {'num_workers': 1, 'pin_memory': True} if use_cuda else {}
     set_seed(parser_args.seed)
 
-    data = get_dataset(parser_args)
+    print("\n\nBeginning of process.")
+    print_time()
+
+    if parser_args.arch in ['transformer']:
+        # since the transformer code is not ready, just leave the code piece here, it will never go into this branch
+        data = None
+    else:
+        data = get_dataset(parser_args)
 
     IMP_train(parser_args, data, device)
+
+    print("\n\nEnd of process. Exiting")
+    print_time()
 
 
 

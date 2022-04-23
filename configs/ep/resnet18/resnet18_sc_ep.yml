@@ -1,4 +1,5 @@
 algo: 'ep'
+override_prune_rate: True
 
 # Architecture
 arch: cResNet18
@@ -11,12 +12,14 @@ name: resnet18_cifar10_sc
 optimizer: sgd
 lr: 0.1
 lr_policy: cosine_lr
+fine_tune_lr: 0.01
+fine_tune_lr_policy: multistep_lr
 
 # ===== Network training config ===== #
-epochs: 100
+epochs: 200
 wd: 0.0005
 momentum: 0.9
-batch_size: 256
+batch_size: 128
 
 # ===== Sparsity =========== #
 conv_type: SubnetConv
@@ -24,7 +27,7 @@ bn_type: NonAffineBatchNorm
 init: signed_constant
 mode: fan_in
 nonlinearity: relu
-prune_rate: 0.05
+#prune_rate: 0.05
 scale_fan: False
 freeze_weights: True
 

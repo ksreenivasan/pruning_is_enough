@@ -1,0 +1,40 @@
+subfolder: cifar100_resnet32
+trial_num: 1
+
+
+# algorithm
+algo: 'hc_iter' # although this shouldn't play a part
+weight_training: True
+
+# Architecture
+arch: resnet32_double
+
+# ===== Dataset ===== #
+dataset: CIFAR100
+name: resnet32_cifar100_wt
+use_full_data: True
+
+# ===== Learning Rate Policy ======== #
+optimizer: sgd
+lr: 0.1
+lr_policy: multistep_lr #cosine_lr #constant_lr
+
+# ===== Network training config ===== #
+epochs: 150
+wd: 0.0001
+momentum: 0.9
+batch_size: 64
+
+
+# ===== Sparsity =========== #
+conv_type: SubnetConv
+bn_type: NonAffineBatchNorm
+freeze_weights: True
+prune_rate: -1
+init: kaiming_normal
+scale_fan: True
+skip_fine_tune: True
+
+# ===== Hardware setup ===== #
+workers: 4
+#gpu: 3

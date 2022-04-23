@@ -42,6 +42,7 @@ from utils.net_utils import (
 )
 from utils.schedulers import get_scheduler
 from utils.utils import set_seed, plot_histogram_scores
+from SmartRatio import SmartRatio
 
 import importlib
 
@@ -51,6 +52,14 @@ import models
 import copy
 from torch._utils import _flatten_dense_tensors, _unflatten_dense_tensors
 
+
+
+def print_layers(parser_args, model):
+    conv_layers, linear_layers = get_layers(parser_args.arch, model)
+    i = 0
+    for layer in [*conv_layers, *linear_layers]:
+        i += 1
+        print(i, layer)
 
 
 def print_model(model, parser_args):
@@ -80,14 +89,14 @@ def print_model(model, parser_args):
     #exit()
 
 
-def do_sanity_checks(model, parser_args, data, criterion, epoch_list, test_acc_before_round_list, test_acc_list,
+def do_sanity_checks(model, parser_args, data, criterion, epoch_list, test_acc_before_round_list, test_acc_list, val_acc_list, train_acc_list,
                      reg_loss_list, model_sparsity_list, result_root):
 
     print("Beginning Sanity Checks:")
     # do the sanity check for shuffled mask/weights, reinit weights
     print("Sanity Check 1: Weight Reinit")
     cp_model = copy.deepcopy(model)
-    cp_model = finetune(cp_model, parser_args, data, criterion, epoch_list, test_acc_before_round_list, test_acc_list,
+    cp_model = finetune(cp_model, parser_args, data, criterion, epoch_list, test_acc_before_round_list, test_acc_list, val_acc_list, train_acc_list,
                         reg_loss_list, model_sparsity_list, result_root, reinit=True, chg_weight=True)
 
     '''
@@ -98,13 +107,16 @@ def do_sanity_checks(model, parser_args, data, criterion, epoch_list, test_acc_b
     '''
     print("Sanity Check 2: Mask Reshuffle")
     cp_model = copy.deepcopy(model)
-    cp_model = finetune(cp_model, parser_args, data, criterion, epoch_list, test_acc_before_round_list, test_acc_list,
+    cp_model = finetune(cp_model, parser_args, data, criterion, epoch_list, test_acc_before_round_list, test_acc_list, val_acc_list, train_acc_list,
                         reg_loss_list, model_sparsity_list, result_root, shuffle=True, chg_mask=True)
 
+    # this doesn't work. removing it.
+    """
     print("Sanity Check 3: Mask Invert")
     cp_model = copy.deepcopy(model)
     cp_model = finetune(cp_model, parser_args, data, criterion, epoch_list, test_acc_before_round_list, test_acc_list,
                         reg_loss_list, model_sparsity_list, result_root, invert=True, chg_mask=True)
+    """
 
 
 def save_checkpoint_at_prune(model, parser_args):
@@ -161,98 +173,54 @@ def evaluate_without_training(parser_args, model, model2, validate, data, criter
             connect_mask(cp_model, criterion, data, validate, cp_model2)
         # visualize_mask_2D(cp_model, criterion, data, validate)
 
+class dotdict(dict):
+    """dot.notation access to dictionary attributes"""
+    __getattr__ = dict.get
+    __setattr__ = dict.__setitem__
+    __delattr__ = dict.__delitem__
 
-def test_random_subnet(model, data, criterion, parser_args, writer, result_root):
 
-    # round the score (in the model itself)
-    model = round_model(model, parser_args.round, noise=parser_args.noise,
-                        ratio=parser_args.noise_ratio, rank=parser_args.gpu)
 
-    # TODO: CHANGE THIS BACK once the finetune from checkpoints code is fixed
-    # NOTE: this part is hard coded
-    model = redraw(model, shuffle=parser_args.shuffle, reinit=parser_args.reinit,
-                   chg_mask=parser_args.chg_mask, chg_weight=parser_args.chg_weight)
+#def test_smart_ratio(model, data, criterion, parser_args, result_root):
+  
 
-    # switch to weight training mode (turn on the requires_grad for weight/bias, and turn off the requires_grad for other parameters)
-    model = switch_to_wt(model)
 
-    # set base_setting and evaluate
-    run_base_dir, ckpt_base_dir, log_base_dir, writer, epoch_time, validation_time, train_time, progress_overall = get_settings(
-        parser_args)
-    # TODO: Change this to use finetune() (I think this is possible)
-    optimizer = get_optimizer(parser_args, model, finetune_flag=True)
-    train, validate, modifier = get_trainer(parser_args)
+def test_random_subnet(model, data, criterion, parser_args, result_root, smart_ratio=-1):
 
-    # check the performance of loaded model (after rounding)
-    acc1, acc5, acc10 = validate(
-        data.val_loader, model, criterion, parser_args, writer, parser_args.epochs-1)
-    epoch_list = []
-    test_acc_before_round_list = []
-    test_acc_list = []
-    reg_loss_list = []
-    model_sparsity_list = []
+    if smart_ratio != -1:
+        # get a randomly pruned model with SmartRatio
+        smart_ratio_args = {'linear_keep_ratio': 0.3, 
+                            }
+        smart_ratio_args = dotdict(smart_ratio_args)
+        model = SmartRatio(model, smart_ratio_args, parser_args)
+        # # NOTE: temporarily added for code checking
+        # torch.save(model.state_dict(), result_root + 'init_model_{}.pth'.format(smart_ratio)) 
+        # return
+        model = set_gpu(parser_args, model)
+        # this model modify `flag` to represent the sparsity,
+        # and `score` are all ones.
 
-    for epoch in range(parser_args.epochs):
+    else:
+        # round the score (in the model itself)
+        model = round_model(model, parser_args.round, noise=parser_args.noise, ratio=parser_args.noise_ratio, rank=parser_args.gpu)    
+        
+        # TODO: CHANGE THIS BACK once the finetune from checkpoints code is fixed
+        # NOTE: this part is hard coded
+        model = redraw(model, shuffle=parser_args.shuffle, reinit=parser_args.reinit, chg_mask=parser_args.chg_mask, chg_weight=parser_args.chg_weight)  
 
-        if parser_args.multiprocessing_distributed:
-            data.train_loader.sampler.set_epoch(epoch)
-        #lr_policy(epoch, iteration=None)
-        #modifier(parser_args, epoch, model)
-        cur_lr = get_lr(optimizer)
-        print('epoch: {}, lr: {}'.format(epoch, cur_lr))
-        print("="*60)
+    model_filename = result_root + 'model_before_finetune.pth'
+    #print("Writing init model to {}".format(model_filename))
+    #torch.save(model.state_dict(), model_filename)
 
-        # train for one epoch
-        start_train = time.time()
-        train_acc1, train_acc5, train_acc10, reg_loss = train(
-            data.train_loader, model, criterion, optimizer, epoch, parser_args, writer=writer
-        )
-        train_time.update((time.time() - start_train) / 60)
-
-        # evaluate on validation set
-        start_validation = time.time()
-        acc1, acc5, acc10 = validate(
-            data.val_loader, model, criterion, parser_args, writer, epoch)
-        validation_time.update((time.time() - start_validation) / 60)
-        cp_model = round_model(model, parser_args.round, noise=parser_args.noise,
-                               ratio=parser_args.noise_ratio, rank=parser_args.gpu)
-        avg_sparsity = get_model_sparsity(cp_model)
-        print('Model avg sparsity: {}'.format(avg_sparsity))
-
-        # update all results lists
-        epoch_list.append(epoch)
-        test_acc_before_round_list.append(-1)
-        test_acc_list.append(acc1)
-        reg_loss_list.append(reg_loss)
-        model_sparsity_list.append(avg_sparsity)
-
-        epoch_time.update((time.time()) / 60)
-        progress_overall.display(epoch)
-        progress_overall.write_to_tensorboard(
-            writer, prefix="diagnostics", global_step=epoch
-        )
-        writer.add_scalar("test/lr", cur_lr, epoch)
-        end_epoch = time.time()
-
-        results_df = pd.DataFrame({'epoch': epoch_list, 'test_acc_before_rounding': test_acc_before_round_list,
-                                  'test_acc': test_acc_list, 'regularization_loss': reg_loss_list, 'model_sparsity': model_sparsity_list})
-
-        if parser_args.results_filename:
-            results_filename = parser_args.results_filename
-        else:
-            results_filename = result_root + \
-                'random_subnet_{}.csv'.format(parser_args.prune_rate)
-        print("Writing results into: {}".format(results_filename))
-        results_df.to_csv(results_filename, index=False)
-
-    if parser_args.multiprocessing_distributed:
-        cleanup_distributed()
+    old_epoch_list, old_test_acc_before_round_list, old_test_acc_list, old_val_acc_list, old_train_acc_list, old_reg_loss_list, old_model_sparsity_list = [], [], [], [], [], [], []
+    model = finetune(model, parser_args, data, criterion, 
+                    old_epoch_list, old_test_acc_before_round_list, old_test_acc_list, old_val_acc_list, old_train_acc_list, old_reg_loss_list, old_model_sparsity_list, 
+                    result_root, shuffle=False, reinit=False, invert=False, chg_mask=False, chg_weight=False)
 
     # save checkpoint for later debug
-    model_filename = "random_subnet_finetuned_{}_ckpt.pt".format(
-        parser_args.prune_rate)
-    print("Writing final model to {}".format(model_filename))
-    torch.save(model.state_dict(), model_filename)
+    model_filename = result_root +  'model_after_finetune.pth'
+    #print("Writing final model to {}".format(model_filename))
+    #torch.save(model.state_dict(), model_filename)
 
 
 def eval_and_print(validate, data_loader, model, criterion, parser_args, writer=None, epoch=parser_args.start_epoch, description='model'):
@@ -265,10 +233,12 @@ def eval_and_print(validate, data_loader, model, criterion, parser_args, writer=
     return acc1
 
 
-def finetune(model, parser_args, data, criterion, old_epoch_list, old_test_acc_before_round_list, old_test_acc_list, old_reg_loss_list, old_model_sparsity_list, result_root, shuffle=False, reinit=False, invert=False, chg_mask=False, chg_weight=False):
+def finetune(model, parser_args, data, criterion, old_epoch_list, old_test_acc_before_round_list, old_test_acc_list, old_val_acc_list, old_train_acc_list, old_reg_loss_list, old_model_sparsity_list, result_root, shuffle=False, reinit=False, invert=False, chg_mask=False, chg_weight=False):
     epoch_list = copy.deepcopy(old_epoch_list)
     test_acc_before_round_list = copy.deepcopy(old_test_acc_before_round_list)
     test_acc_list = copy.deepcopy(old_test_acc_list)
+    val_acc_list = copy.deepcopy(old_val_acc_list)
+    train_acc_list = copy.deepcopy(old_train_acc_list)
     reg_loss_list = copy.deepcopy(old_reg_loss_list)
     model_sparsity_list = copy.deepcopy(old_model_sparsity_list)
 
@@ -307,24 +277,40 @@ def finetune(model, parser_args, data, criterion, old_epoch_list, old_test_acc_b
         parser_args)
 
     optimizer = get_optimizer(parser_args, model, finetune_flag=True)
+    scheduler = get_scheduler(optimizer, policy=parser_args.fine_tune_lr_policy)
+    ''' 
     if parser_args.epochs == 150:
         scheduler = get_scheduler(optimizer, parser_args.fine_tune_lr_policy, milestones=[
                                   80, 120], gamma=0.1)  # NOTE: hard-coded
     elif parser_args.epochs == 50:
         scheduler = get_scheduler(optimizer, parser_args.fine_tune_lr_policy, milestones=[
                                   20, 40], gamma=0.1)  # NOTE: hard-coded
+    elif parser_args.epochs == 200:
+        scheduler = get_scheduler(optimizer, parser_args.fine_tune_lr_policy, milestones=[
+                                  100, 150], gamma=0.1)  # NOTE: hard-coded
+    elif parser_args.epochs == 300:
+        scheduler = get_scheduler(optimizer, parser_args.fine_tune_lr_policy, milestones=[
+                                  150, 250], gamma=0.1)  # NOTE: hard-coded
     else:
         scheduler = get_scheduler(optimizer, parser_args.fine_tune_lr_policy, milestones=[
                                   20, 40], gamma=0.1)  # NOTE: hard-coded
+    '''
+
     train, validate, modifier = get_trainer(parser_args)
 
     # check the performance of loaded model (after rounding)
     acc1, acc5, acc10 = validate(
         data.val_loader, model, criterion, parser_args, writer, parser_args.epochs-1)
+    val_acc1, val_acc5, val_acc10 = validate(
+        data.actual_val_loader, model, criterion, parser_args, writer, parser_args.epochs-1)
+    train_acc1, train_acc5, train_acc10 = validate(
+        data.train_loader, model, criterion, parser_args, writer, parser_args.epochs-1)
     avg_sparsity = post_round_sparsity
     epoch_list.append(parser_args.epochs-1)
     test_acc_before_round_list.append(-1)
     test_acc_list.append(acc1)
+    val_acc_list.append(val_acc1)
+    train_acc_list.append(train_acc1)
     reg_loss_list.append(0.0)
     model_sparsity_list.append(avg_sparsity)
 
@@ -349,6 +335,8 @@ def finetune(model, parser_args, data, criterion, old_epoch_list, old_test_acc_b
         start_validation = time.time()
         acc1, acc5, acc10 = validate(
             data.val_loader, model, criterion, parser_args, writer, epoch)
+        val_acc1, val_acc5, val_acc10 = validate(
+            data.actual_val_loader, model, criterion, parser_args, writer, epoch)
         validation_time.update((time.time() - start_validation) / 60)
         # copy & paste the sparsity of prev. epoch
         avg_sparsity = model_sparsity_list[-1]
@@ -357,6 +345,8 @@ def finetune(model, parser_args, data, criterion, old_epoch_list, old_test_acc_b
         epoch_list.append(epoch)
         test_acc_before_round_list.append(-1)
         test_acc_list.append(acc1)
+        val_acc_list.append(val_acc1)
+        train_acc_list.append(train_acc1)
         reg_loss_list.append(reg_loss)
         model_sparsity_list.append(avg_sparsity)
 
@@ -368,7 +358,7 @@ def finetune(model, parser_args, data, criterion, old_epoch_list, old_test_acc_b
         writer.add_scalar("test/lr", cur_lr, epoch)
         end_epoch = time.time()
 
-        results_df = pd.DataFrame({'epoch': epoch_list, 'test_acc_before_rounding': test_acc_before_round_list, 'test_acc': test_acc_list,
+        results_df = pd.DataFrame({'epoch': epoch_list, 'test_acc_before_rounding': test_acc_before_round_list, 'test_acc': test_acc_list, 'val_acc': val_acc_list, 'train_acc': train_acc_list,
                                    'regularization_loss': reg_loss_list, 'model_sparsity': model_sparsity_list})
         if not chg_mask and not chg_weight:
             results_filename = result_root + 'acc_and_sparsity.csv'
@@ -427,6 +417,7 @@ def get_settings(parser_args):
     run_base_dir, ckpt_base_dir, log_base_dir = get_directories(parser_args)
     parser_args.ckpt_base_dir = ckpt_base_dir
     writer = SummaryWriter(log_dir=log_base_dir)
+    # writer = None
     epoch_time = AverageMeter("epoch_time", ":.4f", write_avg=False)
     validation_time = AverageMeter("validation_time", ":.4f", write_avg=False)
     train_time = AverageMeter("train_time", ":.4f", write_avg=False)
@@ -921,21 +912,21 @@ def resume(parser_args, model, optimizer):
         print(f"=> Loading checkpoint '{parser_args.resume}'")
 
         checkpoint = torch.load(
-            parser_args.resume, map_location=f"cuda:{parser_args.multigpu[0]}")
-        if parser_args.start_epoch is None:
-            print(f"=> Setting new start epoch at {checkpoint['epoch']}")
-            parser_args.start_epoch = checkpoint["epoch"]
+            parser_args.resume, map_location=f"cuda:{parser_args.gpu}")
+        #if parser_args.start_epoch is None:
+        #    print(f"=> Setting new start epoch at {checkpoint['epoch']}")
+        #    parser_args.start_epoch = checkpoint["epoch"]
 
-        best_acc1 = checkpoint["best_acc1"]
+        #best_acc1 = checkpoint["best_acc1"]
 
-        model.load_state_dict(checkpoint["state_dict"])
+        model.load_state_dict(checkpoint)
 
-        optimizer.load_state_dict(checkpoint["optimizer"])
+        # optimizer.load_state_dict(checkpoint["optimizer"])
 
-        print(
-            f"=> Loaded checkpoint '{parser_args.resume}' (epoch {checkpoint['epoch']})")
+        #print(
+        #    f"=> Loaded checkpoint '{parser_args.resume}' (epoch {checkpoint['epoch']})")
 
-        return best_acc1
+        return 0
     else:
         print(f"=> No checkpoint found at '{parser_args.resume}'")
 
@@ -1159,3 +1150,11 @@ def print_num_dataset(data):
         num_test += label.size()[0]
 
     print(num_train, num_val, num_test)
+
+
+def print_time():
+    print("\n\n--------------------------------------")
+    print("TIME: The current time is: {}".format(time.ctime()))
+    print("TIME: The current time in seconds is: {}".format(time.time()))
+    print("--------------------------------------\n\n")
+

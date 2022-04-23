@@ -151,6 +151,8 @@ class ResNet(nn.Module):
                     self.fc2 = builder.conv1x1(dim_size, num_classes)
 
 
+        
+        self.prunable_layer_names, self.prunable_biases = self.get_prunable_param_names()
 
     def _make_layer(self, builder, block, planes, blocks, stride=1):
         downsample = None
@@ -171,6 +173,19 @@ class ResNet(nn.Module):
             layers.append(block(builder, self.inplanes, planes, base_width=self.base_width))
 
         return nn.Sequential(*layers)
+
+    def get_prunable_param_names(model):
+        prunable_weights = [name + '.weight' for name, module in model.named_modules() if
+                isinstance(module, nn.modules.conv.Conv2d) or
+                isinstance(module, nn.modules.linear.Linear)]
+        if parser_args.bias:
+            prunable_biases = [name + '.bias' for name, module in model.named_modules() if
+                isinstance(module, nn.modules.conv.Conv2d) or
+                isinstance(module, nn.modules.linear.Linear)]
+        else:
+            prunable_biases = [""]
+
+        return prunable_weights, prunable_biases
 
     def forward(self, x, hidden=False):
         # update score thresholds for global ep

@@ -10,6 +10,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from utils.builder import get_builder
+from args_helper import parser_args
 
 
 class Block(nn.Module):
@@ -64,6 +65,8 @@ class MobileNet_base(nn.Module):
         self.bn2 = builder.batchnorm(1280)
         self.linear = builder.conv1x1(1280, num_classes) # original model: bias=True
 
+        self.prunable_layer_names, self.prunable_biases = self.get_prunable_param_names()
+
     def _make_layers(self, in_planes):
         layers = []
         for expansion, out_planes, num_blocks, stride in self.cfg:
@@ -72,6 +75,19 @@ class MobileNet_base(nn.Module):
                 layers.append(Block(self.builder, in_planes, out_planes, expansion, stride))
                 in_planes = out_planes
         return nn.Sequential(*layers)
+
+    def get_prunable_param_names(model):
+        prunable_weights = [name + '.weight' for name, module in model.named_modules() if
+                isinstance(module, torch.nn.modules.conv.Conv2d) or
+                isinstance(module, torch.nn.modules.linear.Linear)]
+        if parser_args.bias:
+            prunable_biases = [name + '.bias' for name, module in model.named_modules() if
+                isinstance(module, torch.nn.modules.conv.Conv2d) or
+                isinstance(module, torch.nn.modules.linear.Linear)]
+        else:
+            prunable_biases = [""]
+
+        return prunable_weights, prunable_biases
 
     def forward(self, x):
         #print(x.shape)
@@ -91,6 +107,9 @@ class MobileNet_base(nn.Module):
 
 def MobileNetV2():
     return MobileNet_base(get_builder())
+
+def tinyMobileNetV2(num_classes=200):
+    return MobileNet_base(get_builder(), num_classes=num_classes)
 
 '''
 class BlockNormal(nn.Module):

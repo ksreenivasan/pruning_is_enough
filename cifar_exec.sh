@@ -56,6 +56,58 @@ BLOCK
 #python main.py --config configs/ep/conv4/conv4_sc_ep.yml 
 
 ## WideResNet28
+:<<BLOCK
 python main.py \
 --config configs/hypercube/wideresnet28/wideresnet28_weight_training.yml > wideresnet_wt_log 2>&1
+BLOCK
 
+#:<<BLOCK
+# Using validation to figure out hyperparams
+# NOTE: make sure to delete/comment subfolder from the config file or else it may not work
+conf_file="configs/training/resnet32/cifar100_resnet32_training"
+conf_end=".yml"
+log_root="resnet32_wt_"
+log_end="_log"
+subfolder_root="resnet32_wt_"
+
+for trial in 1
+do
+    python main.py \
+    --config "$conf_file$conf_end" \
+    --subfolder "$subfolder_root$trial" > "$log_root$trial$log_end" 2>&1 &
+
+    #python main.py \
+    #--config "$conf_file$conf_end" \
+    #--trial-num $trial \
+    #--invert-sanity-check \
+    #--skip-sanity-checks \
+    #--subfolder "invert_$subfolder_root$trial" > "invert_$log_root$trial$log_end" 2>&1 &
+done
+#BLOCK
+
+:<<BLOCK
+# Final run on full data
+# NOTE: make sure to delete/comment subfolder from the config file or else it may not work
+conf_file="configs/param_tuning/resnet20_13_34/conf2"
+conf_end=".yml"
+log_root="resnet20_sp13_34_"
+log_end="_log"
+subfolder_root="resnet20_sp13_34_"
+
+for trial in 1
+do
+    python main.py \
+    --config "$conf_file$conf_end" \
+    --trial-num $trial \
+    --use-full-data \
+    --subfolder "$subfolder_root$trial" > "$log_root$trial$log_end" 2>&1 &
+
+    python main.py \
+    --config "$conf_file$conf_end" \
+    --trial-num $trial \
+    --invert-sanity-check \
+    --use-full-data \
+    --skip-sanity-checks \
+    --subfolder "invert_$subfolder_root$trial" > "invert_$log_root$trial$log_end" 2>&1 &
+done
+BLOCK

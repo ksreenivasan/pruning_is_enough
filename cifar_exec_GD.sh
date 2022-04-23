@@ -1,4 +1,358 @@
-#export cuda_visible_devices=3
+
+
+## NeurIPS prep
+
+
+#:<<BLOCK
+# Using validation to figure out hyperparams
+# NOTE: make sure to delete/comment subfolder from the config file or else it may not work
+#conf_file="configs/training/resnet32/cifar100_resnet32_training"
+#conf_file="configs/sr/resnet32/cifar100_resnet32_sr"
+#conf_file="configs/sr/resnet32/cifar100_resnet32_sr_debug"
+#conf_file="configs/imp/resnet32_cifar100"
+#conf_file="configs/imp/mobilenet"
+#conf_file="configs/hypercube/resnet32/double/sparsity_5"
+conf_file="configs/ep/resnet32/cifar100_sparsity_2"
+conf_end=".yml"
+log_root="resnet32_cifar100_ep_2_"
+log_end="_log"
+subfolder_root="resnet32_cifar100_ep_2_"
+
+for trial in 1
+do
+    python main.py \
+    --gpu 0 \
+    --config "$conf_file$conf_end" \
+    --subfolder "$subfolder_root$trial" > "$log_root$trial$log_end" 2>&1 &
+
+    #--smart_ratio 0.98 \
+    
+    #python main.py \
+    #--config "$conf_file$conf_end" \
+    #--trial-num $trial \
+    #--invert-sanity-check \
+    #--skip-sanity-checks \
+    #--subfolder "invert_$subfolder_root$trial" > "invert_$log_root$trial$log_end" 2>&1 &
+done
+#BLOCK
+
+
+
+
+
+
+
+
+
+# REBUTTAL
+# NOTE: make sure to delete/comment subfolder from the config file or else it may not work
+:<<BLOCK
+conf_file="configs/param_tuning/vgg_1_4/conf"
+conf_end=".yml"
+log_root="vgg_1_4_val"
+log_end="_log"
+subfolder_root="vgg_1_4_val"
+gpu=1
+
+for trial in 1 6
+do
+    python main.py \
+    --config "$conf_file$trial$conf_end" \
+    --trial-num $trial \
+    --gpu $gpu \
+    --subfolder "$subfolder_root$trial" > "$log_root$trial$log_end" 2>&1 #&
+done
+
+BLOCK
+# Final run on full data
+# # NOTE: make sure to delete/comment subfolder from the config file or else it may not work
+# conf_file="configs/param_tuning/resnet20_059_KS/conf4"
+# conf_end=".yml"
+# log_root="resnet20_059_"
+# log_end="_log"
+# subfolder_root="resnet20_059_"
+
+# for trial in 1 2 3
+# do
+#     python main.py \
+#     --config "$conf_file$conf_end" \
+#     --trial-num $trial \
+#     --use-full-data \
+#     --subfolder "$subfolder_root$trial" > "$log_root$trial$log_end" 2>&1 &
+
+#     python main.py \
+#     --config "$conf_file" \
+#     --trial-num $trial \
+#     --invert-sanity-check \
+#     --use-full-data \
+#     --skip-sanity-checks \
+#     --subfolder "invert_$subfolder_root$trial" > "invert_$log_root$trial$log_end" 2>&1 &
+# done
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+:<<BLOCK
+# Using validation to figure out hyperparams
+# NOTE: make sure to delete/comment subfolder from the config file or else it may not work
+conf_file="configs/conf"
+conf_end=".yml"
+log_root="resnet20_059_val_debug"
+log_end="_log"
+subfolder_root="resnet20_059_val_debug_"
+
+for trial in 4 5 6
+do
+    python main.py \
+    --config "$conf_file$trial$conf_end" \
+    --subfolder "$subfolder_root$trial" > "$log_root$trial$log_end" 2>&1 &
+
+    #python main.py \
+    #--config "$conf_file" \
+    #--trial-num $trial \
+    #--invert-sanity-check \
+    #--subfolder "invert_$subfolder_root$trial" > "invert_$log_root$trial$log_end" 2>&1 &
+done
+BLOCK
+
+# # Final run on full data
+# # NOTE: make sure to delete/comment subfolder from the config file or else it may not work
+# conf_file="configs/param_tuning/resnet20_059_KS/conf4"
+# conf_end=".yml"
+# log_root="resnet20_059_"
+# log_end="_log"
+# subfolder_root="resnet20_059_"
+
+# for trial in 1 2 3
+# do
+#     python main.py \
+#     --config "$conf_file$conf_end" \
+#     --trial-num $trial \
+#     --use-full-data \
+#     --subfolder "$subfolder_root$trial" > "$log_root$trial$log_end" 2>&1 &
+
+#     python main.py \
+#     --config "$conf_file" \
+#     --trial-num $trial \
+#     --invert-sanity-check \
+#     --use-full-data \
+#     --skip-sanity-checks \
+#     --subfolder "invert_$subfolder_root$trial" > "invert_$log_root$trial$log_end" 2>&1 &
+# done
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# VGG16, 0.5%, bf_ft_acc vs af_ft_acc
+:<<BLOCK
+config_file="configs/hypercube/vgg16/vgg.yml"
+subfolder_root="vgg_bf_af_relation_"
+con="_"
+log_end="_log"
+sp_list=(0.5) #(0.5 1.4)
+lr_list=(0.01 0.001 0.0001 0.00001)
+#t_list=(100)  # 5 20 50 100
+for sp in ${sp_list[@]}
+do
+    for lr in ${lr_list[@]}
+    do
+        python main.py \
+        --config "$config_file" --subfolder "$subfolder_root$sp$con$lr" \
+        --target-sparsity "$sp" --lr "$lr" > "$subfolder_root$sp$con$lr$log_end" 2>&1 &
+    done
+done
+BLOCK
+
+
+
+:<<BLOCK
+# VGG16, bias=True, Affine-BN
+config_file="configs/hypercube/vgg16/vgg_bias_affine.yml"
+subfolder_root="vgg_bias_affine_True_hc_sparsity_"
+log_end="_log"
+
+
+sp_list=(50 5 2.5 1.4)
+for sp in ${sp_list[@]}
+do
+    python main.py \
+    --config "$config_file" --subfolder "$subfolder_root$sp" \
+    --target-sparsity "$sp" #> "$subfloder_root$sp$log_end" 2>&1 &
+done
+
+BLOCK
+
+
+
+######################################################
+##########   ResNet-18   #############################
+######################################################
+
+# weight training
+:<<BLOCK
+conf_file="configs/training/resnet18/cifar10_resnet18_training.yml"
+subfolder_root="resnet18_cifar10_wt_"
+log_end="_log"
+
+python main.py \
+    --config "$conf_file" \
+    --subfolder "$subfolder_root" #> "$subfolder_root$log_end" 2>&1 &
+BLOCK
+
+# Renda 
+:<<BLOCK
+conf_file="configs/imp/resnet18_cifar.yml"
+subfolder_root="resnet18_cifar10_renda_updated"
+log_end="_log"
+gpu=0
+
+python imp_main.py \
+    --config "$conf_file" \
+    --imp-rounds 30 \
+    --imp-no-rewind \
+    --gpu $gpu \
+    --subfolder "$subfolder_root" > "$subfolder_root$log_end" 2>&1 &
+BLOCK
+
+
+
+# EP
+:<<BLOCK
+conf_file="configs/ep/resnet18/resnet18_sc_ep.yml"
+subfolder_root="resnet18_cifar10_ep_"
+log_end="_log"
+
+for pr in 0.05 0.02 0.005
+do
+    python main.py \
+    --config "$conf_file" \
+    --prune-rate "$pr" \
+    --subfolder "$subfolder_root$pr" > "$subfolder_root$pr$log_end" 2>&1 &
+done
+
+BLOCK
+
+
+# smart ratio
+:<<BLOCK
+conf_file="configs/sr/resnet18/cifar10_resnet18_sr.yml"
+subfolder_root="resnet18_cifar10_sr_"
+log_end="_log"
+
+for sr in 0.95 0.98 0.995
+do
+    python main.py \
+    --config "$conf_file" \
+    --smart_ratio "$sr" \
+    --subfolder "$subfolder_root$sr" > "$subfolder_root$sr$log_end" 2>&1 &
+done
+BLOCK
+
+# Gem-Miner (hypercube)
+:<<BLOCK
+
+# 5% sparsity
+#conf_file="configs/hypercube/resnet18/cifar10/sparsity_5_85lam6.yml"
+#subfolder_root="resnet18_cifar10_hc_sparsity_5_real_"
+
+#conf_file="configs/hypercube/resnet18/cifar10/sparsity_5_85lam6_iter_20.yml"
+#subfolder_root="resnet18_cifar10_hc_sparsity_5_iter_20"
+
+#conf_file="configs/hypercube/resnet18/cifar10/sparsity_5_85lam6_iter_20_multistep_0_1.yml"
+#subfolder_root="resnet18_cifar10_hc_sparsity_5_iter_20_multistep_0_1"
+
+#conf_file="configs/hypercube/resnet18/cifar10/sparsity_5_85lam6_iter_20_cosine_0_1.yml"
+#subfolder_root="resnet18_cifar10_hc_sparsity_5_iter_20_cosine_0_1"
+
+conf_file="configs/hypercube/resnet18/cifar10/sparsity_5_85lam6_iter_20_adam.yml"
+subfolder_root="resnet18_cifar10_hc_sparsity_5_iter_20_adam"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# Running trials in parallel
+:<<BLOCK
+conf_file="configs/ablation_hc/resnet20_1_4_normal.yml"
+log_root="hc_resnet20_1_4_"
+log_end="_log"
+subfolder_root="hc_resnet20_1_4_results_"
+
+for trial in 2
+do
+    python main.py \
+    --config "$conf_file" --subfolder "$subfolder_root$trial" \
+    --trial-num "$trial" > "$log_root$trial$log_end" 2>&1 #&
+
+#    python main.py \
+#    --config "$conf_file" --subfolder "invert_$subfolder_root$trial" \
+#    --trial-num "$trial" --invert-sanity-check --skip-sanity-checks > "invert_$log_root$trial$log_end" 2>&1 &
+done
+BLOCK
+
+
+:<<BLOCK
+conf_file="configs/ablation_hc/resnet20_1_4_unflag_False.yml"
+log_root="hc_resnet20_1_4_unflag_False_"
+log_end="_log"
+subfolder_root="hc_resnet20_1_4_unflag_False_results_"
+
+for trial in 1 2
+do
+    python main.py \
+    --config "$conf_file" --subfolder "$subfolder_root$trial" \
+    --trial-num "$trial" > "$log_root$trial$log_end" 2>&1 #&
+done
+BLOCK
+
+
+
+
+
+
+
+
+
+
+
+
 
 ### MobileNetV2
 #####python main.py --config configs/training/mobilenetV2/cifar10_mobileV2_training.yml #> mobilenet_cifar10_wt
@@ -7,14 +361,12 @@
 
 #python main.py --config configs/training/mobilenetV2/cifar10_mobileV2_training_check.yml #> mobilenet_cifar10_wt_check
 
-#:<<BLOCK
+:<<BLOCK
 #python main.py --config configs/ep/mobilenetV2/cifar10_mobileV2_ep_sparsity_50.yml > log_mobilev2_EP_sparsity_50 2>&1
 #python main.py --config configs/ep/mobilenetV2/cifar10_mobileV2_ep_sparsity_5.yml > log_mobilev2_EP_sparsity_5 2>&1
 #python main.py --config configs/ep/mobilenetV2/cifar10_mobileV2_ep_sparsity_20.yml > log_mobilev2_EP_sparsity_20 2>&1
 #python main.py --config configs/ep/mobilenetV2/cifar10_mobileV2_ep_sparsity_1_7.yml > log_mobilev2_EP_sparsity_1_7 2>&1
-
-
-#BLOCK
+BLOCK
 
 :<<BLOCK
 python main.py --config configs/hypercube/mobilenetV2/sparsity_50.yml > log_mobilev2_HC_sparsity_50 2>&1 
@@ -22,7 +374,11 @@ python main.py --config configs/hypercube/mobilenetV2/sparsity_5.yml > log_mobil
 python main.py --config configs/hypercube/mobilenetV2/sparsity_20.yml > log_mobilev2_HC_sparsity_20 2>&1 
 BLOCK
 #python main.py --config configs/hypercube/mobilenetV2/sparsity_5_7lam6.yml > log_mobilev2_HC_sparsity_5_7lam6 2>&1 
+#python main.py --config configs/hypercube/mobilenetV2/sparsity_1_4.yml > log_mobilev2_HC_sparsity_1_4 2>&1 
+#python main.py --config configs/hypercube/mobilenetV2/sparsity_20_3lam6.yml > log_mobilev2_HC_sparsity_20_3lam6 2>&1 
+
 #python main.py --config configs/hypercube/mobilenetV2/sparsity_20_1lam6.yml > log_mobilev2_HC_sparsity_20_1lam6 2>&1 
+#python main.py --config configs/hypercube/mobilenetV2/sparsity_20_3lam6.yml > log_mobilev2_HC_sparsity_20_3lam6 2>&1 
 
 
 #### ResNet-18
@@ -39,15 +395,15 @@ BLOCK
 
 
 ### ResNet-20
+#python main.py --config configs/ep/resnet20/resnet20_sc_ep.yml 
+#TODO: add global_ep yml here
+#python main.py --config configs/ep/resnet20/resnet20_global_ep_iter.yml #> cifar_log 2>&1
+#python main.py --config configs/ep/resnet20/resnet20_global_ep_iter_adam.yml #> cifar_log 2>&1
+
+# Smart Ratio
+#python main.py --config configs/sr/resnet20/resnet20_sr.yml # ResNet-20
+#python main.py --config configs/sr/resnet32/resnet32_sr.yml # ResNet-32
 #python main.py --config configs/training/resnet20/cifar10_resnet20_training.yml
-#python main.py --config configs/hypercube/resnet20/resnet20_sparsity_3_72_unflagT.yml > log_hc_sparsity_3_72_unflagT 2>&1
-#python main.py --config configs/hypercube/resnet20/resnet20_sparsity_1_44_unflagT.yml > log_hc_sparsity_1_44_unflagT 2>&1
-#python main.py --config configs/hypercube/resnet20/resnet20_sparsity_0_59_unflagT.yml > log_hc_sparsity_0_59_unflagT 2>&1
-
-
-
-
-
 #python main.py --config configs/hypercube/resnet20/error_bar/resnet20_sparsity_3_72_t1.yml #> log_hc_sparsity_3_72_t1 2>&1
 
 
@@ -115,6 +471,9 @@ BLOCK
 #python main.py --config configs/hypercube/resnet20/resnet20_quantized_iter_hc_0_5_MAML_1e-4.yml --run_idx 2
 #python main.py --config configs/hypercube/resnet20/resnet20_quantized_iter_hc_0_5_MAML_0.yml --run_idx 3
 
+
+
+
 #python main.py --config config10.yml --run_idx 10 #> log_config$r 2>&1	
 :<<BLOCK
 run_list=(3 4)
@@ -129,15 +488,20 @@ BLOCK
 #python main.py --config config3.yml --run_idx 3
 #python main.py --config config4.yml --run_idx 4 
 
-#python main.py --config config6.yml --run_idx 6
 #python main.py --config config5.yml --run_idx 5
-#python main.py --config config8.yml --run_idx 8 
+#python main.py --config config6.yml --run_idx 6
 #python main.py --config config7.yml --run_idx 7
+#python main.py --config config8.yml --run_idx 8 
 
 #python main.py --config config9.yml --run_idx 9
 #python main.py --config config10.yml --run_idx 10
 
 #python main.py --config config11.yml --run_idx 11
+#python main.py --config config12.yml --run_idx 12
+#python main.py --config config13.yml --run_idx 13
+
+
+
 
 :<<BLOCK
 run_list=(2 3)
