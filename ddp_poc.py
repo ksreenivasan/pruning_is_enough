@@ -43,9 +43,8 @@ class ToyModel(nn.Module):
         return self.net2(self.relu(self.net1(x)))
 
 
- def evaluate(model, device, test_loader):
+def evaluate(model, device, test_loader):
     model.eval()
-
     correct = 0
     total = 0
     with torch.no_grad():
