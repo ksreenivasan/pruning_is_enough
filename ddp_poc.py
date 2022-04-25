@@ -10,6 +10,7 @@ import torchvision.transforms as transforms
 import torchvision
 from torch.utils.data.distributed import DistributedSampler
 from torch.utils.data import DataLoader
+import re
 
 from torch.nn.parallel import DistributedDataParallel as DDP
 
@@ -52,7 +53,7 @@ def evaluate(model, device, test_loader):
 
 def get_model_norm(model):
     tot_norm = 0
-    for name, params in ddp_model.named_parameters():
+    for name, params in model.named_parameters():
         tot_norm += torch.norm(params.data)
     return tot_norm
 
@@ -91,18 +92,17 @@ def demo_basic(rank, world_size):
 
     device = torch.device("cuda:{}".format(rank))
 
-    for epoch in range(5):
+    for epoch in range(15):
         print("Local Rank: {}, Epoch: {}, Training ...".format(rank, epoch))
         if epoch % 3 == 0:
-            if rank == 0:
-                # prune model
-                print("Gonna try to prune model")
-                for name, params in ddp_model.named_parameters():
-                    # basically, prune everything
-                    if re.match('.*\.weight', name) or re.match('.*\.bias', name)::
-                        params.data = torch.zeros_like(params.data)
+            # prune model
+            print("Rank: {} | Gonna try to prune model".format(rank))
+            for name, params in ddp_model.named_parameters():
+                # basically, prune everything
+                if re.match('.*\.weight', name) or re.match('.*\.bias', name):
+                    params.data = torch.zeros_like(params.data)
 
-        print("Model Norm: {}".format(get_model_norm(ddp_model)))
+        print("Rank: {} | Model Norm: {}".format(rank, get_model_norm(ddp_model)))
         # Save and evaluate model routinely
         if epoch % 2 == 0:
             if rank == 0:
@@ -116,6 +116,7 @@ def demo_basic(rank, world_size):
         total_data_size = [0, 0]
 
         for data in train_loader:
+            print("Rank: {} | Model Norm: {}".format(rank, get_model_norm(ddp_model)))
             inputs, labels = data[0].to(device).reshape(-1, 32*32*3), data[1].to(device)
             # print("Device: {} | Batch Size: {} | Label sum: {}".format(rank, data[1].shape[0], torch.sum(data[1])))
             total_data_size[rank] += data[1].shape[0]
