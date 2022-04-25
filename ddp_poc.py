@@ -99,7 +99,7 @@ def demo_basic(rank, world_size):
         if epoch % 3 == 0:
             if rank == 0:
                 # prune model
-
+                print("Gonna try to prune model")
 
         ddp_model.train()
         total_data_size = [0, 0]
