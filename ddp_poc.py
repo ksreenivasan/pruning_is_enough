@@ -6,6 +6,7 @@ import torch.distributed as dist
 import torch.nn as nn
 import torch.optim as optim
 import torch.multiprocessing as mp
+import torchvision.transforms as transforms
 
 from torch.nn.parallel import DistributedDataParallel as DDP
 
@@ -92,8 +93,7 @@ def demo_basic(rank, world_size):
     device = torch.device("cuda:{}".format(rank))
 
     for epoch in range(10):
-    	print("Local Rank: {}, Epoch: {}, Training ...".format(rank, epoch))
-        
+        print("Local Rank: {}, Epoch: {}, Training ...".format(rank, epoch))
         # Save and evaluate model routinely
         if epoch % 2 == 0:
             if local_rank == 0:
