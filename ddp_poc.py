@@ -65,7 +65,8 @@ def demo_basic(rank, world_size):
     setup(rank, world_size)
 
     # create model and move it to GPU with id rank
-    model = ToyModel().to(rank)
+    model = torchvision.models.resnet18(pretrained=False).to(rank)
+    # model = ToyModel().to(rank)
     ddp_model = DDP(model, device_ids=[rank])
 
     transform = transforms.Compose([
