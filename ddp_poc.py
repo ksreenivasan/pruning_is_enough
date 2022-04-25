@@ -50,6 +50,12 @@ def evaluate(model, device, test_loader):
 
     return accuracy
 
+def get_model_norm(model):
+    tot_norm = 0
+    for name, params in ddp_model.named_parameters():
+        tot_norm += torch.norm(params.data)
+    return tot_norm
+
 
 def demo_basic(rank, world_size):
     print(f"Running basic DDP example on rank {rank}.")
@@ -87,6 +93,7 @@ def demo_basic(rank, world_size):
 
     for epoch in range(5):
         print("Local Rank: {}, Epoch: {}, Training ...".format(rank, epoch))
+        print("Model Norm: {}".format(get_model_norm(ddp_model)))
         # Save and evaluate model routinely
         if epoch % 2 == 0:
             if rank == 0:
@@ -100,6 +107,10 @@ def demo_basic(rank, world_size):
             if rank == 0:
                 # prune model
                 print("Gonna try to prune model")
+                for name, params in ddp_model.named_parameters():
+                    # basically, prune everything
+                    if re.match('.*\.weight', name) or re.match('.*\.bias', name)::
+                        params.data = torch.zeros_like(params.data)
 
         ddp_model.train()
         total_data_size = [0, 0]
@@ -171,8 +182,8 @@ def demo_checkpoint(rank, world_size):
 
 
 if __name__ == "__main__":
-	n_gpus = torch.cuda.device_count()
-	assert n_gpus >= 2, f"Requires at least 2 GPUs to run, but got {n_gpus}"
-	world_size = n_gpus
-	run_demo(demo_basic, world_size)
-	# run_demo(demo_checkpoint, world_size)
+    n_gpus = torch.cuda.device_count()
+    assert n_gpus >= 2, f"Requires at least 2 GPUs to run, but got {n_gpus}"
+    world_size = n_gpus
+    run_demo(demo_basic, world_size)
+    # run_demo(demo_checkpoint, world_size)
