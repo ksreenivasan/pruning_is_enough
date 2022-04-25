@@ -35,9 +35,9 @@ def cleanup():
 class ToyModel(nn.Module):
     def __init__(self):
         super(ToyModel, self).__init__()
-        self.net1 = nn.Linear(10, 10)
+        self.net1 = nn.Linear(5, 5)
         self.relu = nn.ReLU()
-        self.net2 = nn.Linear(10, 5)
+        self.net2 = nn.Linear(5, 5)
 
     def forward(self, x):
         return self.net2(self.relu(self.net1(x)))
@@ -119,7 +119,6 @@ def demo_basic(rank, world_size):
     # labels = torch.randn(20, 5).to(rank)
     # loss_fn(outputs, labels).backward()
     # optimizer.step()
-
     cleanup()
 
 
@@ -155,7 +154,7 @@ def demo_checkpoint(rank, world_size):
         torch.load(CHECKPOINT_PATH, map_location=map_location))
 
     optimizer.zero_grad()
-    outputs = ddp_model(torch.randn(20, 10))
+    outputs = ddp_model(torch.randn(20, 5))
     labels = torch.randn(20, 5).to(rank)
     loss_fn = nn.MSELoss()
     loss_fn(outputs, labels).backward()
