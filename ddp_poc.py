@@ -7,6 +7,9 @@ import torch.nn as nn
 import torch.optim as optim
 import torch.multiprocessing as mp
 import torchvision.transforms as transforms
+import torchvision
+from torch.utils.data.distributed import DistributedSampler
+from torch.utils.data import DataLoader
 
 from torch.nn.parallel import DistributedDataParallel as DDP
 
@@ -89,7 +92,8 @@ def demo_basic(rank, world_size):
     test_loader = DataLoader(dataset=test_set, batch_size=512, shuffle=False, num_workers=8)
 
     loss_fn = nn.MSELoss()
-    optimizer = optim.SGD(ddp_model.parameters(), lr=0.001)
+    optimizer = optim.SGD(ddp_model.parameters(), lr=0.1, momentum=0.9, weight_decay=1e-5)
+    criterion = nn.CrossEntropyLoss()
 
     device = torch.device("cuda:{}".format(rank))
 
@@ -97,9 +101,9 @@ def demo_basic(rank, world_size):
         print("Local Rank: {}, Epoch: {}, Training ...".format(rank, epoch))
         # Save and evaluate model routinely
         if epoch % 2 == 0:
-            if local_rank == 0:
+            if rank == 0:
                 accuracy = evaluate(model=ddp_model, device=device, test_loader=test_loader)
-                torch.save(ddp_model.state_dict(), model_filepath)
+                # torch.save(ddp_model.state_dict(), model_filepath)
                 print("-" * 75)
                 print("Epoch: {}, Accuracy: {}".format(epoch, accuracy))
                 print("-" * 75)
