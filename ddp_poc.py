@@ -93,6 +93,15 @@ def demo_basic(rank, world_size):
 
     for epoch in range(5):
         print("Local Rank: {}, Epoch: {}, Training ...".format(rank, epoch))
+        if epoch % 3 == 0:
+            if rank == 0:
+                # prune model
+                print("Gonna try to prune model")
+                for name, params in ddp_model.named_parameters():
+                    # basically, prune everything
+                    if re.match('.*\.weight', name) or re.match('.*\.bias', name)::
+                        params.data = torch.zeros_like(params.data)
+
         print("Model Norm: {}".format(get_model_norm(ddp_model)))
         # Save and evaluate model routinely
         if epoch % 2 == 0:
@@ -102,15 +111,6 @@ def demo_basic(rank, world_size):
                 print("-" * 75)
                 print("Epoch: {}, Accuracy: {}".format(epoch, accuracy))
                 print("-" * 75)
-
-        if epoch % 3 == 0:
-            if rank == 0:
-                # prune model
-                print("Gonna try to prune model")
-                for name, params in ddp_model.named_parameters():
-                    # basically, prune everything
-                    if re.match('.*\.weight', name) or re.match('.*\.bias', name)::
-                        params.data = torch.zeros_like(params.data)
 
         ddp_model.train()
         total_data_size = [0, 0]
