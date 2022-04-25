@@ -97,7 +97,7 @@ def demo_basic(rank, world_size):
 
     device = torch.device("cuda:{}".format(rank))
 
-    for epoch in range(10):
+    for epoch in range(5):
         print("Local Rank: {}, Epoch: {}, Training ...".format(rank, epoch))
         # Save and evaluate model routinely
         if epoch % 2 == 0:
@@ -109,15 +109,18 @@ def demo_basic(rank, world_size):
                 print("-" * 75)
 
         ddp_model.train()
+        total_data_size = [0, 0]
 
         for data in train_loader:
             inputs, labels = data[0].to(device), data[1].to(device)
+            # print("Device: {} | Batch Size: {} | Label sum: {}".format(rank, data[1].shape[0], torch.sum(data[1])))
+            total_data_size[rank] += data[1].shape[0]
             optimizer.zero_grad()
             outputs = ddp_model(inputs)
             loss = criterion(outputs, labels)
             loss.backward()
             optimizer.step()
-
+        print("End of epoch total batch sizes: {}".format(total_data_size))
     # optimizer.zero_grad()
     # outputs = ddp_model(torch.randn(20, 10))
     # labels = torch.randn(20, 5).to(rank)
