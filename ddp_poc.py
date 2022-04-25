@@ -13,18 +13,6 @@ from torch.utils.data import DataLoader
 
 from torch.nn.parallel import DistributedDataParallel as DDP
 
-# On Windows platform, the torch.distributed package only
-# supports Gloo backend, FileStore and TcpStore.
-# For FileStore, set init_method parameter in init_process_group
-# to a local file. Example as follow:
-# init_method="file:///f:/libtmp/some_file"
-# dist.init_process_group(
-#    "gloo",
-#    rank=rank,
-#    init_method=init_method,
-#    world_size=world_size)
-# For TcpStore, same way as on Linux.
-
 def setup(rank, world_size):
     os.environ['MASTER_ADDR'] = '127.0.0.1'
     os.environ['MASTER_PORT'] = '12355'
@@ -39,9 +27,9 @@ def cleanup():
 class ToyModel(nn.Module):
     def __init__(self):
         super(ToyModel, self).__init__()
-        self.net1 = nn.Linear(5, 5)
+        self.net1 = nn.Linear(3072, 100)
         self.relu = nn.ReLU()
-        self.net2 = nn.Linear(5, 5)
+        self.net2 = nn.Linear(100, 10)
 
     def forward(self, x):
         return self.net2(self.relu(self.net1(x)))
@@ -53,7 +41,7 @@ def evaluate(model, device, test_loader):
     total = 0
     with torch.no_grad():
         for data in test_loader:
-            images, labels = data[0].to(device), data[1].to(device)
+            images, labels = data[0].to(device).reshape(-1, 32*32*3), data[1].to(device)
             outputs = model(images)
             _, predicted = torch.max(outputs.data, 1)
             total += labels.size(0)
@@ -68,8 +56,8 @@ def demo_basic(rank, world_size):
     setup(rank, world_size)
 
     # create model and move it to GPU with id rank
-    model = torchvision.models.resnet18(pretrained=False).to(rank)
-    # model = ToyModel().to(rank)
+    # model = torchvision.models.resnet18(pretrained=False).to(rank)
+    model = ToyModel().to(rank)
     ddp_model = DDP(model, device_ids=[rank])
 
     transform = transforms.Compose([
@@ -108,11 +96,16 @@ def demo_basic(rank, world_size):
                 print("Epoch: {}, Accuracy: {}".format(epoch, accuracy))
                 print("-" * 75)
 
+        if epoch % 3 == 0:
+            if rank == 0:
+                # prune model
+
+
         ddp_model.train()
         total_data_size = [0, 0]
 
         for data in train_loader:
-            inputs, labels = data[0].to(device), data[1].to(device)
+            inputs, labels = data[0].to(device).reshape(-1, 32*32*3), data[1].to(device)
             # print("Device: {} | Batch Size: {} | Label sum: {}".format(rank, data[1].shape[0], torch.sum(data[1])))
             total_data_size[rank] += data[1].shape[0]
             optimizer.zero_grad()
