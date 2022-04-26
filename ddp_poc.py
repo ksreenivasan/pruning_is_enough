@@ -98,7 +98,7 @@ def demo_basic(rank, world_size):
 
     device = torch.device("cuda:{}".format(rank))
 
-    for epoch in range(5):
+    for epoch in range(2):
         print("Local Rank: {}, Epoch: {}, Training ...".format(rank, epoch))
         print("Local Rank: {} | Parser args: gpu={}, Name={}".format(rank, parser_args.gpu, parser_args.name))
         if epoch % 3 == 0:
@@ -120,7 +120,7 @@ def demo_basic(rank, world_size):
                 print("-" * 75)
 
         ddp_model.train()
-        total_data_size = [0, 0]
+        total_data_size = [0, 0, 0, 0]
 
         for data in train_loader:
             print("Rank: {} | Model Norm: {}".format(rank, get_model_norm(ddp_model)))
@@ -142,6 +142,7 @@ def demo_basic(rank, world_size):
     cp_model = copy.deepcopy(model)
     print("Local rank: {} | Copied Model".format(rank))
 
+    optimizer = optim.SGD(cp_model.parameters(), lr=0.1, momentum=0.9, weight_decay=1e-5)
     for data in train_loader:
         print("Rank: {} | Copied Model Norm: {}".format(rank, get_model_norm(cp_model)))
         inputs, labels = data[0].to(device).reshape(-1, 32*32*3), data[1].to(device)
@@ -153,6 +154,11 @@ def demo_basic(rank, world_size):
         loss.backward()
         optimizer.step()
     print("End of epoch total batch sizes: {}".format(total_data_size))
+
+    print("Local rank: {} | Entering barrier".format(rank))
+    dist.barrier()
+    print("Local rank: {} | Past barrier".format(rank))
+    print("Rank: {} | Copied Model Norm: {}".format(rank, get_model_norm(cp_model)))
 
     cleanup()
 
