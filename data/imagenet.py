@@ -84,6 +84,6 @@ class ImageNet:
         self.actual_val_loader = torch.utils.data.DataLoader(
             validation_dataset,
             batch_size=parser_args.batch_size,
-            shuffle=True,
+            shuffle=False,
             **kwargs
         )

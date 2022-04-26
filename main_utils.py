@@ -94,6 +94,11 @@ def do_sanity_checks(model, parser_args, data, criterion, epoch_list, test_acc_b
     print("Beginning Sanity Checks:")
     # do the sanity check for shuffled mask/weights, reinit weights
     print("Sanity Check 1: Weight Reinit")
+
+    print("TORCH BARRIER: GPU:{}".format(parser_args.gpu))
+    dist.barrier()
+    print("CLEARED TORCH BARRIER: GPU:{}".format(parser_args.gpu))
+
     cp_model = copy.deepcopy(model)
     cp_model = finetune(cp_model, parser_args, data, criterion, epoch_list, test_acc_before_round_list, test_acc_list, val_acc_list, train_acc_list,
                         reg_loss_list, model_sparsity_list, result_root, reinit=True, chg_weight=True)
@@ -105,6 +110,11 @@ def do_sanity_checks(model, parser_args, data, criterion, epoch_list, test_acc_b
                         reg_loss_list, model_sparsity_list, result_root, shuffle=True, chg_weight=True)
     '''
     print("Sanity Check 2: Mask Reshuffle")
+
+    print("TORCH BARRIER: GPU:{}".format(parser_args.gpu))
+    dist.barrier()
+    print("CLEARED TORCH BARRIER: GPU:{}".format(parser_args.gpu))
+
     cp_model = copy.deepcopy(model)
     cp_model = finetune(cp_model, parser_args, data, criterion, epoch_list, test_acc_before_round_list, test_acc_list, val_acc_list, train_acc_list,
                         reg_loss_list, model_sparsity_list, result_root, shuffle=True, chg_mask=True)
@@ -262,11 +272,16 @@ def finetune(model, parser_args, data, criterion, old_epoch_list, old_test_acc_b
         post_round_sparsity = get_model_sparsity(model)
 
     # apply reinit/shuffling masks/weights (if necessary)
+    # DDP_TODO: Check if this works well
     model = redraw(model, shuffle=shuffle, reinit=reinit,
                    invert=invert, chg_mask=chg_mask, chg_weight=chg_weight)
 
     # switch to weight training mode (turn on the requires_grad for weight/bias, and turn off the requires_grad for other parameters)
     model = switch_to_wt(model)
+
+    print("TORCH BARRIER: GPU:{}".format(parser_args.gpu))
+    dist.barrier()
+    print("CLEARED TORCH BARRIER: GPU:{}".format(parser_args.gpu))
 
     # not to use score regulaization during the weight training
     parser_args.regularization = False
@@ -298,20 +313,24 @@ def finetune(model, parser_args, data, criterion, old_epoch_list, old_test_acc_b
     train, validate, modifier = get_trainer(parser_args)
 
     # check the performance of loaded model (after rounding)
-    acc1, acc5, acc10 = validate(
-        data.val_loader, model, criterion, parser_args, writer, parser_args.epochs-1)
-    val_acc1, val_acc5, val_acc10 = validate(
-        data.actual_val_loader, model, criterion, parser_args, writer, parser_args.epochs-1)
-    train_acc1, train_acc5, train_acc10 = validate(
-        data.train_loader, model, criterion, parser_args, writer, parser_args.epochs-1)
+    if (parser_args.multiprocessing_distributed and parser_args.gpu == 0) or not parser_args.multiprocessing_distributed:
+        acc1, acc5, acc10 = validate(
+            data.val_loader, model, criterion, parser_args, writer, parser_args.epochs-1)
+        val_acc1, val_acc5, val_acc10 = validate(
+            data.actual_val_loader, model, criterion, parser_args, writer, parser_args.epochs-1)
+        train_acc1, train_acc5, train_acc10 = validate(
+            data.train_loader, model, criterion, parser_args, writer, parser_args.epochs-1)
+
     avg_sparsity = post_round_sparsity
-    epoch_list.append(parser_args.epochs-1)
-    test_acc_before_round_list.append(-1)
-    test_acc_list.append(acc1)
-    val_acc_list.append(val_acc1)
-    train_acc_list.append(train_acc1)
-    reg_loss_list.append(0.0)
-    model_sparsity_list.append(avg_sparsity)
+
+    if (parser_args.multiprocessing_distributed and parser_args.gpu == 0) or not parser_args.multiprocessing_distributed:
+        epoch_list.append(parser_args.epochs-1)
+        test_acc_before_round_list.append(-1)
+        test_acc_list.append(acc1)
+        val_acc_list.append(val_acc1)
+        train_acc_list.append(train_acc1)
+        reg_loss_list.append(0.0)
+        model_sparsity_list.append(avg_sparsity)
 
     end_epoch = time.time()
     for epoch in range(parser_args.epochs, parser_args.epochs*2):
@@ -372,8 +391,9 @@ def finetune(model, parser_args, data, criterion, old_epoch_list, old_test_acc_b
         else:
             raise NotImplementedError
 
-        print("Writing results into: {}".format(results_filename))
-        results_df.to_csv(results_filename, index=False)
+        if (parser_args.multiprocessing_distributed and parser_args.gpu == 0) or not parser_args.multiprocessing_distributed:
+            print("Writing results into: {}".format(results_filename))
+            results_df.to_csv(results_filename, index=False)
         scheduler.step()
 
     return model

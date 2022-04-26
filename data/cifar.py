@@ -23,6 +23,11 @@ class CIFAR10:
             mean=[0.491, 0.482, 0.447], std=[0.247, 0.243, 0.262]
         )
 
+        if args.multiprocessing_distributed:
+            train_sampler = torch.utils.data.distributed.DistributedSampler(train_dataset)
+        else:
+            train_sampler = None
+
         dataset = torchvision.datasets.CIFAR10(
             root=data_root,
             train=True,
@@ -54,13 +59,21 @@ class CIFAR10:
             train_dataset, validation_dataset = random_split(dataset, [train_size, val_size])
 
         self.train_loader = torch.utils.data.DataLoader(
-            train_dataset, batch_size=parser_args.batch_size, shuffle=True, **kwargs
+            train_dataset,
+            batch_size=parser_args.batch_size,
+            shuffle=(train_sampler is None),
+            sampler=train_sampler,
+            **kwargs
         )
 
         self.val_loader = torch.utils.data.DataLoader(
-            test_dataset, batch_size=parser_args.batch_size, shuffle=False, **kwargs
+            test_dataset,
+            batch_size=parser_args.batch_size,
+            shuffle=False, **kwargs
         )
 
         self.actual_val_loader = torch.utils.data.DataLoader(
-            validation_dataset, batch_size=parser_args.batch_size, shuffle=True, **kwargs
+            validation_dataset,
+            batch_size=parser_args.batch_size,
+            shuffle=False, **kwargs
         )

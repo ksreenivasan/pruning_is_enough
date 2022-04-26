@@ -112,7 +112,7 @@ def main_worker(gpu, ngpus_per_node):
         print("Overriding prune_rate to {}".format(parser_args.prune_rate))
     #if parser_args.dataset == 'TinyImageNet':
     #    print_num_dataset(data)
-    if (parser_args.multiprocessing_distributed and parser_args.gpu == 0) or not parser_args.multiprocessing_distributed::
+    if (parser_args.multiprocessing_distributed and parser_args.gpu == 0) or not parser_args.multiprocessing_distributed:
         if not parser_args.weight_training:
             print_layers(parser_args, model)
 
@@ -131,9 +131,9 @@ def main_worker(gpu, ngpus_per_node):
             do_sanity_checks(model, parser_args, data, criterion, epoch_list, test_acc_before_round_list,
                          test_acc_list, reg_loss_list, model_sparsity_list, parser_args.results_root)
             
-            #cp_model = round_model(model, round_scheme="all_ones", noise=parser_args.noise,
+            # cp_model = round_model(model, round_scheme="all_ones", noise=parser_args.noise,
             #            ratio=parser_args.noise_ratio, rank=parser_args.gpu)
-            #print(get_model_sparsity(cp_model))
+            # print(get_model_sparsity(cp_model))
         return
 
 
@@ -275,8 +275,10 @@ def main_worker(gpu, ngpus_per_node):
             print_time()
 
     # finetune weights
-    # DDP_TODO: Check how DDP works with copy deepcopy
+    # DDP works surprisingly well with copy deepcopy. Might cause memory issues TODO
+    print("TORCH BARRIER: GPU:{}".format(parser_args.gpu))
     dist.barrier()
+    print("CLEARED TORCH BARRIER: GPU:{}".format(parser_args.gpu))
 
     cp_model = copy.deepcopy(model)
     if not parser_args.skip_fine_tune:
@@ -294,10 +296,13 @@ def main_worker(gpu, ngpus_per_node):
         if (parser_args.multiprocessing_distributed and parser_args.gpu == 0) or not parser_args.multiprocessing_distributed:
             print("Skipping finetuning!!!")
 
+    print("TORCH BARRIER: GPU:{}".format(parser_args.gpu))
+    dist.barrier()
+    print("CLEARED TORCH BARRIER: GPU:{}".format(parser_args.gpu))
+
     if not parser_args.skip_sanity_checks:
         do_sanity_checks(model, parser_args, data, criterion, epoch_list, test_acc_before_round_list,
                          test_acc_list, val_acc_list, train_acc_list, reg_loss_list, model_sparsity_list, result_root)
-
     else:
         if (parser_args.multiprocessing_distributed and parser_args.gpu == 0) or not parser_args.multiprocessing_distributed:
             print("Skipping sanity checks!!!")
