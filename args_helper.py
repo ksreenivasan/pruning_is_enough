@@ -792,6 +792,12 @@ class ArgsHelper:
         )
         # added parser args for IMP
         parser.add_argument(
+            "--imp-rounds",
+            type=int,
+            default=-1,
+            help="if set > 0, then ignore the epochs statement, and calculate epochs based on rounds * iter / round"
+        )
+        parser.add_argument(
             "--imp_rewind_iter", 
             default=1000, 
             type=int, 

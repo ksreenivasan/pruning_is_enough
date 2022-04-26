@@ -1,0 +1,37 @@
+# IMP algorithm
+algo: 'imp'
+seed: 42
+trial_num: 1
+
+# Architecture
+arch: ResNet50
+transfer_learning: True
+
+# ===== Dataset ===== #
+dataset: Caltech101
+
+# ===== Learning Rate Policy ======== #
+optimizer: adam  #
+lr: 0.0001  #
+lr_policy: multistep_lr  #
+lr_gamma: 0.1  #
+
+# ===== Network training config ===== #
+iter_period: 50  #
+wd: 0  #
+momentum: 0.9  #
+batch_size: 16  #
+bias: False  # yes
+
+# ===== Sparsity =========== #
+conv_type: SubnetConv
+bn_type: AffineBatchNorm  # yes
+prune_rate: 0.2
+init: kaiming_normal  #
+imp_rewind_iter: 1000  #
+
+
+# ===== Hardware setup ===== #
+workers: 4
+# gpu: 2
+

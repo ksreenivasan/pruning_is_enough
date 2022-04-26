@@ -1022,7 +1022,7 @@ def get_dataset(parser_args):
     return dataset
 
 
-def get_model(parser_args, num_classes=-1):
+def get_model(parser_args, num_classes=101):
     if parser_args.first_layer_dense:
         parser_args.first_layer_type = "DenseConv"
 

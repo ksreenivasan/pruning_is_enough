@@ -6,15 +6,17 @@
 
 # IMP / Renda
 
-subfd="long_warm_imp_transfer_debug"
+subfd="long_warm_renda_transfer_debug"
 n_gpu=0
 
 python imp_main.py \
 --config configs/imp/transfer_1FC.yml \
---epochs 5000 \
+--imp-no-rewind \
+--imp-rounds 20 \
 --gpu $n_gpu \
 --subfolder $subfd #> log_caltech_renda 2>&1
 
+#--epochs 5000 \
 
 # HC
 #:<<BLOCK
