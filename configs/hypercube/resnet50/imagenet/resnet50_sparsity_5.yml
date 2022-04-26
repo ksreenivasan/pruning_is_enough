@@ -1,0 +1,66 @@
+subfolder: regular_imagenet_resnet50
+# trial_num: 1
+#lam_finetune_loss: 1
+#num_step_finetune: 5
+
+# Hypercube optimization
+algo: 'hc_iter'
+iter_period: 5
+
+# Architecture
+arch: ResNet50
+
+# ===== Dataset ===== #
+dataset: ImageNet
+name: resnet50_imagenet
+data: /data/imagenet/
+
+# ===== Learning Rate Policy ======== #
+optimizer: sgd
+lr: 0.4 #0.01
+lr_policy: cosine_lr #constant_lr #multistep_lr
+fine_tune_lr: 0.001
+fine_tune_lr_policy: multistep_lr
+
+# ===== Network training config ===== #
+epochs: 10
+wd: 0.0 
+momentum: 0.9
+batch_size: 64
+mixed_precision: True
+
+# ===== Sparsity =========== #
+conv_type: SubnetConv
+bn_type: NonAffineBatchNorm
+freeze_weights: True
+prune_type: BottomK
+# enter target sparsity here
+target_sparsity: 5
+# decide if you want to "unflag"
+unflag_before_finetune: False
+init: signed_constant
+score_init: unif #skew #half #bimodal #skew # bern
+scale_fan: False #True
+
+# ===== Rounding ===== #
+round: naive 
+noise: True
+noise_ratio: 0 
+
+# ===== Quantization ===== #
+hc_quantized: True
+quantize_threshold: 0.5
+
+# ===== Regularization ===== #
+regularization: L2
+lmbda: 0.0000001 # 1e-4 #0.00005 # 5e-5
+
+# ===== Hardware setup ===== #
+workers: 4
+gpu: 1
+
+# ===== Checkpointing ===== #
+checkpoint_at_prune: False
+
+# ==== sanity check ==== #
+skip_sanity_checks: True

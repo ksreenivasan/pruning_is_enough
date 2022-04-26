@@ -126,6 +126,18 @@ def get_layers(arch='Conv4', model=None):
             linear_layers.append(layer.mlp.fc1)
             linear_layers.append(layer.mlp.fc2)
         # linear_layers.append(model.decoder)
+
+    elif arch == 'ResNet18':
+        conv_layers = [model.conv1]
+        for layer in [model.layer1, model.layer2, model.layer3, model.layer4]:
+            for basic_block_id in [0, 1]:
+                conv_layers.append(layer[basic_block_id].conv1)
+                conv_layers.append(layer[basic_block_id].conv2)
+        linear_layers = [model.fc]
+
+    else:
+        print("ERROR: get_layers() not implemented for model {}".format(arch))
+        return -1
     return (conv_layers, linear_layers)
 
 
