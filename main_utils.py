@@ -504,14 +504,11 @@ def get_mask(model):
     return mask, flat_tensor
 
 
-def setup_distributed(ngpus_per_node):
-    # for debugging
-    #    os.environ['NCCL_DEBUG'] = 'INFO'
-    #    os.environ['TORCH_DISTRIBUTED_DEBUG'] = 'INFO'
-
-    # setup environment
+def setup_distributed(rank, ngpus_per_node):
     os.environ['MASTER_ADDR'] = '127.0.0.1'
     os.environ['MASTER_PORT'] = '29500'
+
+    dist.init_process_group("nccl", rank=rank, world_size=ngpus_per_node)
 
 
 def cleanup_distributed():
@@ -886,21 +883,13 @@ def get_trainer(parser_args):
 def set_gpu(parser_args, model):
     assert torch.cuda.is_available(), "CPU-only experiments currently unsupported"
 
-    if parser_args.gpu is not None:
-        torch.cuda.set_device(parser_args.gpu)
-        model.cuda(parser_args.gpu)
+    # torch.cuda.set_device(parser_args.gpu)
+    model.to(parser_args.gpu)
 
-        if parser_args.multiprocessing_distributed:
-            torch.distributed.init_process_group(
-                backend=parser_args.dist_backend,
-                init_method='env://',
-                world_size=parser_args.world_size,
-                rank=parser_args.rank
-            )
-            model = nn.parallel.DistributedDataParallel(
-                model, device_ids=[parser_args.gpu], find_unused_parameters=True)
-    else:
-        device = torch.device("cpu")
+    if parser_args.multiprocessing_distributed:
+        # TODO: not sure about find_unused_parameters. Need to check
+        model = nn.parallel.DistributedDataParallel(
+            model, device_ids=[parser_args.gpu], find_unused_parameters=True)
 
     return model
 
