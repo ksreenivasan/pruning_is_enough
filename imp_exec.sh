@@ -1,7 +1,7 @@
 # ===== warm short IMP ===== #
 
 subfd="short_warm_imp"
-n_gpu=1
+n_gpu=0
 
 python imp_main.py \
 --config configs/imp/resnet20.yml \
@@ -9,6 +9,7 @@ python imp_main.py \
 --gpu $n_gpu \
 --subfolder $subfd
 
+:<<BLOCK
 for i in 14 13 7 3 1 0
 do
     python imp_sanity.py \
@@ -19,6 +20,7 @@ do
     --gpu $n_gpu
 done
 
+BLOCK
 
 # IMP
 :<<BLOCK
