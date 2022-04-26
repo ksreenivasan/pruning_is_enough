@@ -7,7 +7,7 @@ python imp_main.py \
 --config configs/imp/resnet20.yml \
 --imp-rounds 30 \
 --gpu $n_gpu \
---subfolder $subfd > imp_log 2>&1
+--subfolder $subfd #> imp_log 2>&1
 
 
 
