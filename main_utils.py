@@ -903,7 +903,7 @@ def get_trainer(parser_args):
 def set_gpu(parser_args, model):
     assert torch.cuda.is_available(), "CPU-only experiments currently unsupported"
 
-    # torch.cuda.set_device(parser_args.gpu)
+    torch.cuda.set_device(parser_args.gpu)
     model.to(parser_args.gpu)
 
     if parser_args.multiprocessing_distributed:

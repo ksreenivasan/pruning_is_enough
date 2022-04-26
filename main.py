@@ -35,7 +35,7 @@ def main_worker(gpu, ngpus_per_node):
     train, validate, modifier = get_trainer(parser_args)
     model = get_model(parser_args)
 
-    if parser_args == 0:
+    if (parser_args.multiprocessing_distributed and parser_args.gpu == 0) or not parser_args.multiprocessing_distributed:
         idty_str = get_idty_str(parser_args)
         if parser_args.subfolder is not None:
             if not os.path.isdir('results/'):
