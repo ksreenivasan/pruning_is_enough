@@ -13,7 +13,7 @@ python imp_main.py \
 --wd 1e-4 \
 --momentum 0.9 \
 --batch-size 128 \
---iter_period 8 \
+#--iter_period 8 \
 --seed 42 \
 --prune-rate 0.2 \
 --imp_rewind_iter 1000 \
