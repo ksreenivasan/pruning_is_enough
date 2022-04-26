@@ -2,8 +2,9 @@ import os
 
 import torch
 from torchvision import datasets, transforms
-
 import torch.multiprocessing
+from args_helper import parser_args
+from torch.utils.data import random_split
 
 torch.multiprocessing.set_sharing_strategy("file_system")
 
@@ -11,13 +12,12 @@ class ImageNet:
     def __init__(self, args):
         super(ImageNet, self).__init__()
 
-#        data_root = os.path.join(args.data, "imagenet")
         data_root = args.data
 
         use_cuda = torch.cuda.is_available()
 
         # Data loading code
-        kwargs = {"num_workers": args.num_workers, "pin_memory": True} if use_cuda else {}
+        kwargs = {"num_workers": parser_args.num_workers, "pin_memory": True} if use_cuda else {}
 
         # Data loading code
         traindir = os.path.join(data_root, "train")
@@ -27,7 +27,7 @@ class ImageNet:
             mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
         )
 
-        train_dataset = datasets.ImageFolder(
+        dataset = datasets.ImageFolder(
             traindir,
             transforms.Compose(
                 [
@@ -39,22 +39,7 @@ class ImageNet:
             ),
         )
 
-        if args.multiprocessing_distributed:
-            train_sampler = torch.utils.data.distributed.DistributedSampler(train_dataset)
-        else:
-            train_sampler = None
-
-
-        self.train_loader = torch.utils.data.DataLoader(
-            train_dataset,
-            batch_size=args.batch_size,
-            shuffle=(train_sampler is None),
-            sampler=train_sampler,
-            **kwargs
-        )
-
-        self.val_loader = torch.utils.data.DataLoader(
-            datasets.ImageFolder(
+        test_dataset = datasets.ImageFolder(
                 valdir,
                 transforms.Compose(
                     [
@@ -64,8 +49,41 @@ class ImageNet:
                         normalize,
                     ]
                 ),
-            ),
-            batch_size=args.batch_size,
+            )
+
+        if parser_args.use_full_data:
+            train_dataset = dataset
+            # use_full_data => we are not tuning hyperparameters
+            validation_dataset = test_dataset
+        else:
+            val_size = 10000
+            train_size = len(dataset) - val_size
+            train_dataset, validation_dataset = random_split(dataset, [train_size, val_size])
+
+        if args.multiprocessing_distributed:
+            train_sampler = torch.utils.data.distributed.DistributedSampler(train_dataset)
+        else:
+            train_sampler = None
+
+
+        self.train_loader = torch.utils.data.DataLoader(
+            train_dataset,
+            batch_size=parser_args.batch_size,
+            shuffle=(train_sampler is None),
+            sampler=train_sampler,
+            **kwargs
+        )
+
+        self.val_loader = torch.utils.data.DataLoader(
+            test_dataset,
+            batch_size=parser_args.batch_size,
             shuffle=False,
+            **kwargs
+        )
+
+        self.actual_val_loader = torch.utils.data.DataLoader(
+            validation_dataset,
+            batch_size=parser_args.batch_size,
+            shuffle=True,
             **kwargs
         )

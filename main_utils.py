@@ -319,7 +319,6 @@ def finetune(model, parser_args, data, criterion, old_epoch_list, old_test_acc_b
         if parser_args.multiprocessing_distributed:
             data.train_loader.sampler.set_epoch(epoch)
         # lr_policy(epoch, iteration=None)
-        # modifier(parser_args, epoch, model)
         cur_lr = get_lr(optimizer)
         print('epoch: {}, lr: {}'.format(epoch, cur_lr))
 
@@ -331,34 +330,35 @@ def finetune(model, parser_args, data, criterion, old_epoch_list, old_test_acc_b
         train_time.update((time.time() - start_train) / 60)
 
         # evaluate on validation set
-        start_validation = time.time()
-        acc1, acc5, acc10 = validate(
-            data.val_loader, model, criterion, parser_args, writer, epoch)
-        val_acc1, val_acc5, val_acc10 = validate(
-            data.actual_val_loader, model, criterion, parser_args, writer, epoch)
-        validation_time.update((time.time() - start_validation) / 60)
-        # copy & paste the sparsity of prev. epoch
-        avg_sparsity = model_sparsity_list[-1]
+        if (parser_args.multiprocessing_distributed and parser_args.gpu == 0) or not parser_args.multiprocessing_distributed:
+            start_validation = time.time()
+            acc1, acc5, acc10 = validate(
+                data.val_loader, model, criterion, parser_args, writer, epoch)
+            val_acc1, val_acc5, val_acc10 = validate(
+                data.actual_val_loader, model, criterion, parser_args, writer, epoch)
+            validation_time.update((time.time() - start_validation) / 60)
+            # copy & paste the sparsity of prev. epoch
+            avg_sparsity = model_sparsity_list[-1]
 
-        # update all results lists
-        epoch_list.append(epoch)
-        test_acc_before_round_list.append(-1)
-        test_acc_list.append(acc1)
-        val_acc_list.append(val_acc1)
-        train_acc_list.append(train_acc1)
-        reg_loss_list.append(reg_loss)
-        model_sparsity_list.append(avg_sparsity)
+            # update all results lists
+            epoch_list.append(epoch)
+            test_acc_before_round_list.append(-1)
+            test_acc_list.append(acc1)
+            val_acc_list.append(val_acc1)
+            train_acc_list.append(train_acc1)
+            reg_loss_list.append(reg_loss)
+            model_sparsity_list.append(avg_sparsity)
 
-        epoch_time.update((time.time() - end_epoch) / 60)
-        progress_overall.display(epoch)
-        progress_overall.write_to_tensorboard(
-            writer, prefix="diagnostics", global_step=epoch
-        )
-        writer.add_scalar("test/lr", cur_lr, epoch)
-        end_epoch = time.time()
+            epoch_time.update((time.time() - end_epoch) / 60)
+            progress_overall.display(epoch)
+            progress_overall.write_to_tensorboard(
+                writer, prefix="diagnostics", global_step=epoch
+            )
+            writer.add_scalar("test/lr", cur_lr, epoch)
+            end_epoch = time.time()
 
-        results_df = pd.DataFrame({'epoch': epoch_list, 'test_acc_before_rounding': test_acc_before_round_list, 'test_acc': test_acc_list, 'val_acc': val_acc_list, 'train_acc': train_acc_list,
-                                   'regularization_loss': reg_loss_list, 'model_sparsity': model_sparsity_list})
+            results_df = pd.DataFrame({'epoch': epoch_list, 'test_acc_before_rounding': test_acc_before_round_list, 'test_acc': test_acc_list, 'val_acc': val_acc_list, 'train_acc': train_acc_list,
+                                       'regularization_loss': reg_loss_list, 'model_sparsity': model_sparsity_list})
         if not chg_mask and not chg_weight:
             results_filename = result_root + 'acc_and_sparsity.csv'
         # elif chg_weight and shuffle:

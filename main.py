@@ -70,7 +70,7 @@ def main_worker(gpu, ngpus_per_node):
     optimizer = get_optimizer(parser_args, model)
     data = get_dataset(parser_args)
     scheduler = get_scheduler(optimizer, parser_args.lr_policy)
-    #lr_policy = get_policy(parser_args.lr_policy)(optimizer, parser_args)
+    # lr_policy = get_policy(parser_args.lr_policy)(optimizer, parser_args)
     if parser_args.label_smoothing is None:
         criterion = nn.CrossEntropyLoss().cuda()
     else:
@@ -112,10 +112,9 @@ def main_worker(gpu, ngpus_per_node):
         print("Overriding prune_rate to {}".format(parser_args.prune_rate))
     #if parser_args.dataset == 'TinyImageNet':
     #    print_num_dataset(data)
-    if not parser_args.weight_training:
-        print_layers(parser_args, model)
-    
-
+    if (parser_args.multiprocessing_distributed and parser_args.gpu == 0) or not parser_args.multiprocessing_distributed::
+        if not parser_args.weight_training:
+            print_layers(parser_args, model)
 
     if parser_args.mixed_precision:
         scaler = torch.cuda.amp.GradScaler(enabled=True) # mixed precision
@@ -142,7 +141,7 @@ def main_worker(gpu, ngpus_per_node):
     for epoch in range(parser_args.start_epoch, parser_args.epochs):
         if parser_args.multiprocessing_distributed:
             data.train_loader.sampler.set_epoch(epoch)
-        #lr_policy(epoch, iteration=None)
+        # lr_policy(epoch, iteration=None)
         modifier(parser_args, epoch, model)
         cur_lr = get_lr(optimizer)
 
@@ -166,37 +165,40 @@ def main_worker(gpu, ngpus_per_node):
         scheduler.step()
 
         # evaluate on validation set
-        start_validation = time.time()
-        if parser_args.algo in ['hc', 'hc_iter']:
-            br_acc1, br_acc5, br_acc10 = validate(
-                data.val_loader, model, criterion, parser_args, writer, epoch)  # before rounding
-            print('Acc before rounding: {}'.format(br_acc1))
-            acc_avg = 0
-            for num_trial in range(parser_args.num_test):
-                cp_model = round_model(model, parser_args.round, noise=parser_args.noise,
-                                       ratio=parser_args.noise_ratio, rank=parser_args.gpu)
+        if (parser_args.multiprocessing_distributed and parser_args.gpu == 0) or not parser_args.multiprocessing_distributed:
+            start_validation = time.time()
+            if parser_args.algo in ['hc', 'hc_iter']:
+                br_acc1, br_acc5, br_acc10 = validate(
+                    data.val_loader, model, criterion, parser_args, writer, epoch)  # before rounding
+                print('Acc before rounding: {}'.format(br_acc1))
+                acc_avg = 0
+                for num_trial in range(parser_args.num_test):
+                    cp_model = round_model(model, parser_args.round, noise=parser_args.noise,
+                                           ratio=parser_args.noise_ratio, rank=parser_args.gpu)
+                    acc1, acc5, acc10 = validate(
+                        data.val_loader, cp_model, criterion, parser_args, writer, epoch)
+                    acc_avg += acc1
+                acc_avg /= parser_args.num_test
+                acc1 = acc_avg
+                print('Acc after rounding: {}'.format(acc1))
+                val_acc1, val_acc5, val_acc10 = validate(
+                        data.actual_val_loader, cp_model, criterion, parser_args, writer, epoch)
+                print('Validation Acc after rounding: {}'.format(val_acc1))
+            else:
                 acc1, acc5, acc10 = validate(
-                    data.val_loader, cp_model, criterion, parser_args, writer, epoch)
-                acc_avg += acc1
-            acc_avg /= parser_args.num_test
-            acc1 = acc_avg
-            print('Acc after rounding: {}'.format(acc1))
-            val_acc1, val_acc5, val_acc10 = validate(
-                    data.actual_val_loader, cp_model, criterion, parser_args, writer, epoch)
-            print('Validation Acc after rounding: {}'.format(val_acc1))
-        else:
-            acc1, acc5, acc10 = validate(
-                data.val_loader, model, criterion, parser_args, writer, epoch)
-            print('Acc: {}'.format(acc1))
-        validation_time.update((time.time() - start_validation) / 60)
+                    data.val_loader, model, criterion, parser_args, writer, epoch)
+                print('Acc: {}'.format(acc1))
+            validation_time.update((time.time() - start_validation) / 60)
 
         # prune the model every T_{prune} epochs
         if not parser_args.weight_training and parser_args.algo in ['hc_iter', 'global_ep_iter'] and epoch % (parser_args.iter_period) == 0 and epoch != 0:
             prune(model)
             if parser_args.checkpoint_at_prune:
-                save_checkpoint_at_prune(model, parser_args)
+                if (parser_args.multiprocessing_distributed and parser_args.gpu == 0) or not parser_args.multiprocessing_distributed:
+                    save_checkpoint_at_prune(model, parser_args)
 
         # get model sparsity
+        # DDP_TODO: This part could be a problem. What if models get out of sync?
         if not parser_args.weight_training:
             if parser_args.bottom_k_on_forward:
                 cp_model = copy.deepcopy(model)
@@ -212,7 +214,9 @@ def main_worker(gpu, ngpus_per_node):
         else:
             # haven't written a weight sparsity function yet
             avg_sparsity = -1
-        print('Model avg sparsity: {}'.format(avg_sparsity))
+
+        if (parser_args.multiprocessing_distributed and parser_args.gpu == 0) or not parser_args.multiprocessing_distributed:
+            print('Model avg sparsity: {}'.format(avg_sparsity))
 
         # if model has been "short-circuited", then no point in continuing training
         if avg_sparsity == 0:
@@ -227,92 +231,78 @@ def main_worker(gpu, ngpus_per_node):
             break
 
         # update all results lists
-        epoch_list.append(epoch)
-        if parser_args.algo in ['hc', 'hc_iter']:
-            test_acc_before_round_list.append(br_acc1)
-        else:
-            # no before rounding for EP/weight training
-            test_acc_before_round_list.append(-1)
-        test_acc_list.append(acc1)
-        val_acc_list.append(val_acc1)
-        train_acc_list.append(train_acc1)
-        reg_loss_list.append(reg_loss)
-        model_sparsity_list.append(avg_sparsity)
+        if (parser_args.multiprocessing_distributed and parser_args.gpu == 0) or not parser_args.multiprocessing_distributed:
+            epoch_list.append(epoch)
+            if parser_args.algo in ['hc', 'hc_iter']:
+                test_acc_before_round_list.append(br_acc1)
+            else:
+                # no before rounding for EP/weight training
+                test_acc_before_round_list.append(-1)
+            test_acc_list.append(acc1)
+            val_acc_list.append(val_acc1)
+            train_acc_list.append(train_acc1)
+            reg_loss_list.append(reg_loss)
+            model_sparsity_list.append(avg_sparsity)
 
-        epoch_time.update((time.time() - end_epoch) / 60)
-        progress_overall.display(epoch)
-        progress_overall.write_to_tensorboard(
-            writer, prefix="diagnostics", global_step=epoch
-        )
+            epoch_time.update((time.time() - end_epoch) / 60)
+            progress_overall.display(epoch)
+            progress_overall.write_to_tensorboard(
+                writer, prefix="diagnostics", global_step=epoch
+            )
 
-        if parser_args.conv_type == "SampleSubnetConv":
-            count = 0
-            sum_pr = 0.0
-            for n, m in model.named_modules():
-                if isinstance(m, SampleSubnetConv):
-                    # avg pr across 10 samples
-                    pr = 0.0
-                    for _ in range(10):
-                        pr += (
-                            (torch.rand_like(m.clamped_scores) >= m.clamped_scores)
-                            .float()
-                            .mean()
-                            .item()
-                        )
-                    pr /= 10.0
-                    writer.add_scalar("pr/{}".format(n), pr, epoch)
-                    sum_pr += pr
-                    count += 1
+            writer.add_scalar("test/lr", cur_lr, epoch)
+            end_epoch = time.time()
 
-            parser_args.prune_rate = sum_pr / count
-            writer.add_scalar("pr/average", parser_args.prune_rate, epoch)
+            if parser_args.algo in ['hc', 'hc_iter']:
+                results_df = pd.DataFrame({'epoch': epoch_list, 'test_acc_before_rounding': test_acc_before_round_list,
+                                          'test_acc': test_acc_list, 'val_acc': val_acc_list, 'train_acc': train_acc_list, 'regularization_loss': reg_loss_list, 'model_sparsity': model_sparsity_list})
+            else:
+                results_df = pd.DataFrame(
+                    {'epoch': epoch_list, 'test_acc': test_acc_list, 'model_sparsity': model_sparsity_list})
 
-        writer.add_scalar("test/lr", cur_lr, epoch)
-        end_epoch = time.time()
+            if parser_args.results_filename:
+                results_filename = parser_args.results_filename
+            else:
+                results_filename = result_root + 'acc_and_sparsity.csv'
+            print("Writing results into: {}".format(results_filename))
+            results_df.to_csv(results_filename, index=False)
 
-        if parser_args.algo in ['hc', 'hc_iter']:
-            results_df = pd.DataFrame({'epoch': epoch_list, 'test_acc_before_rounding': test_acc_before_round_list,
-                                      'test_acc': test_acc_list, 'val_acc': val_acc_list, 'train_acc': train_acc_list, 'regularization_loss': reg_loss_list, 'model_sparsity': model_sparsity_list})
-        else:
-            results_df = pd.DataFrame(
-                {'epoch': epoch_list, 'test_acc': test_acc_list, 'model_sparsity': model_sparsity_list})
+        if (parser_args.multiprocessing_distributed and parser_args.gpu == 0) or not parser_args.multiprocessing_distributed:
+            # save checkpoint before fine-tuning
+            torch.save(model.state_dict(), result_root + 'model_before_finetune.pth')
 
-        if parser_args.results_filename:
-            results_filename = parser_args.results_filename
-        else:
-            results_filename = result_root + 'acc_and_sparsity.csv'
-        print("Writing results into: {}".format(results_filename))
-        results_df.to_csv(results_filename, index=False)
-
-    # save checkpoint before fine-tuning
-    #torch.save(model.state_dict(), result_root + 'model_before_finetune.pth')
-
-    print("\n\nHigh accuracy subnetwork found! Rest is just finetuning")
-    print_time()
+            print("\n\nHigh accuracy subnetwork found! Rest is just finetuning")
+            print_time()
 
     # finetune weights
+    # DDP_TODO: Check how DDP works with copy deepcopy
     cp_model = copy.deepcopy(model)
     if not parser_args.skip_fine_tune:
-        print("Beginning fine-tuning")
+        if (parser_args.multiprocessing_distributed and parser_args.gpu == 0) or not parser_args.multiprocessing_distributed:
+            print("Beginning fine-tuning")
         cp_model = finetune(cp_model, parser_args, data, criterion, epoch_list,
                             test_acc_before_round_list, test_acc_list, val_acc_list, train_acc_list, reg_loss_list, model_sparsity_list, result_root)
         # print out the final acc
-        eval_and_print(validate, data.val_loader, cp_model, criterion,
-                       parser_args, writer=None, description='final model after finetuning')
-        # save checkpoint after fine-tuning
-        #torch.save(cp_model.state_dict(), result_root + 'model_after_finetune.pth')
+        if (parser_args.multiprocessing_distributed and parser_args.gpu == 0) or not parser_args.multiprocessing_distributed:
+            eval_and_print(validate, data.val_loader, cp_model, criterion,
+                           parser_args, writer=None, description='final model after finetuning')
+            # save checkpoint after fine-tuning
+            torch.save(cp_model.state_dict(), result_root + 'model_after_finetune.pth')
     else:
-        print("Skipping finetuning!!!")
+        if (parser_args.multiprocessing_distributed and parser_args.gpu == 0) or not parser_args.multiprocessing_distributed:
+            print("Skipping finetuning!!!")
 
     if not parser_args.skip_sanity_checks:
         do_sanity_checks(model, parser_args, data, criterion, epoch_list, test_acc_before_round_list,
                          test_acc_list, val_acc_list, train_acc_list, reg_loss_list, model_sparsity_list, result_root)
 
     else:
-        print("Skipping sanity checks!!!")
+        if (parser_args.multiprocessing_distributed and parser_args.gpu == 0) or not parser_args.multiprocessing_distributed:
+            print("Skipping sanity checks!!!")
 
-    print("\n\nEnd of process. Exiting")
-    print_time()
+    if (parser_args.multiprocessing_distributed and parser_args.gpu == 0) or not parser_args.multiprocessing_distributed:
+        print("\n\nEnd of process. Exiting")
+        print_time()
 
     if parser_args.multiprocessing_distributed:
         cleanup_distributed()
