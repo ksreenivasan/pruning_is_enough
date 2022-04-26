@@ -348,9 +348,9 @@ def round_model(model, round_scheme, noise=False, ratio=0.0, rank=None):
                 params.data = (params.data + delta) % 2
             '''
 
-    if isinstance(model, nn.parallel.DistributedDataParallel):
-        cp_model = nn.parallel.DistributedDataParallel(
-            cp_model, device_ids=[rank], find_unused_parameters=True)
+    # if isinstance(model, nn.parallel.DistributedDataParallel):
+    #     cp_model = nn.parallel.DistributedDataParallel(
+    #         cp_model, device_ids=[rank], find_unused_parameters=True)
 
     return cp_model
 
