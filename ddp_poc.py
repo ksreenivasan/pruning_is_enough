@@ -13,6 +13,7 @@ from torch.utils.data import DataLoader
 import re
 
 from torch.nn.parallel import DistributedDataParallel as DDP
+from ddp_args_helper import parser_args
 
 def setup(rank, world_size):
     os.environ['MASTER_ADDR'] = '127.0.0.1'
@@ -60,6 +61,7 @@ def get_model_norm(model):
 
 def demo_basic(rank, world_size):
     print(f"Running basic DDP example on rank {rank}.")
+    print("Parser args: gpu={}, name={}".format(parser_args.gpu, parser_args.name))
     setup(rank, world_size)
 
     # create model and move it to GPU with id rank
