@@ -64,15 +64,15 @@ BLOCK
 #:<<BLOCK
 # Using validation to figure out hyperparams
 # NOTE: make sure to delete/comment subfolder from the config file or else it may not work
-conf_file="configs/training/resnet32/cifar100_resnet32_training"
+conf_file="configs/ddp_debug/conf1"
 conf_end=".yml"
-log_root="resnet32_wt_"
+log_root="ddp_debug_"
 log_end="_log"
-subfolder_root="resnet32_wt_"
+subfolder_root="ddp_debug_"
 
 for trial in 1
 do
-    python main.py \
+    CUDA_VISIBLE_DEVICES=0,2,3 python main.py \
     --config "$conf_file$conf_end" \
     --subfolder "$subfolder_root$trial" > "$log_root$trial$log_end" 2>&1 &
 

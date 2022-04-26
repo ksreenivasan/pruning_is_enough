@@ -12,7 +12,7 @@ class ImageNet:
     def __init__(self, args):
         super(ImageNet, self).__init__()
 
-        data_root = args.data
+        data_root = parser_args.data
 
         use_cuda = torch.cuda.is_available()
 
@@ -60,7 +60,7 @@ class ImageNet:
             train_size = len(dataset) - val_size
             train_dataset, validation_dataset = random_split(dataset, [train_size, val_size])
 
-        if args.multiprocessing_distributed:
+        if parser_args.multiprocessing_distributed:
             train_sampler = torch.utils.data.distributed.DistributedSampler(train_dataset)
         else:
             train_sampler = None

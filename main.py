@@ -28,7 +28,7 @@ def main_worker(gpu, ngpus_per_node):
 
     if parser_args.multiprocessing_distributed:
         parser_args.rank = parser_args.gpu
-        setup_distributed(rank, ngpus_per_node)
+        setup_distributed(parser_args.rank, ngpus_per_node)
         # if using ddp, divide batch size per gpu
         parser_args.batch_size = int(parser_args.batch_size / ngpus_per_node)
 
