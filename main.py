@@ -185,6 +185,10 @@ def main_worker(gpu, ngpus_per_node):
             acc1, acc5, acc10 = validate(
                 data.val_loader, model, criterion, parser_args, writer, epoch)
             print('Acc: {}'.format(acc1))
+            val_acc1, val_acc5, val_acc10 = validate(
+                data.actual_val_loader, model, criterion, parser_args, writer, epoch)
+            print('Validation Acc: {}'.format(val_acc1))
+
         validation_time.update((time.time() - start_validation) / 60)
 
         # prune the model every T_{prune} epochs
@@ -272,7 +276,7 @@ def main_worker(gpu, ngpus_per_node):
                                       'test_acc': test_acc_list, 'val_acc': val_acc_list, 'train_acc': train_acc_list, 'regularization_loss': reg_loss_list, 'model_sparsity': model_sparsity_list})
         else:
             results_df = pd.DataFrame(
-                {'epoch': epoch_list, 'test_acc': test_acc_list, 'model_sparsity': model_sparsity_list})
+                {'epoch': epoch_list, 'test_acc': test_acc_list, 'val_acc': val_acc_list, 'train_acc': train_acc_list, 'model_sparsity': model_sparsity_list})
 
         if parser_args.results_filename:
             results_filename = parser_args.results_filename
