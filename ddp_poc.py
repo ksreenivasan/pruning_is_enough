@@ -14,7 +14,7 @@ import re
 
 from torch.nn.parallel import DistributedDataParallel as DDP
 from ddp_args_helper import parser_args
-from ddp_utils import do_something
+from ddp_utils import do_something_outside
 
 def setup(rank, world_size):
     os.environ['MASTER_ADDR'] = '127.0.0.1'
@@ -99,7 +99,7 @@ def demo_basic(rank, world_size):
 
     for epoch in range(15):
         print("Local Rank: {}, Epoch: {}, Training ...".format(rank, epoch))
-        print("Local Rank: {} | Parser args: gpu={}, Name={}".format(parser_args.gpu, parser_args.name))
+        print("Local Rank: {} | Parser args: gpu={}, Name={}".format(rank, parser_args.gpu, parser_args.name))
         if epoch % 3 == 0:
             # prune model
             print("Rank: {} | Gonna try to prune model".format(rank))
@@ -133,7 +133,7 @@ def demo_basic(rank, world_size):
             optimizer.step()
         print("End of epoch total batch sizes: {}".format(total_data_size))
 
-        do_something_outside()
+        do_something_outside(rank)
     # optimizer.zero_grad()
     # outputs = ddp_model(torch.randn(20, 10))
     # labels = torch.randn(20, 5).to(rank)
