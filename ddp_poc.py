@@ -62,6 +62,8 @@ def get_model_norm(model):
 def demo_basic(rank, world_size):
     print(f"Running basic DDP example on rank {rank}.")
     print("Parser args: gpu={}, name={}".format(parser_args.gpu, parser_args.name))
+    print("Setting gpu now, let's see what happens")
+    parser_args.gpu = rank
     setup(rank, world_size)
 
     # create model and move it to GPU with id rank
@@ -96,6 +98,7 @@ def demo_basic(rank, world_size):
 
     for epoch in range(15):
         print("Local Rank: {}, Epoch: {}, Training ...".format(rank, epoch))
+        print("Local Rank: {} | Parser args: gpu={}, Name={}".format(parser_args.gpu, parser_args.name))
         if epoch % 3 == 0:
             # prune model
             print("Rank: {} | Gonna try to prune model".format(rank))

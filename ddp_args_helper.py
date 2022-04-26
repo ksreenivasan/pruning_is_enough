@@ -19,7 +19,7 @@ class ArgsHelper:
         )
         parser.add_argument(
             "--name",
-            default=None,
+            default="blah",
             type=str,
             help="Name of experiment"
         )
@@ -28,7 +28,6 @@ class ArgsHelper:
             args = parser.parse_args("")
         else:
             args = parser.parse_args()
-        self.get_config(args, jupyter_mode)
 
         return args
 
