@@ -72,7 +72,7 @@ def main_worker(gpu, ngpus_per_node):
     scheduler = get_scheduler(optimizer, parser_args.lr_policy)
     # lr_policy = get_policy(parser_args.lr_policy)(optimizer, parser_args)
     if parser_args.label_smoothing is None:
-        criterion = nn.CrossEntropyLoss().cuda()
+        criterion = nn.CrossEntropyLoss()
     else:
         criterion = LabelSmoothing(smoothing=parser_args.label_smoothing)
         # if isinstance(model, nn.parallel.DistributedDataParallel):

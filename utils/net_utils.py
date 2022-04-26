@@ -563,7 +563,7 @@ def get_regularization_loss(model, regularizer='L2', lmbda=1, alpha=1, alpha_pri
     def get_special_reg_sum(layer):
         # reg_loss =  \sum_{i} w_i^2 * p_i(1-p_i)
         # NOTE: alpha = alpha' = 1 here. Change if needed.
-        reg_sum = torch.tensor(0.).cuda()
+        reg_sum = torch.tensor(0.).to(parser_args.gpu)
         w_i = layer.weight
         p_i = layer.scores
         reg_sum += torch.sum(torch.pow(w_i, 2) *
@@ -576,7 +576,7 @@ def get_regularization_loss(model, regularizer='L2', lmbda=1, alpha=1, alpha_pri
         return reg_sum
 
     #pdb.set_trace()
-    regularization_loss = torch.tensor(0.).cuda()
+    regularization_loss = torch.tensor(0.).to(parser_args.gpu)
     if regularizer == 'L2':
         # reg_loss =  ||p||_2^2
         for name, params in model.named_parameters():
