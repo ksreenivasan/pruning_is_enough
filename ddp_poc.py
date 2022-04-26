@@ -13,6 +13,8 @@ from torch.utils.data import DataLoader
 import re
 
 from torch.nn.parallel import DistributedDataParallel as DDP
+from ddp_args_helper import parser_args
+from ddp_utils import do_something_outside
 
 def setup(rank, world_size):
     os.environ['MASTER_ADDR'] = '127.0.0.1'
@@ -60,6 +62,9 @@ def get_model_norm(model):
 
 def demo_basic(rank, world_size):
     print(f"Running basic DDP example on rank {rank}.")
+    print("Parser args: gpu={}, name={}".format(parser_args.gpu, parser_args.name))
+    print("Setting gpu now, let's see what happens")
+    parser_args.gpu = rank
     setup(rank, world_size)
 
     # create model and move it to GPU with id rank
@@ -94,6 +99,7 @@ def demo_basic(rank, world_size):
 
     for epoch in range(15):
         print("Local Rank: {}, Epoch: {}, Training ...".format(rank, epoch))
+        print("Local Rank: {} | Parser args: gpu={}, Name={}".format(rank, parser_args.gpu, parser_args.name))
         if epoch % 3 == 0:
             # prune model
             print("Rank: {} | Gonna try to prune model".format(rank))
@@ -126,6 +132,8 @@ def demo_basic(rank, world_size):
             loss.backward()
             optimizer.step()
         print("End of epoch total batch sizes: {}".format(total_data_size))
+
+        do_something_outside(rank)
     # optimizer.zero_grad()
     # outputs = ddp_model(torch.randn(20, 10))
     # labels = torch.randn(20, 5).to(rank)
