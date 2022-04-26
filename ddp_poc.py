@@ -139,7 +139,7 @@ def demo_basic(rank, world_size):
     print("Local rank: {} | Entering barrier".format(rank))
     dist.barrier()
     print("Local rank: {} | Past barrier".format(rank))
-    cp_model = copy.deepcopy(model)
+    cp_model = copy.deepcopy(ddp_model)
     print("Local rank: {} | Copied Model".format(rank))
 
     optimizer = optim.SGD(cp_model.parameters(), lr=0.1, momentum=0.9, weight_decay=1e-5)
