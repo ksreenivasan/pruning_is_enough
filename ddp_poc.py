@@ -14,6 +14,7 @@ import re
 
 from torch.nn.parallel import DistributedDataParallel as DDP
 from ddp_args_helper import parser_args
+from ddp_utils import do_something
 
 def setup(rank, world_size):
     os.environ['MASTER_ADDR'] = '127.0.0.1'
@@ -131,6 +132,8 @@ def demo_basic(rank, world_size):
             loss.backward()
             optimizer.step()
         print("End of epoch total batch sizes: {}".format(total_data_size))
+
+        do_something_outside()
     # optimizer.zero_grad()
     # outputs = ddp_model(torch.randn(20, 10))
     # labels = torch.randn(20, 5).to(rank)
