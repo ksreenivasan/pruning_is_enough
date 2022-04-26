@@ -18,7 +18,7 @@ import torch.nn.parallel
 import torch.backends.cudnn as cudnn
 import torch.optim
 import torch.utils.data
-import torch.utils.data.distributed
+import torch.utils.data.distributed as dist
 import torch.multiprocessing as mp
 
 import sys

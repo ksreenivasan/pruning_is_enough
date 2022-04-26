@@ -15,6 +15,7 @@ import re
 from torch.nn.parallel import DistributedDataParallel as DDP
 from ddp_args_helper import parser_args
 from ddp_utils import do_something_outside
+import copy
 
 def setup(rank, world_size):
     os.environ['MASTER_ADDR'] = '127.0.0.1'
@@ -97,7 +98,7 @@ def demo_basic(rank, world_size):
 
     device = torch.device("cuda:{}".format(rank))
 
-    for epoch in range(15):
+    for epoch in range(5):
         print("Local Rank: {}, Epoch: {}, Training ...".format(rank, epoch))
         print("Local Rank: {} | Parser args: gpu={}, Name={}".format(rank, parser_args.gpu, parser_args.name))
         if epoch % 3 == 0:
@@ -134,11 +135,25 @@ def demo_basic(rank, world_size):
         print("End of epoch total batch sizes: {}".format(total_data_size))
 
         do_something_outside(rank)
-    # optimizer.zero_grad()
-    # outputs = ddp_model(torch.randn(20, 10))
-    # labels = torch.randn(20, 5).to(rank)
-    # loss_fn(outputs, labels).backward()
-    # optimizer.step()
+
+    print("Local rank: {} | Entering barrier".format(rank))
+    dist.barrier()
+    print("Local rank: {} | Past barrier".format(rank))
+    cp_model = copy.deepcopy(model)
+    print("Local rank: {} | Copied Model".format(rank))
+
+    for data in train_loader:
+        print("Rank: {} | Copied Model Norm: {}".format(rank, get_model_norm(cp_model)))
+        inputs, labels = data[0].to(device).reshape(-1, 32*32*3), data[1].to(device)
+        # print("Device: {} | Batch Size: {} | Label sum: {}".format(rank, data[1].shape[0], torch.sum(data[1])))
+        total_data_size[rank] += data[1].shape[0]
+        optimizer.zero_grad()
+        outputs = cp_model(inputs)
+        loss = criterion(outputs, labels)
+        loss.backward()
+        optimizer.step()
+    print("End of epoch total batch sizes: {}".format(total_data_size))
+
     cleanup()
 
 

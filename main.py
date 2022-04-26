@@ -276,6 +276,8 @@ def main_worker(gpu, ngpus_per_node):
 
     # finetune weights
     # DDP_TODO: Check how DDP works with copy deepcopy
+    dist.barrier()
+
     cp_model = copy.deepcopy(model)
     if not parser_args.skip_fine_tune:
         if (parser_args.multiprocessing_distributed and parser_args.gpu == 0) or not parser_args.multiprocessing_distributed:
