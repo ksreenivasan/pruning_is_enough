@@ -87,7 +87,7 @@ def train(train_loader, model, criterion, optimizer, epoch, args, writer, scaler
 
         # compute gradient and do SGD step
         optimizer.zero_grad()
-        import ipdb; ipdb.set_trace()
+        #import ipdb; ipdb.set_trace()
         if scaler is None:
             loss.backward()
             optimizer.step()
