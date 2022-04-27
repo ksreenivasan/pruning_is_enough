@@ -1,13 +1,13 @@
 # ===== warm short IMP ===== #
 
-subfd="imp_resnet20_sp0_59"
+subfd="imp_resnet32_"
 # subfd="cifar_resnet_check_sparse_mask_1_4_at_init"
 n_gpu=0
 python imp_main.py \
---config configs/imp/resnet20.yml \
+--config configs/imp/resnet32_cifar100.yml \
 --imp-rounds 30 \
 --gpu $n_gpu \
---subfolder $subfd > imp_log 2>&1
+--subfolder $subfd #> imp_log 2>&1
 
 
 

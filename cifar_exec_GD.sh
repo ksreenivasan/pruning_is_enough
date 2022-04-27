@@ -45,31 +45,26 @@ done
 
 
 
-
 # CIFAR-100, ResNet-32
 :<<BLOCK
 # Using validation to figure out hyperparams
 # NOTE: make sure to delete/comment subfolder from the config file or else it may not work
 #conf_file="configs/training/resnet32/cifar100_resnet32_training"
 #conf_file="configs/sr/resnet32/cifar100_resnet32_sr"
-#conf_file="configs/sr/resnet32/cifar100_resnet32_sr_debug"
-#conf_file="configs/imp/resnet32_cifar100"
-#conf_file="configs/imp/mobilenet"
-#conf_file="configs/hypercube/resnet32/double/sparsity_5"
-conf_file="configs/ep/resnet32/cifar100_sparsity_2"
+conf_file="configs/hypercube/resnet32/double/sparsity_0_5"
+#conf_file="configs/ep/resnet32/cifar100_sparsity_0_5"
 conf_end=".yml"
-log_root="resnet32_cifar100_ep_2_"
+log_root="resnet32_cifar100_ep_0_5_"
 log_end="_log"
-subfolder_root="resnet32_cifar100_ep_2_"
+subfolder_root="resnet32_cifar100_ep_0_5_"
 
 for trial in 1
 do
     python main.py \
-    --gpu 0 \
+    --gpu 1 \
     --config "$conf_file$conf_end" \
     --subfolder "$subfolder_root$trial" > "$log_root$trial$log_end" 2>&1 &
 
-    #--smart_ratio 0.98 \
     
     #python main.py \
     #--config "$conf_file$conf_end" \
@@ -77,8 +72,32 @@ do
     #--invert-sanity-check \
     #--skip-sanity-checks \
     #--subfolder "invert_$subfolder_root$trial" > "invert_$log_root$trial$log_end" 2>&1 &
+    #    --smart_ratio 0.995 \
+
 done
+
+#BLOCK
+#conf_file="configs/sr/resnet32/cifar100_resnet32_sr_debug"
+
+:<<BLOCK
+conf_file="configs/imp/resnet32_cifar100"
+conf_end=".yml"
+log_root="resnet32_cifar100_imp_extended_"
+log_end="_log"
+subfolder_root="resnet32_cifar100_imp_extended_"
+
+for trial in 1
+do
+    python imp_main.py \
+    --gpu 1 \
+    --imp-rounds 30 \
+    --config "$conf_file$conf_end" \
+    --subfolder "$subfolder_root$trial" > "$log_root$trial$log_end" 2>&1 &
+done
+#    --imp-no-rewind \
 BLOCK
+
+
 
 
 
