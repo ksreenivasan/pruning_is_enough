@@ -28,7 +28,7 @@ bn_type: NonAffineBatchNorm
 init: signed_constant
 mode: fan_in
 nonlinearity: relu
-prune_rate: 0.014
+prune_rate: 0.005
 scale_fan: True
 freeze_weights: True
 
