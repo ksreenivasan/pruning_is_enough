@@ -46,13 +46,14 @@ def main_worker(gpu, ngpus_per_node):
             result_root = result_subroot + '/results_' + idty_str + '/'
         else:
             result_root = 'results/results_' + idty_str + '/'
-    else:
-        idty_str = get_idty_str(parser_args)
-        result_root = 'results/results_' + idty_str + '/'
 
         if not os.path.isdir(result_root):
             os.mkdir(result_root)
         print_model(model, parser_args)
+    else:
+        idty_str = get_idty_str(parser_args)
+        result_root = 'results/results_' + idty_str + '/'
+
 
     if parser_args.weight_training:
         model = round_model(model, round_scheme="all_ones", noise=parser_args.noise,
