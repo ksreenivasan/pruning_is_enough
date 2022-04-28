@@ -26,6 +26,10 @@ def train(train_loader, model, criterion, optimizer, epoch, args, writer, scaler
     #    [batch_time, data_time, losses, top1, top5],
     #    prefix=f"GPU:[{args.gpu}] | Epoch: [{epoch}]",
     # )
+    top1 = 0
+    top5 = 0
+    top10 = 0
+    num_images = 0
 
     # switch to train mode
     model.train()
@@ -33,16 +37,16 @@ def train(train_loader, model, criterion, optimizer, epoch, args, writer, scaler
     batch_size = train_loader.batch_size
     num_batches = len(train_loader)
     end = time.time()
-    for i, (images, target) in tqdm.tqdm(
-        enumerate(train_loader), ascii=True, total=len(train_loader)
-    ):
+    # for i, (images, target) in tqdm.tqdm(
+    #     enumerate(train_loader), ascii=True, total=len(train_loader)
+    # ):
+    for i, (images, target) in enumerate(train_loader):
         # measure data loading time
-        data_time.update(time.time() - end)
-        #print(images.shape, target.shape)
+        data_time = time.time() - end
+        # print("Data Time: {}".format(data_time))
+        # print(images.shape, target.shape)
 
-        if args.gpu is not None:
-            images = images.cuda(args.gpu, non_blocking=True)
-
+        images = images.cuda(args.gpu, non_blocking=True)
         target = target.cuda(args.gpu, non_blocking=True)
 
         # update score thresholds for global ep
@@ -80,10 +84,15 @@ def train(train_loader, model, criterion, optimizer, epoch, args, writer, scaler
 
         # measure accuracy and record loss
         acc1, acc5, acc10 = accuracy(output, target, topk=(1, 5, 10))
-        losses.update(loss.item(), images.size(0))
-        top1.update(acc1.item(), images.size(0))
-        top5.update(acc5.item(), images.size(0))
-        top10.update(acc10.item(), images.size(0))
+        # losses.update(loss.item(), images.size(0))
+        # top1.update(acc1.item(), images.size(0))
+        # top5.update(acc5.item(), images.size(0))
+        # top10.update(acc10.item(), images.size(0))
+        # compute weighted sum for each accuracy so we can average it later
+        top1 += acc1.item() * images.size(0)
+        top5 += acc5.item() * images.size(0)
+        top10 += acc10.item() * images.size(0)
+        num_images += images.size(0)
 
         # compute gradient and do SGD step
         optimizer.zero_grad()
@@ -96,14 +105,17 @@ def train(train_loader, model, criterion, optimizer, epoch, args, writer, scaler
             scaler.update()
 
         # measure elapsed time
-        batch_time.update(time.time() - end)
+        # batch_time.update(time.time() - end)
+        batch_time = time.time() - end
         end = time.time()
 
         if i % args.print_freq == 0:
             t = (num_batches * epoch + i) * batch_size
-            progress.display(i)
-            progress.write_to_tensorboard(
-                writer, prefix="train", global_step=t)
+            # progress.display(i)
+            # progress.write_to_tensorboard(
+            #     writer, prefix="train", global_step=t)
+            print("GPU:{} | Epoch: {} | loss={} | Batch Time={}".format(parser_args.gpu, epoch, loss.item(), acc1.item()), batch_time)
+
 
     # before completing training, clean up model based on latest scores
     # update score thresholds for global ep
@@ -116,7 +128,7 @@ def train(train_loader, model, criterion, optimizer, epoch, args, writer, scaler
                 with torch.no_grad():
                     scores.data = torch.clamp(scores.data, 0.0, 1.0)
 
-    return top1.avg, top5.avg, top10.avg, regularization_loss.item()
+    return top1/num_images, top5/num_images, top10/num_images, regularization_loss.item()
 
 
 def validate(val_loader, model, criterion, args, writer, epoch):
@@ -128,18 +140,20 @@ def validate(val_loader, model, criterion, args, writer, epoch):
     # progress = ProgressMeter(
     #    len(val_loader), [batch_time, losses, top1, top5, top10], prefix="Test: "
     # )
+    top1 = 0
+    top5 = 0
+    top10 = 0
 
     # switch to evaluate mode
     model.eval()
 
     with torch.no_grad():
         end = time.time()
-        for i, (images, target) in tqdm.tqdm(
-            enumerate(val_loader), ascii=True, total=len(val_loader)
-        ):
-            if args.gpu is not None:
-                images = images.cuda(args.gpu, non_blocking=True)
-
+        # for i, (images, target) in tqdm.tqdm(
+        #     enumerate(val_loader), ascii=True, total=len(val_loader)
+        # ):
+        for i, (images, target) in enumerate(val_loader):
+            images = images.cuda(args.gpu, non_blocking=True)
             target = target.cuda(args.gpu, non_blocking=True)
 
             #print(images.shape, target.shape)
@@ -151,26 +165,33 @@ def validate(val_loader, model, criterion, args, writer, epoch):
 
             # measure accuracy and record loss
             acc1, acc5, acc10 = accuracy(output, target, topk=(1, 5, 10))
-            losses.update(loss.item(), images.size(0))
-            top1.update(acc1.item(), images.size(0))
-            top5.update(acc5.item(), images.size(0))
-            top10.update(acc10.item(), images.size(0))
+            # losses.update(loss.item(), images.size(0))
+            # top1.update(acc1.item(), images.size(0))
+            # top5.update(acc5.item(), images.size(0))
+            # top10.update(acc10.item(), images.size(0))
+            # compute weighted sum for each accuracy so we can average it later
+            top1 += acc1.item() * images.size(0)
+            top5 += acc5.item() * images.size(0)
+            top10 += acc10.item() * images.size(0)
+            num_images += images.size(0)
 
             # measure elapsed time
-            batch_time.update(time.time() - end)
+            # batch_time.update(time.time() - end)
+            batch_time = time.time() - end
             end = time.time()
 
             if i % args.print_freq == 0:
-                progress.display(i)
+                # progress.display(i)
+                print("GPU:{} | Epoch: {} | loss={} | Batch Time={}".format(parser_args.gpu, epoch, loss.item(), acc1.item()), batch_time)
 
-        progress.display(len(val_loader))
+        # progress.display(len(val_loader))
 
-        if writer is not None:
-            progress.write_to_tensorboard(
-                writer, prefix="test", global_step=epoch)
+        # if writer is not None:
+        #     progress.write_to_tensorboard(
+        #         writer, prefix="test", global_step=epoch)
 
-    print("Model top1 Accuracy: {}".format(top1.avg))
-    return top1.avg, top5.avg, top10.avg
+    print("Model top1 Accuracy: {}".format(top1/num_images))
+    return top1/num_images, top5/num_images, top10/num_images
 
 
 def modifier(args, epoch, model):

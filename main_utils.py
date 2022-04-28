@@ -25,7 +25,7 @@ import sys
 import re
 
 from utils.conv_type import FixedSubnetConv, SampleSubnetConv
-from utils.logging import AverageMeter, ProgressMeter
+# from utils.logging import AverageMeter, ProgressMeter
 from utils.net_utils import (
     set_model_prune_rate,
     freeze_model_weights,
@@ -349,7 +349,8 @@ def finetune(model, parser_args, data, criterion, old_epoch_list, old_test_acc_b
         train_acc1, train_acc5, train_acc10, reg_loss = train(
             data.train_loader, model, criterion, optimizer, epoch, parser_args, writer=writer
         )
-        train_time.update((time.time() - start_train) / 60)
+        # train_time.update((time.time() - start_train) / 60)
+        train_time = (time.time() - start_train) / 60
 
         # evaluate on validation set
         if (parser_args.multiprocessing_distributed and parser_args.gpu == 0) or not parser_args.multiprocessing_distributed:
@@ -358,7 +359,8 @@ def finetune(model, parser_args, data, criterion, old_epoch_list, old_test_acc_b
                 data.val_loader, model, criterion, parser_args, writer, epoch)
             val_acc1, val_acc5, val_acc10 = validate(
                 data.actual_val_loader, model, criterion, parser_args, writer, epoch)
-            validation_time.update((time.time() - start_validation) / 60)
+            # validation_time.update((time.time() - start_validation) / 60)
+            validation_time = (time.time() - start_validation) / 60
             # copy & paste the sparsity of prev. epoch
             avg_sparsity = model_sparsity_list[-1]
 
@@ -371,12 +373,12 @@ def finetune(model, parser_args, data, criterion, old_epoch_list, old_test_acc_b
             reg_loss_list.append(reg_loss)
             model_sparsity_list.append(avg_sparsity)
 
-            epoch_time.update((time.time() - end_epoch) / 60)
-            progress_overall.display(epoch)
-            progress_overall.write_to_tensorboard(
-                writer, prefix="diagnostics", global_step=epoch
-            )
-            writer.add_scalar("test/lr", cur_lr, epoch)
+            # epoch_time.update((time.time() - end_epoch) / 60)
+            # progress_overall.display(epoch)
+            # progress_overall.write_to_tensorboard(
+            #     writer, prefix="diagnostics", global_step=epoch
+            # )
+            # writer.add_scalar("test/lr", cur_lr, epoch)
             end_epoch = time.time()
 
             results_df = pd.DataFrame({'epoch': epoch_list, 'test_acc_before_rounding': test_acc_before_round_list, 'test_acc': test_acc_list, 'val_acc': val_acc_list, 'train_acc': train_acc_list,
@@ -439,12 +441,16 @@ def get_settings(parser_args):
     parser_args.ckpt_base_dir = ckpt_base_dir
     writer = SummaryWriter(log_dir=log_base_dir)
     # writer = None
-    epoch_time = AverageMeter("epoch_time", ":.4f", write_avg=False)
-    validation_time = AverageMeter("validation_time", ":.4f", write_avg=False)
-    train_time = AverageMeter("train_time", ":.4f", write_avg=False)
-    progress_overall = ProgressMeter(
-        1, [epoch_time, validation_time, train_time], prefix="Overall Timing"
-    )
+    # epoch_time = AverageMeter("epoch_time", ":.4f", write_avg=False)
+    # validation_time = AverageMeter("validation_time", ":.4f", write_avg=False)
+    # train_time = AverageMeter("train_time", ":.4f", write_avg=False)
+    # progress_overall = ProgressMeter(
+    #     1, [epoch_time, validation_time, train_time], prefix="Overall Timing"
+    # )
+    epoch_time = 0
+    validation_time = 0
+    train_time = 0
+    progress_overall = None
 
     return run_base_dir, ckpt_base_dir, log_base_dir, writer, epoch_time, validation_time, train_time, progress_overall
 
