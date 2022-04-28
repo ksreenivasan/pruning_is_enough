@@ -46,6 +46,9 @@ def main_worker(gpu, ngpus_per_node):
             result_root = result_subroot + '/results_' + idty_str + '/'
         else:
             result_root = 'results/results_' + idty_str + '/'
+    else:
+        idty_str = get_idty_str(parser_args)
+        result_root = 'results/results_' + idty_str + '/'
 
         if not os.path.isdir(result_root):
             os.mkdir(result_root)
@@ -266,19 +269,21 @@ def main_worker(gpu, ngpus_per_node):
                 results_filename = result_root + 'acc_and_sparsity.csv'
             print("Writing results into: {}".format(results_filename))
             results_df.to_csv(results_filename, index=False)
+    print("Local rank: {} | About to enter save model logic".format(parser_args.gpu))
+    if (parser_args.multiprocessing_distributed and parser_args.gpu == 0) or not parser_args.multiprocessing_distributed:
+        # save checkpoint before fine-tuning
+        # torch.save(model.state_dict(), result_root + 'model_before_finetune.pth')
 
-        if (parser_args.multiprocessing_distributed and parser_args.gpu == 0) or not parser_args.multiprocessing_distributed:
-            # save checkpoint before fine-tuning
-            torch.save(model.state_dict(), result_root + 'model_before_finetune.pth')
-
-            print("\n\nHigh accuracy subnetwork found! Rest is just finetuning")
-            print_time()
+        print("\n\nHigh accuracy subnetwork found! Rest is just finetuning")
+        print("Local rank: {}".format(parser_args.gpu))
+        print_time()
 
     # finetune weights
     # DDP works surprisingly well with copy deepcopy. Might cause memory issues TODO
-    print("TORCH BARRIER: GPU:{}".format(parser_args.gpu))
-    dist.barrier()
-    print("CLEARED TORCH BARRIER: GPU:{}".format(parser_args.gpu))
+    if parser_args.multiprocessing_distributed:
+        print("TORCH BARRIER: GPU:{}".format(parser_args.gpu))
+        dist.barrier()
+        print("CLEARED TORCH BARRIER: GPU:{}".format(parser_args.gpu))
 
     cp_model = copy.deepcopy(model)
     if not parser_args.skip_fine_tune:
@@ -296,9 +301,10 @@ def main_worker(gpu, ngpus_per_node):
         if (parser_args.multiprocessing_distributed and parser_args.gpu == 0) or not parser_args.multiprocessing_distributed:
             print("Skipping finetuning!!!")
 
-    print("TORCH BARRIER: GPU:{}".format(parser_args.gpu))
-    dist.barrier()
-    print("CLEARED TORCH BARRIER: GPU:{}".format(parser_args.gpu))
+    if parser_args.multiprocessing_distributed:
+        print("TORCH BARRIER: GPU:{}".format(parser_args.gpu))
+        dist.barrier()
+        print("CLEARED TORCH BARRIER: GPU:{}".format(parser_args.gpu))
 
     if not parser_args.skip_sanity_checks:
         do_sanity_checks(model, parser_args, data, criterion, epoch_list, test_acc_before_round_list,

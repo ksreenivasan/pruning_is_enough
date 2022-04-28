@@ -95,9 +95,10 @@ def do_sanity_checks(model, parser_args, data, criterion, epoch_list, test_acc_b
     # do the sanity check for shuffled mask/weights, reinit weights
     print("Sanity Check 1: Weight Reinit")
 
-    print("TORCH BARRIER: GPU:{}".format(parser_args.gpu))
-    dist.barrier()
-    print("CLEARED TORCH BARRIER: GPU:{}".format(parser_args.gpu))
+    if parser_args.multiprocessing_distributed:
+        print("TORCH BARRIER: GPU:{}".format(parser_args.gpu))
+        dist.barrier()
+        print("CLEARED TORCH BARRIER: GPU:{}".format(parser_args.gpu))
 
     cp_model = copy.deepcopy(model)
     cp_model = finetune(cp_model, parser_args, data, criterion, epoch_list, test_acc_before_round_list, test_acc_list, val_acc_list, train_acc_list,
@@ -111,9 +112,10 @@ def do_sanity_checks(model, parser_args, data, criterion, epoch_list, test_acc_b
     '''
     print("Sanity Check 2: Mask Reshuffle")
 
-    print("TORCH BARRIER: GPU:{}".format(parser_args.gpu))
-    dist.barrier()
-    print("CLEARED TORCH BARRIER: GPU:{}".format(parser_args.gpu))
+    if parser_args.multiprocessing_distributed:
+        print("TORCH BARRIER: GPU:{}".format(parser_args.gpu))
+        dist.barrier()
+        print("CLEARED TORCH BARRIER: GPU:{}".format(parser_args.gpu))
 
     cp_model = copy.deepcopy(model)
     cp_model = finetune(cp_model, parser_args, data, criterion, epoch_list, test_acc_before_round_list, test_acc_list, val_acc_list, train_acc_list,
@@ -279,9 +281,10 @@ def finetune(model, parser_args, data, criterion, old_epoch_list, old_test_acc_b
     # switch to weight training mode (turn on the requires_grad for weight/bias, and turn off the requires_grad for other parameters)
     model = switch_to_wt(model)
 
-    print("TORCH BARRIER: GPU:{}".format(parser_args.gpu))
-    dist.barrier()
-    print("CLEARED TORCH BARRIER: GPU:{}".format(parser_args.gpu))
+    if parser_args.multiprocessing_distributed:
+        print("TORCH BARRIER: GPU:{}".format(parser_args.gpu))
+        dist.barrier()
+        print("CLEARED TORCH BARRIER: GPU:{}".format(parser_args.gpu))
 
     # not to use score regulaization during the weight training
     parser_args.regularization = False

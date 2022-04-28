@@ -37,8 +37,6 @@ init: signed_constant
 score_init: unif #skew #half #bimodal #skew # bern
 scale_fan: False #True
 
-
-
 # ===== Rounding ===== #
 round: naive 
 noise: True

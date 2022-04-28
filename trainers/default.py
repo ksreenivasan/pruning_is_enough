@@ -1,11 +1,11 @@
 import time
 import torch
-import tqdm
+# import tqdm
 import copy
 import pdb
 
 from utils.eval_utils import accuracy
-from utils.logging import AverageMeter, ProgressMeter
+# from utils.logging import AverageMeter, ProgressMeter
 from utils.net_utils import get_regularization_loss, prune, get_layers
 
 from torch import optim
@@ -15,17 +15,17 @@ __all__ = ["train", "validate", "modifier"]
 
 
 def train(train_loader, model, criterion, optimizer, epoch, args, writer, scaler=None):
-    batch_time = AverageMeter("Time", ":6.3f")
-    data_time = AverageMeter("Data", ":6.3f")
-    losses = AverageMeter("Loss", ":.3f")
-    top1 = AverageMeter("Acc@1", ":6.2f")
-    top5 = AverageMeter("Acc@5", ":6.2f")
-    top10 = AverageMeter("Acc@10", ":6.2f")
-    progress = ProgressMeter(
-        len(train_loader),
-        [batch_time, data_time, losses, top1, top5],
-        prefix=f"Epoch: [{epoch}]",
-    )
+    # batch_time = AverageMeter("Time", ":6.3f")
+    # data_time = AverageMeter("Data", ":6.3f")
+    # losses = AverageMeter("Loss", ":.3f")
+    # top1 = AverageMeter("Acc@1", ":6.2f")
+    # top5 = AverageMeter("Acc@5", ":6.2f")
+    # top10 = AverageMeter("Acc@10", ":6.2f")
+    # progress = ProgressMeter(
+    #    len(train_loader),
+    #    [batch_time, data_time, losses, top1, top5],
+    #    prefix=f"GPU:[{args.gpu}] | Epoch: [{epoch}]",
+    # )
 
     # switch to train mode
     model.train()
@@ -120,14 +120,14 @@ def train(train_loader, model, criterion, optimizer, epoch, args, writer, scaler
 
 
 def validate(val_loader, model, criterion, args, writer, epoch):
-    batch_time = AverageMeter("Time", ":6.3f", write_val=False)
-    losses = AverageMeter("Loss", ":.3f", write_val=False)
-    top1 = AverageMeter("Acc@1", ":6.2f", write_val=False)
-    top5 = AverageMeter("Acc@5", ":6.2f", write_val=False)
-    top10 = AverageMeter("Acc@10", ":6.2f", write_val=False)
-    progress = ProgressMeter(
-        len(val_loader), [batch_time, losses, top1, top5, top10], prefix="Test: "
-    )
+    # batch_time = AverageMeter("Time", ":6.3f", write_val=False)
+    # losses = AverageMeter("Loss", ":.3f", write_val=False)
+    # top1 = AverageMeter("Acc@1", ":6.2f", write_val=False)
+    # top5 = AverageMeter("Acc@5", ":6.2f", write_val=False)
+    # top10 = AverageMeter("Acc@10", ":6.2f", write_val=False)
+    # progress = ProgressMeter(
+    #    len(val_loader), [batch_time, losses, top1, top5, top10], prefix="Test: "
+    # )
 
     # switch to evaluate mode
     model.eval()

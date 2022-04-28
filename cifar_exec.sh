@@ -72,7 +72,7 @@ subfolder_root="ddp_debug_"
 
 for trial in 1
 do
-    CUDA_VISIBLE_DEVICES=0,2,3 python main.py \
+    CUDA_VISIBLE_DEVICES=0,1 python main.py \
     --config "$conf_file$conf_end" \
     --subfolder "$subfolder_root$trial" > "$log_root$trial$log_end" 2>&1 &
 
