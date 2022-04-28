@@ -164,7 +164,8 @@ def main_worker(gpu, ngpus_per_node):
         train_acc1, train_acc5, train_acc10, reg_loss = train(
             data.train_loader, model, criterion, optimizer, epoch, parser_args, writer=writer, scaler=scaler
         )
-        train_time.update((time.time() - start_train) / 60)
+        # train_time.update((time.time() - start_train) / 60)
+        train_time = (time.time() - start_train) / 60
         scheduler.step()
 
         # evaluate on validation set
@@ -191,7 +192,8 @@ def main_worker(gpu, ngpus_per_node):
                 acc1, acc5, acc10 = validate(
                     data.val_loader, model, criterion, parser_args, writer, epoch)
                 print('Acc: {}'.format(acc1))
-            validation_time.update((time.time() - start_validation) / 60)
+            # validation_time.update((time.time() - start_validation) / 60)
+            validation_time = (time.time() - start_validation) / 60
 
         # prune the model every T_{prune} epochs
         if not parser_args.weight_training and parser_args.algo in ['hc_iter', 'global_ep_iter'] and epoch % (parser_args.iter_period) == 0 and epoch != 0:
