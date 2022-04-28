@@ -166,6 +166,7 @@ def main_worker(gpu, ngpus_per_node):
         )
         # train_time.update((time.time() - start_train) / 60)
         train_time = (time.time() - start_train) / 60
+
         scheduler.step()
 
         # evaluate on validation set
@@ -249,13 +250,15 @@ def main_worker(gpu, ngpus_per_node):
             reg_loss_list.append(reg_loss)
             model_sparsity_list.append(avg_sparsity)
 
-            epoch_time.update((time.time() - end_epoch) / 60)
-            progress_overall.display(epoch)
-            progress_overall.write_to_tensorboard(
-                writer, prefix="diagnostics", global_step=epoch
-            )
+            # epoch_time.update((time.time() - end_epoch) / 60)
+            epoch_time = (time.time() - end_epoch) / 60
+            # progress_overall.display(epoch)
+            # progress_overall.write_to_tensorboard(
+            #     writer, prefix="diagnostics", global_step=epoch
+            # )
+            print("GPU:{} | Epoch: {} | Acc={} | Epoch Time={}".format(parser_args.gpu, epoch, acc1, epoch_time))
 
-            writer.add_scalar("test/lr", cur_lr, epoch)
+            # writer.add_scalar("test/lr", cur_lr, epoch)
             end_epoch = time.time()
 
             if parser_args.algo in ['hc', 'hc_iter']:
