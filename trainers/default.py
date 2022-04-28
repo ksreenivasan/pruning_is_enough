@@ -114,7 +114,7 @@ def train(train_loader, model, criterion, optimizer, epoch, args, writer, scaler
             # progress.display(i)
             # progress.write_to_tensorboard(
             #     writer, prefix="train", global_step=t)
-            print("GPU:{} | Epoch: {} | loss={} | Batch Time={}".format(parser_args.gpu, epoch, loss.item(), acc1.item()), batch_time)
+            print("GPU:{} | Epoch: {} | loss={} | Batch Time={}".format(args.gpu, epoch, loss.item(), acc1.item()), batch_time)
 
 
     # before completing training, clean up model based on latest scores
@@ -182,7 +182,7 @@ def validate(val_loader, model, criterion, args, writer, epoch):
 
             if i % args.print_freq == 0:
                 # progress.display(i)
-                print("GPU:{} | Epoch: {} | loss={} | Batch Time={}".format(parser_args.gpu, epoch, loss.item(), acc1.item()), batch_time)
+                print("GPU:{} | Epoch: {} | loss={} | Batch Time={}".format(args.gpu, epoch, loss.item(), acc1.item()), batch_time)
 
         # progress.display(len(val_loader))
 

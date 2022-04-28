@@ -379,6 +379,8 @@ def finetune(model, parser_args, data, criterion, old_epoch_list, old_test_acc_b
             #     writer, prefix="diagnostics", global_step=epoch
             # )
             # writer.add_scalar("test/lr", cur_lr, epoch)
+            epoch_time = (time.time() - end_epoch) / 60
+            print("GPU:{} | Epoch: {} | Acc={} | Epoch Time={}".format(parser_args.gpu, epoch, acc1, epoch_time))
             end_epoch = time.time()
 
             results_df = pd.DataFrame({'epoch': epoch_list, 'test_acc_before_rounding': test_acc_before_round_list, 'test_acc': test_acc_list, 'val_acc': val_acc_list, 'train_acc': train_acc_list,
