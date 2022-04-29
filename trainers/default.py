@@ -116,6 +116,10 @@ def train(train_loader, model, criterion, optimizer, epoch, args, writer, scaler
                 scores = params
                 with torch.no_grad():
                     scores.data = torch.clamp(scores.data, 0.0, 1.0)
+    if args.iter_ep and (epoch+1)%args.iter_period == 0:
+        args.prune_rate *= args.prune_rate # iteratively reduce the prune rate (for checking the ablation study)
+
+
 
     return top1.avg, top5.avg, top10.avg, regularization_loss.item()
 

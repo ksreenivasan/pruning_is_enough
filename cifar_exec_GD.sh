@@ -2,18 +2,22 @@
 # Ablation studies (GM vs EP) - CIFAR-10, ResNet-20, sparsity=0.5%
 conf_end=".yml"
 log_end="_log"
+
 # EP
-conf_file="configs/ablation_ep_gm_resnet20_059/ep"
-log_root="resnet20_059_ep"
-subfolder_root="resnet20_059_ep"
+# conf_file="configs/ablation_ep_gm_resnet20_059/ep"
+# log_root="resnet20_059_ep"
+# subfolder_root="resnet20_059_ep"
+
 # EP + iterative sparsity control (ep_decay)
-conf_file="configs/ablation_ep_gm_resnet20_059/ep_decay"
-log_root="resnet20_059_ep_decay"
-subfolder_root="resnet20_059_ep_decay"
+# conf_file="configs/ablation_ep_gm_resnet20_059/ep_decay"
+# log_root="resnet20_059_ep_decay_debug"
+# subfolder_root="resnet20_059_ep_decay_debug"
+
 # EP + iterative sparsity control + global sparsity constraint (global_ep_decay)
-# conf_file="configs/ablation_ep_gm_resnet20_059/global_ep_decay"
-# log_root="resnet20_059_global_ep_decay"
-# subfolder_root="resnet20_059_global_ep_decay"
+conf_file="configs/ablation_ep_gm_resnet20_059/global_ep_decay"
+log_root="resnet20_059_global_ep_decay"
+subfolder_root="resnet20_059_global_ep_decay"
+
 # GM
 # conf_file="configs/ablation_ep_gm_resnet20_059/gm"
 # log_root="resnet20_059_gm"
@@ -22,11 +26,11 @@ subfolder_root="resnet20_059_ep_decay"
 for trial in 1
 do
     python main.py \
-    --gpu 1 \
+    --gpu 3 \
     --config "$conf_file$conf_end" \
     --trial-num $trial \
     --use-full-data \
-    --subfolder "$subfolder_root$trial" #c> "$log_root$trial$log_end" 2>&1 &
+    --subfolder "$subfolder_root$trial" > "$log_root$trial$log_end" 2>&1 &
 
     # python main.py \
     # --config "$conf_file" \
