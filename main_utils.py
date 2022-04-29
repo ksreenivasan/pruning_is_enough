@@ -95,10 +95,10 @@ def do_sanity_checks(model, parser_args, data, criterion, epoch_list, test_acc_b
     # do the sanity check for shuffled mask/weights, reinit weights
     print("Sanity Check 1: Weight Reinit")
 
-    if parser_args.multiprocessing_distributed:
-        print("TORCH BARRIER: GPU:{}".format(parser_args.gpu))
-        dist.barrier()
-        print("CLEARED TORCH BARRIER: GPU:{}".format(parser_args.gpu))
+    # if parser_args.multiprocessing_distributed:
+        # print("TORCH BARRIER: GPU:{}".format(parser_args.gpu))
+        # dist.barrier()
+        # print("CLEARED TORCH BARRIER: GPU:{}".format(parser_args.gpu))
 
     cp_model = copy.deepcopy(model)
     cp_model = finetune(cp_model, parser_args, data, criterion, epoch_list, test_acc_before_round_list, test_acc_list, val_acc_list, train_acc_list,

@@ -17,7 +17,7 @@ class CIFAR10:
         use_cuda = torch.cuda.is_available()
 
         # Data loading code
-        kwargs = {"num_workers": parser_args.workers, "pin_memory": True} if use_cuda else {}
+        kwargs = {"num_workers": parser_args.num_workers, "pin_memory": True} if use_cuda else {}
 
         normalize = transforms.Normalize(
             mean=[0.491, 0.482, 0.447], std=[0.247, 0.243, 0.262]

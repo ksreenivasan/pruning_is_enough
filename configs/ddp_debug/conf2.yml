@@ -52,7 +52,7 @@ lmbda: 0.0001 # 1e-4
 
 # ===== Hardware setup ===== #
 workers: 8
-# gpu: 3
+gpu: 0
 mixed_precision: True
 
 # ===== Checkpointing ===== #
