@@ -64,16 +64,17 @@ BLOCK
 #:<<BLOCK
 # Using validation to figure out hyperparams
 # NOTE: make sure to delete/comment subfolder from the config file or else it may not work
-conf_file="configs/training/resnet32/cifar100_resnet32_training"
+conf_file="configs/ablation_ep_gm_resnet20_059/ks_global_ep_iter"
 conf_end=".yml"
-log_root="resnet32_wt_"
+log_root="ks_global_ep_iter_debug_"
 log_end="_log"
-subfolder_root="resnet32_wt_"
+subfolder_root="ks_global_ep_iter_debug_"
 
 for trial in 1
 do
     python main.py \
     --config "$conf_file$conf_end" \
+    --gpu 0 \
     --subfolder "$subfolder_root$trial" > "$log_root$trial$log_end" 2>&1 &
 
     #python main.py \
