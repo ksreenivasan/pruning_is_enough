@@ -1,8 +1,6 @@
-#subfolder: global_EP_decay
+# global iterative EP
 algo: 'global_ep_iter'
 
-# decaying EP
-target_sparsity: 0.25
 iter_period: 2
 
 # Architecture
@@ -32,6 +30,9 @@ freeze_weights: True
 prune_type: BottomK
 init: signed_constant
 scale_fan: True
+target_sparsity: 25
+# don't unflag for EP!
+unflag_before_finetune: False
 
 mode: fan_in 
 nonlinearity: relu

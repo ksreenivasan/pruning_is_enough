@@ -64,11 +64,11 @@ BLOCK
 #:<<BLOCK
 # Using validation to figure out hyperparams
 # NOTE: make sure to delete/comment subfolder from the config file or else it may not work
-conf_file="configs/ablation_ep_gm_resnet20_059/ks_global_ep_iter"
+conf_file="configs/ablation_ep_gm_resnet20_059/ks_global_ep_iter_with_reg"
 conf_end=".yml"
-log_root="ks_global_ep_iter_debug_"
+log_root="ks_global_ep_iter_with_reg_debug_"
 log_end="_log"
-subfolder_root="ks_global_ep_iter_debug_"
+subfolder_root="ks_global_ep_iter_with_reg_debug_"
 
 for trial in 1
 do

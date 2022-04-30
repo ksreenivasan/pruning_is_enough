@@ -1,6 +1,7 @@
-# EP with global sparsity constraint
-algo: 'global_ep'
+# global iterative EP
+algo: 'global_ep_iter'
 
+iter_period: 2
 
 # Architecture
 arch: resnet20
@@ -29,12 +30,15 @@ freeze_weights: True
 prune_type: BottomK
 init: signed_constant
 scale_fan: True
-target_sparsity: 25.0
+target_sparsity: 25
 # don't unflag for EP!
 unflag_before_finetune: False
-
 mode: fan_in 
 nonlinearity: relu
+
+# ===== Regularization ===== #
+regularization: L2
+lmbda: 0.1
 
 # ===== Hardware setup ===== #
 workers: 4
@@ -42,6 +46,7 @@ workers: 4
 
 # ===== Checkpointing ===== #
 checkpoint_at_prune: False #True
+
 
 # ==== sanity check ==== #
 skip_sanity_checks: True
