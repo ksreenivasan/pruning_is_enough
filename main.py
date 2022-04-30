@@ -199,7 +199,8 @@ def main_worker(gpu, ngpus_per_node):
                     save_checkpoint_at_prune(model, parser_args)
             elif parser_args.algo == 'global_ep_iter':
                 # just update prune_rate because the pruning happens on forward anyway
-                parser_args.prune_rate = 1 - (1- parser_args.prune_rate)**2
+                p = get_prune_rate(parser_args.target_sparsity, parser_args.iter_period)
+                parser_args.prune_rate =  (1-p)**np.floor((epoch+1) / parser_args.iter_period)
 
         # get model sparsity
         if not parser_args.weight_training:

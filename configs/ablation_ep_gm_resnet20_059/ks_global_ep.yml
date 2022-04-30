@@ -1,11 +1,7 @@
 #subfolder: global_EP_decay
+# EP with global sparsity constraint
 algo: 'global_ep'
 
-# decaying EP
-# iter_period: 8
-# iter_ep: True
-prune_rate: 0.75
-override_prune_rate: True
 
 # Architecture
 arch: resnet20
@@ -34,6 +30,7 @@ freeze_weights: True
 prune_type: BottomK
 init: signed_constant
 scale_fan: True
+target_sparsity: 25.0
 
 mode: fan_in 
 nonlinearity: relu
@@ -44,7 +41,6 @@ workers: 4
 
 # ===== Checkpointing ===== #
 checkpoint_at_prune: False #True
-
 
 # ==== sanity check ==== #
 skip_sanity_checks: True

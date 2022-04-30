@@ -669,10 +669,10 @@ def get_prune_rate(target_sparsity=0.5, iter_period=5):
         target_sparsity, iter_period))
     max_epochs = parser_args.epochs
     num_prune_iterations = np.floor((max_epochs-1)/iter_period)
-    # if algo is HC, iter_HC or anything that uses prune() then, prune_rate represents number of weights to prune
+    # if algo is HC, iter_HC, global_EP, global_EP_iter then, prune_rate represents number of weights to prune
     prune_rate = 1 - np.exp(np.log(target_sparsity/100)/num_prune_iterations)
-    # if algo is EP, iter_EP etc, which uses the prune(update_thresholds=True), then it represents target sparsity
-    if parser_args.algo in ['ep', 'global_ep', 'global_ep_iter']:
+    # if algo is EP, then it represents target sparsity
+    if parser_args.algo in ['ep']:
         prune_rate = 1 - prune_rate
     return prune_rate
 
