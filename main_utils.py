@@ -258,7 +258,7 @@ def finetune(model, parser_args, data, criterion, old_epoch_list, old_test_acc_b
             model = round_model(model, round_scheme=parser_args.round, noise=parser_args.noise,
                                 ratio=parser_args.noise_ratio, rank=parser_args.gpu)
             post_round_sparsity = get_model_sparsity(model)
-    elif parser_args.algo in ['ep']:
+    elif parser_args.algo in ['ep', 'global_ep', 'global_ep_iter']:
         post_round_sparsity = get_model_sparsity(model)
 
     # apply reinit/shuffling masks/weights (if necessary)

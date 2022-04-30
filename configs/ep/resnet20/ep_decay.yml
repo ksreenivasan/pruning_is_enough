@@ -1,6 +1,12 @@
-subfolder: EP
+#subfolder: EP_decay
 algo: 'ep'
 override_prune_rate: True
+
+
+# decaying EP
+iter_period: 8
+iter_ep: True
+prune_rate: 0.75
 
 # Architecture
 arch: resnet20
@@ -28,7 +34,6 @@ bn_type: NonAffineBatchNorm
 init: signed_constant
 mode: fan_in
 nonlinearity: relu
-prune_rate: 0.014
 scale_fan: True
 freeze_weights: True
 

@@ -1,13 +1,14 @@
-subfolder: EP
-algo: 'ep'
-override_prune_rate: True
+# global iterative EP
+algo: 'global_ep_iter'
+
+iter_period: 2
 
 # Architecture
 arch: resnet20
 
 # ===== Dataset ===== #
 dataset: CIFAR10
-name: resnet20_cifar10_sc
+name: resnet20_cifar10_sc_global_ep
 
 # ===== Learning Rate Policy ======== #
 optimizer: sgd
@@ -17,7 +18,7 @@ fine_tune_lr: 0.1
 fine_tune_lr_policy: cosine_lr
 
 # ===== Network training config ===== #
-epochs: 150 #150 #150
+epochs: 10
 weight_decay: 0.0005
 momentum: 0.9
 batch_size: 256
@@ -25,12 +26,16 @@ batch_size: 256
 # ===== Sparsity =========== #
 conv_type: SubnetConv
 bn_type: NonAffineBatchNorm
-init: signed_constant
-mode: fan_in
-nonlinearity: relu
-prune_rate: 0.014
-scale_fan: True
 freeze_weights: True
+prune_type: BottomK
+init: signed_constant
+scale_fan: True
+target_sparsity: 25
+# don't unflag for EP!
+unflag_before_finetune: False
+
+mode: fan_in 
+nonlinearity: relu
 
 # ===== Hardware setup ===== #
 workers: 4
@@ -38,6 +43,7 @@ workers: 4
 
 # ===== Checkpointing ===== #
 checkpoint_at_prune: False #True
+
 
 # ==== sanity check ==== #
 skip_sanity_checks: True
