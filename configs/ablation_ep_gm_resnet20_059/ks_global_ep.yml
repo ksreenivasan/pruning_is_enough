@@ -1,7 +1,6 @@
 # EP with global sparsity constraint
 algo: 'global_ep'
 
-
 # Architecture
 arch: resnet20
 
@@ -17,7 +16,7 @@ fine_tune_lr: 0.1
 fine_tune_lr_policy: cosine_lr
 
 # ===== Network training config ===== #
-epochs: 10
+epochs: 150
 weight_decay: 0.0005
 momentum: 0.9
 batch_size: 256
@@ -29,7 +28,9 @@ freeze_weights: True
 prune_type: BottomK
 init: signed_constant
 scale_fan: True
-target_sparsity: 25.0
+target_sparsity: 0.59 # 0 < target_sparsity < 100
+iter_period: 75 # set it as epochs/2? (hacky)
+
 # don't unflag for EP!
 unflag_before_finetune: False
 

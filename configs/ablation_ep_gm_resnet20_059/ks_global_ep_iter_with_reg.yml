@@ -1,7 +1,7 @@
 # global iterative EP
 algo: 'global_ep_iter'
 
-iter_period: 2
+iter_period: 5
 
 # Architecture
 arch: resnet20
@@ -18,7 +18,7 @@ fine_tune_lr: 0.1
 fine_tune_lr_policy: cosine_lr
 
 # ===== Network training config ===== #
-epochs: 10
+epochs: 150
 weight_decay: 0.0005
 momentum: 0.9
 batch_size: 256
@@ -30,7 +30,7 @@ freeze_weights: True
 prune_type: BottomK
 init: signed_constant
 scale_fan: True
-target_sparsity: 25
+target_sparsity: 0.59
 # don't unflag for EP!
 unflag_before_finetune: False
 mode: fan_in 
@@ -38,7 +38,7 @@ nonlinearity: relu
 
 # ===== Regularization ===== #
 regularization: L2
-lmbda: 0.1
+lmbda: 0.0001
 
 # ===== Hardware setup ===== #
 workers: 4
