@@ -920,7 +920,7 @@ def set_gpu(parser_args, model):
     if parser_args.multiprocessing_distributed:
         # TODO: not sure about find_unused_parameters. Need to check
         model = nn.parallel.DistributedDataParallel(
-            model, device_ids=[parser_args.gpu], find_unused_parameters=True)
+            model, device_ids=[parser_args.gpu], find_unused_parameters=False)
 
     return model
 
