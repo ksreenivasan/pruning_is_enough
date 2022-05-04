@@ -537,7 +537,7 @@ def get_mask(model):
 
 def setup_distributed(rank, ngpus_per_node):
     os.environ['MASTER_ADDR'] = '127.0.0.1'
-    os.environ['MASTER_PORT'] = '29500'
+    os.environ['MASTER_PORT'] = '29600'
 
     dist.init_process_group("nccl", rank=rank, world_size=ngpus_per_node)
 

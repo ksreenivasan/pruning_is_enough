@@ -35,7 +35,7 @@ bn_type: NonAffineBatchNorm
 freeze_weights: True
 prune_type: BottomK
 # enter target sparsity here
-target_sparsity: 5
+target_sparsity: 10
 # decide if you want to "unflag"
 unflag_before_finetune: False
 init: signed_constant
@@ -53,7 +53,7 @@ quantize_threshold: 0.5
 
 # ===== Regularization ===== #
 regularization: L2
-lmbda: 0.000001 # 1e-6
+lmbda: 0.00000005 # 5e-8
 
 # ===== Hardware setup ===== #
 workers: 12

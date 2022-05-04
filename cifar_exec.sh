@@ -64,15 +64,15 @@ BLOCK
 #:<<BLOCK
 # Using validation to figure out hyperparams
 # NOTE: make sure to delete/comment subfolder from the config file or else it may not work
-conf_file="configs/ddp_debug/conf1"
+conf_file="configs/hypercube/resnet50/imagenet/resnet50_sparsity_15"
 conf_end=".yml"
-log_root="ddp_debug_"
+log_root="resnet50_imagenet_sp15_"
 log_end="_log"
-subfolder_root="ddp_debug_"
+subfolder_root="resnet50_imagenet_sp15_"
 
 for trial in 1
 do
-    CUDA_VISIBLE_DEVICES=0,1 python main.py \
+    python main.py \
     --config "$conf_file$conf_end" \
     --subfolder "$subfolder_root$trial" > "$log_root$trial$log_end" 2>&1 &
 
