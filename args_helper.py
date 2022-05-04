@@ -878,35 +878,52 @@ class ArgsHelper:
             default=0,
             help="Use mixed precision or not"
         )
-        parser.add_argument('--transformer_emsize', type=int, default=200,
-                    help='size of word embeddings')
-        parser.add_argument('--transformer_nhid', type=int, default=200,
-                    help='number of hidden units per layer')
-        parser.add_argument('--transformer_nlayers', type=int, default=2,
-                    help='number of layers')
-        parser.add_argument('--transformer_clip', type=float, default=0.25,
-                    help='gradient clipping')
-        parser.add_argument('--transformer_bptt', type=int, default=35,
-                    help='sequence length')
-        parser.add_argument('--transformer_dropout', type=float, default=0.2,
-                    help='dropout applied to layers (0 = no dropout)')
-        parser.add_argument('--transformer_nhead', type=int, default=2,
-                    help='the number of heads in the encoder/decoder of the transformer model')
-      
+        parser.add_argument('--transformer_emsize',
+            type=int, default=200,
+            help='size of word embeddings'
+        )
+        parser.add_argument('--transformer_nhid',
+            type=int,
+            default=200,
+            help='number of hidden units per layer'
+        )
+        parser.add_argument('--transformer_nlayers',
+            type=int,
+            default=2,
+            help='number of layers'
+        )
+        parser.add_argument('--transformer_clip',
+            type=float,
+            default=0.25,
+            help='gradient clipping'
+        )
+        parser.add_argument('--transformer_bptt',
+            type=int,
+            default=35,
+            help='sequence length'
+        )
+        parser.add_argument('--transformer_dropout',
+            type=float,
+            default=0.2,
+            help='dropout applied to layers (0 = no dropout)'
+        )
+        parser.add_argument('--transformer_nhead',
+            type=int,
+            default=2,
+            help='the number of heads in the encoder/decoder of the transformer model'
+        )
         parser.add_argument(
             "--only-sanity",
             action="store_true",
             default=False,
             help="Only run sanity checks on the files in specific directory or subdirectories"
         )
-        
         parser.add_argument(
             "--invert-sanity-check",
             action="store_true",
             default=False,
             help="Enable this to run the inverted sanity check (for HC)"
         )
-
         parser.add_argument(
             "--sanity-folder",
             default=None,
@@ -914,7 +931,6 @@ class ArgsHelper:
             metavar="PATH",
             help="directory(s) to access for only sanity check",
         )
-
         parser.add_argument(
             "--sr-version",
             default=1,
@@ -926,6 +942,12 @@ class ArgsHelper:
             action="store_true",
             default=False,
             help="Enable this use full train data and not leave anything for validation"
+        )
+        parser.add_argument(
+            "--port",
+            default=29500,
+            type=int,
+            help="Specify port to use for DDP",
         )
 
         if jupyter_mode:
