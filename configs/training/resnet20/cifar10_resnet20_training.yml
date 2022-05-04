@@ -1,0 +1,42 @@
+subfolder: resnet20_cifar10_weight_training
+trial_num: 1
+
+
+# algorithm
+algo: 'hc'
+weight_training: True
+
+# Architecture
+arch: resnet20
+
+# ===== Dataset ===== #
+dataset: CIFAR10
+name: resnet20_cifar10_training
+
+# ===== Learning Rate Policy ======== #
+optimizer: sgd
+lr: 0.1
+lr_policy: multistep_lr #cosine_lr #constant_lr
+
+# ===== Network training config ===== #
+epochs: 11
+wd: 0.0001
+momentum: 0.9
+batch_size: 128
+
+weight_training: True
+
+# ===== Sparsity =========== #
+conv_type: SubnetConv
+bn_type: NonAffineBatchNorm
+freeze_weights: True
+prune_rate: -1
+init: kaiming_normal
+scale_fan: True
+
+# ===== Hardware setup ===== #
+workers: 4
+gpu: 1
+
+ckpt_at_fixed_epochs: [1, 3, 5, 10]
+skip_fine_tune: True
