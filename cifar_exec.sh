@@ -64,19 +64,21 @@ BLOCK
 #:<<BLOCK
 # Using validation to figure out hyperparams
 # NOTE: make sure to delete/comment subfolder from the config file or else it may not work
-conf_file="configs/training/resnet20/cifar10_resnet20_training"
+conf_file="configs/warm_gm/resnet20/resnet20_sp1_44_warm_gm"
 conf_end=".yml"
-log_root="ks_resnet20_wt_training"
+log_root="resnet20_warm_gm_from_epoch_"
 log_end="_log"
-subfolder_root="ks_resnet20_wt_training"
+subfolder_root="resnet20_warm_gm_from_epoch_"
+ckpt_path="model_checkpoints/resnet20_wt/wt_model_after_epoch_"
 
-for trial in 1
+for epoch in 5 10
 do
     python main.py \
     --config "$conf_file$conf_end" \
+    --pretrained "${ckpt_path}${epoch}.pth" \
     --gpu 1 \
     --use-full-data \
-    --subfolder "$subfolder_root$trial" > "$log_root$trial$log_end" 2>&1 &
+    --subfolder "$subfolder_root$epoch" > "$log_root$epoch$log_end" 2>&1 &
 
     #python main.py \
     #--config "$conf_file$conf_end" \
