@@ -924,8 +924,14 @@ class ArgsHelper:
         parser.add_argument(
             "--use-full-data",
             action="store_true",
-            default=False,
+            default=None,
             help="Enable this use full train data and not leave anything for validation"
+        )
+        parser.add_argument(
+            "--ckpt-at-fixed-epochs",
+            default=None,
+            type=str,
+            help="pass a list of epochs to load ckpt from later. Mainly for warm-GM"
         )
 
         if jupyter_mode:

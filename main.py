@@ -251,6 +251,10 @@ def main_worker(gpu, ngpus_per_node):
             writer, prefix="diagnostics", global_step=epoch
         )
 
+        if parser_args.ckpt_at_fixed_epochs:
+            if epoch in parser_args.ckpt_at_fixed_epochs:
+                torch.save(model.state_dict(), result_root + 'wt_model_after_epoch_{}.pth'.format(epoch))
+
         if parser_args.conv_type == "SampleSubnetConv":
             count = 0
             sum_pr = 0.0
