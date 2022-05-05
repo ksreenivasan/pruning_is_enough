@@ -143,6 +143,10 @@ def main_worker(gpu, ngpus_per_node):
 
     # Start training
     for epoch in range(parser_args.start_epoch, parser_args.epochs):
+        if parser_args.only_finetune:
+            print("Skipping pruning and going straight to finetune!!!")
+            break
+
         if parser_args.multiprocessing_distributed:
             data.train_loader.sampler.set_epoch(epoch)
         # lr_policy(epoch, iteration=None)
@@ -275,6 +279,7 @@ def main_worker(gpu, ngpus_per_node):
                 results_filename = result_root + 'acc_and_sparsity.csv'
             print("Writing results into: {}".format(results_filename))
             results_df.to_csv(results_filename, index=False)
+
     print("Local rank: {} | About to enter save model logic".format(parser_args.gpu))
     if (parser_args.multiprocessing_distributed and parser_args.gpu == 0) or not parser_args.multiprocessing_distributed:
         # save checkpoint before fine-tuning

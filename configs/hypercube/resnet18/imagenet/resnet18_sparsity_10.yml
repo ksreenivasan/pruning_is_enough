@@ -1,4 +1,4 @@
-# subfolder: regular_imagenet_resnet50
+subfolder: ffcv_imagenet_resnet18
 # trial_num: 1
 #lam_finetune_loss: 1
 #num_step_finetune: 5
@@ -8,27 +8,25 @@ algo: 'hc_iter'
 iter_period: 5
 
 # Architecture
-arch: ResNet50
+arch: ResNet18
 
 # ===== Dataset ===== #
-dataset: ImageNet
-name: resnet50_imagenet
-data: /home/ubuntu/ILSVRC2012/
+dataset: FfcvImageNet
+name: resnet18_ffcv
+data: /workspace/ffcv-imagenet/data/
 
 # ===== Learning Rate Policy ======== #
 optimizer: sgd
-lr: 0.4 #0.01
+lr: 0.1 #0.01
 lr_policy: cosine_lr #constant_lr #multistep_lr
-fine_tune_lr: 0.04
+fine_tune_lr: 0.01
 fine_tune_lr_policy: multistep_lr
 
 # ===== Network training config ===== #
-epochs: 88
+epochs: 50
 wd: 0.0 
 momentum: 0.9
-batch_size: 1024
-fine_tune_lr: 0.001
-fine_tune_lr_policy: multistep_lr
+batch_size: 128
 mixed_precision: True
 
 # ===== Sparsity =========== #
@@ -37,7 +35,7 @@ bn_type: NonAffineBatchNorm
 freeze_weights: True
 prune_type: BottomK
 # enter target sparsity here
-target_sparsity: 5
+target_sparsity: 10
 # decide if you want to "unflag"
 unflag_before_finetune: False
 init: signed_constant
@@ -55,12 +53,11 @@ quantize_threshold: 0.5
 
 # ===== Regularization ===== #
 regularization: L2
-lmbda: 0.000001 # 1e-6
+lmbda: 0.000001 # 1e-4 #0.00005 # 5e-5
 
 # ===== Hardware setup ===== #
-workers: 12
-multiprocessing_distributed: True
-mixed_precision: True
+workers: 4
+gpu: 0
 
 # ===== Checkpointing ===== #
 checkpoint_at_prune: False

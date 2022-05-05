@@ -282,8 +282,6 @@ class ArgsHelper:
             default=1.0,
             help="portion of additional width compared with original width"
         )
-
-
         parser.add_argument(
             "--hidden-size",
             type=int,
@@ -936,6 +934,12 @@ class ArgsHelper:
             default=1,
             type=int,
             help="smart ratio version number (1, 2, ...)",
+        )
+        parser.add_argument(
+            "--only-finetune",
+            action="store_true",
+            default=False,
+            help="Enable this to skip pruning and jump to finetune. Typically paired with --resume"
         )
         parser.add_argument(
             "--use-full-data",
