@@ -933,6 +933,12 @@ class ArgsHelper:
             type=str,
             help="pass a list of epochs to load ckpt from later. Mainly for warm-GM"
         )
+        parser.add_argument(
+            "--drop-bottom-half-weights",
+            action="store_true",
+            default=False,
+            help="Enable this drop bottom half of weights in epoch 1 when using pretrained model"
+        )
 
         if jupyter_mode:
             args = parser.parse_args("")

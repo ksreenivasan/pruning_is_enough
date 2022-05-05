@@ -139,7 +139,14 @@ def main_worker(gpu, ngpus_per_node):
     for epoch in range(parser_args.start_epoch, parser_args.epochs):
         if parser_args.multiprocessing_distributed:
             data.train_loader.sampler.set_epoch(epoch)
-        #lr_policy(epoch, iteration=None)
+
+        if parser_args.pretrained and parser_args.drop_bottom_half_weights and epoch == 1:
+            org_prune_rate = parser_args.prune_rate
+            parser_args.prune_rate = 0.5
+            print("Loaded pretrained model, so drop the bottom half of the weights in Epoch 1")
+            prune(model, only_update_scores=True)
+            parser_args.prune_rate = org_prune_rate
+        # lr_policy(epoch, iteration=None)
         modifier(parser_args, epoch, model)
         cur_lr = get_lr(optimizer)
 

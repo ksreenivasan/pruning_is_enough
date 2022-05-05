@@ -374,10 +374,10 @@ def get_score_sparsity_hc(model):
 """
 
 
-def prune(model, update_thresholds_only=False, update_scores=False):
+def prune(model, update_thresholds_only=False, update_scores=False, only_update_scores=False):
     if update_thresholds_only:
         pass
-        #print("Updating prune thresholds")
+        # print("Updating prune thresholds")
     else:
         print("Pruning Model:")
 
@@ -443,8 +443,12 @@ def prune(model, update_thresholds_only=False, update_scores=False):
                     layer.flag.data = (layer.flag.data + torch.lt(layer.scores.abs(),  # TODO
                                        torch.ones_like(layer.scores)*scores_threshold).int() == 2).int()
                 else:
-                    layer.flag.data = (layer.flag.data + torch.gt(layer.scores.abs(),  # TODO
-                                       torch.ones_like(layer.scores)*scores_threshold).int() == 2).int()
+                    if update_scores_only:
+                        layer.scores.data = torch.gt(layer.scores.abs(),
+                                       torch.ones_like(layer.scores)*scores_threshold).int()
+                    else:
+                        layer.flag.data = (layer.flag.data + torch.gt(layer.scores.abs(),  # TODO
+                                           torch.ones_like(layer.scores)*scores_threshold).int() == 2).int()
                 if update_scores:
                     layer.scores.data = layer.scores.data * layer.flag.data
                 if parser_args.bias:
@@ -452,8 +456,12 @@ def prune(model, update_thresholds_only=False, update_scores=False):
                         layer.bias_flag.data = (layer.bias_flag.data + torch.lt(layer.bias_scores, torch.ones_like(
                             layer.bias_scores)*bias_scores_threshold).int() == 2).int()
                     else:
-                        layer.bias_flag.data = (layer.bias_flag.data + torch.gt(layer.bias_scores, torch.ones_like(
-                            layer.bias_scores)*bias_scores_threshold).int() == 2).int()
+                        if update_scores_only:
+                            layer.bias_scores.data = layer.bias_scores.data + torch.gt(layer.bias_scores, torch.ones_like(
+                                layer.bias_scores)*bias_scores_threshold).int()
+                        else:
+                            layer.bias_flag.data = (layer.bias_flag.data + torch.gt(layer.bias_scores, torch.ones_like(
+                                layer.bias_scores)*bias_scores_threshold).int() == 2).int()
                     if update_scores:
                         layer.bias_scores.data = layer.bias_scores.data * layer.bias_flag.data
 
