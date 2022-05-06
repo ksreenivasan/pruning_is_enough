@@ -144,8 +144,12 @@ def main_worker(gpu, ngpus_per_node):
             org_prune_rate = parser_args.prune_rate
             parser_args.prune_rate = 0.5
             print("Loaded pretrained model, so drop the bottom half of the weights in Epoch 1")
-            prune(model, only_update_scores=True)
+            prune(model, update_scores_only=True)
             parser_args.prune_rate = org_prune_rate
+            # print("Loaded pretrained model, so randomly drop half the weights in Epoch 1")
+            # conv_layers, linear_layers = get_layers(parser_args.arch, model)
+            # for layer in (conv_layers+linear_layers):
+            #     layer.scores.data = torch.bernoulli(0.5 * torch.ones_like(layer.scores.data))
         # lr_policy(epoch, iteration=None)
         modifier(parser_args, epoch, model)
         cur_lr = get_lr(optimizer)

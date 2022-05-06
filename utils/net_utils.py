@@ -374,7 +374,7 @@ def get_score_sparsity_hc(model):
 """
 
 
-def prune(model, update_thresholds_only=False, update_scores=False, only_update_scores=False):
+def prune(model, update_thresholds_only=False, update_scores=False, update_scores_only=False):
     if update_thresholds_only:
         pass
         # print("Updating prune thresholds")
@@ -444,7 +444,7 @@ def prune(model, update_thresholds_only=False, update_scores=False, only_update_
                                        torch.ones_like(layer.scores)*scores_threshold).int() == 2).int()
                 else:
                     if update_scores_only:
-                        layer.scores.data = torch.gt(layer.scores.abs(),
+                        layer.scores.data = layer.scores.data * torch.gt(layer.scores.abs(),
                                        torch.ones_like(layer.scores)*scores_threshold).int()
                     else:
                         layer.flag.data = (layer.flag.data + torch.gt(layer.scores.abs(),  # TODO
@@ -457,7 +457,7 @@ def prune(model, update_thresholds_only=False, update_scores=False, only_update_
                             layer.bias_scores)*bias_scores_threshold).int() == 2).int()
                     else:
                         if update_scores_only:
-                            layer.bias_scores.data = layer.bias_scores.data + torch.gt(layer.bias_scores, torch.ones_like(
+                            layer.bias_scores.data = layer.bias_scores.data * torch.gt(layer.bias_scores, torch.ones_like(
                                 layer.bias_scores)*bias_scores_threshold).int()
                         else:
                             layer.bias_flag.data = (layer.bias_flag.data + torch.gt(layer.bias_scores, torch.ones_like(
