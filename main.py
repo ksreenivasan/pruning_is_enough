@@ -141,11 +141,8 @@ def main_worker(gpu, ngpus_per_node):
             data.train_loader.sampler.set_epoch(epoch)
 
         if parser_args.pretrained and parser_args.drop_bottom_half_weights and epoch == 1:
-            org_prune_rate = parser_args.prune_rate
-            parser_args.prune_rate = 0.5
             print("Loaded pretrained model, so drop the bottom half of the weights in Epoch 1")
-            prune(model, update_scores_only=True)
-            parser_args.prune_rate = org_prune_rate
+            prune(model, drop_bottom_half_weights=True)
             # print("Loaded pretrained model, so randomly drop half the weights in Epoch 1")
             # conv_layers, linear_layers = get_layers(parser_args.arch, model)
             # for layer in (conv_layers+linear_layers):

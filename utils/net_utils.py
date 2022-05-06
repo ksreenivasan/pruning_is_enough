@@ -374,7 +374,7 @@ def get_score_sparsity_hc(model):
 """
 
 
-def prune(model, update_thresholds_only=False, update_scores=False, update_scores_only=False):
+def prune(model, update_thresholds_only=False, update_scores=False, drop_bottom_half_weights=False):
     if update_thresholds_only:
         pass
         # print("Updating prune thresholds")
@@ -395,6 +395,61 @@ def prune(model, update_thresholds_only=False, update_scores=False, update_score
                                    torch.ones_like(layer.scores)*0.5).int() == 2).int()
         else:
             raise NotImplementedError
+
+    elif drop_bottom_half_weights:
+        # this workflow is primarily for the case when we start with pretrained model
+        # after 1 epoch, we want to drop bottom half of the WEIGHTS, not scores
+        # but we do this by setting the score associated with those weights to 0
+        num_active_weights = 0
+        num_active_biases = 0
+        active_weights_list = []
+        active_bias_list = []
+        for layer in (conv_layers + linear_layers):
+            num_active_weights += layer.flag.data.sum().item()
+            active_weights = (layer.weight.data[layer.flag.data == 1]).clone()
+            active_weights_list.append(active_weights)
+            if parser_args.bias:
+                num_active_biases += layer.bias_flag.data.sum().item()
+                active_biases = (
+                    layer.bias.data[layer.bias_flag.data == 1]).clone()
+                active_bias_list.append(active_biases)
+
+        number_of_weights_to_prune = np.ceil(
+            0.5 * num_active_weights).astype(int)
+        number_of_biases_to_prune = np.ceil(
+            0.5.prune_rate * num_active_biases).astype(int)
+
+        agg_weights = torch.cat(active_weights_list)
+        agg_biases = torch.cat(
+            active_bias_list) if parser_args.bias else torch.tensor([])
+
+        # if invert_sanity_check, then threshold is based on sorted scores in descending order, and we prune all scores ABOVE it
+        weight_threshold = torch.sort(
+            torch.abs(agg_weights), descending=parser_args.invert_sanity_check).values[number_of_weights_to_prune-1].item()
+
+        if parser_args.bias:
+            bias_threshold = torch.sort(
+                torch.abs(agg_bias_scores), descending=parser_args.invert_sanity_check).values[number_of_biases_to_prune-1].item()
+        else:
+            bias_scores_threshold = -1
+
+        if parser_args.invert_sanity_check:
+            weight_mask = torch.lt(layer.weight.abs(),  # TODO
+                    torch.ones_like(layer.weight)*weight_threshold).int()
+        else:
+            weight_mask = torch.gt(layer.weight.abs(),  # TODO
+                    torch.ones_like(layer.weight)*weight_threshold).int()
+
+        # apply mask to scores
+        layer.scores.data = layer.scores.data * weight_mask
+        if parser_args.bias:
+            if parser_args.invert_sanity_check:
+                bias_mask = torch.lt(layer.bias, torch.ones_like(
+                                    layer.bias)*bias_threshold).int()
+            else:
+                bias_mask = torch.gt(layer.bias, torch.ones_like(
+                                    layer.bias)*bias_threshold).int()
+            layer.bias_scores.data = layer.bias_scores.data * bias_flag
 
     # prune the bottom k of scores.abs()
     elif parser_args.prune_type == 'BottomK':
@@ -443,12 +498,8 @@ def prune(model, update_thresholds_only=False, update_scores=False, update_score
                     layer.flag.data = (layer.flag.data + torch.lt(layer.scores.abs(),  # TODO
                                        torch.ones_like(layer.scores)*scores_threshold).int() == 2).int()
                 else:
-                    if update_scores_only:
-                        layer.scores.data = layer.scores.data * torch.gt(layer.scores.abs(),
-                                       torch.ones_like(layer.scores)*scores_threshold).int()
-                    else:
-                        layer.flag.data = (layer.flag.data + torch.gt(layer.scores.abs(),  # TODO
-                                           torch.ones_like(layer.scores)*scores_threshold).int() == 2).int()
+                    layer.flag.data = (layer.flag.data + torch.gt(layer.scores.abs(),  # TODO
+                                       torch.ones_like(layer.scores)*scores_threshold).int() == 2).int()
                 if update_scores:
                     layer.scores.data = layer.scores.data * layer.flag.data
                 if parser_args.bias:
@@ -456,12 +507,8 @@ def prune(model, update_thresholds_only=False, update_scores=False, update_score
                         layer.bias_flag.data = (layer.bias_flag.data + torch.lt(layer.bias_scores, torch.ones_like(
                             layer.bias_scores)*bias_scores_threshold).int() == 2).int()
                     else:
-                        if update_scores_only:
-                            layer.bias_scores.data = layer.bias_scores.data * torch.gt(layer.bias_scores, torch.ones_like(
-                                layer.bias_scores)*bias_scores_threshold).int()
-                        else:
-                            layer.bias_flag.data = (layer.bias_flag.data + torch.gt(layer.bias_scores, torch.ones_like(
-                                layer.bias_scores)*bias_scores_threshold).int() == 2).int()
+                        layer.bias_flag.data = (layer.bias_flag.data + torch.gt(layer.bias_scores, torch.ones_like(
+                            layer.bias_scores)*bias_scores_threshold).int() == 2).int()
                     if update_scores:
                         layer.bias_scores.data = layer.bias_scores.data * layer.bias_flag.data
 
