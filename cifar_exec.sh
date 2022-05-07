@@ -64,11 +64,11 @@ BLOCK
 #:<<BLOCK
 # Using validation to figure out hyperparams
 # NOTE: make sure to delete/comment subfolder from the config file or else it may not work
-conf_file="configs/hypercube/resnet50/imagenet/resnet50_sparsity_15"
+conf_file="configs/hypercube/resnet20/resnet20_sparsity_1_44_unflagT_real"
 conf_end=".yml"
-log_root="resnet50_imagenet_sp15_"
+log_root="ddp_resnet20_sp1_4_"
 log_end="_log"
-subfolder_root="resnet50_imagenet_sp15_"
+subfolder_root="ddp_resnet20_sp1_4_"
 
 for trial in 1
 do
