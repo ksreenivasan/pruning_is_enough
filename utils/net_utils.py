@@ -417,7 +417,7 @@ def prune(model, update_thresholds_only=False, update_scores=False, drop_bottom_
         number_of_weights_to_prune = np.ceil(
             0.5 * num_active_weights).astype(int)
         number_of_biases_to_prune = np.ceil(
-            0.5.prune_rate * num_active_biases).astype(int)
+            0.5 * num_active_biases).astype(int)
 
         agg_weights = torch.cat(active_weights_list)
         agg_biases = torch.cat(
@@ -433,23 +433,24 @@ def prune(model, update_thresholds_only=False, update_scores=False, drop_bottom_
         else:
             bias_scores_threshold = -1
 
-        if parser_args.invert_sanity_check:
-            weight_mask = torch.lt(layer.weight.abs(),  # TODO
-                    torch.ones_like(layer.weight)*weight_threshold).int()
-        else:
-            weight_mask = torch.gt(layer.weight.abs(),  # TODO
-                    torch.ones_like(layer.weight)*weight_threshold).int()
-
-        # apply mask to scores
-        layer.scores.data = layer.scores.data * weight_mask
-        if parser_args.bias:
+        for layer in (conv_layers + linear_layers):
             if parser_args.invert_sanity_check:
-                bias_mask = torch.lt(layer.bias, torch.ones_like(
-                                    layer.bias)*bias_threshold).int()
+                weight_mask = torch.lt(layer.weight.abs(),  # TODO
+                        torch.ones_like(layer.weight)*weight_threshold).int()
             else:
-                bias_mask = torch.gt(layer.bias, torch.ones_like(
-                                    layer.bias)*bias_threshold).int()
-            layer.bias_scores.data = layer.bias_scores.data * bias_flag
+                weight_mask = torch.gt(layer.weight.abs(),  # TODO
+                        torch.ones_like(layer.weight)*weight_threshold).int()
+
+            # apply mask to scores
+            layer.scores.data = torch.ones_like(layer.scores.data) * weight_mask
+            if parser_args.bias:
+                if parser_args.invert_sanity_check:
+                    bias_mask = torch.lt(layer.bias, torch.ones_like(
+                                        layer.bias)*bias_threshold).int()
+                else:
+                    bias_mask = torch.gt(layer.bias, torch.ones_like(
+                                        layer.bias)*bias_threshold).int()
+                layer.bias_scores.data = torch.ones_like(layer.bias_scores.data) * bias_flag
 
     # prune the bottom k of scores.abs()
     elif parser_args.prune_type == 'BottomK':
