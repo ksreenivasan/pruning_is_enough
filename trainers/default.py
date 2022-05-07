@@ -40,6 +40,7 @@ def train(train_loader, model, criterion, optimizer, epoch, args, writer, scaler
     # for i, (images, target) in tqdm.tqdm(
     #     enumerate(train_loader), ascii=True, total=len(train_loader)
     # ):
+    print("(TRAINER)BEFORE TRAIN LOOP: GPU:{} | Epoch {} | Memory Usage: {}".format(epoch, psutil.virtual_memory()))
     for i, (images, target) in enumerate(train_loader):
         # measure data loading time
         data_time = time.time() - end
@@ -116,17 +117,19 @@ def train(train_loader, model, criterion, optimizer, epoch, args, writer, scaler
             #     writer, prefix="train", global_step=t)
             print("GPU:{} | Epoch: {} | loss={} | Batch Time={}".format(args.gpu, epoch, loss.item(), acc1.item(), batch_time))
 
-
+    print("(TRAINER)AFTER TRAIN LOOP: GPU:{} | Epoch {} | Memory Usage: {}".format(epoch, psutil.virtual_memory()))
     # before completing training, clean up model based on latest scores
     # update score thresholds for global ep
     if args.algo in ['global_ep', 'global_ep_iter']:
         prune(model, update_thresholds_only=True)
     if args.algo in ['hc', 'hc_iter', 'pt'] and not args.differentiate_clamp:
+        print("(TRAINER)BEFORE PROJECTION: GPU:{} | Epoch {} | Memory Usage: {}".format(epoch, psutil.virtual_memory()))
         for name, params in model.named_parameters():
             if "score" in name:
                 scores = params
                 with torch.no_grad():
                     scores.data = torch.clamp(scores.data, 0.0, 1.0)
+        print("(TRAINER)AFTER PROJECTION: GPU:{} | Epoch {} | Memory Usage: {}".format(epoch, psutil.virtual_memory()))
 
     return top1/num_images, top5/num_images, top10/num_images, regularization_loss.item()
 
