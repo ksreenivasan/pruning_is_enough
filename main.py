@@ -1,4 +1,5 @@
 from main_utils import *
+import psutil
 
 
 def main():
@@ -143,6 +144,7 @@ def main_worker(gpu, ngpus_per_node):
 
     # Start training
     for epoch in range(parser_args.start_epoch, parser_args.epochs):
+        print("STARTING TRAINING: Epoch {} | Memory Usage: {}".format(epoch, psutil.virtual_memory()))
         if parser_args.multiprocessing_distributed:
             data.train_loader.sampler.set_epoch(epoch)
         # lr_policy(epoch, iteration=None)
@@ -162,9 +164,11 @@ def main_worker(gpu, ngpus_per_node):
 
         # train for one epoch
         start_train = time.time()
+        print("BEFORE TRAIN LOOP: Epoch {} | Memory Usage: {}".format(epoch, psutil.virtual_memory()))
         train_acc1, train_acc5, train_acc10, reg_loss = train(
             data.train_loader, model, criterion, optimizer, epoch, parser_args, writer=writer, scaler=scaler
         )
+        print("AFTER TRAIN LOOP: Epoch {} | Memory Usage: {}".format(epoch, psutil.virtual_memory()))
         # train_time.update((time.time() - start_train) / 60)
         train_time = (time.time() - start_train) / 60
 
@@ -173,6 +177,7 @@ def main_worker(gpu, ngpus_per_node):
         # evaluate on validation set
         if (parser_args.multiprocessing_distributed and parser_args.gpu == 0) or not parser_args.multiprocessing_distributed:
             start_validation = time.time()
+            print("BEFORE VAL LOOP: Epoch {} | Memory Usage: {}".format(epoch, psutil.virtual_memory()))
             if parser_args.algo in ['hc', 'hc_iter']:
                 br_acc1, br_acc5, br_acc10 = validate(
                     data.val_loader, model, criterion, parser_args, writer, epoch)  # before rounding
@@ -196,10 +201,13 @@ def main_worker(gpu, ngpus_per_node):
                 print('Acc: {}'.format(acc1))
             # validation_time.update((time.time() - start_validation) / 60)
             validation_time = (time.time() - start_validation) / 60
+            print("AFTER VAL LOOP: Epoch {} | Memory Usage: {}".format(epoch, psutil.virtual_memory()))
 
         # prune the model every T_{prune} epochs
         if not parser_args.weight_training and parser_args.algo in ['hc_iter', 'global_ep_iter'] and epoch % (parser_args.iter_period) == 0 and epoch != 0:
+            print("BEFORE PRUNE: Epoch {} | Memory Usage: {}".format(epoch, psutil.virtual_memory()))
             prune(model)
+            print("AFTER PRUNE: Epoch {} | Memory Usage: {}".format(epoch, psutil.virtual_memory()))
             if parser_args.checkpoint_at_prune:
                 if (parser_args.multiprocessing_distributed and parser_args.gpu == 0) or not parser_args.multiprocessing_distributed:
                     save_checkpoint_at_prune(model, parser_args)
@@ -275,6 +283,7 @@ def main_worker(gpu, ngpus_per_node):
                 results_filename = result_root + 'acc_and_sparsity.csv'
             print("Writing results into: {}".format(results_filename))
             results_df.to_csv(results_filename, index=False)
+            print("AFTER TRAINING: Epoch {} | Memory Usage: {}".format(epoch, psutil.virtual_memory()))
     print("Local rank: {} | About to enter save model logic".format(parser_args.gpu))
     if (parser_args.multiprocessing_distributed and parser_args.gpu == 0) or not parser_args.multiprocessing_distributed:
         # save checkpoint before fine-tuning
