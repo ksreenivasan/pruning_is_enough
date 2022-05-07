@@ -41,7 +41,8 @@ def train(train_loader, model, criterion, optimizer, epoch, args, writer, scaler
     # for i, (images, target) in tqdm.tqdm(
     #     enumerate(train_loader), ascii=True, total=len(train_loader)
     # ):
-    print("(TRAINER)BEFORE TRAIN LOOP: GPU:{} | Epoch {} | Memory Usage: {}".format(args.gpu, epoch, psutil.virtual_memory()))
+    if args.gpu == 0:
+        print("(TRAINER)BEFORE TRAIN LOOP: GPU:{} | Epoch {} | Memory Usage: {}".format(args.gpu, epoch, psutil.virtual_memory()))
     for i, (images, target) in enumerate(train_loader):
         # measure data loading time
         data_time = time.time() - end
@@ -75,16 +76,19 @@ def train(train_loader, model, criterion, optimizer, epoch, args, writer, scaler
             raise NotImplementedError  # please check finetune_loss repo
 
         regularization_loss = torch.tensor(0)
+        if args.gpu == 0:
+            print("(TRAINER)BEFORE REGULARIZATION COMPUTATION: GPU:{} | Epoch {} | Memory Usage: {}".format(args.gpu, epoch, psutil.virtual_memory()))
         if args.regularization:
             regularization_loss =\
                 get_regularization_loss(model, regularizer=args.regularization,
                                         lmbda=args.lmbda, alpha=args.alpha,
                                         alpha_prime=args.alpha_prime)
-
+        if args.gpu == 0:
+            print("(TRAINER)BEFORE REGULARIZATION COMPUTATION: GPU:{} | Epoch {} | Memory Usage: {}".format(args.gpu, epoch, psutil.virtual_memory()))
         #print('regularization_loss: ', regularization_loss)
         loss += regularization_loss
-
-        print("(TRAINER)BEFORE ACCURACY COMPUTATION: GPU:{} | Epoch {} | Memory Usage: {}".format(args.gpu, epoch, psutil.virtual_memory()))
+        if args.gpu == 0:
+            print("(TRAINER)BEFORE ACCURACY COMPUTATION: GPU:{} | Epoch {} | Memory Usage: {}".format(args.gpu, epoch, psutil.virtual_memory()))
         # measure accuracy and record loss
         acc1, acc5, acc10 = accuracy(output, target, topk=(1, 5, 10))
         # losses.update(loss.item(), images.size(0))
@@ -97,7 +101,8 @@ def train(train_loader, model, criterion, optimizer, epoch, args, writer, scaler
         top10 += acc10.item() * images.size(0)
         num_images += images.size(0)
 
-        print("(TRAINER)AFTER ACCURACY COMPUTATION: GPU:{} | Epoch {} | Memory Usage: {}".format(args.gpu, epoch, psutil.virtual_memory()))
+        if args.gpu == 0:
+            print("(TRAINER)AFTER ACCURACY COMPUTATION: GPU:{} | Epoch {} | Memory Usage: {}".format(args.gpu, epoch, psutil.virtual_memory()))
 
         # compute gradient and do SGD step
         optimizer.zero_grad()
@@ -127,13 +132,15 @@ def train(train_loader, model, criterion, optimizer, epoch, args, writer, scaler
     if args.algo in ['global_ep', 'global_ep_iter']:
         prune(model, update_thresholds_only=True)
     if args.algo in ['hc', 'hc_iter', 'pt'] and not args.differentiate_clamp:
-        print("(TRAINER)BEFORE PROJECTION: GPU:{} | Epoch {} | Memory Usage: {}".format(args.gpu, epoch, psutil.virtual_memory()))
+        if args.gpu == 0:
+            print("(TRAINER)BEFORE PROJECTION: GPU:{} | Epoch {} | Memory Usage: {}".format(args.gpu, epoch, psutil.virtual_memory()))
         for name, params in model.named_parameters():
             if "score" in name:
                 scores = params
                 with torch.no_grad():
                     scores.data = torch.clamp(scores.data, 0.0, 1.0)
-        print("(TRAINER)AFTER PROJECTION: GPU:{} | Epoch {} | Memory Usage: {}".format(args.gpu, epoch, psutil.virtual_memory()))
+        if args.gpu == 0:
+            print("(TRAINER)AFTER PROJECTION: GPU:{} | Epoch {} | Memory Usage: {}".format(args.gpu, epoch, psutil.virtual_memory()))
 
     return top1/num_images, top5/num_images, top10/num_images, regularization_loss.item()
 
