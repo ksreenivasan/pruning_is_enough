@@ -151,6 +151,20 @@ def main_worker(gpu, ngpus_per_node):
         modifier(parser_args, epoch, model)
         cur_lr = get_lr(optimizer)
 
+        # print("Skipping training, just gonna round")
+        # print("Before Round: Epoch {} | Memory Usage: {}".format(epoch, psutil.virtual_memory()))
+        # cp_model = round_model(model, parser_args.round, noise=parser_args.noise,
+        #                         ratio=parser_args.noise_ratio, rank=parser_args.gpu)
+        # if (parser_args.multiprocessing_distributed and parser_args.gpu == 0) or not parser_args.multiprocessing_distributed:
+        #     acc1, acc5, acc10 = validate(data.val_loader, cp_model, criterion, parser_args, writer, epoch)
+        # else:
+        #     acc1 = -1
+        # print("GPU: {} | acc1={}".format(parser_args.gpu, acc1))
+        # print("After Round: Epoch {} | Memory Usage: {}".format(epoch, psutil.virtual_memory()))
+        # dist.barrier()
+        # continue
+
+
         # save the score at the beginning of training epoch, so if we set parser.args.rewind_to_epoch to 0
         # that means we save the initialization of score
         if parser_args.rewind_score and parser_args.rewind_to_epoch == epoch:
