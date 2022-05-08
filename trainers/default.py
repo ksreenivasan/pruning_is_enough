@@ -126,7 +126,7 @@ def train(train_loader, model, criterion, optimizer, epoch, args, writer, scaler
             #     writer, prefix="train", global_step=t)
             print("GPU:{} | Epoch: {} | loss={} | Batch Time={}".format(args.gpu, epoch, loss.item(), acc1.item(), batch_time))
 
-    # print("(TRAINER)AFTER TRAIN LOOP: GPU:{} | Epoch {} | Memory Usage: {}".format(args.gpu, epoch, psutil.virtual_memory()))
+    print("(TRAINER)AFTER TRAIN LOOP: GPU:{} | Epoch {} | Memory Usage: {}".format(args.gpu, epoch, psutil.virtual_memory()))
     # before completing training, clean up model based on latest scores
     # update score thresholds for global ep
     if args.algo in ['global_ep', 'global_ep_iter']:

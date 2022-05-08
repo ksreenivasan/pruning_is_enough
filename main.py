@@ -177,7 +177,7 @@ def main_worker(gpu, ngpus_per_node):
         # evaluate on validation set
         if (parser_args.multiprocessing_distributed and parser_args.gpu == 0) or not parser_args.multiprocessing_distributed:
             start_validation = time.time()
-            print("BEFORE VAL LOOP: Epoch {} | Memory Usage: {}".format(epoch, psutil.virtual_memory()))
+            print("BEFORE VAL LOOP: GPU: {} | Epoch {} | Memory Usage: {}".format(parser_args.gpu, epoch, psutil.virtual_memory()))
             if parser_args.algo in ['hc', 'hc_iter']:
                 br_acc1, br_acc5, br_acc10 = validate(
                     data.val_loader, model, criterion, parser_args, writer, epoch)  # before rounding
@@ -201,7 +201,7 @@ def main_worker(gpu, ngpus_per_node):
                 print('Acc: {}'.format(acc1))
             # validation_time.update((time.time() - start_validation) / 60)
             validation_time = (time.time() - start_validation) / 60
-            print("AFTER VAL LOOP: Epoch {} | Memory Usage: {}".format(epoch, psutil.virtual_memory()))
+            print("AFTER VAL LOOP: GPU: {} | Epoch {} | Memory Usage: {}".format(parser_args.gpu, epoch, psutil.virtual_memory()))
 
         # prune the model every T_{prune} epochs
         if not parser_args.weight_training and parser_args.algo in ['hc_iter', 'global_ep_iter'] and epoch % (parser_args.iter_period) == 0 and epoch != 0:
