@@ -264,12 +264,18 @@ def finetune(model, parser_args, data, criterion, old_epoch_list, old_test_acc_b
             model = round_model(model, round_scheme="all_ones", noise=parser_args.noise,
                                 ratio=parser_args.noise_ratio, rank=parser_args.gpu)
             # check sparsity
-            post_round_sparsity = get_model_sparsity(model)
+            if (parser_args.multiprocessing_distributed and parser_args.gpu == 0) or not parser_args.multiprocessing_distributed:
+                post_round_sparsity = get_model_sparsity(model)
+            else:
+                post_round_sparsity = -1
         else:
             # round the score (in the model itself)
             model = round_model(model, round_scheme=parser_args.round, noise=parser_args.noise,
                                 ratio=parser_args.noise_ratio, rank=parser_args.gpu)
-            post_round_sparsity = get_model_sparsity(model)
+            if (parser_args.multiprocessing_distributed and parser_args.gpu == 0) or not parser_args.multiprocessing_distributed:
+                post_round_sparsity = get_model_sparsity(model)
+            else:
+                post_round_sparsity = -1
     elif parser_args.algo in ['ep']:
         post_round_sparsity = get_model_sparsity(model)
 

@@ -221,9 +221,12 @@ def main_worker(gpu, ngpus_per_node):
                 avg_sparsity = get_model_sparsity(cp_model)
             elif parser_args.algo in ['hc', 'hc_iter']:
                 # Round before checking sparsity
-                cp_model = round_model(model, parser_args.round, noise=parser_args.noise,
-                                       ratio=parser_args.noise_ratio, rank=parser_args.gpu)
-                avg_sparsity = get_model_sparsity(cp_model)
+                if (parser_args.multiprocessing_distributed and parser_args.gpu == 0) or not parser_args.multiprocessing_distributed:
+                    cp_model = round_model(model, parser_args.round, noise=parser_args.noise,
+                                           ratio=parser_args.noise_ratio, rank=parser_args.gpu)
+                    avg_sparsity = get_model_sparsity(cp_model)
+                else:
+                    avg_sparsity = -1
             else:
                 avg_sparsity = get_model_sparsity(model)
         else:

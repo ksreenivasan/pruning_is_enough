@@ -132,7 +132,8 @@ def get_layers(arch='Conv4', dist_model=None):
 
 
 def redraw(model, shuffle=False, reinit=False, invert=False, chg_mask=False, chg_weight=False):
-    cp_model = copy.deepcopy(model)
+    # cp_model = copy.deepcopy(model)
+    cp_model = model
     conv_layers, linear_layers = get_layers(parser_args.arch, cp_model)
     for layer in (conv_layers + linear_layers):
         if shuffle:
