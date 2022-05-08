@@ -9,7 +9,7 @@ from utils.eval_utils import accuracy
 from utils.net_utils import get_regularization_loss, prune, get_layers
 
 from torch import optim
-import psutil
+import psutil, sys
 
 __all__ = ["train", "validate", "modifier"]
 
@@ -41,9 +41,11 @@ def train(train_loader, model, criterion, optimizer, epoch, args, writer, scaler
     # for i, (images, target) in tqdm.tqdm(
     #     enumerate(train_loader), ascii=True, total=len(train_loader)
     # ):
-    if args.gpu == 0:
-        print("(TRAINER)BEFORE TRAIN LOOP: GPU:{} | Epoch {} | Memory Usage: {}".format(args.gpu, epoch, psutil.virtual_memory()))
+    print("(TRAINER)BEFORE TRAIN LOOP: GPU:{} | Epoch {} | Memory Usage: {}".format(args.gpu, epoch, psutil.virtual_memory()))
     for i, (images, target) in enumerate(train_loader):
+        # print("(TRAINER)AFTER LOADING IMAGES: GPU:{} | Epoch {} | Memory Usage: {}".format(args.gpu, epoch, psutil.virtual_memory()))
+        # print("Is it just the image?")
+        # print("(TRAINER): Size of images: {}".format(sys.getsizeof(images)))
         # measure data loading time
         data_time = time.time() - end
         # print("Data Time: {}".format(data_time))
@@ -56,12 +58,14 @@ def train(train_loader, model, criterion, optimizer, epoch, args, writer, scaler
         if args.algo in ['global_ep', 'global_ep_iter']:
             prune(model, update_thresholds_only=True)
 
+        # print("(TRAINER)BEFORE PROJECTION: GPU:{} | Epoch {} | Memory Usage: {}".format(args.gpu, epoch, psutil.virtual_memory()))
         if args.algo in ['hc', 'hc_iter', 'pt'] and i % args.project_freq == 0 and not args.differentiate_clamp:
             for name, params in model.named_parameters():
                 if "score" in name:
                     scores = params
                     with torch.no_grad():
                         scores.data = torch.clamp(scores.data, 0.0, 1.0)
+        # print("(TRAINER)BEFORE PROJECTION: GPU:{} | Epoch {} | Memory Usage: {}".format(args.gpu, epoch, psutil.virtual_memory()))
 
         # compute output
         if scaler is None:
@@ -76,19 +80,16 @@ def train(train_loader, model, criterion, optimizer, epoch, args, writer, scaler
             raise NotImplementedError  # please check finetune_loss repo
 
         regularization_loss = torch.tensor(0)
-        if args.gpu == 0:
-            print("(TRAINER)BEFORE REGULARIZATION COMPUTATION: GPU:{} | Epoch {} | Memory Usage: {}".format(args.gpu, epoch, psutil.virtual_memory()))
+        # print("(TRAINER)BEFORE REGULARIZATION COMPUTATION: GPU:{} | Epoch {} | Memory Usage: {}".format(args.gpu, epoch, psutil.virtual_memory()))
         if args.regularization:
             regularization_loss =\
                 get_regularization_loss(model, regularizer=args.regularization,
                                         lmbda=args.lmbda, alpha=args.alpha,
                                         alpha_prime=args.alpha_prime)
-        if args.gpu == 0:
-            print("(TRAINER)BEFORE REGULARIZATION COMPUTATION: GPU:{} | Epoch {} | Memory Usage: {}".format(args.gpu, epoch, psutil.virtual_memory()))
+        # print("(TRAINER)BEFORE REGULARIZATION COMPUTATION: GPU:{} | Epoch {} | Memory Usage: {}".format(args.gpu, epoch, psutil.virtual_memory()))
         #print('regularization_loss: ', regularization_loss)
         loss += regularization_loss
-        if args.gpu == 0:
-            print("(TRAINER)BEFORE ACCURACY COMPUTATION: GPU:{} | Epoch {} | Memory Usage: {}".format(args.gpu, epoch, psutil.virtual_memory()))
+        # print("(TRAINER)BEFORE ACCURACY COMPUTATION: GPU:{} | Epoch {} | Memory Usage: {}".format(args.gpu, epoch, psutil.virtual_memory()))
         # measure accuracy and record loss
         acc1, acc5, acc10 = accuracy(output, target, topk=(1, 5, 10))
         # losses.update(loss.item(), images.size(0))
@@ -101,8 +102,7 @@ def train(train_loader, model, criterion, optimizer, epoch, args, writer, scaler
         top10 += acc10.item() * images.size(0)
         num_images += images.size(0)
 
-        if args.gpu == 0:
-            print("(TRAINER)AFTER ACCURACY COMPUTATION: GPU:{} | Epoch {} | Memory Usage: {}".format(args.gpu, epoch, psutil.virtual_memory()))
+        # print("(TRAINER)AFTER ACCURACY COMPUTATION: GPU:{} | Epoch {} | Memory Usage: {}".format(args.gpu, epoch, psutil.virtual_memory()))
 
         # compute gradient and do SGD step
         optimizer.zero_grad()
@@ -126,21 +126,19 @@ def train(train_loader, model, criterion, optimizer, epoch, args, writer, scaler
             #     writer, prefix="train", global_step=t)
             print("GPU:{} | Epoch: {} | loss={} | Batch Time={}".format(args.gpu, epoch, loss.item(), acc1.item(), batch_time))
 
-    print("(TRAINER)AFTER TRAIN LOOP: GPU:{} | Epoch {} | Memory Usage: {}".format(args.gpu, epoch, psutil.virtual_memory()))
+    # print("(TRAINER)AFTER TRAIN LOOP: GPU:{} | Epoch {} | Memory Usage: {}".format(args.gpu, epoch, psutil.virtual_memory()))
     # before completing training, clean up model based on latest scores
     # update score thresholds for global ep
     if args.algo in ['global_ep', 'global_ep_iter']:
         prune(model, update_thresholds_only=True)
     if args.algo in ['hc', 'hc_iter', 'pt'] and not args.differentiate_clamp:
-        if args.gpu == 0:
-            print("(TRAINER)BEFORE PROJECTION: GPU:{} | Epoch {} | Memory Usage: {}".format(args.gpu, epoch, psutil.virtual_memory()))
+        print("(TRAINER)BEFORE PROJECTION: GPU:{} | Epoch {} | Memory Usage: {}".format(args.gpu, epoch, psutil.virtual_memory()))
         for name, params in model.named_parameters():
             if "score" in name:
                 scores = params
                 with torch.no_grad():
                     scores.data = torch.clamp(scores.data, 0.0, 1.0)
-        if args.gpu == 0:
-            print("(TRAINER)AFTER PROJECTION: GPU:{} | Epoch {} | Memory Usage: {}".format(args.gpu, epoch, psutil.virtual_memory()))
+        print("(TRAINER)AFTER PROJECTION: GPU:{} | Epoch {} | Memory Usage: {}".format(args.gpu, epoch, psutil.virtual_memory()))
 
     return top1/num_images, top5/num_images, top10/num_images, regularization_loss.item()
 

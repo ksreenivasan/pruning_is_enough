@@ -18,9 +18,11 @@ from utils.conv_type import SubnetConv
 
 # return layer objects of conv layers and linear layers so we can parse them
 # efficiently
-def get_layers(arch='Conv4', model=None):
-    if isinstance(model, nn.parallel.DistributedDataParallel):
-        model = model.module
+def get_layers(arch='Conv4', dist_model=None):
+    if isinstance(dist_model, nn.parallel.DistributedDataParallel):
+         model = dist_model.module
+    else:
+        model = dist_model
     if arch == 'Conv4':
         conv_layers = [model.convs[0], model.convs[2],
                        model.convs[5], model.convs[7]]
@@ -312,11 +314,14 @@ class SubnetL1RegLoss(nn.Module):
 # rounds model by round_scheme and returns the rounded model
 def round_model(model, round_scheme, noise=False, ratio=0.0, rank=None):
     print("Rounding model with scheme: {}".format(round_scheme))
+    cp_model = copy.deepcopy(model)
     if isinstance(model, nn.parallel.DistributedDataParallel):
-        cp_model = copy.deepcopy(model.module)
+       # cp_model = copy.deepcopy(model.module)
+       named_params = cp_model.module.named_parameters()
     else:
-        cp_model = copy.deepcopy(model)
-    for name, params in cp_model.named_parameters():
+        # cp_model = copy.deepcopy(model)
+        named_params = cp_model.named_parameters()
+    for name, params in named_params:
         if ".score" in name:
             if noise:
                 delta = torch.randn_like(params.data)*ratio
@@ -350,7 +355,7 @@ def round_model(model, round_scheme, noise=False, ratio=0.0, rank=None):
 
     # if isinstance(model, nn.parallel.DistributedDataParallel):
     #     cp_model = nn.parallel.DistributedDataParallel(
-    #         cp_model, device_ids=[rank], find_unused_parameters=True)
+    #        cp_model, device_ids=[parser_args.gpu], find_unused_parameters=False)
 
     return cp_model
 
@@ -475,8 +480,8 @@ def prune(model, update_thresholds_only=False, update_scores=False):
 
 # returns avg_sparsity = number of non-zero weights!
 def get_model_sparsity(model, threshold=0):
-    if isinstance(model, nn.parallel.DistributedDataParallel):
-        model = model.module
+    # if isinstance(model, nn.parallel.DistributedDataParallel):
+    #    model = model.module
     conv_layers, linear_layers = get_layers(parser_args.arch, model)
     numer = 0
     denom = 0
@@ -556,8 +561,8 @@ def get_layer_sparsity(layer, threshold=0):
 
 
 def get_regularization_loss(model, regularizer='L2', lmbda=1, alpha=1, alpha_prime=1):
-    if isinstance(model, nn.parallel.DistributedDataParallel):
-        model = model.module
+    # if isinstance(model, nn.parallel.DistributedDataParallel):
+    #    model = model.module
     conv_layers, linear_layers = get_layers(parser_args.arch, model)
 
     def get_special_reg_sum(layer):
