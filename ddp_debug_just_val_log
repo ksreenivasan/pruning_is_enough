@@ -1,0 +1,867 @@
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+Namespace(algo='hc_iter', alpha=1.0, alpha_prime=1.0, arch='ResNet50', batch_size=1024, bias=False, bn_type='NonAffineBatchNorm', bottom_k_on_forward=False, checkpoint_at_prune=False, chg_mask=False, chg_weight=False, ckpt_interval=-1, config='configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml', conv_type='SubnetConv', data='/home/ubuntu/ILSVRC2012/', data_dir='../data', dataset='ImageNet', dense_training=False, differentiate_clamp=False, dist_backend='nccl', epochs=88, evaluate=False, evaluate_only=False, fine_tune_lr=0.04, fine_tune_lr_policy='multistep_lr', fine_tune_optimizer='sgd', fine_tune_wd=0.0001, first_layer_dense=False, first_layer_type=None, fixed_init=False, flips=None, freeze_weights=True, gamma=0.1, gpu=0, hc_period=1, hc_quantized=True, hc_warmup=9999, hidden_size=500, how_to_connect='prob', how_to_prune='random', imp_no_rewind=False, imp_resume_epoch=-1, imp_resume_iter=-1, imp_resume_round=-1, imp_rewind_iter=1000, imp_rewind_model='short_imp/Liu_checkpoint_model_correct.pth', imp_rounds=-1, init='signed_constant', interpolate='prob', invert_sanity_check=False, iter_period=5, iter_start=0, label_smoothing=None, lam_finetune_loss=-1, last_layer_dense=False, lmbda=1e-06, load_ckpt=None, log_dir=None, log_interval=2, loss='cross-entropy-loss', lr=0.4, lr_adjust=50, lr_gamma=0.1, lr_policy='cosine_lr', max_iter=100000, metric='loss', milestones=[50, 100, 150, 200], mixed_precision=True, mode='fan_in', mode_connect=False, mode_connect_filename=None, momentum=0.9, multiprocessing_distributed=True, name='resnet50_imagenet', nesterov=False, no_bn_decay=False, no_cuda=False, noise=True, noise_ratio=0, nonlinearity='relu', num_round=1, num_step_finetune=10, num_test=1, num_trial=1, num_workers=4, only_sanity=False, optimizer='sgd', override_prune_rate=False, plot_hc_convergence=False, port=29500, pretrained=None, pretrained2=None, print_freq=10, project_freq=1, prune_rate=0.5, prune_type='BottomK', pruning_strategy=None, quantize_threshold=0.5, random_subnet=False, rank=-1, regularization='L2', reinit=False, results_filename=None, resume=None, rewind_score=False, rewind_to_epoch=-1, round='naive', run_idx=None, sanity_folder=None, save_every=-1, save_model=False, save_plot_data=False, scale_fan=False, score_init='unif', score_init_constant=None, seed=42, seed_fixed_init=24, shift=0.0, shuffle=False, skip_fine_tune=False, skip_sanity_checks=True, smart_ratio=-1, sr_version=1, start_epoch=None, start_from_nothing=False, subfolder=None, submask_size=1, target_sparsity=5, td=0.99, temp=100000, trainer='default', transformer_bptt=35, transformer_clip=0.25, transformer_dropout=0.2, transformer_emsize=200, transformer_nhead=2, transformer_nhid=200, transformer_nlayers=2, trial_num=1, unflag_before_finetune=False, use_full_data=False, warmup_length=0, wd=0.0, weight_training=False, width=1.0, width_mult=1.0, workers=12, world_size=-1, **{'compare-rounding': False})
+
+
+Beginning of process.
+
+
+--------------------------------------
+TIME: The current time is: Mon May  9 05:17:43 2022
+TIME: The current time in seconds is: 1652073463.3837602
+--------------------------------------
+
+
+Seeded everything: 42
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+Use GPU: 3 for training
+=> Using trainer from trainers.default
+=> Creating model 'ResNet50'
+==> Conv Type: SubnetConv
+==> BN Type: NonAffineBatchNorm
+==> Building first layer
+==> Setting prune rate of network to 0.5
+=> Rough estimate model params 25502912
+=> Freezing model weights
+=> Getting ImageNet dataset
+scheduler: use cosine learning rate decay, with max epochs 88
+Computing prune_rate for target_sparsity 5 with iter_period 5
+Setting prune_rate to 0.16156611126074005
+STARTING TRAINING: Epoch 0 | Memory Usage: svmem(total=257568083968, available=241866600448, percent=6.1, used=13576986624, free=237415022592, active=14918508544, inactive=3857522688, buffers=452333568, cached=6123741184, shared=96784384, slab=553857024)
+Skipping training, just gonna round
+Before Round: Epoch 0 | Memory Usage: svmem(total=257568083968, available=241866600448, percent=6.1, used=13576986624, free=237415022592, active=14918508544, inactive=3857522688, buffers=452333568, cached=6123741184, shared=96784384, slab=553857024)
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+Use GPU: 0 for training
+=> Using trainer from trainers.default
+=> Creating model 'ResNet50'
+==> Conv Type: SubnetConv
+==> BN Type: NonAffineBatchNorm
+==> Building first layer
+==> Setting prune rate of network to 0.5
+=> Rough estimate model params 25502912
+=> Freezing model weights
+conv1.scores 9408
+layer1.0.conv1.scores 4096
+layer1.0.conv2.scores 36864
+layer1.0.conv3.scores 16384
+layer1.0.downsample.0.scores 16384
+layer1.1.conv1.scores 16384
+layer1.1.conv2.scores 36864
+layer1.1.conv3.scores 16384
+layer1.2.conv1.scores 16384
+layer1.2.conv2.scores 36864
+layer1.2.conv3.scores 16384
+layer2.0.conv1.scores 32768
+layer2.0.conv2.scores 147456
+layer2.0.conv3.scores 65536
+layer2.0.downsample.0.scores 131072
+layer2.1.conv1.scores 65536
+layer2.1.conv2.scores 147456
+layer2.1.conv3.scores 65536
+layer2.2.conv1.scores 65536
+layer2.2.conv2.scores 147456
+layer2.2.conv3.scores 65536
+layer2.3.conv1.scores 65536
+layer2.3.conv2.scores 147456
+layer2.3.conv3.scores 65536
+layer3.0.conv1.scores 131072
+layer3.0.conv2.scores 589824
+layer3.0.conv3.scores 262144
+layer3.0.downsample.0.scores 524288
+layer3.1.conv1.scores 262144
+layer3.1.conv2.scores 589824
+layer3.1.conv3.scores 262144
+layer3.2.conv1.scores 262144
+layer3.2.conv2.scores 589824
+layer3.2.conv3.scores 262144
+layer3.3.conv1.scores 262144
+layer3.3.conv2.scores 589824
+layer3.3.conv3.scores 262144
+layer3.4.conv1.scores 262144
+layer3.4.conv2.scores 589824
+layer3.4.conv3.scores 262144
+layer3.5.conv1.scores 262144
+layer3.5.conv2.scores 589824
+layer3.5.conv3.scores 262144
+layer4.0.conv1.scores 524288
+layer4.0.conv2.scores 2359296
+layer4.0.conv3.scores 1048576
+layer4.0.downsample.0.scores 2097152
+layer4.1.conv1.scores 1048576
+layer4.1.conv2.scores 2359296
+layer4.1.conv3.scores 1048576
+layer4.2.conv1.scores 1048576
+layer4.2.conv2.scores 2359296
+layer4.2.conv3.scores 1048576
+fc.scores 2048000
+total num_params:  25502912
+=> Getting ImageNet dataset
+scheduler: use cosine learning rate decay, with max epochs 88
+Computing prune_rate for target_sparsity 5 with iter_period 5
+Setting prune_rate to 0.16156611126074005
+1 SubnetConv(3, 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False)
+2 SubnetConv(64, 64, kernel_size=(1, 1), stride=(1, 1), bias=False)
+3 SubnetConv(64, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+4 SubnetConv(64, 256, kernel_size=(1, 1), stride=(1, 1), bias=False)
+5 SubnetConv(256, 64, kernel_size=(1, 1), stride=(1, 1), bias=False)
+6 SubnetConv(64, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+7 SubnetConv(64, 256, kernel_size=(1, 1), stride=(1, 1), bias=False)
+8 SubnetConv(256, 64, kernel_size=(1, 1), stride=(1, 1), bias=False)
+9 SubnetConv(64, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+10 SubnetConv(64, 256, kernel_size=(1, 1), stride=(1, 1), bias=False)
+11 SubnetConv(256, 128, kernel_size=(1, 1), stride=(1, 1), bias=False)
+12 SubnetConv(128, 128, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1), bias=False)
+13 SubnetConv(128, 512, kernel_size=(1, 1), stride=(1, 1), bias=False)
+14 SubnetConv(512, 128, kernel_size=(1, 1), stride=(1, 1), bias=False)
+15 SubnetConv(128, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+16 SubnetConv(128, 512, kernel_size=(1, 1), stride=(1, 1), bias=False)
+17 SubnetConv(512, 128, kernel_size=(1, 1), stride=(1, 1), bias=False)
+18 SubnetConv(128, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+19 SubnetConv(128, 512, kernel_size=(1, 1), stride=(1, 1), bias=False)
+20 SubnetConv(512, 128, kernel_size=(1, 1), stride=(1, 1), bias=False)
+21 SubnetConv(128, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+22 SubnetConv(128, 512, kernel_size=(1, 1), stride=(1, 1), bias=False)
+23 SubnetConv(512, 256, kernel_size=(1, 1), stride=(1, 1), bias=False)
+24 SubnetConv(256, 256, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1), bias=False)
+25 SubnetConv(256, 1024, kernel_size=(1, 1), stride=(1, 1), bias=False)
+26 SubnetConv(1024, 256, kernel_size=(1, 1), stride=(1, 1), bias=False)
+27 SubnetConv(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+28 SubnetConv(256, 1024, kernel_size=(1, 1), stride=(1, 1), bias=False)
+29 SubnetConv(1024, 256, kernel_size=(1, 1), stride=(1, 1), bias=False)
+30 SubnetConv(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+31 SubnetConv(256, 1024, kernel_size=(1, 1), stride=(1, 1), bias=False)
+32 SubnetConv(1024, 256, kernel_size=(1, 1), stride=(1, 1), bias=False)
+33 SubnetConv(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+34 SubnetConv(256, 1024, kernel_size=(1, 1), stride=(1, 1), bias=False)
+35 SubnetConv(1024, 256, kernel_size=(1, 1), stride=(1, 1), bias=False)
+36 SubnetConv(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+37 SubnetConv(256, 1024, kernel_size=(1, 1), stride=(1, 1), bias=False)
+38 SubnetConv(1024, 256, kernel_size=(1, 1), stride=(1, 1), bias=False)
+39 SubnetConv(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+40 SubnetConv(256, 1024, kernel_size=(1, 1), stride=(1, 1), bias=False)
+41 SubnetConv(1024, 512, kernel_size=(1, 1), stride=(1, 1), bias=False)
+42 SubnetConv(512, 512, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1), bias=False)
+43 SubnetConv(512, 2048, kernel_size=(1, 1), stride=(1, 1), bias=False)
+44 SubnetConv(2048, 512, kernel_size=(1, 1), stride=(1, 1), bias=False)
+45 SubnetConv(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+46 SubnetConv(512, 2048, kernel_size=(1, 1), stride=(1, 1), bias=False)
+47 SubnetConv(2048, 512, kernel_size=(1, 1), stride=(1, 1), bias=False)
+48 SubnetConv(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+49 SubnetConv(512, 2048, kernel_size=(1, 1), stride=(1, 1), bias=False)
+50 SubnetConv(2048, 1000, kernel_size=(1, 1), stride=(1, 1), bias=False)
+STARTING TRAINING: Epoch 0 | Memory Usage: svmem(total=257568083968, available=241830998016, percent=6.1, used=13612589056, free=237379420160, active=14953283584, inactive=3857522688, buffers=452333568, cached=6123741184, shared=96784384, slab=553857024)
+Skipping training, just gonna round
+Before Round: Epoch 0 | Memory Usage: svmem(total=257568083968, available=241830998016, percent=6.1, used=13612589056, free=237379420160, active=14953283584, inactive=3857522688, buffers=452333568, cached=6123741184, shared=96784384, slab=553857024)
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+Use GPU: 2 for training
+=> Using trainer from trainers.default
+=> Creating model 'ResNet50'
+==> Conv Type: SubnetConv
+==> BN Type: NonAffineBatchNorm
+==> Building first layer
+==> Setting prune rate of network to 0.5
+=> Rough estimate model params 25502912
+=> Freezing model weights
+=> Getting ImageNet dataset
+scheduler: use cosine learning rate decay, with max epochs 88
+Computing prune_rate for target_sparsity 5 with iter_period 5
+Setting prune_rate to 0.16156611126074005
+STARTING TRAINING: Epoch 0 | Memory Usage: svmem(total=257568083968, available=241832804352, percent=6.1, used=13610729472, free=237381226496, active=14950014976, inactive=3857522688, buffers=452333568, cached=6123794432, shared=96833536, slab=553857024)
+Skipping training, just gonna round
+Before Round: Epoch 0 | Memory Usage: svmem(total=257568083968, available=241832804352, percent=6.1, used=13610729472, free=237381226496, active=14950014976, inactive=3857522688, buffers=452333568, cached=6123794432, shared=96833536, slab=553857024)
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+Use GPU: 1 for training
+=> Using trainer from trainers.default
+=> Creating model 'ResNet50'
+==> Conv Type: SubnetConv
+==> BN Type: NonAffineBatchNorm
+==> Building first layer
+==> Setting prune rate of network to 0.5
+=> Rough estimate model params 25502912
+=> Freezing model weights
+=> Getting ImageNet dataset
+scheduler: use cosine learning rate decay, with max epochs 88
+Computing prune_rate for target_sparsity 5 with iter_period 5
+Setting prune_rate to 0.16156611126074005
+STARTING TRAINING: Epoch 0 | Memory Usage: svmem(total=257568083968, available=241675661312, percent=6.2, used=13767872512, free=237224083456, active=15108395008, inactive=3857522688, buffers=452333568, cached=6123794432, shared=96833536, slab=553857024)
+Skipping training, just gonna round
+Before Round: Epoch 0 | Memory Usage: svmem(total=257568083968, available=241675661312, percent=6.2, used=13767872512, free=237224083456, active=15108395008, inactive=3857522688, buffers=452333568, cached=6123794432, shared=96833536, slab=553857024)
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+Model top1 Accuracy: 0.0
+GPU: 0 | acc1=-1
+After Round: Epoch 0 | Memory Usage: svmem(total=257568083968, available=239869431808, percent=6.9, used=14969909248, free=235307470848, active=16267698176, inactive=4562612224, buffers=452399104, cached=6838304768, shared=699158528, slab=563982336)
+STARTING TRAINING: Epoch 1 | Memory Usage: svmem(total=257568083968, available=239869431808, percent=6.9, used=14969909248, free=235307470848, active=16267698176, inactive=4562612224, buffers=452399104, cached=6838304768, shared=699158528, slab=563982336)
+Skipping training, just gonna round
+Before Round: Epoch 1 | Memory Usage: svmem(total=257568083968, available=239869431808, percent=6.9, used=14969909248, free=235307470848, active=16267698176, inactive=4562612224, buffers=452399104, cached=6838304768, shared=699158528, slab=563982336)
+Model top1 Accuracy: 0.0
+GPU: 3 | acc1=-1
+After Round: Epoch 0 | Memory Usage: svmem(total=257568083968, available=239854374912, percent=6.9, used=14984900608, free=235292409856, active=16281235456, inactive=4562644992, buffers=452378624, cached=6838394880, shared=699240448, slab=564129792)
+STARTING TRAINING: Epoch 1 | Memory Usage: svmem(total=257568083968, available=239869431808, percent=6.9, used=14969909248, free=235307470848, active=16267698176, inactive=4562612224, buffers=452399104, cached=6838304768, shared=699158528, slab=563982336)
+Skipping training, just gonna round
+Before Round: Epoch 1 | Memory Usage: svmem(total=257568083968, available=239869431808, percent=6.9, used=14969909248, free=235307470848, active=16267698176, inactive=4562612224, buffers=452399104, cached=6838304768, shared=699158528, slab=563982336)
+Model top1 Accuracy: 0.0
+GPU: 1 | acc1=-1
+After Round: Epoch 0 | Memory Usage: svmem(total=257568083968, available=239868772352, percent=6.9, used=14970503168, free=235306807296, active=16267505664, inactive=4562644992, buffers=452378624, cached=6838394880, shared=699240448, slab=564097024)
+STARTING TRAINING: Epoch 1 | Memory Usage: svmem(total=257568083968, available=239869431808, percent=6.9, used=14969909248, free=235307470848, active=16267698176, inactive=4562612224, buffers=452399104, cached=6838304768, shared=699158528, slab=563982336)
+Skipping training, just gonna round
+Before Round: Epoch 1 | Memory Usage: svmem(total=257568083968, available=239869431808, percent=6.9, used=14969909248, free=235307470848, active=16267698176, inactive=4562612224, buffers=452399104, cached=6838304768, shared=699158528, slab=563982336)
+Model top1 Accuracy: 0.0
+GPU: 2 | acc1=-1
+After Round: Epoch 0 | Memory Usage: svmem(total=257568083968, available=239868227584, percent=6.9, used=14971047936, free=235306262528, active=16267505664, inactive=4562644992, buffers=452378624, cached=6838394880, shared=699240448, slab=564097024)
+STARTING TRAINING: Epoch 1 | Memory Usage: svmem(total=257568083968, available=239869431808, percent=6.9, used=14969909248, free=235307470848, active=16267698176, inactive=4562612224, buffers=452399104, cached=6838304768, shared=699158528, slab=563982336)
+Skipping training, just gonna round
+Before Round: Epoch 1 | Memory Usage: svmem(total=257568083968, available=239869431808, percent=6.9, used=14969909248, free=235307470848, active=16267698176, inactive=4562612224, buffers=452399104, cached=6838304768, shared=699158528, slab=563982336)
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+Model top1 Accuracy: 0.0
+GPU: 2 | acc1=-1
+After Round: Epoch 1 | Memory Usage: svmem(total=257568083968, available=238790684672, percent=7.3, used=16047853568, free=234149507072, active=17369210880, inactive=4606590976, buffers=452415488, cached=6918307840, shared=699080704, slab=568066048)
+STARTING TRAINING: Epoch 2 | Memory Usage: svmem(total=257568083968, available=238790684672, percent=7.3, used=16047853568, free=234149507072, active=17369210880, inactive=4606590976, buffers=452415488, cached=6918307840, shared=699080704, slab=568066048)
+Skipping training, just gonna round
+Before Round: Epoch 2 | Memory Usage: svmem(total=257568083968, available=238790684672, percent=7.3, used=16047853568, free=234149507072, active=17369210880, inactive=4606590976, buffers=452415488, cached=6918307840, shared=699080704, slab=568066048)
+Model top1 Accuracy: 0.0
+GPU: 3 | acc1=-1
+After Round: Epoch 1 | Memory Usage: svmem(total=257568083968, available=238790676480, percent=7.3, used=16047767552, free=234149498880, active=17369243648, inactive=4606627840, buffers=452415488, cached=6918402048, shared=699174912, slab=568074240)
+STARTING TRAINING: Epoch 2 | Memory Usage: svmem(total=257568083968, available=238790684672, percent=7.3, used=16047853568, free=234149507072, active=17369210880, inactive=4606590976, buffers=452415488, cached=6918307840, shared=699080704, slab=568066048)
+Skipping training, just gonna round
+Before Round: Epoch 2 | Memory Usage: svmem(total=257568083968, available=238790684672, percent=7.3, used=16047853568, free=234149507072, active=17369210880, inactive=4606590976, buffers=452415488, cached=6918307840, shared=699080704, slab=568066048)
+Model top1 Accuracy: 0.0
+GPU: 0 | acc1=-1
+After Round: Epoch 1 | Memory Usage: svmem(total=257568083968, available=235897942016, percent=8.4, used=18940383232, free=231256784896, active=20249591808, inactive=4606734336, buffers=452415488, cached=6918500352, shared=699273216, slab=568410112)
+STARTING TRAINING: Epoch 2 | Memory Usage: svmem(total=257568083968, available=238790684672, percent=7.3, used=16047853568, free=234149507072, active=17369210880, inactive=4606590976, buffers=452415488, cached=6918307840, shared=699080704, slab=568066048)
+Skipping training, just gonna round
+Before Round: Epoch 2 | Memory Usage: svmem(total=257568083968, available=238790684672, percent=7.3, used=16047853568, free=234149507072, active=17369210880, inactive=4606590976, buffers=452415488, cached=6918307840, shared=699080704, slab=568066048)
+Model top1 Accuracy: 0.0
+GPU: 1 | acc1=-1
+After Round: Epoch 1 | Memory Usage: svmem(total=257568083968, available=238790983680, percent=7.3, used=16047542272, free=234149806080, active=17369198592, inactive=4606595072, buffers=452415488, cached=6918320128, shared=699092992, slab=568033280)
+STARTING TRAINING: Epoch 2 | Memory Usage: svmem(total=257568083968, available=238790684672, percent=7.3, used=16047853568, free=234149507072, active=17369210880, inactive=4606590976, buffers=452415488, cached=6918307840, shared=699080704, slab=568066048)
+Skipping training, just gonna round
+Before Round: Epoch 2 | Memory Usage: svmem(total=257568083968, available=238790684672, percent=7.3, used=16047853568, free=234149507072, active=17369210880, inactive=4606590976, buffers=452415488, cached=6918307840, shared=699080704, slab=568066048)
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+Model top1 Accuracy: 0.0
+GPU: 1 | acc1=-1
+After Round: Epoch 2 | Memory Usage: svmem(total=257568083968, available=237710934016, percent=7.7, used=17126715392, free=233007718400, active=18478784512, inactive=4624752640, buffers=452456448, cached=6981193728, shared=699109376, slab=570544128)
+STARTING TRAINING: Epoch 3 | Memory Usage: svmem(total=257568083968, available=237710934016, percent=7.7, used=17126715392, free=233007718400, active=18478784512, inactive=4624752640, buffers=452456448, cached=6981193728, shared=699109376, slab=570544128)
+Skipping training, just gonna round
+Before Round: Epoch 3 | Memory Usage: svmem(total=257568083968, available=237710934016, percent=7.7, used=17126715392, free=233007718400, active=18478784512, inactive=4624752640, buffers=452456448, cached=6981193728, shared=699109376, slab=570544128)
+Model top1 Accuracy: 0.0
+GPU: 2 | acc1=-1
+After Round: Epoch 2 | Memory Usage: svmem(total=257568083968, available=237710925824, percent=7.7, used=17126723584, free=233007710208, active=18478784512, inactive=4624752640, buffers=452456448, cached=6981193728, shared=699109376, slab=570544128)
+STARTING TRAINING: Epoch 3 | Memory Usage: svmem(total=257568083968, available=237710934016, percent=7.7, used=17126715392, free=233007718400, active=18478784512, inactive=4624752640, buffers=452456448, cached=6981193728, shared=699109376, slab=570544128)
+Skipping training, just gonna round
+Before Round: Epoch 3 | Memory Usage: svmem(total=257568083968, available=237710934016, percent=7.7, used=17126715392, free=233007718400, active=18478784512, inactive=4624752640, buffers=452456448, cached=6981193728, shared=699109376, slab=570544128)
+Model top1 Accuracy: 0.0
+GPU: 0 | acc1=-1
+After Round: Epoch 2 | Memory Usage: svmem(total=257568083968, available=237711011840, percent=7.7, used=17126473728, free=233007796224, active=18478981120, inactive=4624818176, buffers=452456448, cached=6981357568, shared=699273216, slab=570617856)
+STARTING TRAINING: Epoch 3 | Memory Usage: svmem(total=257568083968, available=237710934016, percent=7.7, used=17126715392, free=233007718400, active=18478784512, inactive=4624752640, buffers=452456448, cached=6981193728, shared=699109376, slab=570544128)
+Skipping training, just gonna round
+Before Round: Epoch 3 | Memory Usage: svmem(total=257568083968, available=237710934016, percent=7.7, used=17126715392, free=233007718400, active=18478784512, inactive=4624752640, buffers=452456448, cached=6981193728, shared=699109376, slab=570544128)
+Model top1 Accuracy: 0.0
+GPU: 3 | acc1=-1
+After Round: Epoch 2 | Memory Usage: svmem(total=257568083968, available=237711093760, percent=7.7, used=17126391808, free=233007878144, active=18479149056, inactive=4624818176, buffers=452456448, cached=6981357568, shared=699273216, slab=570617856)
+STARTING TRAINING: Epoch 3 | Memory Usage: svmem(total=257568083968, available=237710934016, percent=7.7, used=17126715392, free=233007718400, active=18478784512, inactive=4624752640, buffers=452456448, cached=6981193728, shared=699109376, slab=570544128)
+Skipping training, just gonna round
+Before Round: Epoch 3 | Memory Usage: svmem(total=257568083968, available=237710934016, percent=7.7, used=17126715392, free=233007718400, active=18478784512, inactive=4624752640, buffers=452456448, cached=6981193728, shared=699109376, slab=570544128)
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+Model top1 Accuracy: 0.0
+GPU: 3 | acc1=-1
+After Round: Epoch 3 | Memory Usage: svmem(total=257568083968, available=236632559616, percent=8.1, used=18204184576, free=231860031488, active=19605176320, inactive=4633370624, buffers=458727424, cached=7045140480, shared=699027456, slab=573870080)
+STARTING TRAINING: Epoch 4 | Memory Usage: svmem(total=257568083968, available=236632559616, percent=8.1, used=18204184576, free=231860031488, active=19605176320, inactive=4633370624, buffers=458727424, cached=7045140480, shared=699027456, slab=573870080)
+Skipping training, just gonna round
+Before Round: Epoch 4 | Memory Usage: svmem(total=257568083968, available=236632559616, percent=8.1, used=18204184576, free=231860031488, active=19605176320, inactive=4633370624, buffers=458727424, cached=7045140480, shared=699027456, slab=573870080)
+Model top1 Accuracy: 0.0
+GPU: 2 | acc1=-1
+After Round: Epoch 3 | Memory Usage: svmem(total=257568083968, available=236631998464, percent=8.1, used=18204352512, free=231859339264, active=19605348352, inactive=4633477120, buffers=458727424, cached=7045664768, shared=699289600, slab=574271488)
+STARTING TRAINING: Epoch 4 | Memory Usage: svmem(total=257568083968, available=236632559616, percent=8.1, used=18204184576, free=231860031488, active=19605176320, inactive=4633370624, buffers=458727424, cached=7045140480, shared=699027456, slab=573870080)
+Skipping training, just gonna round
+Before Round: Epoch 4 | Memory Usage: svmem(total=257568083968, available=236632559616, percent=8.1, used=18204184576, free=231860031488, active=19605176320, inactive=4633370624, buffers=458727424, cached=7045140480, shared=699027456, slab=573870080)
+Model top1 Accuracy: 0.0
+GPU: 0 | acc1=-1
+After Round: Epoch 3 | Memory Usage: svmem(total=257568083968, available=236632104960, percent=8.1, used=18204409856, free=231859445760, active=19605250048, inactive=4633411584, buffers=458727424, cached=7045500928, shared=699125760, slab=574185472)
+STARTING TRAINING: Epoch 4 | Memory Usage: svmem(total=257568083968, available=236632559616, percent=8.1, used=18204184576, free=231860031488, active=19605176320, inactive=4633370624, buffers=458727424, cached=7045140480, shared=699027456, slab=573870080)
+Skipping training, just gonna round
+Before Round: Epoch 4 | Memory Usage: svmem(total=257568083968, available=236632559616, percent=8.1, used=18204184576, free=231860031488, active=19605176320, inactive=4633370624, buffers=458727424, cached=7045140480, shared=699027456, slab=573870080)
+Model top1 Accuracy: 0.0
+GPU: 1 | acc1=-1
+After Round: Epoch 3 | Memory Usage: svmem(total=257568083968, available=236631998464, percent=8.1, used=18204352512, free=231859339264, active=19605348352, inactive=4633477120, buffers=458727424, cached=7045664768, shared=699289600, slab=574271488)
+STARTING TRAINING: Epoch 4 | Memory Usage: svmem(total=257568083968, available=236632559616, percent=8.1, used=18204184576, free=231860031488, active=19605176320, inactive=4633370624, buffers=458727424, cached=7045140480, shared=699027456, slab=573870080)
+Skipping training, just gonna round
+Before Round: Epoch 4 | Memory Usage: svmem(total=257568083968, available=236632559616, percent=8.1, used=18204184576, free=231860031488, active=19605176320, inactive=4633370624, buffers=458727424, cached=7045140480, shared=699027456, slab=573870080)
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+Model top1 Accuracy: 0.0
+GPU: 2 | acc1=-1
+After Round: Epoch 4 | Memory Usage: svmem(total=257568083968, available=235555250176, percent=8.5, used=19281035264, free=230746054656, active=20719042560, inactive=4622409728, buffers=458739712, cached=7082254336, shared=699060224, slab=574767104)
+STARTING TRAINING: Epoch 5 | Memory Usage: svmem(total=257568083968, available=235555250176, percent=8.5, used=19281035264, free=230746054656, active=20719042560, inactive=4622409728, buffers=458739712, cached=7082254336, shared=699060224, slab=574767104)
+Skipping training, just gonna round
+Before Round: Epoch 5 | Memory Usage: svmem(total=257568083968, available=235555250176, percent=8.5, used=19281035264, free=230746054656, active=20719042560, inactive=4622409728, buffers=458739712, cached=7082254336, shared=699060224, slab=574767104)
+Model top1 Accuracy: 0.0
+GPU: 0 | acc1=-1
+After Round: Epoch 4 | Memory Usage: svmem(total=257568083968, available=235554959360, percent=8.5, used=19281162240, free=230745763840, active=20719177728, inactive=4622475264, buffers=458739712, cached=7082418176, shared=699224064, slab=574783488)
+STARTING TRAINING: Epoch 5 | Memory Usage: svmem(total=257568083968, available=235555250176, percent=8.5, used=19281035264, free=230746054656, active=20719042560, inactive=4622409728, buffers=458739712, cached=7082254336, shared=699060224, slab=574767104)
+Skipping training, just gonna round
+Before Round: Epoch 5 | Memory Usage: svmem(total=257568083968, available=235555250176, percent=8.5, used=19281035264, free=230746054656, active=20719042560, inactive=4622409728, buffers=458739712, cached=7082254336, shared=699060224, slab=574767104)
+Model top1 Accuracy: 0.0
+GPU: 3 | acc1=-1
+After Round: Epoch 4 | Memory Usage: svmem(total=257568083968, available=235554226176, percent=8.5, used=19281813504, free=230745030656, active=20719792128, inactive=4622508032, buffers=458739712, cached=7082500096, shared=699305984, slab=574799872)
+STARTING TRAINING: Epoch 5 | Memory Usage: svmem(total=257568083968, available=235555250176, percent=8.5, used=19281035264, free=230746054656, active=20719042560, inactive=4622409728, buffers=458739712, cached=7082254336, shared=699060224, slab=574767104)
+Skipping training, just gonna round
+Before Round: Epoch 5 | Memory Usage: svmem(total=257568083968, available=235555250176, percent=8.5, used=19281035264, free=230746054656, active=20719042560, inactive=4622409728, buffers=458739712, cached=7082254336, shared=699060224, slab=574767104)
+Model top1 Accuracy: 0.0
+GPU: 1 | acc1=-1
+After Round: Epoch 4 | Memory Usage: svmem(total=257568083968, available=235554951168, percent=8.5, used=19281170432, free=230745755648, active=20719177728, inactive=4622475264, buffers=458739712, cached=7082418176, shared=699224064, slab=574783488)
+STARTING TRAINING: Epoch 5 | Memory Usage: svmem(total=257568083968, available=235555250176, percent=8.5, used=19281035264, free=230746054656, active=20719042560, inactive=4622409728, buffers=458739712, cached=7082254336, shared=699060224, slab=574767104)
+Skipping training, just gonna round
+Before Round: Epoch 5 | Memory Usage: svmem(total=257568083968, available=235555250176, percent=8.5, used=19281035264, free=230746054656, active=20719042560, inactive=4622409728, buffers=458739712, cached=7082254336, shared=699060224, slab=574767104)
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+Model top1 Accuracy: 0.0
+GPU: 0 | acc1=-1
+After Round: Epoch 5 | Memory Usage: svmem(total=257568083968, available=234476613632, percent=9.0, used=20359675904, free=229640441856, active=21827698688, inactive=4607787008, buffers=458752000, cached=7109214208, shared=699101184, slab=573861888)
+STARTING TRAINING: Epoch 6 | Memory Usage: svmem(total=257568083968, available=234476621824, percent=9.0, used=20359667712, free=229640450048, active=21827751936, inactive=4607787008, buffers=458752000, cached=7109214208, shared=699101184, slab=573861888)
+Skipping training, just gonna round
+Before Round: Epoch 6 | Memory Usage: svmem(total=257568083968, available=234476621824, percent=9.0, used=20359667712, free=229640450048, active=21827751936, inactive=4607787008, buffers=458752000, cached=7109214208, shared=699101184, slab=573861888)
+Model top1 Accuracy: 0.0
+GPU: 3 | acc1=-1
+After Round: Epoch 5 | Memory Usage: svmem(total=257568083968, available=234476621824, percent=9.0, used=20359667712, free=229640450048, active=21827751936, inactive=4607787008, buffers=458752000, cached=7109214208, shared=699101184, slab=573861888)
+STARTING TRAINING: Epoch 6 | Memory Usage: svmem(total=257568083968, available=234476621824, percent=9.0, used=20359667712, free=229640450048, active=21827751936, inactive=4607787008, buffers=458752000, cached=7109214208, shared=699101184, slab=573861888)
+Skipping training, just gonna round
+Before Round: Epoch 6 | Memory Usage: svmem(total=257568083968, available=234476621824, percent=9.0, used=20359667712, free=229640450048, active=21827751936, inactive=4607787008, buffers=458752000, cached=7109214208, shared=699101184, slab=573861888)
+Model top1 Accuracy: 0.0
+GPU: 1 | acc1=-1
+After Round: Epoch 5 | Memory Usage: svmem(total=257568083968, available=234476482560, percent=9.0, used=20359667712, free=229640310784, active=21827551232, inactive=4607844352, buffers=458752000, cached=7109353472, shared=699240448, slab=573894656)
+STARTING TRAINING: Epoch 6 | Memory Usage: svmem(total=257568083968, available=234476621824, percent=9.0, used=20359667712, free=229640450048, active=21827751936, inactive=4607787008, buffers=458752000, cached=7109214208, shared=699101184, slab=573861888)
+Skipping training, just gonna round
+Before Round: Epoch 6 | Memory Usage: svmem(total=257568083968, available=234476621824, percent=9.0, used=20359667712, free=229640450048, active=21827751936, inactive=4607787008, buffers=458752000, cached=7109214208, shared=699101184, slab=573861888)
+Model top1 Accuracy: 0.0
+GPU: 2 | acc1=-1
+After Round: Epoch 5 | Memory Usage: svmem(total=257568083968, available=234475950080, percent=9.0, used=20360146944, free=229639778304, active=21827592192, inactive=4607860736, buffers=458752000, cached=7109406720, shared=699293696, slab=573911040)
+STARTING TRAINING: Epoch 6 | Memory Usage: svmem(total=257568083968, available=234476621824, percent=9.0, used=20359667712, free=229640450048, active=21827751936, inactive=4607787008, buffers=458752000, cached=7109214208, shared=699101184, slab=573861888)
+Skipping training, just gonna round
+Before Round: Epoch 6 | Memory Usage: svmem(total=257568083968, available=234476621824, percent=9.0, used=20359667712, free=229640450048, active=21827751936, inactive=4607787008, buffers=458752000, cached=7109214208, shared=699101184, slab=573861888)
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+Model top1 Accuracy: 0.0
+GPU: 0 | acc1=-1
+After Round: Epoch 6 | Memory Usage: svmem(total=257568083968, available=233396252672, percent=9.4, used=21438910464, free=228537217024, active=22933069824, inactive=4590788608, buffers=458764288, cached=7133192192, shared=699174912, slab=578220032)
+STARTING TRAINING: Epoch 7 | Memory Usage: svmem(total=257568083968, available=233396252672, percent=9.4, used=21438910464, free=228537217024, active=22933069824, inactive=4590788608, buffers=458764288, cached=7133192192, shared=699174912, slab=578220032)
+Skipping training, just gonna round
+Before Round: Epoch 7 | Memory Usage: svmem(total=257568083968, available=233396252672, percent=9.4, used=21438910464, free=228537217024, active=22933069824, inactive=4590788608, buffers=458764288, cached=7133192192, shared=699174912, slab=578220032)
+Model top1 Accuracy: 0.0
+GPU: 2 | acc1=-1
+After Round: Epoch 6 | Memory Usage: svmem(total=257568083968, available=233396252672, percent=9.4, used=21438910464, free=228537217024, active=22933069824, inactive=4590788608, buffers=458764288, cached=7133192192, shared=699174912, slab=578220032)
+STARTING TRAINING: Epoch 7 | Memory Usage: svmem(total=257568083968, available=233396252672, percent=9.4, used=21438910464, free=228537217024, active=22933069824, inactive=4590788608, buffers=458764288, cached=7133192192, shared=699174912, slab=578220032)
+Skipping training, just gonna round
+Before Round: Epoch 7 | Memory Usage: svmem(total=257568083968, available=233396252672, percent=9.4, used=21438910464, free=228537217024, active=22933069824, inactive=4590788608, buffers=458764288, cached=7133192192, shared=699174912, slab=578220032)
+Model top1 Accuracy: 0.0
+GPU: 3 | acc1=-1
+After Round: Epoch 6 | Memory Usage: svmem(total=257568083968, available=233382707200, percent=9.4, used=21452374016, free=228523671552, active=22946299904, inactive=4590821376, buffers=458764288, cached=7133274112, shared=699256832, slab=578170880)
+STARTING TRAINING: Epoch 7 | Memory Usage: svmem(total=257568083968, available=233396252672, percent=9.4, used=21438910464, free=228537217024, active=22933069824, inactive=4590788608, buffers=458764288, cached=7133192192, shared=699174912, slab=578220032)
+Skipping training, just gonna round
+Before Round: Epoch 7 | Memory Usage: svmem(total=257568083968, available=233396252672, percent=9.4, used=21438910464, free=228537217024, active=22933069824, inactive=4590788608, buffers=458764288, cached=7133192192, shared=699174912, slab=578220032)
+Model top1 Accuracy: 0.0
+GPU: 1 | acc1=-1
+After Round: Epoch 6 | Memory Usage: svmem(total=257568083968, available=233395535872, percent=9.4, used=21439463424, free=228536500224, active=22933372928, inactive=4590854144, buffers=458764288, cached=7133356032, shared=699338752, slab=578285568)
+STARTING TRAINING: Epoch 7 | Memory Usage: svmem(total=257568083968, available=233396252672, percent=9.4, used=21438910464, free=228537217024, active=22933069824, inactive=4590788608, buffers=458764288, cached=7133192192, shared=699174912, slab=578220032)
+Skipping training, just gonna round
+Before Round: Epoch 7 | Memory Usage: svmem(total=257568083968, available=233396252672, percent=9.4, used=21438910464, free=228537217024, active=22933069824, inactive=4590788608, buffers=458764288, cached=7133192192, shared=699174912, slab=578220032)
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+Model top1 Accuracy: 0.0
+GPU: 1 | acc1=-1
+After Round: Epoch 7 | Memory Usage: svmem(total=257568083968, available=232318562304, percent=9.8, used=22516482048, free=227448471552, active=24030625792, inactive=4571344896, buffers=458772480, cached=7144357888, shared=699191296, slab=579198976)
+STARTING TRAINING: Epoch 8 | Memory Usage: svmem(total=257568083968, available=232318836736, percent=9.8, used=22516281344, free=227448745984, active=24030580736, inactive=4571316224, buffers=458772480, cached=7144284160, shared=699117568, slab=579190784)
+Skipping training, just gonna round
+Before Round: Epoch 8 | Memory Usage: svmem(total=257568083968, available=232318836736, percent=9.8, used=22516281344, free=227448745984, active=24030580736, inactive=4571316224, buffers=458772480, cached=7144284160, shared=699117568, slab=579190784)
+Model top1 Accuracy: 0.0
+GPU: 0 | acc1=-1
+After Round: Epoch 7 | Memory Usage: svmem(total=257568083968, available=232318554112, percent=9.8, used=22516490240, free=227448463360, active=24030625792, inactive=4571344896, buffers=458772480, cached=7144357888, shared=699191296, slab=579198976)
+STARTING TRAINING: Epoch 8 | Memory Usage: svmem(total=257568083968, available=232318562304, percent=9.8, used=22516482048, free=227448471552, active=24030625792, inactive=4571344896, buffers=458772480, cached=7144357888, shared=699191296, slab=579198976)
+Skipping training, just gonna round
+Before Round: Epoch 8 | Memory Usage: svmem(total=257568083968, available=232318836736, percent=9.8, used=22516281344, free=227448745984, active=24030580736, inactive=4571316224, buffers=458772480, cached=7144284160, shared=699117568, slab=579190784)
+Model top1 Accuracy: 0.0
+GPU: 3 | acc1=-1
+After Round: Epoch 7 | Memory Usage: svmem(total=257568083968, available=232317935616, percent=9.8, used=22517026816, free=227447844864, active=24030711808, inactive=4571377664, buffers=458772480, cached=7144439808, shared=699273216, slab=579166208)
+STARTING TRAINING: Epoch 8 | Memory Usage: svmem(total=257568083968, available=232318562304, percent=9.8, used=22516482048, free=227448471552, active=24030625792, inactive=4571344896, buffers=458772480, cached=7144357888, shared=699191296, slab=579198976)
+Skipping training, just gonna round
+Before Round: Epoch 8 | Memory Usage: svmem(total=257568083968, available=232318836736, percent=9.8, used=22516281344, free=227448745984, active=24030580736, inactive=4571316224, buffers=458772480, cached=7144284160, shared=699117568, slab=579190784)
+Model top1 Accuracy: 0.0
+GPU: 2 | acc1=-1
+After Round: Epoch 7 | Memory Usage: svmem(total=257568083968, available=232317820928, percent=9.8, used=22517059584, free=227447730176, active=24030576640, inactive=4571410432, buffers=458772480, cached=7144521728, shared=699355136, slab=579174400)
+STARTING TRAINING: Epoch 8 | Memory Usage: svmem(total=257568083968, available=232318836736, percent=9.8, used=22516281344, free=227448745984, active=24030580736, inactive=4571316224, buffers=458772480, cached=7144284160, shared=699117568, slab=579190784)
+Skipping training, just gonna round
+Before Round: Epoch 8 | Memory Usage: svmem(total=257568083968, available=232318836736, percent=9.8, used=22516281344, free=227448745984, active=24030580736, inactive=4571316224, buffers=458772480, cached=7144284160, shared=699117568, slab=579190784)
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+Model top1 Accuracy: 0.0
+GPU: 3 | acc1=-1
+After Round: Epoch 8 | Memory Usage: svmem(total=257568083968, available=231240687616, percent=10.2, used=23593824256, free=226358386688, active=25124098048, inactive=4556869632, buffers=458780672, cached=7157092352, shared=699371520, slab=580452352)
+STARTING TRAINING: Epoch 9 | Memory Usage: svmem(total=257568083968, available=231241297920, percent=10.2, used=23593623552, free=226359160832, active=25124016128, inactive=4556771328, buffers=458780672, cached=7156518912, shared=699125760, slab=580009984)
+Skipping training, just gonna round
+Before Round: Epoch 9 | Memory Usage: svmem(total=257568083968, available=231241297920, percent=10.2, used=23593623552, free=226359160832, active=25124016128, inactive=4556771328, buffers=458780672, cached=7156518912, shared=699125760, slab=580009984)
+Model top1 Accuracy: 0.0
+GPU: 0 | acc1=-1
+After Round: Epoch 8 | Memory Usage: svmem(total=257568083968, available=231240986624, percent=10.2, used=23593607168, free=226358685696, active=25124143104, inactive=4556836864, buffers=458780672, cached=7157010432, shared=699289600, slab=580427776)
+STARTING TRAINING: Epoch 9 | Memory Usage: svmem(total=257568083968, available=231241297920, percent=10.2, used=23593623552, free=226359160832, active=25124016128, inactive=4556771328, buffers=458780672, cached=7156518912, shared=699125760, slab=580009984)
+Skipping training, just gonna round
+Before Round: Epoch 9 | Memory Usage: svmem(total=257568083968, available=231241297920, percent=10.2, used=23593623552, free=226359160832, active=25124016128, inactive=4556771328, buffers=458780672, cached=7156518912, shared=699125760, slab=580009984)
+Model top1 Accuracy: 0.0
+GPU: 2 | acc1=-1
+After Round: Epoch 8 | Memory Usage: svmem(total=257568083968, available=231241297920, percent=10.2, used=23593623552, free=226359160832, active=25124016128, inactive=4556771328, buffers=458780672, cached=7156518912, shared=699125760, slab=580009984)
+STARTING TRAINING: Epoch 9 | Memory Usage: svmem(total=257568083968, available=231241297920, percent=10.2, used=23593623552, free=226359160832, active=25124016128, inactive=4556771328, buffers=458780672, cached=7156518912, shared=699125760, slab=580009984)
+Skipping training, just gonna round
+Before Round: Epoch 9 | Memory Usage: svmem(total=257568083968, available=231241297920, percent=10.2, used=23593623552, free=226359160832, active=25124016128, inactive=4556771328, buffers=458780672, cached=7156518912, shared=699125760, slab=580009984)
+Model top1 Accuracy: 0.0
+GPU: 1 | acc1=-1
+After Round: Epoch 8 | Memory Usage: svmem(total=257568083968, available=231240695808, percent=10.2, used=23593816064, free=226358394880, active=25124139008, inactive=4556869632, buffers=458780672, cached=7157092352, shared=699371520, slab=580452352)
+STARTING TRAINING: Epoch 9 | Memory Usage: svmem(total=257568083968, available=231241297920, percent=10.2, used=23593623552, free=226359160832, active=25124016128, inactive=4556771328, buffers=458780672, cached=7156518912, shared=699125760, slab=580009984)
+Skipping training, just gonna round
+Before Round: Epoch 9 | Memory Usage: svmem(total=257568083968, available=231241297920, percent=10.2, used=23593623552, free=226359160832, active=25124016128, inactive=4556771328, buffers=458780672, cached=7156518912, shared=699125760, slab=580009984)
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+Model top1 Accuracy: 0.0
+GPU: 1 | acc1=-1
+After Round: Epoch 9 | Memory Usage: svmem(total=257568083968, available=230163259392, percent=10.6, used=24671035392, free=225271758848, active=26218409984, inactive=4538830848, buffers=458780672, cached=7166509056, shared=699359232, slab=581611520)
+STARTING TRAINING: Epoch 10 | Memory Usage: svmem(total=257568083968, available=230164344832, percent=10.6, used=24670126080, free=225272844288, active=26217717760, inactive=4538720256, buffers=458780672, cached=7166332928, shared=699183104, slab=581308416)
+Skipping training, just gonna round
+Before Round: Epoch 10 | Memory Usage: svmem(total=257568083968, available=230164344832, percent=10.6, used=24670126080, free=225272844288, active=26217717760, inactive=4538720256, buffers=458780672, cached=7166332928, shared=699183104, slab=581308416)
+Model top1 Accuracy: 0.0
+GPU: 3 | acc1=-1
+After Round: Epoch 9 | Memory Usage: svmem(total=257568083968, available=230164344832, percent=10.6, used=24670126080, free=225272844288, active=26217717760, inactive=4538720256, buffers=458780672, cached=7166332928, shared=699183104, slab=581308416)
+STARTING TRAINING: Epoch 10 | Memory Usage: svmem(total=257568083968, available=230164344832, percent=10.6, used=24670126080, free=225272844288, active=26217717760, inactive=4538720256, buffers=458780672, cached=7166332928, shared=699183104, slab=581308416)
+Skipping training, just gonna round
+Before Round: Epoch 10 | Memory Usage: svmem(total=257568083968, available=230164344832, percent=10.6, used=24670126080, free=225272844288, active=26217717760, inactive=4538720256, buffers=458780672, cached=7166332928, shared=699183104, slab=581308416)
+Model top1 Accuracy: 0.0
+GPU: 2 | acc1=-1
+After Round: Epoch 9 | Memory Usage: svmem(total=257568083968, available=230151180288, percent=10.6, used=24683073536, free=225259679744, active=26230935552, inactive=4538851328, buffers=458780672, cached=7166550016, shared=699400192, slab=581545984)
+STARTING TRAINING: Epoch 10 | Memory Usage: svmem(total=257568083968, available=230164344832, percent=10.6, used=24670126080, free=225272844288, active=26217717760, inactive=4538720256, buffers=458780672, cached=7166332928, shared=699183104, slab=581308416)
+Skipping training, just gonna round
+Before Round: Epoch 10 | Memory Usage: svmem(total=257568083968, available=230164344832, percent=10.6, used=24670126080, free=225272844288, active=26217717760, inactive=4538720256, buffers=458780672, cached=7166332928, shared=699183104, slab=581308416)
+Model top1 Accuracy: 0.0
+GPU: 0 | acc1=-1
+After Round: Epoch 9 | Memory Usage: svmem(total=257568083968, available=230163075072, percent=10.6, used=24671178752, free=225271574528, active=26218442752, inactive=4538851328, buffers=458780672, cached=7166550016, shared=699400192, slab=581545984)
+STARTING TRAINING: Epoch 10 | Memory Usage: svmem(total=257568083968, available=230164344832, percent=10.6, used=24670126080, free=225272844288, active=26217717760, inactive=4538720256, buffers=458780672, cached=7166332928, shared=699183104, slab=581308416)
+Skipping training, just gonna round
+Before Round: Epoch 10 | Memory Usage: svmem(total=257568083968, available=230164344832, percent=10.6, used=24670126080, free=225272844288, active=26217717760, inactive=4538720256, buffers=458780672, cached=7166332928, shared=699183104, slab=581308416)
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+Model top1 Accuracy: 0.0
+GPU: 3 | acc1=-1
+After Round: Epoch 10 | Memory Usage: svmem(total=257568083968, available=229084164096, percent=11.1, used=25749921792, free=224185765888, active=27302985728, inactive=4527165440, buffers=458788864, cached=7173607424, shared=699396096, slab=584314880)
+STARTING TRAINING: Epoch 11 | Memory Usage: svmem(total=257568083968, available=229084471296, percent=11.1, used=25749860352, free=224186073088, active=27302887424, inactive=4527067136, buffers=458788864, cached=7173361664, shared=699150336, slab=584282112)
+Skipping training, just gonna round
+Before Round: Epoch 11 | Memory Usage: svmem(total=257568083968, available=229084471296, percent=11.1, used=25749860352, free=224186073088, active=27302887424, inactive=4527067136, buffers=458788864, cached=7173361664, shared=699150336, slab=584282112)
+Model top1 Accuracy: 0.0
+GPU: 1 | acc1=-1
+After Round: Epoch 10 | Memory Usage: svmem(total=257568083968, available=229084155904, percent=11.1, used=25749929984, free=224185757696, active=27302944768, inactive=4527165440, buffers=458788864, cached=7173607424, shared=699396096, slab=584314880)
+STARTING TRAINING: Epoch 11 | Memory Usage: svmem(total=257568083968, available=229084471296, percent=11.1, used=25749860352, free=224186073088, active=27302887424, inactive=4527067136, buffers=458788864, cached=7173361664, shared=699150336, slab=584282112)
+Skipping training, just gonna round
+Before Round: Epoch 11 | Memory Usage: svmem(total=257568083968, available=229084471296, percent=11.1, used=25749860352, free=224186073088, active=27302887424, inactive=4527067136, buffers=458788864, cached=7173361664, shared=699150336, slab=584282112)
+Model top1 Accuracy: 0.0
+GPU: 0 | acc1=-1
+After Round: Epoch 10 | Memory Usage: svmem(total=257568083968, available=229084147712, percent=11.1, used=25749938176, free=224185749504, active=27302944768, inactive=4527165440, buffers=458788864, cached=7173607424, shared=699396096, slab=584314880)
+STARTING TRAINING: Epoch 11 | Memory Usage: svmem(total=257568083968, available=229084471296, percent=11.1, used=25749860352, free=224186073088, active=27302887424, inactive=4527067136, buffers=458788864, cached=7173361664, shared=699150336, slab=584282112)
+Skipping training, just gonna round
+Before Round: Epoch 11 | Memory Usage: svmem(total=257568083968, available=229084471296, percent=11.1, used=25749860352, free=224186073088, active=27302887424, inactive=4527067136, buffers=458788864, cached=7173361664, shared=699150336, slab=584282112)
+Model top1 Accuracy: 0.0
+GPU: 2 | acc1=-1
+After Round: Epoch 10 | Memory Usage: svmem(total=257568083968, available=229084471296, percent=11.1, used=25749860352, free=224186073088, active=27302887424, inactive=4527067136, buffers=458788864, cached=7173361664, shared=699150336, slab=584282112)
+STARTING TRAINING: Epoch 11 | Memory Usage: svmem(total=257568083968, available=229084471296, percent=11.1, used=25749860352, free=224186073088, active=27302887424, inactive=4527067136, buffers=458788864, cached=7173361664, shared=699150336, slab=584282112)
+Skipping training, just gonna round
+Before Round: Epoch 11 | Memory Usage: svmem(total=257568083968, available=229084471296, percent=11.1, used=25749860352, free=224186073088, active=27302887424, inactive=4527067136, buffers=458788864, cached=7173361664, shared=699150336, slab=584282112)
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+Model top1 Accuracy: 0.0
+GPU: 3 | acc1=-1
+After Round: Epoch 11 | Memory Usage: svmem(total=257568083968, available=228007362560, percent=11.5, used=26826797056, free=223103909888, active=28385570816, inactive=4516302848, buffers=458797056, cached=7178579968, shared=699396096, slab=583700480)
+STARTING TRAINING: Epoch 12 | Memory Usage: svmem(total=257568083968, available=228007903232, percent=11.5, used=26826346496, free=223104442368, active=28385525760, inactive=4516270080, buffers=458797056, cached=7178498048, shared=699314176, slab=583684096)
+Skipping training, just gonna round
+Before Round: Epoch 12 | Memory Usage: svmem(total=257568083968, available=228007903232, percent=11.5, used=26826346496, free=223104442368, active=28385525760, inactive=4516270080, buffers=458797056, cached=7178498048, shared=699314176, slab=583684096)
+Model top1 Accuracy: 0.0
+GPU: 0 | acc1=-1
+After Round: Epoch 11 | Memory Usage: svmem(total=257568083968, available=228006748160, percent=11.5, used=26827325440, free=223103201280, active=28385570816, inactive=4516302848, buffers=458788864, cached=7178768384, shared=699396096, slab=583888896)
+STARTING TRAINING: Epoch 12 | Memory Usage: svmem(total=257568083968, available=228007903232, percent=11.5, used=26826346496, free=223104442368, active=28385525760, inactive=4516270080, buffers=458797056, cached=7178498048, shared=699314176, slab=583684096)
+Skipping training, just gonna round
+Before Round: Epoch 12 | Memory Usage: svmem(total=257568083968, available=228007903232, percent=11.5, used=26826346496, free=223104442368, active=28385525760, inactive=4516270080, buffers=458797056, cached=7178498048, shared=699314176, slab=583684096)
+Model top1 Accuracy: 0.0
+GPU: 2 | acc1=-1
+After Round: Epoch 11 | Memory Usage: svmem(total=257568083968, available=228007903232, percent=11.5, used=26826346496, free=223104442368, active=28385525760, inactive=4516270080, buffers=458797056, cached=7178498048, shared=699314176, slab=583684096)
+STARTING TRAINING: Epoch 12 | Memory Usage: svmem(total=257568083968, available=228007903232, percent=11.5, used=26826346496, free=223104442368, active=28385525760, inactive=4516270080, buffers=458797056, cached=7178498048, shared=699314176, slab=583684096)
+Skipping training, just gonna round
+Before Round: Epoch 12 | Memory Usage: svmem(total=257568083968, available=228007903232, percent=11.5, used=26826346496, free=223104442368, active=28385525760, inactive=4516270080, buffers=458797056, cached=7178498048, shared=699314176, slab=583684096)
+Model top1 Accuracy: 0.0
+GPU: 1 | acc1=-1
+After Round: Epoch 11 | Memory Usage: svmem(total=257568083968, available=228006739968, percent=11.5, used=26827333632, free=223103193088, active=28385570816, inactive=4516302848, buffers=458788864, cached=7178768384, shared=699396096, slab=583888896)
+STARTING TRAINING: Epoch 12 | Memory Usage: svmem(total=257568083968, available=228007903232, percent=11.5, used=26826346496, free=223104442368, active=28385525760, inactive=4516270080, buffers=458797056, cached=7178498048, shared=699314176, slab=583684096)
+Skipping training, just gonna round
+Before Round: Epoch 12 | Memory Usage: svmem(total=257568083968, available=228007903232, percent=11.5, used=26826346496, free=223104442368, active=28385525760, inactive=4516270080, buffers=458797056, cached=7178498048, shared=699314176, slab=583684096)
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+Model top1 Accuracy: 0.0
+GPU: 3 | acc1=-1
+After Round: Epoch 12 | Memory Usage: svmem(total=257568083968, available=226926379008, percent=11.9, used=27907760128, free=222010966016, active=29474430976, inactive=4507590656, buffers=460058624, cached=7189299200, shared=699330560, slab=585682944)
+STARTING TRAINING: Epoch 13 | Memory Usage: svmem(total=257568083968, available=226926379008, percent=11.9, used=27907760128, free=222010966016, active=29474430976, inactive=4507590656, buffers=460058624, cached=7189299200, shared=699330560, slab=585682944)
+Skipping training, just gonna round
+Before Round: Epoch 13 | Memory Usage: svmem(total=257568083968, available=226926379008, percent=11.9, used=27907760128, free=222010966016, active=29474430976, inactive=4507590656, buffers=460058624, cached=7189299200, shared=699330560, slab=585682944)
+Model top1 Accuracy: 0.0
+GPU: 2 | acc1=-1
+After Round: Epoch 12 | Memory Usage: svmem(total=257568083968, available=226926505984, percent=11.9, used=27907551232, free=222011092992, active=29474377728, inactive=4507623424, buffers=460058624, cached=7189381120, shared=699412480, slab=585732096)
+STARTING TRAINING: Epoch 13 | Memory Usage: svmem(total=257568083968, available=226926379008, percent=11.9, used=27907760128, free=222010966016, active=29474430976, inactive=4507590656, buffers=460058624, cached=7189299200, shared=699330560, slab=585682944)
+Skipping training, just gonna round
+Before Round: Epoch 13 | Memory Usage: svmem(total=257568083968, available=226926379008, percent=11.9, used=27907760128, free=222010966016, active=29474430976, inactive=4507590656, buffers=460058624, cached=7189299200, shared=699330560, slab=585682944)
+Model top1 Accuracy: 0.0
+GPU: 1 | acc1=-1
+After Round: Epoch 12 | Memory Usage: svmem(total=257568083968, available=226926522368, percent=11.9, used=27907534848, free=222011109376, active=29474385920, inactive=4507623424, buffers=460058624, cached=7189381120, shared=699412480, slab=585732096)
+STARTING TRAINING: Epoch 13 | Memory Usage: svmem(total=257568083968, available=226926379008, percent=11.9, used=27907760128, free=222010966016, active=29474430976, inactive=4507590656, buffers=460058624, cached=7189299200, shared=699330560, slab=585682944)
+Skipping training, just gonna round
+Before Round: Epoch 13 | Memory Usage: svmem(total=257568083968, available=226926379008, percent=11.9, used=27907760128, free=222010966016, active=29474430976, inactive=4507590656, buffers=460058624, cached=7189299200, shared=699330560, slab=585682944)
+Model top1 Accuracy: 0.0
+GPU: 0 | acc1=-1
+After Round: Epoch 12 | Memory Usage: svmem(total=257568083968, available=226926563328, percent=11.9, used=27907493888, free=222011150336, active=29474385920, inactive=4507623424, buffers=460058624, cached=7189381120, shared=699412480, slab=585699328)
+STARTING TRAINING: Epoch 13 | Memory Usage: svmem(total=257568083968, available=226926379008, percent=11.9, used=27907760128, free=222010966016, active=29474430976, inactive=4507590656, buffers=460058624, cached=7189299200, shared=699330560, slab=585682944)
+Skipping training, just gonna round
+Before Round: Epoch 13 | Memory Usage: svmem(total=257568083968, available=226926379008, percent=11.9, used=27907760128, free=222010966016, active=29474430976, inactive=4507590656, buffers=460058624, cached=7189299200, shared=699330560, slab=585682944)
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+Model top1 Accuracy: 0.0
+GPU: 0 | acc1=-1
+After Round: Epoch 13 | Memory Usage: svmem(total=257568083968, available=225844846592, percent=12.3, used=28988944384, free=220925771776, active=30554353664, inactive=4498653184, buffers=460075008, cached=7193292800, shared=699428864, slab=587362304)
+STARTING TRAINING: Epoch 14 | Memory Usage: svmem(total=257568083968, available=225845911552, percent=12.3, used=28988043264, free=220926836736, active=30554341376, inactive=4498587648, buffers=460075008, cached=7193128960, shared=699265024, slab=587337728)
+Skipping training, just gonna round
+Before Round: Epoch 14 | Memory Usage: svmem(total=257568083968, available=225845911552, percent=12.3, used=28988043264, free=220926836736, active=30554341376, inactive=4498587648, buffers=460075008, cached=7193128960, shared=699265024, slab=587337728)
+Model top1 Accuracy: 0.0
+GPU: 1 | acc1=-1
+After Round: Epoch 13 | Memory Usage: svmem(total=257568083968, available=225844846592, percent=12.3, used=28988944384, free=220925771776, active=30554353664, inactive=4498653184, buffers=460075008, cached=7193292800, shared=699428864, slab=587362304)
+STARTING TRAINING: Epoch 14 | Memory Usage: svmem(total=257568083968, available=225845911552, percent=12.3, used=28988043264, free=220926836736, active=30554341376, inactive=4498587648, buffers=460075008, cached=7193128960, shared=699265024, slab=587337728)
+Skipping training, just gonna round
+Before Round: Epoch 14 | Memory Usage: svmem(total=257568083968, available=225845911552, percent=12.3, used=28988043264, free=220926836736, active=30554341376, inactive=4498587648, buffers=460075008, cached=7193128960, shared=699265024, slab=587337728)
+Model top1 Accuracy: 0.0
+GPU: 3 | acc1=-1
+After Round: Epoch 13 | Memory Usage: svmem(total=257568083968, available=225844830208, percent=12.3, used=28988960768, free=220925755392, active=30554353664, inactive=4498653184, buffers=460075008, cached=7193292800, shared=699428864, slab=587362304)
+STARTING TRAINING: Epoch 14 | Memory Usage: svmem(total=257568083968, available=225845911552, percent=12.3, used=28988043264, free=220926836736, active=30554341376, inactive=4498587648, buffers=460075008, cached=7193128960, shared=699265024, slab=587337728)
+Skipping training, just gonna round
+Before Round: Epoch 14 | Memory Usage: svmem(total=257568083968, available=225845911552, percent=12.3, used=28988043264, free=220926836736, active=30554341376, inactive=4498587648, buffers=460075008, cached=7193128960, shared=699265024, slab=587337728)
+Model top1 Accuracy: 0.0
+GPU: 2 | acc1=-1
+After Round: Epoch 13 | Memory Usage: svmem(total=257568083968, available=225845911552, percent=12.3, used=28988043264, free=220926836736, active=30554341376, inactive=4498587648, buffers=460075008, cached=7193128960, shared=699265024, slab=587337728)
+STARTING TRAINING: Epoch 14 | Memory Usage: svmem(total=257568083968, available=225845911552, percent=12.3, used=28988043264, free=220926836736, active=30554341376, inactive=4498587648, buffers=460075008, cached=7193128960, shared=699265024, slab=587337728)
+Skipping training, just gonna round
+Before Round: Epoch 14 | Memory Usage: svmem(total=257568083968, available=225845911552, percent=12.3, used=28988043264, free=220926836736, active=30554341376, inactive=4498587648, buffers=460075008, cached=7193128960, shared=699265024, slab=587337728)
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+Model top1 Accuracy: 0.0
+GPU: 0 | acc1=-1
+After Round: Epoch 14 | Memory Usage: svmem(total=257568083968, available=224768364544, percent=12.7, used=30065111040, free=219846156288, active=31638274048, inactive=4487221248, buffers=460095488, cached=7196721152, shared=699445248, slab=587350016)
+STARTING TRAINING: Epoch 15 | Memory Usage: svmem(total=257568083968, available=224769335296, percent=12.7, used=30064316416, free=219847131136, active=31638179840, inactive=4487151616, buffers=460095488, cached=7196540928, shared=699273216, slab=587251712)
+Skipping training, just gonna round
+Before Round: Epoch 15 | Memory Usage: svmem(total=257568083968, available=224769335296, percent=12.7, used=30064316416, free=219847131136, active=31638179840, inactive=4487151616, buffers=460095488, cached=7196540928, shared=699273216, slab=587251712)
+Model top1 Accuracy: 0.0
+GPU: 2 | acc1=-1
+After Round: Epoch 14 | Memory Usage: svmem(total=257568083968, available=224768348160, percent=12.7, used=30065127424, free=219846139904, active=31638220800, inactive=4487221248, buffers=460095488, cached=7196721152, shared=699445248, slab=587350016)
+STARTING TRAINING: Epoch 15 | Memory Usage: svmem(total=257568083968, available=224769335296, percent=12.7, used=30064316416, free=219847131136, active=31638179840, inactive=4487151616, buffers=460095488, cached=7196540928, shared=699273216, slab=587251712)
+Skipping training, just gonna round
+Before Round: Epoch 15 | Memory Usage: svmem(total=257568083968, available=224769335296, percent=12.7, used=30064316416, free=219847131136, active=31638179840, inactive=4487151616, buffers=460095488, cached=7196540928, shared=699273216, slab=587251712)
+Model top1 Accuracy: 0.0
+GPU: 1 | acc1=-1
+After Round: Epoch 14 | Memory Usage: svmem(total=257568083968, available=224769335296, percent=12.7, used=30064316416, free=219847131136, active=31638179840, inactive=4487151616, buffers=460095488, cached=7196540928, shared=699273216, slab=587251712)
+STARTING TRAINING: Epoch 15 | Memory Usage: svmem(total=257568083968, available=224769335296, percent=12.7, used=30064316416, free=219847131136, active=31638179840, inactive=4487151616, buffers=460095488, cached=7196540928, shared=699273216, slab=587251712)
+Skipping training, just gonna round
+Before Round: Epoch 15 | Memory Usage: svmem(total=257568083968, available=224769335296, percent=12.7, used=30064316416, free=219847131136, active=31638179840, inactive=4487151616, buffers=460095488, cached=7196540928, shared=699273216, slab=587251712)
+Model top1 Accuracy: 0.0
+GPU: 3 | acc1=-1
+After Round: Epoch 14 | Memory Usage: svmem(total=257568083968, available=224768364544, percent=12.7, used=30065111040, free=219846156288, active=31638274048, inactive=4487221248, buffers=460095488, cached=7196721152, shared=699445248, slab=587350016)
+STARTING TRAINING: Epoch 15 | Memory Usage: svmem(total=257568083968, available=224769335296, percent=12.7, used=30064316416, free=219847131136, active=31638179840, inactive=4487151616, buffers=460095488, cached=7196540928, shared=699273216, slab=587251712)
+Skipping training, just gonna round
+Before Round: Epoch 15 | Memory Usage: svmem(total=257568083968, available=224769335296, percent=12.7, used=30064316416, free=219847131136, active=31638179840, inactive=4487151616, buffers=460095488, cached=7196540928, shared=699273216, slab=587251712)
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+Model top1 Accuracy: 0.0
+GPU: 3 | acc1=-1
+After Round: Epoch 15 | Memory Usage: svmem(total=257568083968, available=223678771200, percent=13.2, used=31154388992, free=218754023424, active=32727724032, inactive=4476911616, buffers=460107776, cached=7199563776, shared=699379712, slab=588996608)
+STARTING TRAINING: Epoch 16 | Memory Usage: svmem(total=257568083968, available=223678771200, percent=13.2, used=31154388992, free=218754023424, active=32727724032, inactive=4476911616, buffers=460107776, cached=7199563776, shared=699379712, slab=588996608)
+Skipping training, just gonna round
+Before Round: Epoch 16 | Memory Usage: svmem(total=257568083968, available=223678771200, percent=13.2, used=31154388992, free=218754023424, active=32727724032, inactive=4476911616, buffers=460107776, cached=7199563776, shared=699379712, slab=588996608)
+Model top1 Accuracy: 0.0
+GPU: 0 | acc1=-1
+After Round: Epoch 15 | Memory Usage: svmem(total=257568083968, available=223691268096, percent=13.2, used=31141892096, free=218766520320, active=32714416128, inactive=4476911616, buffers=460107776, cached=7199563776, shared=699379712, slab=588996608)
+STARTING TRAINING: Epoch 16 | Memory Usage: svmem(total=257568083968, available=223678771200, percent=13.2, used=31154388992, free=218754023424, active=32727724032, inactive=4476911616, buffers=460107776, cached=7199563776, shared=699379712, slab=588996608)
+Skipping training, just gonna round
+Before Round: Epoch 16 | Memory Usage: svmem(total=257568083968, available=223678771200, percent=13.2, used=31154388992, free=218754023424, active=32727724032, inactive=4476911616, buffers=460107776, cached=7199563776, shared=699379712, slab=588996608)
+Model top1 Accuracy: 0.0
+GPU: 1 | acc1=-1
+After Round: Epoch 15 | Memory Usage: svmem(total=257568083968, available=223690809344, percent=13.2, used=31142268928, free=218766061568, active=32714752000, inactive=4476952576, buffers=460107776, cached=7199645696, shared=699461632, slab=589012992)
+STARTING TRAINING: Epoch 16 | Memory Usage: svmem(total=257568083968, available=223678771200, percent=13.2, used=31154388992, free=218754023424, active=32727724032, inactive=4476911616, buffers=460107776, cached=7199563776, shared=699379712, slab=588996608)
+Skipping training, just gonna round
+Before Round: Epoch 16 | Memory Usage: svmem(total=257568083968, available=223678771200, percent=13.2, used=31154388992, free=218754023424, active=32727724032, inactive=4476911616, buffers=460107776, cached=7199563776, shared=699379712, slab=588996608)
+Model top1 Accuracy: 0.0
+GPU: 2 | acc1=-1
+After Round: Epoch 15 | Memory Usage: svmem(total=257568083968, available=223691268096, percent=13.2, used=31141892096, free=218766520320, active=32714416128, inactive=4476911616, buffers=460107776, cached=7199563776, shared=699379712, slab=588996608)
+STARTING TRAINING: Epoch 16 | Memory Usage: svmem(total=257568083968, available=223678771200, percent=13.2, used=31154388992, free=218754023424, active=32727724032, inactive=4476911616, buffers=460107776, cached=7199563776, shared=699379712, slab=588996608)
+Skipping training, just gonna round
+Before Round: Epoch 16 | Memory Usage: svmem(total=257568083968, available=223678771200, percent=13.2, used=31154388992, free=218754023424, active=32727724032, inactive=4476911616, buffers=460107776, cached=7199563776, shared=699379712, slab=588996608)
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+=> Reading YAML config from configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml
+Model top1 Accuracy: 0.0
+GPU: 0 | acc1=-1
+After Round: Epoch 16 | Memory Usage: svmem(total=257568083968, available=222613651456, percent=13.6, used=32219217920, free=217685762048, active=33790447616, inactive=4470607872, buffers=460132352, cached=7202971648, shared=699396096, slab=590221312)
+STARTING TRAINING: Epoch 17 | Memory Usage: svmem(total=257568083968, available=222613651456, percent=13.6, used=32219217920, free=217685762048, active=33790447616, inactive=4470607872, buffers=460132352, cached=7202971648, shared=699396096, slab=590221312)
+Skipping training, just gonna round
+Before Round: Epoch 17 | Memory Usage: svmem(total=257568083968, available=222613651456, percent=13.6, used=32219217920, free=217685762048, active=33790447616, inactive=4470607872, buffers=460132352, cached=7202971648, shared=699396096, slab=590221312)
+Model top1 Accuracy: 0.0
+GPU: 2 | acc1=-1
+After Round: Epoch 16 | Memory Usage: svmem(total=257568083968, available=222613385216, percent=13.6, used=32219484160, free=217685495808, active=33790447616, inactive=4470607872, buffers=460132352, cached=7202971648, shared=699396096, slab=590221312)
+STARTING TRAINING: Epoch 17 | Memory Usage: svmem(total=257568083968, available=222613651456, percent=13.6, used=32219217920, free=217685762048, active=33790447616, inactive=4470607872, buffers=460132352, cached=7202971648, shared=699396096, slab=590221312)
+Skipping training, just gonna round
+Before Round: Epoch 17 | Memory Usage: svmem(total=257568083968, available=222613651456, percent=13.6, used=32219217920, free=217685762048, active=33790447616, inactive=4470607872, buffers=460132352, cached=7202971648, shared=699396096, slab=590221312)
+Model top1 Accuracy: 0.0
+GPU: 3 | acc1=-1
+After Round: Epoch 16 | Memory Usage: svmem(total=257568083968, available=222600069120, percent=13.6, used=32232714240, free=217672183808, active=33803800576, inactive=4470636544, buffers=460132352, cached=7203053568, shared=699478016, slab=590229504)
+STARTING TRAINING: Epoch 17 | Memory Usage: svmem(total=257568083968, available=222613651456, percent=13.6, used=32219217920, free=217685762048, active=33790447616, inactive=4470607872, buffers=460132352, cached=7202971648, shared=699396096, slab=590221312)
+Skipping training, just gonna round
+Before Round: Epoch 17 | Memory Usage: svmem(total=257568083968, available=222613651456, percent=13.6, used=32219217920, free=217685762048, active=33790447616, inactive=4470607872, buffers=460132352, cached=7202971648, shared=699396096, slab=590221312)
+Model top1 Accuracy: 0.0
+GPU: 1 | acc1=-1
+After Round: Epoch 16 | Memory Usage: svmem(total=257568083968, available=222613098496, percent=13.6, used=32219684864, free=217685213184, active=33790713856, inactive=4470636544, buffers=460132352, cached=7203053568, shared=699478016, slab=590229504)
+STARTING TRAINING: Epoch 17 | Memory Usage: svmem(total=257568083968, available=222613651456, percent=13.6, used=32219217920, free=217685762048, active=33790447616, inactive=4470607872, buffers=460132352, cached=7202971648, shared=699396096, slab=590221312)
+Skipping training, just gonna round
+Before Round: Epoch 17 | Memory Usage: svmem(total=257568083968, available=222613651456, percent=13.6, used=32219217920, free=217685762048, active=33790447616, inactive=4470607872, buffers=460132352, cached=7202971648, shared=699396096, slab=590221312)
