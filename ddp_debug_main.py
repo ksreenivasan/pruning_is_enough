@@ -1,3 +1,33 @@
+import pdb
+import numpy as np
+import os
+import pathlib
+import random
+import time
+import pandas as pd
+# from torch.utils.tensorboard import SummaryWriter
+import torch
+import torch.nn as nn
+import torch.nn.parallel
+import torch.backends.cudnn as cudnn
+import torch.optim
+import torch.utils.data
+import torch.distributed as dist
+import torch.multiprocessing as mp
+
+import sys
+import re
+
+
+import copy
+import time
+import torch
+# import tqdm
+import copy
+import pdb
+
+from torch import optim
+import psutil, sys
 from args_helper import parser_args
 import psutil
 
@@ -67,7 +97,7 @@ def main_worker(gpu, ngpus_per_node):
         train_size = len(dataset) - val_size
         train_dataset, validation_dataset = random_split(dataset, [train_size, val_size])
 
-    if parser_args.distributed:
+    if parser_args.multiprocessing_distributed:
         train_sampler = torch.utils.data.distributed.DistributedSampler(train_dataset)
     else:
         train_sampler = None
@@ -187,6 +217,12 @@ def my_validate(val_loader):
     print("Model top1 Accuracy: {}".format(top1/num_images))
     return top1/num_images, top5/num_images, top10/num_images
 
+def print_time():
+    print("\n\n--------------------------------------")
+    print("TIME: The current time is: {}".format(time.ctime()))
+    print("TIME: The current time in seconds is: {}".format(time.time()))
+    print("--------------------------------------\n\n")
 
 if __name__ == "__main__":
     main()
+
