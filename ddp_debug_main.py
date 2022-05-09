@@ -50,6 +50,21 @@ def main():
         main_worker(parser_args.gpu, ngpus_per_node)
 
 
+# set seed for experiment
+def set_seed(seed):
+    random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+    np.random.seed(seed)
+    os.environ['PYTHONHASHSEED'] = str(seed)
+    # set this=True if you want deterministic runs
+    torch.backends.cudnn.deterministic = False
+    # set this=False if you want deterministic runs
+    torch.backends.cudnn.benchmark = True
+    print("Seeded everything: {}".format(seed))
+
+
 def setup_distributed(rank, ngpus_per_node):
     os.environ['MASTER_ADDR'] = '127.0.0.1'
     os.environ['MASTER_PORT'] = '{}'.format(parser_args.port)
