@@ -35,11 +35,11 @@ class ImageNet:
         else:
             # train_size = 1000
             # val_size = len(dataset) - train_size
-            val_size = 10000
+            val_size = 1000
             train_size = len(dataset) - val_size
             train_dataset, validation_dataset = random_split(dataset, [train_size, val_size])
 
-        if parser_args.distributed:
+        if parser_args.multiprocessing_distributed:
             train_sampler = torch.utils.data.distributed.DistributedSampler(train_dataset)
         else:
             train_sampler = None
