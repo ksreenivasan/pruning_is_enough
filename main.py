@@ -142,6 +142,69 @@ def main_worker(gpu, ngpus_per_node):
         return
 
 
+    #########################DATA LOADING CODE#########################
+    from torchvision import datasets, transforms
+    import torch.multiprocessing
+    from torch.utils.data import random_split
+    torch.multiprocessing.set_sharing_strategy("file_system")
+    data_root = parser_args.data
+
+    traindir = os.path.join(data_root, 'train')
+    valdir = os.path.join(data_root, 'val')
+    normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                             std=[0.229, 0.224, 0.225])
+
+    dataset = datasets.ImageFolder(
+                            traindir,
+                            transforms.Compose([
+                                transforms.RandomResizedCrop(224),
+                                transforms.RandomHorizontalFlip(),
+                                transforms.ToTensor(),
+                                normalize,
+                            ]))
+
+    if parser_args.use_full_data:
+        train_dataset = dataset
+        # use_full_data => we are not tuning hyperparameters
+        validation_dataset = test_dataset
+    else:
+        # train_size = 1000
+        # val_size = len(dataset) - train_size
+        val_size = 10000
+        train_size = len(dataset) - val_size
+        train_dataset, validation_dataset = random_split(dataset, [train_size, val_size])
+
+    if parser_args.distributed:
+        train_sampler = torch.utils.data.distributed.DistributedSampler(train_dataset)
+    else:
+        train_sampler = None
+
+    val_dataset = datasets.ImageFolder(valdir, transforms.Compose([
+                        transforms.Resize(256),
+                        transforms.CenterCrop(224),
+                        transforms.ToTensor(),
+                        normalize,
+                    ]))
+
+    train_loader = torch.utils.data.DataLoader(
+                                train_dataset, batch_size=parser_args.batch_size,
+                                shuffle=(train_sampler is None),
+                                num_workers=parser_args.num_workers,
+                                pin_memory=True, sampler=train_sampler)
+
+    val_loader = torch.utils.data.DataLoader(
+                    val_dataset,
+                    batch_size=parser_args.batch_size, shuffle=False,
+                    num_workers=parser_args.num_workers, pin_memory=True)
+
+    actual_val_loader = torch.utils.data.DataLoader(
+        validation_dataset,
+        batch_size=parser_args.batch_size, shuffle=False,
+        num_workers=parser_args.num_workers, pin_memory=True
+    )
+
+    #########################DATA LOADING CODE#########################
+
     # Start training
     for epoch in range(parser_args.start_epoch, parser_args.epochs):
         print("STARTING TRAINING: Epoch {} | Memory Usage: {}".format(epoch, psutil.virtual_memory()))
@@ -156,7 +219,7 @@ def main_worker(gpu, ngpus_per_node):
         # cp_model = round_model(model, parser_args.round, noise=parser_args.noise,
                                 #ratio=parser_args.noise_ratio, rank=parser_args.gpu)
         if True:#(parser_args.multiprocessing_distributed and parser_args.gpu == 0) or not parser_args.multiprocessing_distributed:
-            validate(data.train_loader, model, criterion, parser_args, writer, epoch)
+            validate(actual_val_loader, model, criterion, parser_args, writer, epoch)
             acc1 = -1
         else:
             acc1 = -1
