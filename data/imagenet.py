@@ -14,76 +14,56 @@ class ImageNet:
 
         data_root = parser_args.data
 
-        use_cuda = torch.cuda.is_available()
-
-        # Data loading code
-        kwargs = {"num_workers": parser_args.num_workers, "pin_memory": True} if use_cuda else {}
-
-        # Data loading code
-        traindir = os.path.join(data_root, "train")
-        valdir = os.path.join(data_root, "val")
-
-        normalize = transforms.Normalize(
-            mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
-        )
+        traindir = os.path.join(data_root, 'train')
+        valdir = os.path.join(data_root, 'val')
+        normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                                 std=[0.229, 0.224, 0.225])
 
         dataset = datasets.ImageFolder(
-            traindir,
-            transforms.Compose(
-                [
-                    transforms.RandomResizedCrop(224),
-                    transforms.RandomHorizontalFlip(),
-                    transforms.ToTensor(),
-                    normalize,
-                ]
-            ),
-        )
-
-        test_dataset = datasets.ImageFolder(
-                valdir,
-                transforms.Compose(
-                    [
-                        transforms.Resize(256),
-                        transforms.CenterCrop(224),
-                        transforms.ToTensor(),
-                        normalize,
-                    ]
-                ),
-            )
+                                traindir,
+                                transforms.Compose([
+                                    transforms.RandomResizedCrop(224),
+                                    transforms.RandomHorizontalFlip(),
+                                    transforms.ToTensor(),
+                                    normalize,
+                                ]))
 
         if parser_args.use_full_data:
             train_dataset = dataset
             # use_full_data => we are not tuning hyperparameters
             validation_dataset = test_dataset
         else:
-            train_size = 1000
-            val_size = len(dataset) - train_size
+            # train_size = 1000
+            # val_size = len(dataset) - train_size
+            val_size = 10000
+            train_size = len(dataset) - val_size
             train_dataset, validation_dataset = random_split(dataset, [train_size, val_size])
 
-        if parser_args.multiprocessing_distributed:
+        if parser_args.distributed:
             train_sampler = torch.utils.data.distributed.DistributedSampler(train_dataset)
         else:
             train_sampler = None
 
+        val_dataset = datasets.ImageFolder(valdir, transforms.Compose([
+                            transforms.Resize(256),
+                            transforms.CenterCrop(224),
+                            transforms.ToTensor(),
+                            normalize,
+                        ]))
 
         self.train_loader = torch.utils.data.DataLoader(
-            train_dataset,
-            batch_size=parser_args.batch_size,
-            shuffle=(train_sampler is None),
-            sampler=train_sampler,
-            **kwargs
-        )
+                                    train_dataset, batch_size=parser_args.batch_size,
+                                    shuffle=(train_sampler is None),
+                                    num_workers=parser_args.num_workers,
+                                    pin_memory=True, sampler=train_sampler)
 
         self.val_loader = torch.utils.data.DataLoader(
-            validation_dataset,
-            batch_size=parser_args.batch_size,
-            shuffle=True,
-            **kwargs
-        )
+                        val_dataset,
+                        batch_size=parser_args.batch_size, shuffle=False,
+                        num_workers=parser_args.num_workers, pin_memory=True)
 
         self.actual_val_loader = torch.utils.data.DataLoader(
             validation_dataset,
-            batch_size=parser_args.batch_size,
-            shuffle=True,
-            **kwargs
+            batch_size=parser_args.batch_size, shuffle=False,
+            num_workers=parser_args.num_workers, pin_memory=True
         )
