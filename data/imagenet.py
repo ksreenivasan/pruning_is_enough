@@ -3,16 +3,13 @@ import os
 import torch
 from torchvision import datasets, transforms
 import torch.multiprocessing
-from args_helper import parser_args
 from torch.utils.data import random_split
-
-torch.multiprocessing.set_sharing_strategy("file_system")
 
 class ImageNet:
     def __init__(self, args):
         super(ImageNet, self).__init__()
 
-        data_root = parser_args.data
+        data_root = args.data
 
         traindir = os.path.join(data_root, 'train')
         valdir = os.path.join(data_root, 'val')
@@ -28,7 +25,7 @@ class ImageNet:
                                     normalize,
                                 ]))
 
-        if parser_args.use_full_data:
+        if args.use_full_data:
             train_dataset = dataset
             # use_full_data => we are not tuning hyperparameters
             validation_dataset = test_dataset
@@ -39,7 +36,7 @@ class ImageNet:
             train_size = len(dataset) - val_size
             train_dataset, validation_dataset = random_split(dataset, [train_size, val_size])
 
-        if parser_args.multiprocessing_distributed:
+        if args.multiprocessing_distributed:
             train_sampler = torch.utils.data.distributed.DistributedSampler(train_dataset)
         else:
             train_sampler = None
@@ -52,18 +49,18 @@ class ImageNet:
                         ]))
 
         self.train_loader = torch.utils.data.DataLoader(
-                                    train_dataset, batch_size=parser_args.batch_size,
-                                    shuffle=(train_sampler is None),
-                                    num_workers=parser_args.num_workers,
+                                    train_dataset, batch_size=args.batch_size,
+                                    shuffle=False,
+                                    num_workers=args.num_workers,
                                     pin_memory=True, sampler=train_sampler)
 
         self.val_loader = torch.utils.data.DataLoader(
                         val_dataset,
-                        batch_size=parser_args.batch_size, shuffle=False,
-                        num_workers=parser_args.num_workers, pin_memory=True)
+                        batch_size=args.batch_size, shuffle=False,
+                        num_workers=args.num_workers, pin_memory=True)
 
         self.actual_val_loader = torch.utils.data.DataLoader(
             validation_dataset,
-            batch_size=parser_args.batch_size, shuffle=False,
-            num_workers=parser_args.num_workers, pin_memory=True
+            batch_size=args.batch_size, shuffle=False,
+            num_workers=args.num_workers, pin_memory=True
         )
