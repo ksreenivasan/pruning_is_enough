@@ -13,7 +13,7 @@ def main():
     ngpus_per_node = torch.cuda.device_count()
 
     if parser_args.multiprocessing_distributed:
-        assert ngpus_per_node >= 2, f"Requires at least 2 GPUs to run, but got {ngpus_per_node}"
+        # assert ngpus_per_node >= 2, f"Requires at least 2 GPUs to run, but got {ngpus_per_node}"
         mp.spawn(main_worker, args=(ngpus_per_node,), nprocs=ngpus_per_node, join=True)
     else:
         # Simply call main_worker function
@@ -151,18 +151,19 @@ def main_worker(gpu, ngpus_per_node):
         modifier(parser_args, epoch, model)
         cur_lr = get_lr(optimizer)
 
-        # print("Skipping training, just gonna round")
-        # print("Before Round: Epoch {} | Memory Usage: {}".format(epoch, psutil.virtual_memory()))
+        print("Skipping training, just gonna round")
+        print("Before Round: Epoch {} | Memory Usage: {}".format(epoch, psutil.virtual_memory()))
         # cp_model = round_model(model, parser_args.round, noise=parser_args.noise,
-        #                         ratio=parser_args.noise_ratio, rank=parser_args.gpu)
-        # if (parser_args.multiprocessing_distributed and parser_args.gpu == 0) or not parser_args.multiprocessing_distributed:
-        #     acc1, acc5, acc10 = validate(data.val_loader, cp_model, criterion, parser_args, writer, epoch)
-        # else:
-        #     acc1 = -1
-        # print("GPU: {} | acc1={}".format(parser_args.gpu, acc1))
-        # print("After Round: Epoch {} | Memory Usage: {}".format(epoch, psutil.virtual_memory()))
-        # dist.barrier()
-        # continue
+                                #ratio=parser_args.noise_ratio, rank=parser_args.gpu)
+        if True:#(parser_args.multiprocessing_distributed and parser_args.gpu == 0) or not parser_args.multiprocessing_distributed:
+            validate(data.train_loader, model, criterion, parser_args, writer, epoch)
+            acc1 = -1
+        else:
+            acc1 = -1
+        print("GPU: {} | acc1={}".format(parser_args.gpu, acc1))
+        print("After Round: Epoch {} | Memory Usage: {}".format(epoch, psutil.virtual_memory()))
+        dist.barrier()
+        continue
 
 
         # save the score at the beginning of training epoch, so if we set parser.args.rewind_to_epoch to 0

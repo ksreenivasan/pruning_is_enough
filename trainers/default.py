@@ -155,7 +155,7 @@ def validate(val_loader, model, criterion, args, writer, epoch):
     top1 = 0
     top5 = 0
     top10 = 0
-    num_images = 0
+    num_images = 1
 
     # switch to evaluate mode
     model.eval()
@@ -165,28 +165,33 @@ def validate(val_loader, model, criterion, args, writer, epoch):
         # for i, (images, target) in tqdm.tqdm(
         #     enumerate(val_loader), ascii=True, total=len(val_loader)
         # ):
+        # time.sleep(0.1)
+        # return -1, -1, -1
         for i, (images, target) in enumerate(val_loader):
+            continue
             images = images.to(args.gpu)
             target = target.to(args.gpu)
 
             #print(images.shape, target.shape)
 
             # compute output
-            output = model(images)
+            # output = model(images)
 
-            loss = criterion(output, target)
+            # loss = criterion(output, target)
+            loss = torch.Tensor([0])
 
             # measure accuracy and record loss
-            acc1, acc5, acc10 = accuracy(output, target, topk=(1, 5, 10))
+            # acc1, acc5, acc10 = accuracy(output, target, topk=(1, 5, 10))
+            acc1, acc5, acc10 = torch.Tensor([5]), torch.Tensor([5]), torch.Tensor([5])
             # losses.update(loss.item(), images.size(0))
             # top1.update(acc1.item(), images.size(0))
             # top5.update(acc5.item(), images.size(0))
             # top10.update(acc10.item(), images.size(0))
             # compute weighted sum for each accuracy so we can average it later
-            top1 += acc1.item() * images.size(0)
-            top5 += acc5.item() * images.size(0)
-            top10 += acc10.item() * images.size(0)
-            num_images += images.size(0)
+            top1 += acc1.item()# * images.size(0)
+            top5 += acc5.item()# * images.size(0)
+            top10 += acc10.item()# * images.size(0)
+            num_images += 1#images.size(0)
 
             # measure elapsed time
             # batch_time.update(time.time() - end)

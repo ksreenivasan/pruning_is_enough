@@ -56,8 +56,8 @@ class ImageNet:
             # use_full_data => we are not tuning hyperparameters
             validation_dataset = test_dataset
         else:
-            val_size = 10000
-            train_size = len(dataset) - val_size
+            train_size = 1000
+            val_size = len(dataset) - train_size
             train_dataset, validation_dataset = random_split(dataset, [train_size, val_size])
 
         if parser_args.multiprocessing_distributed:
@@ -75,15 +75,15 @@ class ImageNet:
         )
 
         self.val_loader = torch.utils.data.DataLoader(
-            test_dataset,
+            validation_dataset,
             batch_size=parser_args.batch_size,
-            shuffle=False,
+            shuffle=True,
             **kwargs
         )
 
         self.actual_val_loader = torch.utils.data.DataLoader(
             validation_dataset,
             batch_size=parser_args.batch_size,
-            shuffle=False,
+            shuffle=True,
             **kwargs
         )

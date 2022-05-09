@@ -1107,17 +1107,17 @@ def get_directories(parser_args):
     log_base_dir = run_base_dir / "logs"
     ckpt_base_dir = run_base_dir / "checkpoints"
 
-    if not run_base_dir.exists():
-        os.makedirs(run_base_dir)
+    #if not run_base_dir.exists():
+    #    os.makedirs(run_base_dir)
 
-    (run_base_dir / "settings.txt").write_text(str(parser_args))
+    #(run_base_dir / "settings.txt").write_text(str(parser_args))
 
     return run_base_dir, ckpt_base_dir, log_base_dir
 
 
 def write_result_to_csv(**kwargs):
     results = pathlib.Path("runs") / "results.csv"
-
+    return -1
     if not results.exists():
         results.write_text(
             "Date Finished, "
