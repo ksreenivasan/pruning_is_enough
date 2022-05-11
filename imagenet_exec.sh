@@ -23,7 +23,11 @@ done
 BLOCK
 
 conf_file="configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml"
-log_root="resnet50_sp5"
+log_root="ddp_debug_"
 log_end="_log"
-CUDA_VISIBLE_DEVICES=0,1,2,3 python ddp_debug_main.py \
-    --config "$conf_file" > "$log_root$log_end" 2>&1 &
+for gpu in 0 1 2 3
+do
+    python ddp_debug_main.py \
+    --rank "$gpu" \
+    --config "$conf_file" > "$log_root$gpu$log_end" 2>&1 &
+done

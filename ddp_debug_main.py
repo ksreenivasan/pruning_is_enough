@@ -672,7 +672,7 @@ parser.add_argument(
 )
 parser.add_argument(
     "--rank",
-    default=-1,
+    default=0,
     type=int,
     help="node rank for distributed training"
 )
@@ -976,12 +976,6 @@ parser.add_argument(
     type=int,
     help="Specify port to use for DDP",
 )
-parser.add_argument(
-    "--rank",
-    default=0,
-    type=int,
-    help="Specify rank/gpu for DDP",
-)
 
 parser_args = parser.parse_args()
 # get commands from command line
@@ -1008,7 +1002,7 @@ def main():
 
     # world size = ngpus_per_node since we are assuming single node
     ngpus_per_node = torch.cuda.device_count()
-    main_worker(rank, ngpus_per_node, parser_args)
+    main_worker(parser_args.rank, ngpus_per_node, parser_args)
 
     # if parser_args.multiprocessing_distributed:
     #     # assert ngpus_per_node >= 2, f"Requires at least 2 GPUs to run, but got {ngpus_per_node}"
