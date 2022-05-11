@@ -1039,7 +1039,7 @@ def main_worker(gpu, ngpus_per_node):
     from torchvision import datasets, transforms
     import torch.multiprocessing
     from torch.utils.data import random_split
-    torch.multiprocessing.set_sharing_strategy("file_system")
+    # torch.multiprocessing.set_sharing_strategy("file_system")
     data_root = parser_args.data
 
     traindir = os.path.join(data_root, 'train')
