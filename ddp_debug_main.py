@@ -977,23 +977,23 @@ parser.add_argument(
     help="Specify port to use for DDP",
 )
 
+parser_args = parser.parse_args()
+# get commands from command line
+override_args = _parser.argv_to_vars(sys.argv)
+
+# load yaml file
+yaml_txt = open(parser_args.config).read()
+
+# override args
+loaded_yaml = yaml.load(yaml_txt, Loader=yaml.FullLoader)
+for v in override_args:
+    loaded_yaml[v] = getattr(parser_args, v)
+
+print(f"=> Reading YAML config from {parser_args.config}")
+parser_args.__dict__.update(loaded_yaml)
+
 
 def main():
-    parser_args = parser.parse_args()
-    # get commands from command line
-    override_args = _parser.argv_to_vars(sys.argv)
-
-    # load yaml file
-    yaml_txt = open(parser_args.config).read()
-
-    # override args
-    loaded_yaml = yaml.load(yaml_txt, Loader=yaml.FullLoader)
-    for v in override_args:
-        loaded_yaml[v] = getattr(parser_args, v)
-
-    print(f"=> Reading YAML config from {parser_args.config}")
-    parser_args.__dict__.update(loaded_yaml)
-
     print(parser_args)
     print("\n\nBeginning of process.")
     print_time()
