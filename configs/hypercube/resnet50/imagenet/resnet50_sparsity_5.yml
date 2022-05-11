@@ -56,7 +56,7 @@ regularization: L2
 lmbda: 0.000001 # 1e-6
 
 # ===== Hardware setup ===== #
-workers: 12
+workers: 8
 multiprocessing_distributed: True
 mixed_precision: True
 # gpu: 1

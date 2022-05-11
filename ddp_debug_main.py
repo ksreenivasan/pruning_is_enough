@@ -29,6 +29,12 @@ import pdb
 from torch import optim
 import psutil, sys
 import psutil
+import argparse
+import sys
+import yaml
+from configs import parser as _parser
+
+global parser_args
 
 parser = argparse.ArgumentParser(description="Pruning random networks")
 # Config/Hyperparameters
@@ -999,10 +1005,10 @@ def main():
 
     if parser_args.multiprocessing_distributed:
         # assert ngpus_per_node >= 2, f"Requires at least 2 GPUs to run, but got {ngpus_per_node}"
-        mp.spawn(main_worker, args=(ngpus_per_node,), nprocs=ngpus_per_node, join=True)
+        mp.spawn(main_worker, args=(ngpus_per_node,parser_args), nprocs=ngpus_per_node, join=True)
     else:
         # Simply call main_worker function
-        main_worker(parser_args.gpu, ngpus_per_node)
+        main_worker(parser_args.gpu, ngpus_per_node, parser_args)
 
 
 # set seed for experiment
@@ -1020,17 +1026,17 @@ def set_seed(seed):
     print("Seeded everything: {}".format(seed))
 
 
-def setup_distributed(rank, ngpus_per_node):
+def setup_distributed(rank, ngpus_per_node, parser_args):
     os.environ['MASTER_ADDR'] = '127.0.0.1'
     os.environ['MASTER_PORT'] = '{}'.format(parser_args.port)
 
     dist.init_process_group("nccl", rank=rank, world_size=ngpus_per_node)
 
-def main_worker(gpu, ngpus_per_node):
+def main_worker(gpu, ngpus_per_node, parser_args):
     parser_args.gpu = gpu
     if parser_args.multiprocessing_distributed:
         parser_args.rank = parser_args.gpu
-        setup_distributed(parser_args.rank, ngpus_per_node)
+        setup_distributed(parser_args.rank, ngpus_per_node, parser_args)
         # if using ddp, divide batch size per gpu
         parser_args.batch_size = int(parser_args.batch_size / ngpus_per_node)
 
