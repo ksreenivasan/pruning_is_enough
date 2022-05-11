@@ -1115,7 +1115,7 @@ def main_worker(gpu, ngpus_per_node, parser_args):
         # cp_model = round_model(model, parser_args.round, noise=parser_args.noise,
                                 #ratio=parser_args.noise_ratio, rank=parser_args.gpu)
         if True:#(parser_args.multiprocessing_distributed and parser_args.gpu == 0) or not parser_args.multiprocessing_distributed:
-            my_validate(actual_val_loader)
+            my_validate(actual_val_loader, parser_args, epoch)
             acc1 = -1
         else:
             acc1 = -1
@@ -1126,7 +1126,7 @@ def main_worker(gpu, ngpus_per_node, parser_args):
 
     print("GPU:{} | WE DID IT!!!")
 
-def my_validate(val_loader):
+def my_validate(val_loader, parser_args, epoch):
     # batch_time = AverageMeter("Time", ":6.3f", write_val=False)
     # losses = AverageMeter("Loss", ":.3f", write_val=False)
     # top1 = AverageMeter("Acc@1", ":6.2f", write_val=False)
@@ -1139,7 +1139,6 @@ def my_validate(val_loader):
     top5 = 0
     top10 = 0
     num_images = 1
-
     # switch to evaluate mode
 
     with torch.no_grad():
@@ -1150,9 +1149,8 @@ def my_validate(val_loader):
         # time.sleep(0.1)
         # return -1, -1, -1
         for i, (images, target) in enumerate(val_loader):
-            continue
-            images = images.to(args.gpu)
-            target = target.to(args.gpu)
+            images = images.to(parser_args.gpu)
+            target = target.to(parser_args.gpu)
 
             #print(images.shape, target.shape)
 
@@ -1180,9 +1178,9 @@ def my_validate(val_loader):
             batch_time = time.time() - end
             end = time.time()
 
-            if i % args.print_freq == 0:
+            if i % parser_args.print_freq == 0:
                 # progress.display(i)
-                print("GPU:{} | Epoch: {} | loss={} | Batch Time={}".format(args.gpu, epoch, loss.item(), acc1.item(), batch_time))
+                print("GPU:{} | Epoch: {} | loss={} | Batch Time={}".format(parser_args.gpu, epoch, loss.item(), acc1.item(), batch_time))
 
         # progress.display(len(val_loader))
 
