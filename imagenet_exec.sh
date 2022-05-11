@@ -27,7 +27,7 @@ log_root="ddp_debug_"
 log_end="_log"
 for gpu in 0 1 2 3
 do
-    CUDA_VISIBLE_DEVICES="$gpu" python main.py \
+    python main.py \
                                     --rank "$gpu" \
                                     --config "$conf_file" > "$log_root$gpu$log_end" 2>&1 &
 done

@@ -38,8 +38,8 @@ def main_worker(rank, ngpus_per_node):
         # if using ddp, divide batch size per gpu
         parser_args.batch_size = int(parser_args.batch_size / ngpus_per_node)
 
-    # train, validate, modifier = get_trainer(parser_args)
-    #model = get_model(parser_args)
+    train, validate, modifier = get_trainer(parser_args)
+    model = get_model(parser_args)
 
     if (parser_args.multiprocessing_distributed and parser_args.gpu == 0) or not parser_args.multiprocessing_distributed:
         idty_str = get_idty_str(parser_args)
