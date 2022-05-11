@@ -3,7 +3,7 @@ import psutil
 from torchvision import datasets, transforms
 import torch.multiprocessing
 from torch.utils.data import random_split
-torch.multiprocessing.set_sharing_strategy("file_system")
+# torch.multiprocessing.set_sharing_strategy("file_system")
 
 
 
@@ -17,24 +17,24 @@ def main():
     # world size = ngpus_per_node since we are assuming single node
     ngpus_per_node = torch.cuda.device_count()
 
-    if parser_args.multiprocessing_distributed:
-        # assert ngpus_per_node >= 2, f"Requires at least 2 GPUs to run, but got {ngpus_per_node}"
-        mp.spawn(main_worker, args=(ngpus_per_node,), nprocs=ngpus_per_node, join=True)
-    else:
-        # Simply call main_worker function
-        main_worker(parser_args.gpu, ngpus_per_node)
+    # if parser_args.multiprocessing_distributed:
+    #     # assert ngpus_per_node >= 2, f"Requires at least 2 GPUs to run, but got {ngpus_per_node}"
+    #     mp.spawn(main_worker, args=(ngpus_per_node,), nprocs=ngpus_per_node, join=True)
+    # else:
+    #     # Simply call main_worker function
+    #     main_worker(parser_args.gpu, ngpus_per_node)
+    main_worker(parser_args.rank, ngpus_per_node)
 
 
-def main_worker(gpu, ngpus_per_node):
+def main_worker(rank, ngpus_per_node):
     # NOTE: gpu = rank in the multiprocessing setting
-    parser_args.gpu = gpu
+    parser_args.gpu = rank
 
     if parser_args.gpu is not None:
         print("Use GPU: {} for training".format(parser_args.gpu))
 
     if parser_args.multiprocessing_distributed:
-        parser_args.rank = parser_args.gpu
-        setup_distributed(parser_args.rank, ngpus_per_node)
+        setup_distributed(parser_args.gpu, ngpus_per_node)
         # if using ddp, divide batch size per gpu
         parser_args.batch_size = int(parser_args.batch_size / ngpus_per_node)
 
