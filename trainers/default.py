@@ -41,7 +41,7 @@ def train(train_loader, model, criterion, optimizer, epoch, args, writer, scaler
     # for i, (images, target) in tqdm.tqdm(
     #     enumerate(train_loader), ascii=True, total=len(train_loader)
     # ):
-    print("(TRAINER)BEFORE TRAIN LOOP: GPU:{} | Epoch {} | Memory Usage: {}".format(args.gpu, epoch, psutil.virtual_memory()))
+    print("(TRAINER)Before Train Loop: GPU:{} | Epoch {} | Memory Usage: {}".format(args.gpu, epoch, psutil.virtual_memory()))
     for i, (images, target) in enumerate(train_loader):
         # print("(TRAINER)AFTER LOADING IMAGES: GPU:{} | Epoch {} | Memory Usage: {}".format(args.gpu, epoch, psutil.virtual_memory()))
         # print("Is it just the image?")
@@ -126,7 +126,7 @@ def train(train_loader, model, criterion, optimizer, epoch, args, writer, scaler
             #     writer, prefix="train", global_step=t)
             print("GPU:{} | Epoch: {} | loss={} | Batch Time={}".format(args.gpu, epoch, loss.item(), acc1.item(), batch_time))
 
-    print("(TRAINER)AFTER TRAIN LOOP: GPU:{} | Epoch {} | Memory Usage: {}".format(args.gpu, epoch, psutil.virtual_memory()))
+    print("(TRAINER)After Train Loop: GPU:{} | Epoch {} | Memory Usage: {}".format(args.gpu, epoch, psutil.virtual_memory()))
     # before completing training, clean up model based on latest scores
     # update score thresholds for global ep
     if args.algo in ['global_ep', 'global_ep_iter']:
