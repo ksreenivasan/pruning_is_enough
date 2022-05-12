@@ -4,6 +4,8 @@ from torchvision import datasets, transforms
 import torch.multiprocessing
 from torch.utils.data import random_split
 
+import os
+
 def main():
     print(parser_args)
     print("\n\nBeginning of process.")
@@ -20,6 +22,14 @@ def main():
     # else:
     #     # Simply call main_worker function
     #     main_worker(parser_args.gpu, ngpus_per_node)
+    if 'RANK' in os.environ and 'WORLD_SIZE' in os.environ:
+        parser_args.rank = int(os.environ["RANK"])
+        parser_args.world_size = int(os.environ['WORLD_SIZE'])
+        parser_args.gpu = int(os.environ['LOCAL_RANK'])
+    elif 'SLURM_PROCID' in os.environ:
+        parser_args.rank = int(os.environ['SLURM_PROCID'])
+        parser_args.gpu = args.rank % torch.cuda.device_count()
+       
     main_worker(parser_args.rank, ngpus_per_node)
 
 
