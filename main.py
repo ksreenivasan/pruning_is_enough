@@ -330,18 +330,21 @@ def main_worker(rank, ngpus_per_node):
         dist.barrier()
         print("CLEARED TORCH BARRIER: GPU:{}".format(parser_args.gpu))
 
-    cp_model = copy.deepcopy(model)
+    if not parser_args.multiprocessing_distributed:
+        before_ft_model = copy.deepcopy(model)
+    else:
+        before_ft_model = model.module
     if not parser_args.skip_fine_tune:
         if (parser_args.multiprocessing_distributed and parser_args.gpu == 0) or not parser_args.multiprocessing_distributed:
             print("Beginning fine-tuning")
-        cp_model = finetune(cp_model, parser_args, data, criterion, epoch_list,
+        model = finetune(model, parser_args, data, criterion, epoch_list,
                             test_acc_before_round_list, test_acc_list, val_acc_list, train_acc_list, reg_loss_list, model_sparsity_list, result_root)
         # print out the final acc
         if (parser_args.multiprocessing_distributed and parser_args.gpu == 0) or not parser_args.multiprocessing_distributed:
-            eval_and_print(validate, data.val_loader, cp_model, criterion,
+            eval_and_print(validate, data.val_loader, model, criterion,
                            parser_args, writer=None, description='final model after finetuning')
             # save checkpoint after fine-tuning
-            torch.save(cp_model.state_dict(), result_root + 'model_after_finetune.pth')
+            torch.save(model.state_dict(), result_root + 'model_after_finetune.pth')
     else:
         if (parser_args.multiprocessing_distributed and parser_args.gpu == 0) or not parser_args.multiprocessing_distributed:
             print("Skipping finetuning!!!")
@@ -352,6 +355,7 @@ def main_worker(rank, ngpus_per_node):
         print("CLEARED TORCH BARRIER: GPU:{}".format(parser_args.gpu))
 
     if not parser_args.skip_sanity_checks:
+        # load before_ft_model into current model
         do_sanity_checks(model, parser_args, data, criterion, epoch_list, test_acc_before_round_list,
                          test_acc_list, val_acc_list, train_acc_list, reg_loss_list, model_sparsity_list, result_root)
     else:
