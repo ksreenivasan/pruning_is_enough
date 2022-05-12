@@ -23,7 +23,7 @@ done
 BLOCK
 
 conf_file="configs/hypercube/resnet50/imagenet/resnet50_sparsity_5.yml"
-log_root="ddp_debug_"
+log_root="resnet50_sp5_gpu_"
 log_end="_log"
 for gpu in 0 1 2 3
 do
