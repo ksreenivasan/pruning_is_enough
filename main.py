@@ -206,9 +206,10 @@ def main_worker(rank, ngpus_per_node):
             start_validation = time.time()
             print("Before Val() Call: GPU: {} | Epoch {} | Memory Usage: {}".format(parser_args.gpu, epoch, psutil.virtual_memory()))
             if parser_args.algo in ['hc', 'hc_iter']:
-                br_acc1, br_acc5, br_acc10 = validate(
-                    data.val_loader, model, criterion, parser_args, writer, epoch)  # before rounding
-                print('Acc before rounding: {}'.format(br_acc1))
+                br_acc1, br_acc5, br_acc10 = -1, -1, -1
+                #br_acc1, br_acc5, br_acc10 = validate(
+                #    data.val_loader, model, criterion, parser_args, writer, epoch)  # before rounding
+                #print('Acc before rounding: {}'.format(br_acc1))
                 acc_avg = 0
                 for num_trial in range(parser_args.num_test):
                     cp_model = round_model(model, parser_args.round, noise=parser_args.noise,
