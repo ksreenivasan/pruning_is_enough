@@ -332,7 +332,7 @@ def finetune(model, parser_args, data, criterion, old_epoch_list, old_test_acc_b
                                   20, 40], gamma=0.1)  # NOTE: hard-coded
     '''
 
-    # train, validate, modifier = get_trainer(parser_args)
+    train, validate, modifier = get_trainer(parser_args)
 
     # check the performance of loaded model (after rounding)
     if (parser_args.multiprocessing_distributed and parser_args.gpu == 0) or not parser_args.multiprocessing_distributed:
