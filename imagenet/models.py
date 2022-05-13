@@ -93,9 +93,9 @@ class Bottleneck(nn.Module):
 # ResNet {{{
 class ResNet(nn.Module):
     def __init__(self, builder, block, layers, num_classes=1000, base_width=64):
-        args_first_layer_dense = False
-        args_last_layer_dense = False
-        args_bias = False
+        self.args_first_layer_dense = False
+        self.args_last_layer_dense = False
+        self.args_bias = False
 
         self.inplanes = 64
         super(ResNet, self).__init__()
@@ -104,7 +104,7 @@ class ResNet(nn.Module):
         if self.base_width // 64 > 1:
             print(f"==> Using {self.base_width // 64}x wide model")
 
-        if args_first_layer_dense:
+        if self.args_first_layer_dense:
             self.conv1 = nn.Conv2d(
                 3, self.inplanes, kernel_size=7, stride=2, padding=3, bias=False
             )
@@ -121,7 +121,7 @@ class ResNet(nn.Module):
         self.avgpool = nn.AdaptiveAvgPool2d(1)
 
         # self.fc = nn.Linear(512 * block.expansion, num_classes)
-        if args_last_layer_dense:
+        if self.args_last_layer_dense:
             self.fc = nn.Conv2d(512 * block.expansion, num_classes, 1)
         else:
             self.fc = builder.conv1x1(512 * block.expansion, num_classes)
@@ -148,12 +148,12 @@ class ResNet(nn.Module):
 
         return nn.Sequential(*layers)
 
-    def get_prunable_param_names(model):
-        prunable_weights = [name + '.weight' for name, module in model.named_modules() if
+    def get_prunable_param_names(self):
+        prunable_weights = [name + '.weight' for name, module in self.named_modules() if
                 isinstance(module, nn.modules.conv.Conv2d) or
                 isinstance(module, nn.modules.linear.Linear)]
-        if args_bias:
-            prunable_biases = [name + '.bias' for name, module in model.named_modules() if
+        if self.args_bias:
+            prunable_biases = [name + '.bias' for name, module in self.named_modules() if
                 isinstance(module, nn.modules.conv.Conv2d) or
                 isinstance(module, nn.modules.linear.Linear)]
         else:
@@ -301,7 +301,7 @@ class Builder(object):
         return (lambda: nn.ReLU(inplace=True))()
 
     def _init_conv(self, conv):
-        if weight_init == "signed_constant":
+        if self.weight_init == "signed_constant":
             fan = nn.init._calculate_correct_fan(conv.weight, "fan_in")
             # scale_fan = False always because this isn't EP
             # if scale_fan:
@@ -310,7 +310,7 @@ class Builder(object):
             std = gain / math.sqrt(fan)
             conv.weight.data = conv.weight.data.sign() * std
 
-        elif weight_init == "unsigned_constant":
+        elif self.weight_init == "unsigned_constant":
             fan = nn.init._calculate_correct_fan(conv.weight, "fan_in")
             # scale_fan = False always because this isn't EP
             # if parser_args.scale_fan:
@@ -319,7 +319,7 @@ class Builder(object):
             std = gain / math.sqrt(fan)
             conv.weight.data = torch.ones_like(conv.weight.data) * std
 
-        elif weight_init == "kaiming_normal":
+        elif self.weight_init == "kaiming_normal":
             # scale_fan = False always because this isn't EP
             # if parser_args.scale_fan:
             #     fan = nn.init._calculate_correct_fan(conv.weight, parser_args.mode)
@@ -336,20 +336,20 @@ class Builder(object):
                     conv.weight, mode="fan_in", nonlinearity="relu"
                 )
 
-        elif weight_init == "kaiming_uniform":
+        elif self.weight_init == "kaiming_uniform":
             nn.init.kaiming_uniform_(
                 conv.weight, mode="fan_in", nonlinearity="relu"
             )
 
-        elif weight_init == "xavier_normal":
+        elif self.weight_init == "xavier_normal":
             nn.init.xavier_normal_(conv.weight)
 
-        elif weight_init == "xavier_constant":
+        elif self.weight_init == "xavier_constant":
             fan_in, fan_out = nn.init._calculate_fan_in_and_fan_out(conv.weight)
             std = math.sqrt(2.0 / float(fan_in + fan_out))
             conv.weight.data = conv.weight.data.sign() * std
 
-        elif weight_init == "standard":
+        elif self.weight_init == "standard":
             nn.init.kaiming_uniform_(conv.weight, a=math.sqrt(5))
 
         else:
@@ -434,12 +434,12 @@ class GetSubnet(autograd.Function):
 class SubnetConv(nn.Conv2d):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        args_bias = False
-        algo = 'hc'
+        self.args_bias = False
+        self.algo = 'hc'
 
         # initialize flag (representing the pruned weights)
         self.flag = nn.Parameter(torch.ones(self.weight.size()))
-        if args_bias:
+        if self.args_bias:
             self.bias_flag = nn.Parameter(torch.ones(self.bias.size()))
         else:
             # dummy variable just so other things don't break
@@ -447,7 +447,7 @@ class SubnetConv(nn.Conv2d):
 
         # initialize the scores
         self.scores = nn.Parameter(torch.Tensor(self.weight.size()))
-        if args_bias:
+        if self.args_bias:
             self.bias_scores = nn.Parameter(torch.Tensor(self.bias.size()))
         else:
             # dummy variable just so other things don't break
@@ -457,7 +457,7 @@ class SubnetConv(nn.Conv2d):
         self.scores_prune_threshold = -np.inf
         self.bias_scores_prune_threshold = -np.inf
         
-        if algo in ['hc', 'hc_iter']:
+        if self.algo in ['hc', 'hc_iter']:
             # score init is always uniform
             nn.init.uniform_(self.scores, a=0.0, b=1.0)
             nn.init.uniform_(self.bias_scores, a=0.0, b=1.0)
@@ -480,20 +480,20 @@ class SubnetConv(nn.Conv2d):
         return self.scores.abs()
 
     def forward(self, x):
-        if algo in ['hc', 'hc_iter', 'transformer']:
+        if self.algo in ['hc', 'hc_iter', 'transformer']:
             subnet, bias_subnet = GetSubnet.apply(self.scores, self.bias_scores, self.prune_rate)
             subnet = subnet * self.flag.data.float()
             bias_subnet = subnet * self.bias_flag.data.float()
-        elif algo in ['imp']:
+        elif self.algo in ['imp']:
             # no STE, no subnet. Mask is handled outside
             pass
-        elif algo in ['global_ep', 'global_ep_iter']:
+        elif self.algo in ['global_ep', 'global_ep_iter']:
             subnet, bias_subnet = GetSubnet.apply(self.scores.abs(), self.bias_scores.abs(), 0, self.scores_prune_threshold, self.bias_scores_prune_threshold)
         else:
             # ep, global_ep, global_ep_iter, pt etc
             subnet, bias_subnet = GetSubnet.apply(self.scores.abs(), self.bias_scores.abs(), self.prune_rate)
         
-        if algo in ['imp']:
+        if self.algo in ['imp']:
             # no STE, no subnet. Mask is handled outside
             w = self.weight
             b = self.bias
