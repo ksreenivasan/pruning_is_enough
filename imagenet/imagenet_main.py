@@ -319,8 +319,13 @@ def train(train_loader, model, criterion, optimizer, epoch, args, scaler=None):
             target = target.cuda(args.gpu, non_blocking=True)
 
         # compute output
-        output = model(images)
-        loss = criterion(output, target)
+        if scaler is None:
+            output = model(images)
+            loss = criterion(output, target)
+        else:
+            with torch.cuda.amp.autocast(enabled=True):
+                output = model(images)
+                loss = criterion(output, target)
 
         # measure accuracy and record loss
         acc1, acc5 = accuracy(output, target, topk=(1, 5))
@@ -330,8 +335,13 @@ def train(train_loader, model, criterion, optimizer, epoch, args, scaler=None):
 
         # compute gradient and do SGD step
         optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
+        if scaler is None:
+            loss.backward()
+            optimizer.step()
+        else:
+            scaler.scale(loss).backward()
+            scaler.step(optimizer)
+            scaler.update()
 
         # measure elapsed time
         batch_time.update(time.time() - end)
