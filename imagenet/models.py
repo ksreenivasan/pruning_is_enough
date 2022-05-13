@@ -382,10 +382,10 @@ def get_builder():
     return builder
 
 class GetSubnet(autograd.Function):
-    algo = 'hc_iter'
-    quantize_threshold = 0.5
     @staticmethod
     def forward(ctx, scores, bias_scores, k, scores_prune_threshold=-np.inf, bias_scores_prune_threshold=-np.inf):
+        algo = 'hc_iter'
+        quantize_threshold = 0.5
         if algo == 'ep':
             # Get the supermask by sorting the scores and using the top k%
             out = scores.clone()
@@ -436,6 +436,7 @@ class SubnetConv(nn.Conv2d):
         super().__init__(*args, **kwargs)
         self.args_bias = False
         self.algo = 'hc'
+        self.prune_rate = 0.5
 
         # initialize flag (representing the pruned weights)
         self.flag = nn.Parameter(torch.ones(self.weight.size()))
@@ -499,7 +500,7 @@ class SubnetConv(nn.Conv2d):
             b = self.bias
         else:
             w = self.weight * subnet
-            if args_bias:
+            if self.args_bias:
                 b = self.bias * bias_subnet
             else:
                 b = self.bias
