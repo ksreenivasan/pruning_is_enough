@@ -262,18 +262,19 @@ def main_worker(gpu, ngpus_per_node, args):
         if args.distributed:
             train_sampler.set_epoch(epoch)
 
+        print_time("Epoch: {} | Starting Train".format(epoch))
         start_train = time.time()
         # train for one epoch
         train(train_loader, model, criterion, optimizer, epoch, args, scaler)
 
         train_time = train_time = (time.time() - start_train) / 60
-        print("Epoch: {} | Train Time {}".format(train_time))
+        print("Epoch: {} | Train Time {}".format(epoch, train_time))
 
         # evaluate on validation set
         acc1 = validate(val_loader, model, criterion, args)
 
         epoch_time = (time.time() - start_train) / 60
-        print("Epoch: {} | Train + Val Time {}".format(epoch_time))
+        print("Epoch: {} | Train + Val Time {}".format(epoch, epoch_time))
         
         scheduler.step()
 
@@ -476,6 +477,12 @@ def accuracy(output, target, topk=(1,)):
 """
 @ksreenivasan: Dumping new code here
 """
+def print_time(msg):
+    print("\n\n----------------------------------------------------------------------------")
+    print("{}".format(msg))
+    print("TIME: The current time is: {}".format(time.ctime()))
+    print("TIME: The current time in seconds is: {}".format(time.time()))
+    print("----------------------------------------------------------------------------\n\n")
 
 
 if __name__ == '__main__':
