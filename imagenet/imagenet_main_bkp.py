@@ -75,6 +75,10 @@ parser.add_argument('--multiprocessing-distributed', action='store_true',
                          'N processes per node, which has N GPUs. This is the '
                          'fastest way to use PyTorch for either single node or '
                          'multi node data parallel training')
+parser.add_argument("--mixed_precision",
+                    action='store_true',
+                    default=False,
+                    help="Use mixed precision or not")
 
 best_acc1 = 0
 
@@ -178,6 +182,12 @@ def main_worker(gpu, ngpus_per_node, args):
     
     """Sets the learning rate to the initial LR decayed by 10 every 30 epochs"""
     scheduler = StepLR(optimizer, step_size=30, gamma=0.1)
+
+    # adding a scaler
+    if args.mixed_precision:
+        scaler = torch.cuda.amp.GradScaler(enabled=True) # mixed precision
+    else:
+        scaler = None
     
     # optionally resume from a checkpoint
     if args.resume:
@@ -296,8 +306,13 @@ def train(train_loader, model, criterion, optimizer, epoch, args):
             target = target.cuda(args.gpu, non_blocking=True)
 
         # compute output
-        output = model(images)
-        loss = criterion(output, target)
+        if scaler is None:
+            output = model(images)
+            loss = criterion(output, target)
+        else:
+            with torch.cuda.amp.autocast(enabled=True):
+                output = model(images)
+                loss = criterion(output, target)
 
         # measure accuracy and record loss
         acc1, acc5 = accuracy(output, target, topk=(1, 5))
@@ -307,8 +322,13 @@ def train(train_loader, model, criterion, optimizer, epoch, args):
 
         # compute gradient and do SGD step
         optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
+        if scaler is None:
+            loss.backward()
+            optimizer.step()
+        else:
+            scaler.scale(loss).backward()
+            scaler.step(optimizer)
+            scaler.update()
 
         # measure elapsed time
         batch_time.update(time.time() - end)
