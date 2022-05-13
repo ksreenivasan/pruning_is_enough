@@ -7,5 +7,7 @@ python imagenet_main_bkp.py \
 	--multiprocessing-distributed \
 	--world-size 1 \
 	--rank 0 \
+	--batch-size 1024 \
+	--mixed-precision \
 	--data '/home/ubuntu/ILSVRC2012'
 
