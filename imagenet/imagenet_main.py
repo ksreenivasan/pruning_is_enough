@@ -80,6 +80,10 @@ parser.add_argument('--multiprocessing-distributed', action='store_true',
                          'N processes per node, which has N GPUs. This is the '
                          'fastest way to use PyTorch for either single node or '
                          'multi node data parallel training')
+parser.add_argument("--mixed-precision",
+                    action='store_true',
+                    default=False,
+                    help="Use mixed precision or not")
 
 best_acc1 = 0
 
@@ -184,6 +188,12 @@ def main_worker(gpu, ngpus_per_node, args):
     
     """Sets the learning rate to the initial LR decayed by 10 every 30 epochs"""
     scheduler = StepLR(optimizer, step_size=30, gamma=0.1)
+
+    # adding a scaler for mixed-precision training
+    if args.mixed_precision:
+        scaler = torch.cuda.amp.GradScaler(enabled=True) # mixed precision
+    else:
+        scaler = None
     
     # optionally resume from a checkpoint
     if args.resume:
@@ -252,11 +262,18 @@ def main_worker(gpu, ngpus_per_node, args):
         if args.distributed:
             train_sampler.set_epoch(epoch)
 
+        start_train = time.time()
         # train for one epoch
-        train(train_loader, model, criterion, optimizer, epoch, args)
+        train(train_loader, model, criterion, optimizer, epoch, args, scaler)
+
+        train_time = train_time = (time.time() - start_train) / 60
+        print("Epoch: {} | Train Time {}".format(train_time))
 
         # evaluate on validation set
         acc1 = validate(val_loader, model, criterion, args)
+
+        epoch_time = (time.time() - start_train) / 60
+        print("Epoch: {} | Train + Val Time {}".format(epoch_time))
         
         scheduler.step()
 
@@ -277,7 +294,7 @@ def main_worker(gpu, ngpus_per_node, args):
             }, is_best)
 
 
-def train(train_loader, model, criterion, optimizer, epoch, args):
+def train(train_loader, model, criterion, optimizer, epoch, args, scaler=None):
     batch_time = AverageMeter('Time', ':6.3f')
     data_time = AverageMeter('Data', ':6.3f')
     losses = AverageMeter('Loss', ':.4e')
