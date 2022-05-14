@@ -364,6 +364,7 @@ def train(train_loader, model, criterion, optimizer, epoch, args, scaler=None):
 
         regularization_loss = torch.tensor(0)
         regularization_loss = get_regularization_loss(model, args)
+        # print("Regularization loss: {}".format(regularization_loss.item()))
         loss += regularization_loss
 
         # measure accuracy and record loss
