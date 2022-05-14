@@ -1,7 +1,7 @@
 #!/bin/bash
 
-python imagenet_main_bkp.py \
-       	-a resnet50 \
+python imagenet_main.py \
+    --arch resnet50 \
 	--dist-url 'tcp://127.0.0.1:2500' \
 	--dist-backend 'nccl' \
 	--multiprocessing-distributed \
@@ -13,5 +13,5 @@ python imagenet_main_bkp.py \
 	--epochs 88 \
 	--lr 0.4 \
 	--lmbda 0.000001 \
-	--data '/home/ubuntu/ILSVRC2012' > "resnet50_imagenet_log" 2>&1 &
+	--data '/home/ubuntu/ILSVRC2012' #> "resnet50_imagenet_log" 2>&1 &
 
