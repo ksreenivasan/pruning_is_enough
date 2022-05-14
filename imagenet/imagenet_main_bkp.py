@@ -256,14 +256,22 @@ def main_worker(gpu, ngpus_per_node, args):
         if args.distributed:
             train_sampler.set_epoch(epoch)
 
+        print_time("Epoch: {} | Starting Train".format(epoch))
+        start_train = time.time()
+
         # train for one epoch
         train(train_loader, model, criterion, optimizer, epoch, args, scaler)
+
+        train_time = train_time = (time.time() - start_train) / 60
+        print("Epoch: {} | Train Time {}".format(epoch, train_time))
 
         # evaluate on validation set
         acc1 = validate(val_loader, model, criterion, args)
         
         scheduler.step()
 
+        epoch_time = (time.time() - start_train) / 60
+        print("Epoch: {} | Train + Val Time {}".format(epoch, epoch_time))
         
         # remember best acc@1 and save checkpoint
         is_best = acc1 > best_acc1
@@ -468,6 +476,14 @@ def accuracy(output, target, topk=(1,)):
             correct_k = correct[:k].reshape(-1).float().sum(0, keepdim=True)
             res.append(correct_k.mul_(100.0 / batch_size))
         return res
+
+def print_time(msg):
+    print("\n\n----------------------------------------------------------------------------")
+    print("{}".format(msg))
+    print("TIME: The current time is: {}".format(time.ctime()))
+    print("TIME: The current time in seconds is: {}".format(time.time()))
+    print("----------------------------------------------------------------------------\n\n")
+
 
 
 if __name__ == '__main__':

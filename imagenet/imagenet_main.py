@@ -140,10 +140,10 @@ def main_worker(gpu, ngpus_per_node, args):
                                 world_size=args.world_size, rank=args.rank)
     # create model
     if args.pretrained:
-        print("=> using pre-trained model '{}'".format(args.arch))
+        print("==> using pre-trained model '{}'".format(args.arch))
         model = models.__dict__[args.arch](pretrained=True)
     else:
-        print("=> creating model '{}'".format(args.arch))
+        print("==> creating model '{}'".format(args.arch))
         # model = models.__dict__[args.arch]()
         model = models.ResNet50()
 
@@ -274,7 +274,7 @@ def main_worker(gpu, ngpus_per_node, args):
 
         epoch_time = (time.time() - start_train) / 60
         print("Epoch: {} | Train + Val Time {}".format(epoch, epoch_time))
-        
+
         scheduler.step()
 
         
