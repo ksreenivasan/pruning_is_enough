@@ -310,12 +310,13 @@ def main_worker(gpu, ngpus_per_node, args):
         # remember best acc@1 and save checkpoint
         is_best = acc1 > best_acc1
         best_acc1 = max(acc1, best_acc1)
-        results_df.to_csv("acc_and_sparsity.csv", index=False)
+
+        if not args.multiprocessing_distributed or (args.multiprocessing_distributed and args.rank == 0):
+            results_df.to_csv("acc_and_sparsity.csv", index=False)
 
         save_flag = ((epoch+1)%10 == 0) or (epoch > 85)
-        if save_flag and (not args.multiprocessing_distributed or (args.multiprocessing_distributed
-                and args.rank % ngpus_per_node == 0)):
-            torch.save(model.state_dict(), 'model_before_fineune_epoch_{}.pth'.format(epoch))
+        if save_flag and (not args.multiprocessing_distributed or (args.multiprocessing_distributed and args.rank == 0)):
+            torch.save(model.module.state_dict(), 'model_before_fineune_epoch_{}.pth'.format(epoch))
             # save_checkpoint({
             #     'epoch': epoch + 1,
             #     'arch': args.arch,
