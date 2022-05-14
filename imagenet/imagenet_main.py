@@ -344,15 +344,12 @@ def train(train_loader, model, criterion, optimizer, epoch, args, scaler=None):
         if torch.cuda.is_available():
             target = target.cuda(args.gpu, non_blocking=True)
 
+        # project to [0, 1] in every gradient step
         for name, params in model.named_parameters():
-            # make sure param_name ends with .weight or .bias
+            # make sure param_name ends with .scores and not bias_scores
             if re.match('.*\.scores', name) and not re.match('.*\.bias_scores', name):
                 with torch.no_grad():
                     params.data = torch.clamp(params.data, 0.0, 1.0)
-
-        regularization_loss = torch.tensor(0)
-        regularization_loss = get_regularization_loss(model, args)
-        loss += regularization_loss
 
         # compute output
         if scaler is None:
@@ -362,6 +359,10 @@ def train(train_loader, model, criterion, optimizer, epoch, args, scaler=None):
             with torch.cuda.amp.autocast(enabled=True):
                 output = model(images)
                 loss = criterion(output, target)
+
+        regularization_loss = torch.tensor(0)
+        regularization_loss = get_regularization_loss(model, args)
+        loss += regularization_loss
 
         # measure accuracy and record loss
         acc1, acc5 = accuracy(output, target, topk=(1, 5))
@@ -385,6 +386,13 @@ def train(train_loader, model, criterion, optimizer, epoch, args, scaler=None):
 
         if i % args.print_freq == 0:
             progress.display(i)
+
+    # project to [0, 1] before returning model
+    for name, params in model.named_parameters():
+        # make sure param_name ends with .scores and not bias_scores
+        if re.match('.*\.scores', name) and not re.match('.*\.bias_scores', name):
+            with torch.no_grad():
+                params.data = torch.clamp(params.data, 0.0, 1.0)
 
     return top1.avg
 
