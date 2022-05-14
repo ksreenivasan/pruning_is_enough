@@ -493,7 +493,7 @@ class SubnetConv(nn.Conv2d):
         else:
             # ep, global_ep, global_ep_iter, pt etc
             subnet, bias_subnet = GetSubnet.apply(self.scores.abs(), self.bias_scores.abs(), self.prune_rate)
-        
+
         if self.algo in ['imp']:
             # no STE, no subnet. Mask is handled outside
             w = self.weight

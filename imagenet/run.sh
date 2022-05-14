@@ -10,5 +10,7 @@ python imagenet_main_bkp.py \
 	--batch-size 1024 \
 	--workers 12 \
 	--mixed-precision \
+	--epochs 88 \
+	--lr 0.4 \
 	--data '/home/ubuntu/ILSVRC2012' > "resnet50_imagenet_log" 2>&1 &
 

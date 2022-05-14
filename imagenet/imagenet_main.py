@@ -257,6 +257,12 @@ def main_worker(gpu, ngpus_per_node, args):
         validate(val_loader, model, criterion, args)
         return
 
+    epoch_list = []
+    test_acc_list = []
+    model_sparsity_list = []
+    val_acc_list = []
+    train_acc_list = []
+
     for epoch in range(args.start_epoch, args.epochs):
         if args.distributed:
             train_sampler.set_epoch(epoch)
@@ -264,7 +270,7 @@ def main_worker(gpu, ngpus_per_node, args):
         print_time("Epoch: {} | Starting Train".format(epoch))
         start_train = time.time()
         # train for one epoch
-        train(train_loader, model, criterion, optimizer, epoch, args, scaler)
+        train_acc1 = train(train_loader, model, criterion, optimizer, epoch, args, scaler)
 
         train_time = train_time = (time.time() - start_train) / 60
         print("Epoch: {} | Train Time {}".format(epoch, train_time))
@@ -275,23 +281,37 @@ def main_worker(gpu, ngpus_per_node, args):
         epoch_time = (time.time() - start_train) / 60
         print("Epoch: {} | Train + Val Time {}".format(epoch, epoch_time))
 
+        epoch_list.append(epoch)
+        train_acc_list.append(train_acc1)
+        test_acc_list.append(acc1)
+        val_acc_list.append(acc1)
+
         scheduler.step()
 
-        
+        results_df = pd.DataFrame({'epoch': epoch_list,
+                                   'test_acc': test_acc_list,
+                                   'val_acc': val_acc_list,
+                                   'train_acc': train_acc_list,})
+                                   # 'regularization_loss': reg_loss_list,
+                                   # 'model_sparsity': model_sparsity_list})
+
         # remember best acc@1 and save checkpoint
         is_best = acc1 > best_acc1
         best_acc1 = max(acc1, best_acc1)
+        results_df.to_csv("acc_and_sparsity.csv", index=False)
 
-        if not args.multiprocessing_distributed or (args.multiprocessing_distributed
-                and args.rank % ngpus_per_node == 0):
-            save_checkpoint({
-                'epoch': epoch + 1,
-                'arch': args.arch,
-                'state_dict': model.state_dict(),
-                'best_acc1': best_acc1,
-                'optimizer' : optimizer.state_dict(),
-                'scheduler' : scheduler.state_dict()
-            }, is_best)
+        save_flag = ((epoch+1)%10 == 0) or (epoch > 85)
+        if save_flag and (not args.multiprocessing_distributed or (args.multiprocessing_distributed
+                and args.rank % ngpus_per_node == 0)):
+            torch.save(model.state_dict(), 'model_before_fineune_epoch_{}.pth'.format(epoch))
+            # save_checkpoint({
+            #     'epoch': epoch + 1,
+            #     'arch': args.arch,
+            #     'state_dict': model.state_dict(),
+            #     'best_acc1': best_acc1,
+            #     'optimizer' : optimizer.state_dict(),
+            #     'scheduler' : scheduler.state_dict()
+            # }, is_best)
 
 
 def train(train_loader, model, criterion, optimizer, epoch, args, scaler=None):
@@ -349,6 +369,8 @@ def train(train_loader, model, criterion, optimizer, epoch, args, scaler=None):
 
         if i % args.print_freq == 0:
             progress.display(i)
+
+    return top1.avg
 
 
 def validate(val_loader, model, criterion, args):
