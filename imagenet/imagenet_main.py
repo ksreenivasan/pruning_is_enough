@@ -9,6 +9,7 @@ import math
 import numpy as np
 import pandas as pd
 import re
+import copy
 
 import torch
 import torch.nn as nn
@@ -149,6 +150,7 @@ def main_worker(gpu, ngpus_per_node, args):
         print("==> using pre-trained model '{}'".format(args.arch))
         model = models.__dict__[args.arch](pretrained=True)
     else:
+        # args.arch = 'resnet50'
         print("==> creating model '{}'".format(args.arch))
         # model = models.__dict__[args.arch]()
         model = models.ResNet50()
@@ -189,7 +191,7 @@ def main_worker(gpu, ngpus_per_node, args):
 
     print("GPU: {} | Switching to wt to see if that works well!".format(args.gpu))
     print("GPU: {} | First round model to all ones score".format(args.gpu))
-    model = round_model(model, round_scheme='naive')
+    model = round_model(model, round_scheme='all_ones')
     switch_to_wt(model)
     optimizer = torch.optim.SGD(filter(lambda p: p.requires_grad, model.parameters()), args.lr,
                                 momentum=args.momentum,
@@ -365,7 +367,7 @@ def train(train_loader, model, criterion, optimizer, epoch, args, scaler=None):
                 loss = criterion(output, target)
 
         regularization_loss = torch.tensor(0)
-        regularization_loss = get_regularization_loss(model, args)
+        #regularization_loss = get_regularization_loss(model, args)
         # print("Regularization loss: {}".format(regularization_loss.item()))
         loss += regularization_loss
 
@@ -601,6 +603,7 @@ def switch_to_wt(model):
     return model
 
 def round_model(model, round_scheme='naive'):
+    quantize_threshold=0.5
     print("Rounding model with scheme: {}".format(round_scheme))
     cp_model = copy.deepcopy(model)
     if isinstance(model, nn.parallel.DistributedDataParallel):
@@ -613,7 +616,7 @@ def round_model(model, round_scheme='naive'):
         if ".score" in name:
             if round_scheme == 'naive':
                 params.data = torch.gt(params.data, torch.ones_like(
-                    params.data)*parser_args.quantize_threshold).int().float()
+                    params.data)*quantize_threshold).int().float()
             elif round_scheme == 'prob':
                 params.data = torch.clamp(params.data, 0.0, 1.0)
                 params.data = torch.bernoulli(params.data).float()

@@ -12,6 +12,6 @@ python imagenet_main.py \
 	--mixed-precision \
 	--epochs 88 \
 	--lr 0.4 \
-	--lmbda 0.000001 \
+	--lmbda 0.000000 \
 	--data '/home/ubuntu/ILSVRC2012' #> "resnet50_imagenet_log" 2>&1 &
 
