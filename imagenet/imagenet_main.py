@@ -8,6 +8,7 @@ from enum import Enum
 import math
 import numpy as np
 import pandas as pd
+import re
 
 import torch
 import torch.nn as nn
@@ -350,7 +351,7 @@ def train(train_loader, model, criterion, optimizer, epoch, args, scaler=None):
                     params.data = torch.clamp(params.data, 0.0, 1.0)
 
         regularization_loss = torch.tensor(0)
-        regularization_loss = get_regularization_loss(model, lmbda=args.lmbda)
+        regularization_loss = get_regularization_loss(model, args)
         loss += regularization_loss
 
         # compute output
@@ -536,7 +537,7 @@ def get_regularization_loss(model, args):
 
     # reg_loss =  ||p||_2^2
     for name, params in model.named_parameters():
-        if ".bias_score" in nameZ
+        if ".bias_score" in name:
             # do nothing, because I'm pretending there are no biases
             regularization_loss += 0
 

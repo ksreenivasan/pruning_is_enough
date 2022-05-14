@@ -1,7 +1,7 @@
 #!/bin/bash
 
 python imagenet_main.py \
-    --arch resnet50 \
+        --arch ResNet50 \
 	--dist-url 'tcp://127.0.0.1:2500' \
 	--dist-backend 'nccl' \
 	--multiprocessing-distributed \
