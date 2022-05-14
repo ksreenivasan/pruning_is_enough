@@ -187,7 +187,9 @@ def main_worker(gpu, ngpus_per_node, args):
     # define loss function (criterion), optimizer, and learning rate scheduler
     criterion = nn.CrossEntropyLoss().cuda(args.gpu)
 
-    print("Switching to wt to see if that works well!")
+    print("GPU: {} | Switching to wt to see if that works well!".format(args.gpu))
+    print("GPU: {} | First round model to all ones score".format(args.gpu))
+    model = round_model(model, round_scheme='naive')
     switch_to_wt(model)
     optimizer = torch.optim.SGD(filter(lambda p: p.requires_grad, model.parameters()), args.lr,
                                 momentum=args.momentum,
@@ -597,6 +599,36 @@ def switch_to_wt(model):
             params.requires_grad = False
 
     return model
+
+def round_model(model, round_scheme='naive'):
+    print("Rounding model with scheme: {}".format(round_scheme))
+    cp_model = copy.deepcopy(model)
+    if isinstance(model, nn.parallel.DistributedDataParallel):
+       # cp_model = copy.deepcopy(model.module)
+       named_params = cp_model.module.named_parameters()
+    else:
+        # cp_model = copy.deepcopy(model)
+        named_params = cp_model.named_parameters()
+    for name, params in named_params:
+        if ".score" in name:
+            if round_scheme == 'naive':
+                params.data = torch.gt(params.data, torch.ones_like(
+                    params.data)*parser_args.quantize_threshold).int().float()
+            elif round_scheme == 'prob':
+                params.data = torch.clamp(params.data, 0.0, 1.0)
+                params.data = torch.bernoulli(params.data).float()
+            elif round_scheme == 'all_ones':
+                params.data = torch.ones_like(params.data)
+            else:
+                print("INVALID ROUNDING")
+                print("EXITING")
+                exit()
+
+    # if isinstance(model, nn.parallel.DistributedDataParallel):
+    #     cp_model = nn.parallel.DistributedDataParallel(
+    #        cp_model, device_ids=[parser_args.gpu], find_unused_parameters=False)
+
+    return cp_model
 
 if __name__ == '__main__':
     main()
