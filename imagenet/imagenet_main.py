@@ -83,6 +83,10 @@ parser.add_argument("--mixed-precision",
                     action='store_true',
                     default=False,
                     help="Use mixed precision or not")
+parser.add_argument('--lmbda',
+                    type=float,
+                    default=0.001,
+                    help='regularization coefficient lambda')
 
 best_acc1 = 0
 
@@ -282,16 +286,16 @@ def main_worker(gpu, ngpus_per_node, args):
         print("Epoch: {} | Train + Val Time {}".format(epoch, epoch_time))
 
         epoch_list.append(epoch)
-        train_acc_list.append(train_acc1)
-        test_acc_list.append(acc1)
-        val_acc_list.append(acc1)
+        train_acc_list.append(train_acc1.item())
+        test_acc_list.append(acc1.item())
+        val_acc_list.append(acc1.item())
 
         scheduler.step()
 
         results_df = pd.DataFrame({'epoch': epoch_list,
                                    'test_acc': test_acc_list,
                                    'val_acc': val_acc_list,
-                                   'train_acc': train_acc_list,})
+                                   'train_acc': train_acc_list})
                                    # 'regularization_loss': reg_loss_list,
                                    # 'model_sparsity': model_sparsity_list})
 
@@ -337,6 +341,16 @@ def train(train_loader, model, criterion, optimizer, epoch, args, scaler=None):
             images = images.cuda(args.gpu, non_blocking=True)
         if torch.cuda.is_available():
             target = target.cuda(args.gpu, non_blocking=True)
+
+        for name, params in model.named_parameters():
+            # make sure param_name ends with .weight or .bias
+            if re.match('.*\.scores', name) and not re.match('.*\.bias_scores', name):
+                with torch.no_grad():
+                    params.data = torch.clamp(params.data, 0.0, 1.0)
+
+        regularization_loss = torch.tensor(0)
+        regularization_loss = get_regularization_loss(model, lmbda=args.lmbda)
+        loss += regularization_loss
 
         # compute output
         if scaler is None:
@@ -515,6 +529,42 @@ def print_time(msg):
     print("TIME: The current time in seconds is: {}".format(time.time()))
     print("----------------------------------------------------------------------------\n\n")
 
+def get_regularization_loss(model, args):
+    conv_layers, linear_layers = get_layers(args.arch, model)
+    regularization_loss = torch.tensor(0.).to(args.gpu)
+
+    # reg_loss =  ||p||_2^2
+    for name, params in model.named_parameters():
+        if ".bias_score" in nameZ
+            # do nothing, because I'm pretending there are no biases
+            regularization_loss += 0
+
+        elif ".score" in name:
+            regularization_loss += torch.norm(params, p=2)**2
+    regularization_loss = args.lmbda * regularization_loss
+    return regularization_loss
+
+# return layer objects of conv layers and linear layers so we can parse them
+# efficiently
+def get_layers(arch='ResNet50', dist_model=None):
+    if isinstance(dist_model, nn.parallel.DistributedDataParallel):
+         model = dist_model.module
+    else:
+        model = dist_model
+
+    if arch == 'ResNet50':
+        conv_layers = [model.conv1]
+        for layer in [model.layer1, model.layer2, model.layer3, model.layer4]:
+            for basic_block_id in [i for i in range(len(layer))]:
+                conv_layers.append(layer[basic_block_id].conv1)
+                conv_layers.append(layer[basic_block_id].conv2)
+                conv_layers.append(layer[basic_block_id].conv3)
+                # handle shortcut
+                # if len(layer[basic_block_id].shortcut) > 0:
+                #     conv_layers.append(layer[basic_block_id].shortcut[0])
+        linear_layers = [model.fc]
+
+    return (conv_layers, linear_layers)
 
 if __name__ == '__main__':
     main()
