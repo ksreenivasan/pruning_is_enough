@@ -187,7 +187,9 @@ def main_worker(gpu, ngpus_per_node, args):
     # define loss function (criterion), optimizer, and learning rate scheduler
     criterion = nn.CrossEntropyLoss().cuda(args.gpu)
 
-    optimizer = torch.optim.SGD(model.parameters(), args.lr,
+    print("Switching to wt to see if that works well!")
+    switch_to_wt(model)
+    optimizer = torch.optim.SGD(filter(lambda p: p.requires_grad, model.parameters()), args.lr,
                                 momentum=args.momentum,
                                 weight_decay=args.weight_decay)
     
@@ -575,6 +577,25 @@ def get_layers(arch='ResNet50', dist_model=None):
         linear_layers = [model.fc]
 
     return (conv_layers, linear_layers)
+
+
+# switches off gradients for scores and flags and switches it on for weights and biases
+def switch_to_wt(model):
+    print('Switching to weight training by switching off requires_grad for scores and switching it on for weights.')
+
+    for name, params in model.named_parameters():
+        # make sure param_name ends with .weight or .bias
+        if re.match('.*\.weight', name):
+            params.requires_grad = True
+        elif re.match('.*\.bias$', name):
+            params.requires_grad = True
+        elif "score" in name:
+            params.requires_grad = False
+        else:
+            # flags and everything else
+            params.requires_grad = False
+
+    return model
 
 if __name__ == '__main__':
     main()
