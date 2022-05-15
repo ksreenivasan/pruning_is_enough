@@ -90,6 +90,18 @@ parser.add_argument('--lmbda',
                     type=float,
                     default=0.001,
                     help='regularization coefficient lambda')
+parser.add_argument("--iter-period",
+                    type=int,
+                    default=5,
+                    help="period [epochs] for iterative pruning")
+parser.add_argument("--invert-sanity-check",
+                    action="store_true",
+                    default=False,
+                    help="Enable this to run the inverted sanity check (for HC)")
+parser.add_argument("--prune-rate",
+                    default=0.5,
+                    type=float,
+                    help="Decides fraction of weights TO PRUNE when calling prune()")
 
 best_acc1 = 0
 
@@ -279,6 +291,9 @@ def main_worker(gpu, ngpus_per_node, args):
         if args.distributed:
             train_sampler.set_epoch(epoch)
 
+        if epoch % (args.iter_period) == 0 and epoch != 0:
+            prune(model, args)
+
         print_time("Epoch: {} | Starting Train".format(epoch))
         start_train = time.time()
         # train for one epoch
@@ -293,19 +308,23 @@ def main_worker(gpu, ngpus_per_node, args):
         epoch_time = (time.time() - start_train) / 60
         print("Epoch: {} | Train + Val Time {}".format(epoch, epoch_time))
 
+        # check sparsity of model
+        cp_model = round_model(model, args.round)
+        avg_sparsity = get_model_sparsity(cp_model, threshold=0, args=args)
+
         epoch_list.append(epoch)
         train_acc_list.append(train_acc1.item())
         test_acc_list.append(acc1.item())
         val_acc_list.append(acc1.item())
+        model_sparsity_list.append(avg_sparsity)
 
         scheduler.step()
 
         results_df = pd.DataFrame({'epoch': epoch_list,
                                    'test_acc': test_acc_list,
                                    'val_acc': val_acc_list,
-                                   'train_acc': train_acc_list})
-                                   # 'regularization_loss': reg_loss_list,
-                                   # 'model_sparsity': model_sparsity_list})
+                                   'train_acc': train_acc_list,
+                                   'model_sparsity': model_sparsity_list})
 
         # remember best acc@1 and save checkpoint
         is_best = acc1 > best_acc1
@@ -629,7 +648,7 @@ def round_model(model, round_scheme='naive'):
         # cp_model = copy.deepcopy(model)
         named_params = cp_model.named_parameters()
     for name, params in named_params:
-        if ".score" in name:
+        if re.match('.*\.scores', name):
             if round_scheme == 'naive':
                 params.data = torch.gt(params.data, torch.ones_like(
                     params.data)*quantize_threshold).int().float()
@@ -648,6 +667,131 @@ def round_model(model, round_scheme='naive'):
     #        cp_model, device_ids=[parser_args.gpu], find_unused_parameters=False)
 
     return cp_model
+
+
+def prune(model, args, update_thresholds_only=False, update_scores=False):
+    print("Pruning Model:")
+
+    scores_threshold = bias_scores_threshold = -np.inf
+    conv_layers, linear_layers = get_layers(args.arch, model)
+
+    # prune the bottom k of scores
+    num_active_weights = 0
+    num_active_biases = 0
+    active_scores_list = []
+    active_bias_scores_list = []
+
+    for layer in (conv_layers + linear_layers):
+        num_active_weights += layer.flag.data.sum().item()
+        active_scores = (layer.scores.data[layer.flag.data == 1]).clone()
+        active_scores_list.append(active_scores)
+        if args.bias:
+            num_active_biases += layer.bias_flag.data.sum().item()
+            active_biases = (
+                layer.bias_scores.data[layer.bias_flag.data == 1]).clone()
+            active_bias_scores_list.append(active_biases)
+
+    number_of_weights_to_prune = np.ceil(
+        args.prune_rate * num_active_weights).astype(int)
+    number_of_biases_to_prune = np.ceil(
+        args.prune_rate * num_active_biases).astype(int)
+
+    agg_scores = torch.cat(active_scores_list)
+    agg_bias_scores = torch.cat(
+        active_bias_scores_list) if parser_args.bias else torch.tensor([])
+
+    # if invert_sanity_check, then threshold is based on sorted scores in descending order, and we prune all scores ABOVE it
+    scores_threshold = torch.sort(
+        torch.abs(agg_scores), descending=args.invert_sanity_check).values[number_of_weights_to_prune-1].item()
+
+    if args.bias:
+        bias_scores_threshold = torch.sort(
+            torch.abs(agg_bias_scores), descending=args.invert_sanity_check).values[number_of_biases_to_prune-1].item()
+    else:
+        bias_scores_threshold = -1
+
+    if update_thresholds_only:
+        for layer in (conv_layers + linear_layers):
+            layer.scores_prune_threshold = scores_threshold
+        if parser_args.bias:
+            layer.bias_scores_prune_threshold = bias_scores_threshold
+
+    else:
+        for layer in (conv_layers + linear_layers):
+            if args.invert_sanity_check:
+                layer.flag.data = (layer.flag.data + torch.lt(layer.scores.abs(),  # TODO
+                                   torch.ones_like(layer.scores)*scores_threshold).int() == 2).int()
+            else:
+                layer.flag.data = (layer.flag.data + torch.gt(layer.scores.abs(),  # TODO
+                                   torch.ones_like(layer.scores)*scores_threshold).int() == 2).int()
+            if update_scores:
+                layer.scores.data = layer.scores.data * layer.flag.data
+            if args.bias:
+                if args.invert_sanity_check:
+                    layer.bias_flag.data = (layer.bias_flag.data + torch.lt(layer.bias_scores, torch.ones_like(
+                        layer.bias_scores)*bias_scores_threshold).int() == 2).int()
+                else:
+                    layer.bias_flag.data = (layer.bias_flag.data + torch.gt(layer.bias_scores, torch.ones_like(
+                        layer.bias_scores)*bias_scores_threshold).int() == 2).int()
+                if update_scores:
+                    layer.bias_scores.data = layer.bias_scores.data * layer.bias_flag.data
+
+
+    return scores_threshold, bias_scores_threshold
+
+
+# returns num_nonzero elements, total_num_elements so that it is easier to compute
+# average sparsity in the end
+def get_layer_sparsity(layer, threshold=0, args):
+    # assume the model is rounded, compute effective scores
+    eff_scores = layer.scores * layer.flag
+    if args.bias:
+        eff_bias_scores = layer.bias_scores * layer.bias_flag
+    num_middle = torch.sum(torch.gt(eff_scores,
+                           torch.ones_like(eff_scores)*threshold) *
+                           torch.lt(eff_scores,
+                           torch.ones_like(eff_scores.detach()*(1-threshold)).int()))
+    if num_middle > 0:
+        print("WARNING: Model scores are not binary. Sparsity number is unreliable.")
+        raise ValueError
+    w_numer, w_denom = eff_scores.detach().sum().item(), eff_scores.detach().flatten().numel()
+
+    if args.bias:
+        b_numer, b_denom = eff_bias_scores.detach().sum().item(), eff_bias_scores.detach().flatten().numel()
+    else:
+        b_numer, b_denom = 0, 0
+
+    return w_numer, w_denom, b_numer, b_denom
+
+
+# returns avg_sparsity = number of non-zero weights!
+def get_model_sparsity(model, threshold=0, args):
+    conv_layers, linear_layers = get_layers(parser_args.arch, model)
+    numer = 0
+    denom = 0
+
+    # TODO: find a nicer way to do this (skip dropout)
+    # TODO: Update: can't use .children() or .named_modules() because of the way things are wrapped in builder
+    for conv_layer in conv_layers:
+        w_numer, w_denom, b_numer, b_denom = get_layer_sparsity(
+            conv_layer, threshold, args)
+        numer += w_numer
+        denom += w_denom
+        if parser_args.bias:
+            numer += b_numer
+            denom += b_denom
+
+    for lin_layer in linear_layers:
+        w_numer, w_denom, b_numer, b_denom = get_layer_sparsity(
+            lin_layer, threshold, args)
+        numer += w_numer
+        denom += w_denom
+        if parser_args.bias:
+            numer += b_numer
+            denom += b_denom
+    # print('Overall sparsity: {}/{} ({:.2f} %)'.format((int)(numer), denom, 100*numer/denom))
+    return 100*numer/denom
+
 
 if __name__ == '__main__':
     main()
