@@ -358,9 +358,9 @@ class Builder(object):
 
 def get_builder():
     conv_type = "SubnetConv"
-    bn_type = "NonAffineBatchNorm" # TODO: might change this if it doesn't affect weights
+    bn_type = "AffineBatchNorm" # TODO: might change this if it causes problems later
     first_layer_type = None # TODO: I think
-    weight_init = "signed_constant"
+    weight_init = "kaiming_normal"
 
     print("==> Conv Type: {}".format(conv_type))
     print("==> BN Type: {}".format(bn_type))

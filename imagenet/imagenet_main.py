@@ -603,6 +603,21 @@ def switch_to_wt(model):
 
     return model
 
+# switches off gradients for weights and biases and switches it on for scores and flags
+def switch_to_prune(model):
+    print('Switching to pruning by switching off requires_grad for weights and switching it on for scores.')
+
+    for name, params in model.named_parameters():
+        # make sure param_name ends with .weight or .bias
+        if re.match('.*\.scores', name) and re.match('.*\.bias_scores', name):
+            params.requires_grad = True
+        else:
+            # weights, biases, bias_scores, flags and everything else
+            params.requires_grad = False
+
+    return model
+
+
 def round_model(model, round_scheme='naive'):
     quantize_threshold=0.5
     print("Rounding model with scheme: {}".format(round_scheme))
