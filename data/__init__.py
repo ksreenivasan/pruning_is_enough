@@ -4,3 +4,4 @@ from data.imagenet import ImageNet
 from data.tinyimagenet import TinyImageNet
 from data.mnist import MNIST
 from data.bigcifar import BigCIFAR10
+from data.wiki import Wiki

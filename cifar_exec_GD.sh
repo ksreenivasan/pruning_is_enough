@@ -1,16 +1,36 @@
 ## NeurIPS prep
-# Ablation studies (GM vs EP) - CIFAR-10, ResNet-20, sparsity=0.5%
 conf_end=".yml"
 log_end="_log"
+
+conf_file="configs/training/lstm/wt"
+log_root="lstm_wiki_test"
+subfolder_root="lstm_wiki_test"
+
+for trial in 1
+do
+    python main.py \
+    --gpu 1 \
+    --config "$conf_file$conf_end" \
+    --trial-num $trial \
+    --use-full-data \
+    --subfolder "$subfolder_root$trial" #> "$log_root$trial$log_end" 2>&1 &
+
+done
+
+
+
+
+
+# Ablation studies (GM vs EP) - CIFAR-10, ResNet-20, sparsity=0.5%
 ## EP
 # conf_file="configs/ablation_ep_gm_resnet20_059/ep"
 # log_root="resnet20_059_ep"
 # subfolder_root="resnet20_059_ep"
 
 ## Global EP
-conf_file="configs/ablation_ep_gm_resnet20_059/ks_global_ep"
-log_root="resnet20_059_global_ep"
-subfolder_root="resnet20_059_global_ep"
+# conf_file="configs/ablation_ep_gm_resnet20_059/ks_global_ep"
+# log_root="resnet20_059_global_ep"
+# subfolder_root="resnet20_059_global_ep"
 
 ## Global EP iter
 # conf_file="configs/ablation_ep_gm_resnet20_059/ks_global_ep_iter"
@@ -586,15 +606,3 @@ BLOCK
 # To run: nohup bash cifar_exec_GD.sh &
 # To view log: tail -f log_config_i
 
-
-'''
-##### WRONG ablation
-# EP + iterative sparsity control (ep_decay)
-conf_file="configs/ablation_ep_gm_resnet20_059/ep_decay"
-log_root="resnet20_059_ep_decay"
-subfolder_root="resnet20_059_ep_decay"
-# EP + iterative sparsity control + global sparsity constraint (global_ep_decay)
-# conf_file="configs/ablation_ep_gm_resnet20_059/global_ep_decay"
-# log_root="resnet20_059_global_ep_decay"
-# subfolder_root="resnet20_059_global_ep_decay"
-'''
