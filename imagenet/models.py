@@ -124,7 +124,8 @@ class ResNet(nn.Module):
         if self.args_last_layer_dense:
             self.fc = nn.Conv2d(512 * block.expansion, num_classes, 1)
         else:
-            self.fc = builder.conv1x1(512 * block.expansion, num_classes)
+            # self.fc = builder.conv1x1(512 * block.expansion, num_classes)
+            self.fc = builder.linear(512 * block.expansion, num_classes)
         
         self.prunable_layer_names, self.prunable_biases = self.get_prunable_param_names()
 
@@ -360,7 +361,7 @@ def get_builder():
     conv_type = "SubnetConv"
     bn_type = "AffineBatchNorm" # TODO: might change this if it causes problems later
     first_layer_type = None # TODO: I think
-    weight_init = "kaiming_normal"
+    weight_init = "kaiming_normal" # TODO: this is only for debugging wt training
 
     print("==> Conv Type: {}".format(conv_type))
     print("==> BN Type: {}".format(bn_type))
@@ -472,6 +473,8 @@ class SubnetConv(nn.Conv2d):
         self.weight.requires_grad = False
         self.flag.requires_grad = False
         self.bias_flag.requires_grad = False
+        # TODO: Hacky. I'm trying to mimic frankle etc in that we have biases, but we don't prune them
+        self.bias.requires_grad = False
 
     def set_prune_rate(self, prune_rate):
         self.prune_rate = prune_rate
@@ -504,12 +507,97 @@ class SubnetConv(nn.Conv2d):
                 b = self.bias * bias_subnet
             else:
                 b = self.bias
-        
+
         x = F.conv2d(
             x, w, b, self.stride, self.padding, self.dilation, self.groups
         )
 
         return x
+
+
+class SubnetLinear(nn.Linear):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # TODO: hacky. trying to mimic frankle in having biases but not pruning them
+        self.args_bias = False
+        self.algo = 'hc'
+        self.prune_rate = 0.5
+        # resnet50 has bias=True only for the FC layer
+
+        # initialize flag (representing the pruned weights)
+        self.flag = nn.Parameter(torch.ones(self.weight.size()))
+        if self.args_bias:
+            self.bias_flag = nn.Parameter(torch.ones(self.bias.size()))
+        else:
+            # dummy variable just so other things don't break
+            self.bias_flag = nn.Parameter(torch.Tensor(1))
+
+        # initialize the scores
+        self.scores = nn.Parameter(torch.Tensor(self.weight.size()))
+        if self.args_bias:
+            self.bias_scores = nn.Parameter(torch.Tensor(self.bias.size()))
+        else:
+            # dummy variable just so other things don't break
+            self.bias_scores = nn.Parameter(torch.Tensor(1))
+        
+        # prune scores below this for global EP in bottom-k
+        self.scores_prune_threshold = -np.inf
+        self.bias_scores_prune_threshold = -np.inf
+        
+        if self.algo in ['hc', 'hc_iter']:
+            # score init is always uniform
+            nn.init.uniform_(self.scores, a=0.0, b=1.0)
+            nn.init.uniform_(self.bias_scores, a=0.0, b=1.0)
+        else:
+            nn.init.kaiming_uniform_(self.scores, a=math.sqrt(5))
+            nn.init.uniform_(self.bias_scores, a=-1.0, b=1.0) # can't do kaiming here. picking U[-1, 1] for no real reason
+
+        # NOTE: turn the gradient on the weights off
+        self.weight.requires_grad = False
+        self.flag.requires_grad = False
+        self.bias_flag.requires_grad = False
+        # TODO: Hacky. I'm trying to mimic frankle etc in that we have biases, but we don't prune them
+        self.bias.requires_grad = False
+
+    def set_prune_rate(self, prune_rate):
+        self.prune_rate = prune_rate
+
+    @property
+    def clamped_scores(self):
+        return self.scores.abs()
+
+    def forward(self, x):
+        if parser_args.algo in ['hc', 'hc_iter']:
+            # don't need a mask here. the scores are directly multiplied with weights
+            subnet, bias_subnet = GetSubnet.apply(self.scores, self.bias_scores, parser_args.prune_rate)
+            subnet = subnet * self.flag.data.float()
+            bias_subnet = subnet * self.bias_flag.data.float()
+            else:
+                subnet = self.scores * self.flag.data.float()
+                bias_subnet = self.bias_scores * self.bias_flag.data.float()
+        elif parser_args.algo in ['imp']:
+            # no STE, no subnet. Mask is handled outside
+            pass
+        elif parser_args.algo in ['global_ep', 'global_ep_iter']:
+            subnet, bias_subnet = GetSubnet.apply(self.scores.abs(), self.bias_scores.abs(), 0, self.scores_prune_threshold, self.bias_scores_prune_threshold)
+        else:
+            # ep, global_ep, global_ep_iter, pt etc
+            subnet, bias_subnet = GetSubnet.apply(self.scores.abs(), self.bias_scores.abs(), parser_args.prune_rate)
+
+        if parser_args.algo in ['imp']:
+            # no STE, no subnet. Mask is handled outside
+            w = self.weight
+            b = self.bias
+        else:
+            w = self.weight * subnet
+            if parser_args.bias:
+                b = self.bias * bias_subnet
+            else:
+                b = self.bias
+
+        x = F.linear(x, w, b)
+        return x
+
 
 class NonAffineBatchNorm(nn.BatchNorm2d):
     def __init__(self, dim):
