@@ -473,8 +473,6 @@ class SubnetConv(nn.Conv2d):
         self.weight.requires_grad = False
         self.flag.requires_grad = False
         self.bias_flag.requires_grad = False
-        # TODO: Hacky. I'm trying to mimic frankle etc in that we have biases, but we don't prune them
-        self.bias.requires_grad = False
 
     def set_prune_rate(self, prune_rate):
         self.prune_rate = prune_rate
@@ -572,9 +570,6 @@ class SubnetLinear(nn.Linear):
             subnet, bias_subnet = GetSubnet.apply(self.scores, self.bias_scores, parser_args.prune_rate)
             subnet = subnet * self.flag.data.float()
             bias_subnet = subnet * self.bias_flag.data.float()
-            else:
-                subnet = self.scores * self.flag.data.float()
-                bias_subnet = self.bias_scores * self.bias_flag.data.float()
         elif parser_args.algo in ['imp']:
             # no STE, no subnet. Mask is handled outside
             pass
