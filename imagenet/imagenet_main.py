@@ -25,12 +25,12 @@ import torchvision.transforms as transforms
 import torchvision.datasets as datasets
 import torch.autograd as autograd
 import torch.nn.functional as F
-# import torchvision.models as models
+import torchvision.models as torchvision_models
 import models
 
-model_names = sorted(name for name in models.__dict__
+model_names = sorted(name for name in torchvision_models.__dict__
     if name.islower() and not name.startswith("__")
-    and callable(models.__dict__[name]))
+    and callable(torchvision_models.__dict__[name]))
 
 parser = argparse.ArgumentParser(description='PyTorch ImageNet Training')
 parser.add_argument('--data', metavar='DIR', default='/home/ubuntu/ILSVRC2012/',
@@ -742,7 +742,7 @@ def prune(model, args, update_thresholds_only=False, update_scores=False):
 
 # returns num_nonzero elements, total_num_elements so that it is easier to compute
 # average sparsity in the end
-def get_layer_sparsity(layer, threshold=0, args):
+def get_layer_sparsity(layer, threshold=0, args=None):
     # assume the model is rounded, compute effective scores
     eff_scores = layer.scores * layer.flag
     if args.bias:
@@ -765,7 +765,7 @@ def get_layer_sparsity(layer, threshold=0, args):
 
 
 # returns avg_sparsity = number of non-zero weights!
-def get_model_sparsity(model, threshold=0, args):
+def get_model_sparsity(model, threshold=0, args=None):
     conv_layers, linear_layers = get_layers(parser_args.arch, model)
     numer = 0
     denom = 0

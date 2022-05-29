@@ -369,7 +369,7 @@ def get_builder():
     # conv_layer = getattr(utils.conv_type, parser_args.conv_type)
     # bn_layer = getattr(utils.bn_type, parser_args.bn_type)
     conv_layer = SubnetConv
-    bn_layer = NonAffineBatchNorm
+    bn_layer = AffineBatchNorm
 
     if first_layer_type is not None:
         first_layer = getattr(utils.conv_type, first_layer_type)
@@ -437,6 +437,8 @@ class SubnetConv(nn.Conv2d):
         self.args_bias = False
         self.algo = 'hc'
         self.prune_rate = 0.5
+        # resnet50 has bias=False because of BN layers
+        self.bias = None
 
         # initialize flag (representing the pruned weights)
         self.flag = nn.Parameter(torch.ones(self.weight.size()))
@@ -470,8 +472,6 @@ class SubnetConv(nn.Conv2d):
         self.weight.requires_grad = False
         self.flag.requires_grad = False
         self.bias_flag.requires_grad = False
-        # TODO: Hacky. I'm trying to mimick frankle etc in that we have biases, but we don't prune them
-        self.bias.requires_grad = False
 
     def set_prune_rate(self, prune_rate):
         self.prune_rate = prune_rate

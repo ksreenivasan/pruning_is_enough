@@ -2,9 +2,9 @@
 
 python imagenet_main.py \
         --arch ResNet50 \
-	--dist-url 'tcp://127.0.0.1:2500' \
-	--dist-backend 'nccl' \
-	--multiprocessing-distributed \
+	#--dist-url 'tcp://127.0.0.1:2500' \
+	#--dist-backend 'nccl' \
+	#--multiprocessing-distributed \
 	--world-size 1 \
 	--rank 0 \
 	--batch-size 1024 \
