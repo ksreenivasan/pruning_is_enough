@@ -19,6 +19,7 @@ import torch.utils.data.distributed
 import torchvision.transforms as transforms
 import torchvision.datasets as datasets
 import torchvision.models as models
+import models as mymodels
 
 model_names = sorted(name for name in models.__dict__
     if name.islower() and not name.startswith("__")
@@ -140,7 +141,10 @@ def main_worker(gpu, ngpus_per_node, args):
         model = models.__dict__[args.arch](pretrained=True)
     else:
         print("=> creating model '{}'".format(args.arch))
-        model = models.__dict__[args.arch]()
+        # model = models.__dict__[args.arch]()
+        # TODO: trying to compare vision model with my model
+        model = mymodels.ResNet50()
+        model = switch_to_wt(model)
 
     if not torch.cuda.is_available():
         print('using CPU, this will be slow')
@@ -484,6 +488,24 @@ def print_time(msg):
     print("TIME: The current time in seconds is: {}".format(time.time()))
     print("----------------------------------------------------------------------------\n\n")
 
+
+# switches off gradients for scores and flags and switches it on for weights and biases
+def switch_to_wt(model):
+    print('Switching to weight training by switching off requires_grad for scores and switching it on for weights.')
+
+    for name, params in model.named_parameters():
+        # make sure param_name ends with .weight or .bias
+        if re.match('.*\.weight', name):
+            params.requires_grad = True
+        elif re.match('.*\.bias$', name):
+            params.requires_grad = True
+        elif "score" in name:
+            params.requires_grad = False
+        else:
+            # flags and everything else
+            params.requires_grad = False
+
+    return model
 
 
 if __name__ == '__main__':
