@@ -180,6 +180,7 @@ class ResNet(nn.Module):
         x = self.layer4(x)
 
         x = self.avgpool(x)
+        x = torch.flatten(x, 1)
         x = self.fc(x)
         x = x.view(x.size(0), -1)
 
@@ -378,7 +379,7 @@ def get_builder():
     else:
         first_layer = None
 
-    builder = Builder(conv_layer=conv_layer, bn_layer=bn_layer, first_layer=first_layer)
+    builder = Builder(conv_layer=conv_layer, bn_layer=bn_layer, first_layer=first_layer, weight_init=weight_init)
 
     return builder
 
@@ -565,27 +566,27 @@ class SubnetLinear(nn.Linear):
         return self.scores.abs()
 
     def forward(self, x):
-        if parser_args.algo in ['hc', 'hc_iter']:
+        if self.algo in ['hc', 'hc_iter']:
             # don't need a mask here. the scores are directly multiplied with weights
-            subnet, bias_subnet = GetSubnet.apply(self.scores, self.bias_scores, parser_args.prune_rate)
+            subnet, bias_subnet = GetSubnet.apply(self.scores, self.bias_scores, self.prune_rate)
             subnet = subnet * self.flag.data.float()
             bias_subnet = subnet * self.bias_flag.data.float()
-        elif parser_args.algo in ['imp']:
+        elif self.algo in ['imp']:
             # no STE, no subnet. Mask is handled outside
             pass
         elif parser_args.algo in ['global_ep', 'global_ep_iter']:
             subnet, bias_subnet = GetSubnet.apply(self.scores.abs(), self.bias_scores.abs(), 0, self.scores_prune_threshold, self.bias_scores_prune_threshold)
         else:
             # ep, global_ep, global_ep_iter, pt etc
-            subnet, bias_subnet = GetSubnet.apply(self.scores.abs(), self.bias_scores.abs(), parser_args.prune_rate)
+            subnet, bias_subnet = GetSubnet.apply(self.scores.abs(), self.bias_scores.abs(), self.prune_rate)
 
-        if parser_args.algo in ['imp']:
+        if self.algo in ['imp']:
             # no STE, no subnet. Mask is handled outside
             w = self.weight
             b = self.bias
         else:
             w = self.weight * subnet
-            if parser_args.bias:
+            if self.args_bias:
                 b = self.bias * bias_subnet
             else:
                 b = self.bias
