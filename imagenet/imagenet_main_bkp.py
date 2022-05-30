@@ -142,10 +142,11 @@ def main_worker(gpu, ngpus_per_node, args):
         model = models.__dict__[args.arch](pretrained=True)
     else:
         print("=> creating model '{}'".format(args.arch))
-        model = models.__dict__[args.arch]()
+        # model = models.__dict__[args.arch]()
         # TODO: trying to compare vision model with my model
-        #model = mymodels.ResNet50()
-        #model = switch_to_wt(model)
+        model = mymodels.ResNet50()
+        model = round_model(model, round_scheme='all_ones')
+        model = switch_to_wt(model)
 
     if not torch.cuda.is_available():
         print('using CPU, this will be slow')
@@ -507,6 +508,38 @@ def switch_to_wt(model):
             params.requires_grad = False
 
     return model
+
+
+def round_model(model, round_scheme='naive'):
+    quantize_threshold=0.5
+    print("Rounding model with scheme: {}".format(round_scheme))
+    cp_model = copy.deepcopy(model)
+    if isinstance(model, nn.parallel.DistributedDataParallel):
+       # cp_model = copy.deepcopy(model.module)
+       named_params = cp_model.module.named_parameters()
+    else:
+        # cp_model = copy.deepcopy(model)
+        named_params = cp_model.named_parameters()
+    for name, params in named_params:
+        if re.match('.*\.scores', name):
+            if round_scheme == 'naive':
+                params.data = torch.gt(params.data, torch.ones_like(
+                    params.data)*quantize_threshold).int().float()
+            elif round_scheme == 'prob':
+                params.data = torch.clamp(params.data, 0.0, 1.0)
+                params.data = torch.bernoulli(params.data).float()
+            elif round_scheme == 'all_ones':
+                params.data = torch.ones_like(params.data)
+            else:
+                print("INVALID ROUNDING")
+                print("EXITING")
+                exit()
+
+    # if isinstance(model, nn.parallel.DistributedDataParallel):
+    #     cp_model = nn.parallel.DistributedDataParallel(
+    #        cp_model, device_ids=[parser_args.gpu], find_unused_parameters=False)
+
+    return cp_model
 
 
 if __name__ == '__main__':
