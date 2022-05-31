@@ -19,11 +19,11 @@ BLOCK
 
 python imagenet_main_bkp.py \
 	--arch resnet50 \
-	#--dist-url 'tcp://127.0.0.1:2500' \
-	#--dist-backend 'nccl' \
-	#--multiprocessing-distributed \
-	#--world-size 1 \
-	#--rank 0 \
+	--dist-url 'tcp://127.0.0.1:2500' \
+	--dist-backend 'nccl' \
+	--multiprocessing-distributed \
+	--world-size 1 \
+	--rank 0 \
 	--batch-size 256 \
 	--workers 12 \
 	--epochs 5 \

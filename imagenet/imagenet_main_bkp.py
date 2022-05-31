@@ -6,6 +6,7 @@ import time
 import warnings
 from enum import Enum
 import re
+import copy
 
 import torch
 import torch.nn as nn
@@ -142,11 +143,11 @@ def main_worker(gpu, ngpus_per_node, args):
         model = models.__dict__[args.arch](pretrained=True)
     else:
         print("=> creating model '{}'".format(args.arch))
-        # model = models.__dict__[args.arch]()
+        model = models.__dict__[args.arch]()
         # TODO: trying to compare vision model with my model
-        model = mymodels.ResNet50()
-        model = round_model(model, round_scheme='all_ones')
-        model = switch_to_wt(model)
+        # model = mymodels.ResNet50()
+        # model = round_model(model, round_scheme='all_ones')
+        # model = switch_to_wt(model)
 
     if not torch.cuda.is_available():
         print('using CPU, this will be slow')
