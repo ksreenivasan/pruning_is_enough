@@ -102,6 +102,19 @@ parser.add_argument("--prune-rate",
                     default=0.5,
                     type=float,
                     help="Decides fraction of weights TO PRUNE when calling prune()")
+parser.add_argument("--target-sparsity",
+                    default=5,
+                    type=float,
+                    help="Decides target sparsity in % when running GM")
+parser.add_argument("--finetune",
+                    action="store_true",
+                    default=False,
+                    help="Enable this to run the FT step after finding the subnetwork")
+parser.add_argument('--checkpoint',
+                    default='',
+                    type=str,
+                    metavar='PATH',
+                    help='path to latest checkpoint (default: none)')
 
 best_acc1 = 0
 
@@ -167,11 +180,21 @@ def main_worker(gpu, ngpus_per_node, args):
         print("==> creating model '{}'".format(args.arch))
         # model = models.__dict__[args.arch]()
         model = models.ResNet50()
-        print("GPU: {} | Switching to wt to see if that works well!".format(args.gpu))
-        print("GPU: {} | First round model to all ones score".format(args.gpu))
-        model = round_model(model, round_scheme='all_ones')
+        # print("GPU: {} | Switching to wt to see if that works well!".format(args.gpu))
+        # print("GPU: {} | First round model to all ones score".format(args.gpu))
+        # model = round_model(model, round_scheme='all_ones')
+        # model = switch_to_wt(model)
+
+    if args.finetune:
+        print("Finetuning Rare Gem. Loading checkpoint")
+        ckpt = torch.load(args.checkpoint)
+        model.load_state_dict(ckpt)
+        print("Successfully loaded checkpoint: {}".format(ckpt))
+        model = round_model(model, round_scheme='naive')
         model = switch_to_wt(model)
 
+
+    args.prune_rate = get_prune_rate(args.target_sparsity, args.iter_period)
 
     if not torch.cuda.is_available():
         print('using CPU, this will be slow')
@@ -293,7 +316,7 @@ def main_worker(gpu, ngpus_per_node, args):
         if args.distributed:
             train_sampler.set_epoch(epoch)
 
-        if epoch % (args.iter_period) == 0 and epoch != 0:
+        if not args.finetune and epoch % (args.iter_period) == 0 and epoch != 0:
             prune(model, args)
 
         print_time("Epoch: {} | Starting Train".format(epoch))
@@ -335,7 +358,7 @@ def main_worker(gpu, ngpus_per_node, args):
         if not args.multiprocessing_distributed or (args.multiprocessing_distributed and args.rank == 0):
             results_df.to_csv("acc_and_sparsity.csv", index=False)
 
-        save_flag = ((epoch+1)%10 == 0) or (epoch > 85)
+        save_flag = ((epoch+1)%10 == 0) or (epoch > 85) or (epoch == args.epochs-1)
         if save_flag and (not args.multiprocessing_distributed or (args.multiprocessing_distributed and args.rank == 0)):
             torch.save(model.module.state_dict(), 'model_before_fineune_epoch_{}.pth'.format(epoch))
             # save_checkpoint({
@@ -372,12 +395,13 @@ def train(train_loader, model, criterion, optimizer, epoch, args, scaler=None):
         if torch.cuda.is_available():
             target = target.cuda(args.gpu, non_blocking=True)
 
-        # project to [0, 1] in every gradient step
-        for name, params in model.named_parameters():
-            # make sure param_name ends with .scores and not bias_scores
-            if re.match('.*\.scores', name) and not re.match('.*\.bias_scores', name):
-                with torch.no_grad():
-                    params.data = torch.clamp(params.data, 0.0, 1.0)
+        if not args.finetune:
+            # project to [0, 1] in every gradient step
+            for name, params in model.named_parameters():
+                # make sure param_name ends with .scores and not bias_scores
+                if re.match('.*\.scores', name) and not re.match('.*\.bias_scores', name):
+                    with torch.no_grad():
+                        params.data = torch.clamp(params.data, 0.0, 1.0)
 
         # compute output
         if scaler is None:
@@ -416,12 +440,13 @@ def train(train_loader, model, criterion, optimizer, epoch, args, scaler=None):
         if i % args.print_freq == 0:
             progress.display(i)
 
-    # project to [0, 1] before returning model
-    for name, params in model.named_parameters():
-        # make sure param_name ends with .scores and not bias_scores
-        if re.match('.*\.scores', name) and not re.match('.*\.bias_scores', name):
-            with torch.no_grad():
-                params.data = torch.clamp(params.data, 0.0, 1.0)
+    if not args.finetune:
+        # project to [0, 1] before returning model
+        for name, params in model.named_parameters():
+            # make sure param_name ends with .scores and not bias_scores
+            if re.match('.*\.scores', name) and not re.match('.*\.bias_scores', name):
+                with torch.no_grad():
+                    params.data = torch.clamp(params.data, 0.0, 1.0)
 
     return top1.avg
 
@@ -793,6 +818,16 @@ def get_model_sparsity(model, threshold=0, args=None):
             denom += b_denom
     # print('Overall sparsity: {}/{} ({:.2f} %)'.format((int)(numer), denom, 100*numer/denom))
     return 100*numer/denom
+
+
+def get_prune_rate(target_sparsity=0.5, iter_period=5):
+    print("Computing prune_rate for target_sparsity {} with iter_period {}".format(
+        target_sparsity, iter_period))
+    max_epochs = parser_args.epochs
+    num_prune_iterations = np.floor((max_epochs-1)/iter_period)
+    # if algo is HC, iter_HC or anything that uses prune() then, prune_rate represents number of weights to prune
+    prune_rate = 1 - np.exp(np.log(target_sparsity/100)/num_prune_iterations)
+    return prune_rate
 
 
 if __name__ == '__main__':
