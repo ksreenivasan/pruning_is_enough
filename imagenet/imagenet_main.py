@@ -167,6 +167,11 @@ def main_worker(gpu, ngpus_per_node, args):
         print("==> creating model '{}'".format(args.arch))
         # model = models.__dict__[args.arch]()
         model = models.ResNet50()
+        print("GPU: {} | Switching to wt to see if that works well!".format(args.gpu))
+        print("GPU: {} | First round model to all ones score".format(args.gpu))
+        model = round_model(model, round_scheme='all_ones')
+        model = switch_to_wt(model)
+
 
     if not torch.cuda.is_available():
         print('using CPU, this will be slow')
@@ -202,10 +207,6 @@ def main_worker(gpu, ngpus_per_node, args):
     # define loss function (criterion), optimizer, and learning rate scheduler
     criterion = nn.CrossEntropyLoss().cuda(args.gpu)
 
-    print("GPU: {} | Switching to wt to see if that works well!".format(args.gpu))
-    print("GPU: {} | First round model to all ones score".format(args.gpu))
-    model = round_model(model, round_scheme='all_ones')
-    switch_to_wt(model)
     optimizer = torch.optim.SGD(filter(lambda p: p.requires_grad, model.parameters()), args.lr,
                                 momentum=args.momentum,
                                 weight_decay=args.weight_decay)
@@ -388,7 +389,7 @@ def train(train_loader, model, criterion, optimizer, epoch, args, scaler=None):
                 loss = criterion(output, target)
 
         regularization_loss = torch.tensor(0)
-        #regularization_loss = get_regularization_loss(model, args)
+        # regularization_loss = get_regularization_loss(model, args)
         # print("Regularization loss: {}".format(regularization_loss.item()))
         loss += regularization_loss
 
