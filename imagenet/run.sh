@@ -9,10 +9,11 @@ python imagenet_main.py \
 	--world-size 1 \
 	--rank 0 \
 	--batch-size 1024 \
-	--workers 12 \
+	--workers 8 \
 	--mixed-precision \
-	--epochs 5 \
+	--epochs 3 \
 	--lr 0.4 \
+	--finetune \
 	--lmbda 0.000000 \
 	--data '/home/ubuntu/ILSVRC2012' #> "resnet50_imagenet_log" 2>&1 &
 #BLOCK
@@ -25,8 +26,9 @@ python imagenet_main_bkp.py \
 	--multiprocessing-distributed \
 	--world-size 1 \
 	--rank 0 \
-	--batch-size 256 \
-	--workers 12 \
+	--batch-size 1024 \
+	--workers 8 \
+	--mixed-precision \
 	--epochs 5 \
 	--lr 0.4 \
 	--data '/home/ubuntu/ILSVRC2012'

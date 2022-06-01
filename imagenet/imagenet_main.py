@@ -115,6 +115,11 @@ parser.add_argument('--checkpoint',
                     type=str,
                     metavar='PATH',
                     help='path to latest checkpoint (default: none)')
+parser.add_argument("--bias",
+                    action="store_true",
+                    default=False,
+                    help="Enable this to allow pruning biases")
+
 
 best_acc1 = 0
 
@@ -187,14 +192,14 @@ def main_worker(gpu, ngpus_per_node, args):
 
     if args.finetune:
         print("Finetuning Rare Gem. Loading checkpoint")
-        ckpt = torch.load(args.checkpoint)
-        model.load_state_dict(ckpt)
-        print("Successfully loaded checkpoint: {}".format(ckpt))
-        model = round_model(model, round_scheme='naive')
+        #ckpt = torch.load(args.checkpoint)
+        #model.load_state_dict(ckpt)
+        print("Successfully loaded checkpoint: {}".format(args.checkpoint))
+        model = round_model(model, round_scheme='all_ones')
         model = switch_to_wt(model)
 
 
-    args.prune_rate = get_prune_rate(args.target_sparsity, args.iter_period)
+    args.prune_rate = get_prune_rate(args.target_sparsity, args.iter_period, args.epochs)
 
     if not torch.cuda.is_available():
         print('using CPU, this will be slow')
@@ -318,6 +323,7 @@ def main_worker(gpu, ngpus_per_node, args):
 
         if not args.finetune and epoch % (args.iter_period) == 0 and epoch != 0:
             prune(model, args)
+            torch.distributed.barrier()
 
         print_time("Epoch: {} | Starting Train".format(epoch))
         start_train = time.time()
@@ -334,7 +340,7 @@ def main_worker(gpu, ngpus_per_node, args):
         print("Epoch: {} | Train + Val Time {}".format(epoch, epoch_time))
 
         # check sparsity of model
-        cp_model = round_model(model, args.round)
+        cp_model = round_model(model, 'naive')
         avg_sparsity = get_model_sparsity(cp_model, threshold=0, args=args)
 
         epoch_list.append(epoch)
@@ -412,10 +418,10 @@ def train(train_loader, model, criterion, optimizer, epoch, args, scaler=None):
                 output = model(images)
                 loss = criterion(output, target)
 
-        regularization_loss = torch.tensor(0)
-        # regularization_loss = get_regularization_loss(model, args)
-        # print("Regularization loss: {}".format(regularization_loss.item()))
-        loss += regularization_loss
+        if not args.finetune:
+            regularization_loss = get_regularization_loss(model, args)
+            # print("Regularization loss: {}".format(regularization_loss.item()))
+            loss += regularization_loss
 
         # measure accuracy and record loss
         acc1, acc5 = accuracy(output, target, topk=(1, 5))
@@ -725,7 +731,7 @@ def prune(model, args, update_thresholds_only=False, update_scores=False):
 
     agg_scores = torch.cat(active_scores_list)
     agg_bias_scores = torch.cat(
-        active_bias_scores_list) if parser_args.bias else torch.tensor([])
+        active_bias_scores_list) if args.bias else torch.tensor([])
 
     # if invert_sanity_check, then threshold is based on sorted scores in descending order, and we prune all scores ABOVE it
     scores_threshold = torch.sort(
@@ -740,7 +746,7 @@ def prune(model, args, update_thresholds_only=False, update_scores=False):
     if update_thresholds_only:
         for layer in (conv_layers + linear_layers):
             layer.scores_prune_threshold = scores_threshold
-        if parser_args.bias:
+        if args.bias:
             layer.bias_scores_prune_threshold = bias_scores_threshold
 
     else:
@@ -793,7 +799,7 @@ def get_layer_sparsity(layer, threshold=0, args=None):
 
 # returns avg_sparsity = number of non-zero weights!
 def get_model_sparsity(model, threshold=0, args=None):
-    conv_layers, linear_layers = get_layers(parser_args.arch, model)
+    conv_layers, linear_layers = get_layers(args.arch, model)
     numer = 0
     denom = 0
 
@@ -804,7 +810,7 @@ def get_model_sparsity(model, threshold=0, args=None):
             conv_layer, threshold, args)
         numer += w_numer
         denom += w_denom
-        if parser_args.bias:
+        if args.bias:
             numer += b_numer
             denom += b_denom
 
@@ -813,17 +819,16 @@ def get_model_sparsity(model, threshold=0, args=None):
             lin_layer, threshold, args)
         numer += w_numer
         denom += w_denom
-        if parser_args.bias:
+        if args.bias:
             numer += b_numer
             denom += b_denom
     # print('Overall sparsity: {}/{} ({:.2f} %)'.format((int)(numer), denom, 100*numer/denom))
     return 100*numer/denom
 
 
-def get_prune_rate(target_sparsity=0.5, iter_period=5):
+def get_prune_rate(target_sparsity=0.5, iter_period=5, max_epochs=88):
     print("Computing prune_rate for target_sparsity {} with iter_period {}".format(
         target_sparsity, iter_period))
-    max_epochs = parser_args.epochs
     num_prune_iterations = np.floor((max_epochs-1)/iter_period)
     # if algo is HC, iter_HC or anything that uses prune() then, prune_rate represents number of weights to prune
     prune_rate = 1 - np.exp(np.log(target_sparsity/100)/num_prune_iterations)
