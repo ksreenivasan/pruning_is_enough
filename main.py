@@ -49,10 +49,6 @@ def main_worker(gpu, ngpus_per_node):
     if not os.path.isdir(result_root):
         os.mkdir(result_root)
     model = get_model(parser_args)
-    print_model(model, parser_args)
-
-    pdb.set_trace()
-    # check data/model setting
 
 
 
@@ -61,6 +57,8 @@ def main_worker(gpu, ngpus_per_node):
         model = round_model(model, round_scheme="all_ones", noise=parser_args.noise,
                             ratio=parser_args.noise_ratio, rank=parser_args.gpu)
         model = switch_to_wt(model)
+    print_model(model, parser_args)
+
     model = set_gpu(parser_args, model)
     if parser_args.pretrained:
         pretrained(parser_args.pretrained, model)
@@ -84,7 +82,6 @@ def main_worker(gpu, ngpus_per_node):
         test_random_subnet(model, data, criterion, parser_args, result_root, parser_args.smart_ratio) 
         return
         
-
     best_acc1, best_acc5, best_acc10, best_train_acc1, best_train_acc5, best_train_acc10 = 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
     # optionally resume from a checkpoint
     if parser_args.resume:

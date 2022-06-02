@@ -76,8 +76,10 @@ def print_model(model, parser_args):
     else:
         for name, param in model.named_parameters():
             if parser_args.dataset.lower() == 'wiki':
-                print(name, param.view(-1).numel())
-                num_params += param.view(-1).numel()
+                
+                if param.requires_grad:
+                    print(name, param.view(-1).numel())#, param.requires_grad)
+                    num_params += param.view(-1).numel()
             else:
                 if name.endswith('.scores'):
                     print(name, param.view(-1).numel())
