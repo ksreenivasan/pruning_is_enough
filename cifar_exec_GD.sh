@@ -3,14 +3,14 @@
 conf_end=".yml"
 log_end="_log"
 ## EP
-# conf_file="configs/ablation_ep_gm_resnet20_059/ep"
-# log_root="resnet20_059_ep"
-# subfolder_root="resnet20_059_ep"
+conf_file="configs/ablation_ep_gm_resnet20_059/ep" 
+log_root="resnet20_059_ep"
+subfolder_root="resnet20_059_ep"
 
 ## Global EP
-conf_file="configs/ablation_ep_gm_resnet20_059/ks_global_ep"
-log_root="resnet20_059_global_ep"
-subfolder_root="resnet20_059_global_ep"
+#conf_file="configs/ablation_ep_gm_resnet20_059/ks_global_ep"
+#log_root="resnet20_059_global_ep"
+#subfolder_root="resnet20_059_global_ep"
 
 ## Global EP iter
 # conf_file="configs/ablation_ep_gm_resnet20_059/ks_global_ep_iter"
