@@ -40,6 +40,13 @@ class ArgsHelper:
             help="Input batch size for training (default: 64)"
         )
         parser.add_argument(
+            "--eval-batch-size",
+            type=int,
+            default=10,
+            metavar="N",
+            help="Input batch size for training (default: 64)"
+        )
+        parser.add_argument(
             "--epochs",
             type=int,
             default=10,
@@ -892,7 +899,10 @@ class ArgsHelper:
                     help='dropout applied to layers (0 = no dropout)')
         parser.add_argument('--transformer_nhead', type=int, default=2,
                     help='the number of heads in the encoder/decoder of the transformer model')
-      
+
+        parser.add_argument('--clip', type=float, default=0.25,
+                    help='gradient clipping (LSTM)')
+
         parser.add_argument(
             "--only-sanity",
             action="store_true",

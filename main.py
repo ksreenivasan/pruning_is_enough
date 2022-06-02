@@ -51,6 +51,12 @@ def main_worker(gpu, ngpus_per_node):
     model = get_model(parser_args)
     print_model(model, parser_args)
 
+    pdb.set_trace()
+    # check data/model setting
+
+
+
+
     if parser_args.weight_training:
         model = round_model(model, round_scheme="all_ones", noise=parser_args.noise,
                             ratio=parser_args.noise_ratio, rank=parser_args.gpu)
@@ -173,27 +179,27 @@ def main_worker(gpu, ngpus_per_node):
         # evaluate on validation set
         start_validation = time.time()
         if parser_args.algo in ['hc', 'hc_iter']:
-            br_acc1, br_acc5, br_acc10 = validate(
+            br_acc1, br_acc5, br_acc10, loss = validate(
                 data.val_loader, model, criterion, parser_args, writer, epoch)  # before rounding
             print('Acc before rounding: {}'.format(br_acc1))
             acc_avg = 0
             for num_trial in range(parser_args.num_test):
                 cp_model = round_model(model, parser_args.round, noise=parser_args.noise,
                                        ratio=parser_args.noise_ratio, rank=parser_args.gpu)
-                acc1, acc5, acc10 = validate(
+                acc1, acc5, acc10, _ = validate(
                     data.val_loader, cp_model, criterion, parser_args, writer, epoch)
                 acc_avg += acc1
             acc_avg /= parser_args.num_test
             acc1 = acc_avg
             print('Acc after rounding: {}'.format(acc1))
-            val_acc1, val_acc5, val_acc10 = validate(
+            val_acc1, val_acc5, val_acc10, _ = validate(
                     data.actual_val_loader, cp_model, criterion, parser_args, writer, epoch)
             print('Validation Acc after rounding: {}'.format(val_acc1))
         else:
-            acc1, acc5, acc10 = validate(
+            acc1, acc5, acc10, _ = validate(
                 data.val_loader, model, criterion, parser_args, writer, epoch)
             print('Acc: {}'.format(acc1))
-            val_acc1, val_acc5, val_acc10 = validate(
+            val_acc1, val_acc5, val_acc10, _ = validate(
                 data.actual_val_loader, model, criterion, parser_args, writer, epoch)
             print('Validation Acc: {}'.format(val_acc1))
 
@@ -250,7 +256,7 @@ def main_worker(gpu, ngpus_per_node):
         test_acc_list.append(acc1)
         val_acc_list.append(val_acc1)
         train_acc_list.append(train_acc1)
-        reg_loss_list.append(reg_loss)
+        reg_loss_list.append(loss) # this is test loss -> will be used for test perplexity
         model_sparsity_list.append(avg_sparsity)
 
         epoch_time.update((time.time() - end_epoch) / 60)

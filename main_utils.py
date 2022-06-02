@@ -67,6 +67,7 @@ def print_model(model, parser_args):
     # check the model architecture
     
     num_params = 0
+    #pdb.set_trace()
     if parser_args.algo == 'training':
         for name, param in model.named_parameters():
             print(name, param.view(-1).numel())
@@ -74,9 +75,13 @@ def print_model(model, parser_args):
             num_params += param.view(-1).numel()
     else:
         for name, param in model.named_parameters():
-            if name.endswith('.scores'):
+            if parser_args.dataset.lower() == 'wiki':
                 print(name, param.view(-1).numel())
                 num_params += param.view(-1).numel()
+            else:
+                if name.endswith('.scores'):
+                    print(name, param.view(-1).numel())
+                    num_params += param.view(-1).numel()
 
     '''
     else:
@@ -298,11 +303,11 @@ def finetune(model, parser_args, data, criterion, old_epoch_list, old_test_acc_b
     train, validate, modifier = get_trainer(parser_args)
 
     # check the performance of loaded model (after rounding)
-    acc1, acc5, acc10 = validate(
+    acc1, acc5, acc10, _ = validate(
         data.val_loader, model, criterion, parser_args, writer, parser_args.epochs-1)
-    val_acc1, val_acc5, val_acc10 = validate(
+    val_acc1, val_acc5, val_acc10, _ = validate(
         data.actual_val_loader, model, criterion, parser_args, writer, parser_args.epochs-1)
-    train_acc1, train_acc5, train_acc10 = validate(
+    train_acc1, train_acc5, train_acc10, _ = validate(
         data.train_loader, model, criterion, parser_args, writer, parser_args.epochs-1)
     avg_sparsity = post_round_sparsity
     epoch_list.append(parser_args.epochs-1)
@@ -313,6 +318,7 @@ def finetune(model, parser_args, data, criterion, old_epoch_list, old_test_acc_b
     reg_loss_list.append(0.0)
     model_sparsity_list.append(avg_sparsity)
 
+    best_val_loss = 100
     end_epoch = time.time()
     for epoch in range(parser_args.epochs, parser_args.epochs*2):
 
@@ -332,10 +338,13 @@ def finetune(model, parser_args, data, criterion, old_epoch_list, old_test_acc_b
 
         # evaluate on validation set
         start_validation = time.time()
-        acc1, acc5, acc10 = validate(
-            data.val_loader, model, criterion, parser_args, writer, epoch)
-        val_acc1, val_acc5, val_acc10 = validate(
-            data.actual_val_loader, model, criterion, parser_args, writer, epoch)
+        if args.dataset.lower() == 'wiki' and args.arch.lower() == 'rnnmodel': 
+            acc1, acc5, acc10, loss = validate(
+                data.val_loader, model, criterion, parser_args, writer, epoch)
+            val_acc1, val_acc5, val_acc10, val_loss = validate(
+                data.actual_val_loader, model, criterion, parser_args, writer, epoch)
+        else:
+            raise NotImplementedError
         validation_time.update((time.time() - start_validation) / 60)
         # copy & paste the sparsity of prev. epoch
         avg_sparsity = model_sparsity_list[-1]
@@ -346,8 +355,13 @@ def finetune(model, parser_args, data, criterion, old_epoch_list, old_test_acc_b
         test_acc_list.append(acc1)
         val_acc_list.append(val_acc1)
         train_acc_list.append(train_acc1)
-        reg_loss_list.append(reg_loss)
+        reg_loss_list.append(loss) #reg_loss_list.append(reg_loss) # changed for wiki
         model_sparsity_list.append(avg_sparsity)
+
+        # learning rate decay 
+        if best_val_loss > val_loss and parser_args.weight_training:
+            parser_args.lr /= 4
+            print('Change to lr ', parser_args.lr)
 
         epoch_time.update((time.time() - end_epoch) / 60)
         progress_overall.display(epoch)
@@ -975,6 +989,8 @@ def get_model(parser_args):
         set_seed(parser_args.seed_fixed_init)
     if parser_args.arch in ['Conv4', 'Conv4Normal']:
         model = models.__dict__[parser_args.arch](width=parser_args.width)
+    elif parser_args.arch.lower() in ['rnnmodel']:
+        model = models.__dict__[parser_args.arch](rnn_type='LSTM', ntoken=33278, ninp=1500, nhid=1500, nlayers=2, dropout=0.65, tie_weights=True)
     else:
         model = models.__dict__[parser_args.arch]()
     if parser_args.fixed_init:

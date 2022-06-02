@@ -6,7 +6,7 @@ algo: 'hc_iter'
 weight_training: True
 
 # Architecture
-arch: vgg16 #lstm
+arch: RNNModel
 
 # ===== Dataset ===== #
 dataset: Wiki
@@ -14,15 +14,16 @@ name: lstm_wiki_training
 
 # ===== Learning Rate Policy ======== #
 optimizer: sgd
-#lr: 0.1
-fine_tune_lr: 0.01
-lr_policy: multistep_lr #cosine_lr #constant_lr
+lr: 20
+fine_tune_lr: 20
+lr_policy: constant_lr #multistep_lr #cosine_lr #constant_lr
 
 # ===== Network training config ===== #
 epochs: 40
-wd: 0.0005
-momentum: 0.9
-batch_size: 128
+wd: 0 #0.0005
+momentum: 0 #0.9
+batch_size: 20
+eval_batch_size: 10
 target_sparsity: 100
 weight_training: True
 

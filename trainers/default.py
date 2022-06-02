@@ -13,6 +13,14 @@ from torch import optim
 __all__ = ["train", "validate", "modifier"]
 
 
+def repackage_hidden(h):
+    """Wraps hidden states in new Tensors, to detach them from their history."""
+
+    if isinstance(h, torch.Tensor):
+        return h.detach()
+    else:
+        return tuple(repackage_hidden(v) for v in h)
+
 
 def train(train_loader, model, criterion, optimizer, epoch, args, writer, scaler=None):
     batch_time = AverageMeter("Time", ":6.3f")
@@ -30,7 +38,12 @@ def train(train_loader, model, criterion, optimizer, epoch, args, writer, scaler
     # switch to train mode
     model.train()
 
-    batch_size = train_loader.batch_size
+    if args.dataset.lower() != 'wiki':
+        batch_size = train_loader.batch_size
+    else:
+        batch_size = args.batch_size #
+        hidden = model.init_hidden(batch_size)
+
     num_batches = len(train_loader)
     end = time.time()
     for i, (images, target) in tqdm.tqdm(
@@ -56,13 +69,27 @@ def train(train_loader, model, criterion, optimizer, epoch, args, writer, scaler
                     with torch.no_grad():
                         scores.data = torch.clamp(scores.data, 0.0, 1.0)
 
+        
+        if args.dataset.lower() == 'wiki':
+            # Starting each batch, we detach the hidden state from how it was previously produced.
+            # If we didn't, the model would try backpropagating all the way to start of the dataset.
+            model.zero_grad()
+        
         # compute output
         if scaler is None:
-            output = model(images)
+            if args.dataset.lower() == 'wiki' and args.arch.lower() == 'rnnmodel':
+                hidden = repackage_hidden(hidden)
+                output, hidden = model(images, hidden)
+            else:
+                output = model(images)
             loss = criterion(output, target)
         else:
             with torch.cuda.amp.autocast(enabled=True): # mixed precision
-                output = model(images)
+                if args.dataset.lower() == 'wiki' and args.arch.lower() == 'rnnmodel':
+                    hidden = repackage_hidden(hidden)
+                    output, hidden = model(images, hidden)
+                else:
+                    output = model(images)
                 loss = criterion(output, target)
 
         if args.lam_finetune_loss > 0:
@@ -90,9 +117,13 @@ def train(train_loader, model, criterion, optimizer, epoch, args, writer, scaler
         #import ipdb; ipdb.set_trace()
         if scaler is None:
             loss.backward()
+            if args.dataset.lower() == 'wiki' and args.arch.lower() == 'rnnmodel':
+                torch.nn.utils.clip_grad_norm_(model.parameters(), args.clip)
             optimizer.step()
         else:
             scaler.scale(loss).backward()
+            if args.dataset.lower() == 'wiki' and args.arch.lower() == 'rnnmodel':
+                torch.nn.utils.clip_grad_norm_(model.parameters(), args.clip)
             scaler.step(optimizer)
             scaler.update()
 
@@ -137,8 +168,12 @@ def validate(val_loader, model, criterion, args, writer, epoch):
     # switch to evaluate mode
     model.eval()
 
+    if args.dataset.lower() == 'wiki' and args.arch.lower() == 'rnnmodel': 
+        hidden = model.init_hidden(args.eval_batch_size)
+
     with torch.no_grad():
         end = time.time()
+            
         for i, (images, target) in tqdm.tqdm(
             enumerate(val_loader), ascii=True, total=len(val_loader)
         ):
@@ -150,7 +185,11 @@ def validate(val_loader, model, criterion, args, writer, epoch):
             #print(images.shape, target.shape)
 
             # compute output
-            output = model(images)
+            if args.dataset.lower() == 'wiki' and args.arch.lower() == 'rnnmodel':
+                output, hidden = model(images, hidden)
+                hidden = repackage_hidden(hidden)
+            else:
+                output = model(images)
 
             loss = criterion(output, target)
 
@@ -175,7 +214,10 @@ def validate(val_loader, model, criterion, args, writer, epoch):
                 writer, prefix="test", global_step=epoch)
 
     print("Model top1 Accuracy: {}".format(top1.avg))
-    return top1.avg, top5.avg, top10.avg
+    # if args.dataset.lower() == 'wiki' and args.arch.lower() == 'rnnmodel': 
+    #     return top1.avg, top5.avg, top10.avg, loss.item()
+    # else:
+    return top1.avg, top5.avg, top10.avg, loss.item()
 
 
 def modifier(args, epoch, model):

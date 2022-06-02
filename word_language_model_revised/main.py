@@ -129,12 +129,16 @@ def set_parameters_to_prune():
 
 
 ntokens = len(corpus.dictionary)
+print('ntokens: ', ntokens)
 if args.model == 'Transformer':
     model = model.TransformerModel(ntokens, args.emsize, args.nhead, args.nhid, args.nlayers, args.dropout).to(device)
 else:
     model = model.RNNModel(args.model, ntokens, args.emsize, args.nhid, args.nlayers, args.dropout, args.tied).to(device)
 set_parameters_to_prune()
 criterion = nn.NLLLoss()
+print(model)
+for name, param in model.named_parameters():
+    print(name, param.shape)
 
 ###############################################################################
 # Training code
@@ -163,6 +167,7 @@ def get_batch(source, i):
     seq_len = min(args.bptt, len(source) - 1 - i)
     data = source[i:i+seq_len]
     target = source[i+1:i+1+seq_len].view(-1)
+    import pdb; pdb.set_trace()
     return data, target
 
 
@@ -334,7 +339,6 @@ def save_result(epoch_list, val_ppl_list, val_loss_list, test_ppl_list, test_los
 # load seed 
 if args.algo == 'retrain_renda':
     
-
     #ckpt_path = 'checkpoints/test_ckpt_renda_4.pth'
     ckpt_path = 'checkpoints/renda_{}_{}_{}.pth'.format(args.algo, args.prune_rate, args.retrain_start_round)
     print("loading seed from {}".format(ckpt_path))
