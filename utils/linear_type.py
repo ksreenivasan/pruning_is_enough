@@ -78,9 +78,9 @@ class GetSubnet(autograd.Function):
                 bias_out = torch.gt(bias_scores, torch.ones_like(bias_scores)*parser_args.quantize_threshold).float()
 
         else:
-            print("INVALID PRUNING ALGO")
-            print("EXITING")
-            exit()
+            print("Pruning Algo = {}".format(parser_args.algo))
+            print("Are you sure you should be here?")
+            print("GetSubnet")
 
         return out, bias_out
 

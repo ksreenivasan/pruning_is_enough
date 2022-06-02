@@ -139,7 +139,15 @@ def main_worker(gpu, ngpus_per_node):
     for epoch in range(parser_args.start_epoch, parser_args.epochs):
         if parser_args.multiprocessing_distributed:
             data.train_loader.sampler.set_epoch(epoch)
-        #lr_policy(epoch, iteration=None)
+
+        if parser_args.pretrained and parser_args.drop_bottom_half_weights and epoch == 1:
+            print("Loaded pretrained model, so drop the bottom half of the weights in Epoch 1")
+            prune(model, drop_bottom_half_weights=True)
+            # print("Loaded pretrained model, so randomly drop half the weights in Epoch 1")
+            # conv_layers, linear_layers = get_layers(parser_args.arch, model)
+            # for layer in (conv_layers+linear_layers):
+            #     layer.scores.data = torch.bernoulli(0.5 * torch.ones_like(layer.scores.data))
+        # lr_policy(epoch, iteration=None)
         modifier(parser_args, epoch, model)
         cur_lr = get_lr(optimizer)
 
@@ -250,6 +258,10 @@ def main_worker(gpu, ngpus_per_node):
         progress_overall.write_to_tensorboard(
             writer, prefix="diagnostics", global_step=epoch
         )
+
+        if parser_args.ckpt_at_fixed_epochs:
+            if epoch in parser_args.ckpt_at_fixed_epochs:
+                torch.save(model.state_dict(), result_root + 'wt_model_after_epoch_{}.pth'.format(epoch))
 
         if parser_args.conv_type == "SampleSubnetConv":
             count = 0
