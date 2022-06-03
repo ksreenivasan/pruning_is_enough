@@ -445,7 +445,8 @@ def train(train_loader, model, criterion, optimizer, epoch, args, scaler=None):
         end = time.time()
 
         if i % args.print_freq == 0:
-            print("Regularization Loss={} | Total Loss={}".format(regularization_loss, loss))
+            if not args.finetune:
+                print("Regularization Loss={} | Total Loss={}".format(regularization_loss, loss))
             progress.display(i)
 
     if not args.finetune:
