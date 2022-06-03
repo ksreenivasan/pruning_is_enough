@@ -2,7 +2,7 @@
 
 #:<<BLOCK
 python imagenet_main_cifar.py \
-        --arch ResNet50 \
+        --arch ResNet20 \
 	--rank 0 \
 	--batch-size 64 \
 	--workers 8 \
@@ -19,7 +19,7 @@ python imagenet_main_cifar.py \
 	--world-size 1
 
 python imagenet_main_cifar.py \
-        --arch ResNet50 \
+        --arch ResNet20 \
 	--dist-url 'tcp://127.0.0.1:2500' \
 	--dist-backend 'nccl' \
 	--multiprocessing-distributed \
@@ -29,7 +29,7 @@ python imagenet_main_cifar.py \
 	--workers 8 \
 	--mixed-precision \
 	--epochs 88 \
-	--lr 0.004 \
+	--lr 0.01 \
 	--finetune \
 	--checkpoint 'model_before_finetune_epoch_9.pth' \
 	--lmbda 0.0 \
