@@ -27,6 +27,7 @@ import torch.autograd as autograd
 import torch.nn.functional as F
 import torchvision.models as torchvision_models
 import models
+import models_cifar
 
 model_names = sorted(name for name in torchvision_models.__dict__
     if name.islower() and not name.startswith("__")
@@ -184,7 +185,8 @@ def main_worker(gpu, ngpus_per_node, args):
         # args.arch = 'resnet50'
         print("==> creating model '{}'".format(args.arch))
         # model = models.__dict__[args.arch]()
-        model = models.ResNet50()
+        # model = models.ResNet50()
+        model = models_cifar.resnet20()
         if not args.finetune:
             model = switch_to_prune(model)
     if args.finetune:
