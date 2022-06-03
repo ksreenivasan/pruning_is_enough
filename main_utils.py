@@ -218,8 +218,8 @@ def test_random_subnet(model, data, criterion, parser_args, result_root, smart_r
 
     # save checkpoint for later debug
     model_filename = result_root +  'model_after_finetune.pth'
-    #print("Writing final model to {}".format(model_filename))
-    #torch.save(model.state_dict(), model_filename)
+    print("Writing final model to {}".format(model_filename))
+    torch.save(model.state_dict(), model_filename)
 
 
 def eval_and_print(validate, data_loader, model, criterion, parser_args, writer=None, epoch=parser_args.start_epoch, description='model'):
@@ -480,12 +480,26 @@ def switch_to_wt(model):
         # make sure param_name ends with .weight or .bias
         if re.match('.*\.weight', name):
             params.requires_grad = True
-        elif parser_args.bias and re.match('.*\.bias$', name):
+        elif re.match('.*\.bias$', name):
             params.requires_grad = True
         elif "score" in name:
             params.requires_grad = False
         else:
             # flags and everything else
+            params.requires_grad = False
+
+    return model
+ 
+# switches off gradients for weights and biases and switches it on for scores and flags
+def switch_to_prune(model):
+    print('Switching to pruning by switching off requires_grad for weights and switching it on for scores.')
+
+    for name, params in model.named_parameters():
+        # make sure param_name ends with .weight or .bias
+        if re.match('.*\.scores', name) and not re.match('.*\.bias_scores', name):
+            params.requires_grad = True
+        else:
+            # weights, biases, bias_scores, flags and everything else
             params.requires_grad = False
 
     return model

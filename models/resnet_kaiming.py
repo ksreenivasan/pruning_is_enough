@@ -61,13 +61,14 @@ class ResNet(nn.Module):
         self.layer1 = self._make_layer(block, 16 * times, num_blocks[0], stride=1)
         self.layer2 = self._make_layer(block, 32 * times, num_blocks[1], stride=2)
         self.layer3 = self._make_layer(block, 64 * times, num_blocks[2], stride=2)
-        # self.avgpool = nn.AdaptiveAvgPool2d(1)
+        self.avgpool = nn.AdaptiveAvgPool2d(1)
 
         num_classes = 10
         if parser_args.dataset == "CIFAR100":
             num_classes = 100
 
-        self.fc = builder.conv1x1(64 * block.expansion * times, num_classes) # 10 = num_classes for cifar10
+        # self.fc = builder.conv1x1(64 * block.expansion * times, num_classes) # 10 = num_classes for cifar10
+        self.fc = builder.linear(64 * block.expansion * times, num_classes)
 
         self.prunable_layer_names, self.prunable_biases = self.get_prunable_param_names()
 
@@ -102,7 +103,9 @@ class ResNet(nn.Module):
         out = self.layer1(out)
         out = self.layer2(out)
         out = self.layer3(out)
-        out = F.avg_pool2d(out, out.size()[3])
+        # out = F.avg_pool2d(out, out.size()[3])
+        out = self.avgpool(out)
+        out = torch.flatten(out, 1)
         out = self.fc(out)
         return out.flatten(1)
 

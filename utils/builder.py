@@ -71,7 +71,7 @@ class Builder(object):
         return c
 
     def linear(self, in_planes, out_planes):
-        l = SubnetLinear(in_planes, out_planes, bias=parser_args.bias)
+        l = SubnetLinear(in_planes, out_planes, bias=True)
         self._init_conv(l)
         return l
 
@@ -149,7 +149,7 @@ class Builder(object):
 
 
 def get_builder():
-
+    parser_args.bn_type = "AffineBatchNorm"
     print("==> Conv Type: {}".format(parser_args.conv_type))
     print("==> BN Type: {}".format(parser_args.bn_type))
 

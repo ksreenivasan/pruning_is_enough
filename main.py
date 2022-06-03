@@ -30,19 +30,27 @@ def main_worker(gpu, ngpus_per_node):
         # When using a single GPU per process and per DistributedDataParallel, we need to divide the batch size
         # ourselves based on the total number of GPUs we have
         parser_args.batch_size = int(parser_args.batch_size / ngpus_per_node)
-        parser_args.num_workers = int(
-            (parser_args.num_workers + ngpus_per_node - 1) / ngpus_per_node)
-        # Since we have ngpus_per_node processes per node, the total world_size
-        # needs to be adjusted accordingly
-        parser_args.world_size = ngpus_per_node * parser_args.world_size
-    idty_str = get_idty_str(parser_args)
-    if parser_args.subfolder is not None:
-        if not os.path.isdir('results/'):
-            os.mkdir('results/')
-        result_subroot = 'results/' + parser_args.subfolder + '/'
-        if not os.path.isdir(result_subroot):
-            os.mkdir(result_subroot)
-        result_root = result_subroot + '/results_' + idty_str + '/'
+
+    train, validate, modifier = get_trainer(parser_args)
+    model = get_model(parser_args)
+    model = switch_to_prune(model)
+    print("GPU: {}".format(parser_args.gpu))
+
+    if (parser_args.multiprocessing_distributed and parser_args.gpu == 0) or not parser_args.multiprocessing_distributed:
+        idty_str = get_idty_str(parser_args)
+        if parser_args.subfolder is not None:
+            if not os.path.isdir('results/'):
+                os.mkdir('results/')
+            result_subroot = 'results/' + parser_args.subfolder + '/'
+            if not os.path.isdir(result_subroot):
+                os.mkdir(result_subroot)
+            result_root = result_subroot + '/results_' + idty_str + '/'
+        else:
+            result_root = 'results/results_' + idty_str + '/'
+
+        if not os.path.isdir(result_root):
+            os.mkdir(result_root)
+        print_model(model, parser_args)
     else:
         result_root = 'results/results_' + idty_str + '/'
 
@@ -303,7 +311,7 @@ def main_worker(gpu, ngpus_per_node):
         results_df.to_csv(results_filename, index=False)
 
     # save checkpoint before fine-tuning
-    #torch.save(model.state_dict(), result_root + 'model_before_finetune.pth')
+    torch.save(model.state_dict(), result_root + 'model_before_finetune.pth')
 
     print("\n\nHigh accuracy subnetwork found! Rest is just finetuning")
     print_time()
@@ -318,7 +326,7 @@ def main_worker(gpu, ngpus_per_node):
         eval_and_print(validate, data.val_loader, cp_model, criterion,
                        parser_args, writer=None, description='final model after finetuning')
         # save checkpoint after fine-tuning
-        #torch.save(cp_model.state_dict(), result_root + 'model_after_finetune.pth')
+        torch.save(cp_model.state_dict(), result_root + 'model_after_finetune.pth')
     else:
         print("Skipping finetuning!!!")
 
