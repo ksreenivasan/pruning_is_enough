@@ -310,13 +310,13 @@ def main_worker(gpu, ngpus_per_node, args):
     use_cuda = torch.cuda.is_available()
 
     # Data loading code
-    kwargs = {"num_workers": args.num_workers, "pin_memory": True} if use_cuda else {}
+    kwargs = {"num_workers": args.workers, "pin_memory": True} if use_cuda else {}
 
     normalize = transforms.Normalize(
         mean=[0.491, 0.482, 0.447], std=[0.247, 0.243, 0.262]
     )
 
-    train_dataset = torchvision.datasets.CIFAR10(
+    train_dataset = datasets.CIFAR10(
         root=data_root,
         train=True,
         download=True,
@@ -330,14 +330,14 @@ def main_worker(gpu, ngpus_per_node, args):
         ),
     )
 
-    test_dataset = torchvision.datasets.CIFAR10(
+    test_dataset = datasets.CIFAR10(
         root=data_root,
         train=False,
         download=True,
         transform=transforms.Compose([transforms.ToTensor(), normalize]),
     )
 
-    if parser_args.multiprocessing_distributed:
+    if args.multiprocessing_distributed:
         train_sampler = torch.utils.data.distributed.DistributedSampler(train_dataset)
     else:
         train_sampler = None
