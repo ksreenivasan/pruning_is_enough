@@ -185,19 +185,15 @@ def main_worker(gpu, ngpus_per_node, args):
         print("==> creating model '{}'".format(args.arch))
         # model = models.__dict__[args.arch]()
         model = models.ResNet50()
-        # print("GPU: {} | Switching to wt to see if that works well!".format(args.gpu))
-        # print("GPU: {} | First round model to all ones score".format(args.gpu))
-        # model = round_model(model, round_scheme='all_ones')
-        # model = switch_to_wt(model)
-
+        if not args.finetune:
+            model = switch_to_prune(model)
     if args.finetune:
         print("Finetuning Rare Gem. Loading checkpoint")
-        #ckpt = torch.load(args.checkpoint)
-        #model.load_state_dict(ckpt)
+        ckpt = torch.load(args.checkpoint, map_location='cuda:{}'.format(args.gpu))
+        model.load_state_dict(ckpt)
         print("Successfully loaded checkpoint: {}".format(args.checkpoint))
-        model = round_model(model, round_scheme='all_ones')
+        model = round_model(model, round_scheme='naive')
         model = switch_to_wt(model)
-
 
     args.prune_rate = get_prune_rate(args.target_sparsity, args.iter_period, args.epochs)
 
@@ -361,12 +357,17 @@ def main_worker(gpu, ngpus_per_node, args):
         is_best = acc1 > best_acc1
         best_acc1 = max(acc1, best_acc1)
 
+        if not args.finetune:
+            results_filename = "acc_and_sparsity.csv"
+        else:
+            results_filename = "acc_and_sparsity_finetune.csv"
+
         if not args.multiprocessing_distributed or (args.multiprocessing_distributed and args.rank == 0):
-            results_df.to_csv("acc_and_sparsity.csv", index=False)
+            results_df.to_csv(results_filename, index=False)
 
         save_flag = ((epoch+1)%10 == 0) or (epoch > 85) or (epoch == args.epochs-1)
         if save_flag and (not args.multiprocessing_distributed or (args.multiprocessing_distributed and args.rank == 0)):
-            torch.save(model.module.state_dict(), 'model_before_fineune_epoch_{}.pth'.format(epoch))
+            torch.save(model.module.state_dict(), 'model_before_finetune_epoch_{}.pth'.format(epoch))
             # save_checkpoint({
             #     'epoch': epoch + 1,
             #     'arch': args.arch,
@@ -444,6 +445,7 @@ def train(train_loader, model, criterion, optimizer, epoch, args, scaler=None):
         end = time.time()
 
         if i % args.print_freq == 0:
+            print("Regularization Loss={} | Total Loss={}".format(regularization_loss, loss))
             progress.display(i)
 
     if not args.finetune:
@@ -660,8 +662,8 @@ def switch_to_prune(model):
     print('Switching to pruning by switching off requires_grad for weights and switching it on for scores.')
 
     for name, params in model.named_parameters():
-        # make sure param_name ends with .weight or .bias
-        if re.match('.*\.scores', name) and re.match('.*\.bias_scores', name):
+        # make sure param_name ends with .scores and not .bias_scores
+        if re.match('.*\.scores', name) and not re.match('.*\.bias_scores', name):
             params.requires_grad = True
         else:
             # weights, biases, bias_scores, flags and everything else
