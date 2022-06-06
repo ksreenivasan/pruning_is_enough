@@ -119,6 +119,16 @@ parser.add_argument("--bias",
                     action="store_true",
                     default=False,
                     help="Enable this to allow pruning biases")
+parser.add_argument('--subfolder',
+                    default='results',
+                    type=str,
+                    metavar='PATH',
+                    help='path to subfolder where we will store results and ckpts')
+parser.add_argument('--optimizer',
+                    default='sgd',
+                    type=str,
+                    metavar='OPT',
+                    help='sgd|adam')
 
 
 best_acc1 = 0
@@ -231,7 +241,14 @@ def main_worker(gpu, ngpus_per_node, args):
     # define loss function (criterion), optimizer, and learning rate scheduler
     criterion = nn.CrossEntropyLoss().cuda(args.gpu)
 
-    optimizer = torch.optim.SGD(filter(lambda p: p.requires_grad, model.parameters()), args.lr,
+    if args.optimizer == "adam":
+        print("Creating optimizer: Adam")
+        optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, model.parameters()), lr=args.lr,
+            weight_decay=args.weight_decay)
+
+    else args.optimizer == "sgd":
+        print("Creating optimizer: SGD")
+        optimizer = torch.optim.SGD(filter(lambda p: p.requires_grad, model.parameters()), args.lr,
                                 momentum=args.momentum,
                                 weight_decay=args.weight_decay)
     
@@ -358,16 +375,16 @@ def main_worker(gpu, ngpus_per_node, args):
         best_acc1 = max(acc1, best_acc1)
 
         if not args.finetune:
-            results_filename = "acc_and_sparsity.csv"
+            results_filename = "{}/acc_and_sparsity.csv".format(args.subfolder)
         else:
-            results_filename = "acc_and_sparsity_finetune.csv"
+            results_filename = "{}/acc_and_sparsity_finetune.csv".format(args.subfolder)
 
         if not args.multiprocessing_distributed or (args.multiprocessing_distributed and args.rank == 0):
             results_df.to_csv(results_filename, index=False)
 
         save_flag = ((epoch+1)%10 == 0) or (epoch > 85) or (epoch == args.epochs-1)
         if save_flag and (not args.multiprocessing_distributed or (args.multiprocessing_distributed and args.rank == 0)):
-            torch.save(model.module.state_dict(), 'model_before_finetune_epoch_{}.pth'.format(epoch))
+            torch.save(model.module.state_dict(), '{}/model_before_finetune_epoch_{}.pth'.format(args.subfolder, epoch))
             # save_checkpoint({
             #     'epoch': epoch + 1,
             #     'arch': args.arch,
@@ -376,6 +393,8 @@ def main_worker(gpu, ngpus_per_node, args):
             #     'optimizer' : optimizer.state_dict(),
             #     'scheduler' : scheduler.state_dict()
             # }, is_best)
+    if args.finetune:
+        torch.save(model.module.state_dict(), '{}/model_after_finetune_epoch_{}.pth'.format(args.subfolder, epoch))
 
 
 def train(train_loader, model, criterion, optimizer, epoch, args, scaler=None):

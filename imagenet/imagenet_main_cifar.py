@@ -120,6 +120,11 @@ parser.add_argument("--bias",
                     action="store_true",
                     default=False,
                     help="Enable this to allow pruning biases")
+parser.add_argument('--subfolder',
+                    default='results',
+                    type=str,
+                    metavar='PATH',
+                    help='path to subfolder where we will store results and ckpts')
 
 
 best_acc1 = 0
@@ -420,7 +425,7 @@ def main_worker(gpu, ngpus_per_node, args):
 
         save_flag = ((epoch+1)%10 == 0) or (epoch > 85) or (epoch == args.epochs-1)
         if save_flag and (not args.multiprocessing_distributed or (args.multiprocessing_distributed and args.rank == 0)):
-            torch.save(model.module.state_dict(), 'model_before_finetune_epoch_{}.pth'.format(epoch))
+            torch.save(model.module.state_dict(), '{}/model_before_finetune_epoch_{}.pth'.format(args.subfolder, epoch))
             # save_checkpoint({
             #     'epoch': epoch + 1,
             #     'arch': args.arch,
