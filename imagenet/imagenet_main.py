@@ -245,8 +245,7 @@ def main_worker(gpu, ngpus_per_node, args):
         print("Creating optimizer: Adam")
         optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, model.parameters()), lr=args.lr,
             weight_decay=args.weight_decay)
-
-    else args.optimizer == "sgd":
+    else:
         print("Creating optimizer: SGD")
         optimizer = torch.optim.SGD(filter(lambda p: p.requires_grad, model.parameters()), args.lr,
                                 momentum=args.momentum,
