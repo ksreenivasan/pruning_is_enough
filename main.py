@@ -98,7 +98,7 @@ def main_worker(gpu, ngpus_per_node):
     end_epoch = time.time()
     parser_args.start_epoch = parser_args.start_epoch or 0
     acc1 = None
-    epoch_list, test_acc_before_round_list, test_acc_list, reg_loss_list, model_sparsity_list, val_acc_list, train_acc_list = [], [], [], [], [], [], []
+    epoch_list, test_acc_before_round_list, test_acc_list, test_loss_list, model_sparsity_list, val_acc_list, train_acc_list = [], [], [], [], [], [], []
 
     # Save the initial model
     #torch.save(model.state_dict(), result_root + 'init_model.pth')
@@ -112,7 +112,7 @@ def main_worker(gpu, ngpus_per_node):
         print("Overriding prune_rate to {}".format(parser_args.prune_rate))
     #if parser_args.dataset == 'TinyImageNet':
     #    print_num_dataset(data)
-    if not parser_args.weight_training:
+    if not parser_args.weight_training and parser_args.arch.lower() not in ['rnnmodel']:
         print_layers(parser_args, model)
     
 
@@ -130,7 +130,7 @@ def main_worker(gpu, ngpus_per_node):
             resume(parser_args, model, optimizer)
             
             do_sanity_checks(model, parser_args, data, criterion, epoch_list, test_acc_before_round_list,
-                         test_acc_list, reg_loss_list, model_sparsity_list, parser_args.results_root)
+                         test_acc_list, test_loss_list, model_sparsity_list, parser_args.results_root)
             
             #cp_model = round_model(model, round_scheme="all_ones", noise=parser_args.noise,
             #            ratio=parser_args.noise_ratio, rank=parser_args.gpu)
@@ -176,7 +176,7 @@ def main_worker(gpu, ngpus_per_node):
         # evaluate on validation set
         start_validation = time.time()
         if parser_args.algo in ['hc', 'hc_iter']:
-            br_acc1, br_acc5, br_acc10, loss = validate(
+            br_acc1, br_acc5, br_acc10, test_loss = validate(
                 data.val_loader, model, criterion, parser_args, writer, epoch)  # before rounding
             print('Acc before rounding: {}'.format(br_acc1))
             acc_avg = 0
@@ -193,7 +193,7 @@ def main_worker(gpu, ngpus_per_node):
                     data.actual_val_loader, cp_model, criterion, parser_args, writer, epoch)
             print('Validation Acc after rounding: {}'.format(val_acc1))
         else:
-            acc1, acc5, acc10, _ = validate(
+            acc1, acc5, acc10, test_loss = validate(
                 data.val_loader, model, criterion, parser_args, writer, epoch)
             print('Acc: {}'.format(acc1))
             val_acc1, val_acc5, val_acc10, _ = validate(
@@ -253,7 +253,7 @@ def main_worker(gpu, ngpus_per_node):
         test_acc_list.append(acc1)
         val_acc_list.append(val_acc1)
         train_acc_list.append(train_acc1)
-        reg_loss_list.append(loss) # this is test loss -> will be used for test perplexity
+        test_loss_list.append(loss) # this is test loss -> will be used for test perplexity
         model_sparsity_list.append(avg_sparsity)
 
         epoch_time.update((time.time() - end_epoch) / 60)
@@ -293,7 +293,7 @@ def main_worker(gpu, ngpus_per_node):
 
         if parser_args.algo in ['hc', 'hc_iter']:
             results_df = pd.DataFrame({'epoch': epoch_list, 'test_acc_before_rounding': test_acc_before_round_list,
-                                      'test_acc': test_acc_list, 'val_acc': val_acc_list, 'train_acc': train_acc_list, 'regularization_loss': reg_loss_list, 'model_sparsity': model_sparsity_list})
+                                      'test_acc': test_acc_list, 'val_acc': val_acc_list, 'train_acc': train_acc_list, 'test_loss': test_loss_list, 'model_sparsity': model_sparsity_list})
         else:
             results_df = pd.DataFrame(
                 {'epoch': epoch_list, 'test_acc': test_acc_list, 'val_acc': val_acc_list, 'train_acc': train_acc_list, 'model_sparsity': model_sparsity_list})
@@ -316,7 +316,7 @@ def main_worker(gpu, ngpus_per_node):
     if not parser_args.skip_fine_tune:
         print("Beginning fine-tuning")
         cp_model = finetune(cp_model, parser_args, data, criterion, epoch_list,
-                            test_acc_before_round_list, test_acc_list, val_acc_list, train_acc_list, reg_loss_list, model_sparsity_list, result_root)
+                            test_acc_before_round_list, test_acc_list, val_acc_list, train_acc_list, test_loss_list, model_sparsity_list, result_root)
         # print out the final acc
         eval_and_print(validate, data.val_loader, cp_model, criterion,
                        parser_args, writer=None, description='final model after finetuning')
@@ -327,7 +327,7 @@ def main_worker(gpu, ngpus_per_node):
 
     if not parser_args.skip_sanity_checks:
         do_sanity_checks(model, parser_args, data, criterion, epoch_list, test_acc_before_round_list,
-                         test_acc_list, val_acc_list, train_acc_list, reg_loss_list, model_sparsity_list, result_root)
+                         test_acc_list, val_acc_list, train_acc_list, test_loss_list, model_sparsity_list, result_root)
 
     else:
         print("Skipping sanity checks!!!")

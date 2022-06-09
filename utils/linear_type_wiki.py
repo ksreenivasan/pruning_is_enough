@@ -169,6 +169,8 @@ class SubnetLinear(nn.Linear):
                 self.scores.data = torch.clamp(self.scores.data, 0.0, 1.0)
                 self.bias_scores.data = torch.clamp(self.bias_scores.data, 0.0, 1.0)
 
+            import pdb; pdb.set_trace()
+
             if parser_args.hc_quantized:
                 subnet, bias_subnet = GetSubnet.apply(self.scores, self.bias_scores, parser_args.prune_rate)
                 subnet = subnet * self.flag.data.float()

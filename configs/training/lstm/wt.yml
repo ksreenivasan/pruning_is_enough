@@ -1,4 +1,4 @@
-subfolder: lstm_WT_runs
+#subfolder: lstm_WT_runs
 trial_num: 1
 
 # algorithm
@@ -38,4 +38,4 @@ skip_fine_tune: True
 
 # ===== Hardware setup ===== #
 workers: 4
-gpu: 2
+#gpu: 0

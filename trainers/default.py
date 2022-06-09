@@ -75,7 +75,7 @@ def train(train_loader, model, criterion, optimizer, epoch, args, writer, scaler
             # If we didn't, the model would try backpropagating all the way to start of the dataset.
             model.zero_grad()
         
-        pdb.set_trace()
+        #pdb.set_trace()
         # compute output
         if scaler is None:
             if args.dataset.lower() == 'wiki' and args.arch.lower() == 'rnnmodel':
