@@ -416,14 +416,14 @@ def main_worker(gpu, ngpus_per_node, args):
         best_acc1 = max(acc1, best_acc1)
 
         if not args.finetune:
-            results_filename = "acc_and_sparsity.csv"
+            results_filename = "{}/acc_and_sparsity.csv".format(args.subfolder)
         else:
-            results_filename = "acc_and_sparsity_finetune.csv"
+            results_filename = "{}/acc_and_sparsity_finetune.csv".format(args.subfolder)
 
         if not args.multiprocessing_distributed or (args.multiprocessing_distributed and args.rank == 0):
             results_df.to_csv(results_filename, index=False)
 
-        save_flag = ((epoch+1)%10 == 0) or (epoch > 85) or (epoch == args.epochs-1)
+        save_flag = ((epoch+1)%10 == 0) or (epoch > 140) or (epoch == args.epochs-1)
         if save_flag and (not args.multiprocessing_distributed or (args.multiprocessing_distributed and args.rank == 0)):
             torch.save(model.module.state_dict(), '{}/model_before_finetune_epoch_{}.pth'.format(args.subfolder, epoch))
             # save_checkpoint({
