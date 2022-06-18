@@ -483,6 +483,9 @@ class SubnetConv(nn.Conv2d):
         return self.scores.abs()
 
     def forward(self, x):
+        # TODO: hack
+        self.algo = 'pt'
+
         if self.algo in ['hc', 'hc_iter', 'transformer']:
             subnet, bias_subnet = GetSubnet.apply(self.scores, self.bias_scores, self.prune_rate)
             subnet = subnet * self.flag.data.float()
@@ -492,6 +495,10 @@ class SubnetConv(nn.Conv2d):
             pass
         elif self.algo in ['global_ep', 'global_ep_iter']:
             subnet, bias_subnet = GetSubnet.apply(self.scores.abs(), self.bias_scores.abs(), 0, self.scores_prune_threshold, self.bias_scores_prune_threshold)
+        elif self.algo in ['pt']:
+            subnet, bias_subnet = self.scores, self.bias_scores
+            subnet = subnet * self.flag.data.float()
+            bias_subnet = subnet * self.bias_flag.data.float()
         else:
             # ep, global_ep, global_ep_iter, pt etc
             subnet, bias_subnet = GetSubnet.apply(self.scores.abs(), self.bias_scores.abs(), self.prune_rate)
@@ -510,6 +517,9 @@ class SubnetConv(nn.Conv2d):
         x = F.conv2d(
             x, w, b, self.stride, self.padding, self.dilation, self.groups
         )
+
+        # TODO: hack
+        self.algo = 'hc'
 
         return x
 
@@ -566,8 +576,10 @@ class SubnetLinear(nn.Linear):
         return self.scores.abs()
 
     def forward(self, x):
+        # TODO: hack
+        self.algo = 'pt'
+
         if self.algo in ['hc', 'hc_iter']:
-            # don't need a mask here. the scores are directly multiplied with weights
             subnet, bias_subnet = GetSubnet.apply(self.scores, self.bias_scores, self.prune_rate)
             subnet = subnet * self.flag.data.float()
             bias_subnet = subnet * self.bias_flag.data.float()
@@ -576,6 +588,10 @@ class SubnetLinear(nn.Linear):
             pass
         elif parser_args.algo in ['global_ep', 'global_ep_iter']:
             subnet, bias_subnet = GetSubnet.apply(self.scores.abs(), self.bias_scores.abs(), 0, self.scores_prune_threshold, self.bias_scores_prune_threshold)
+        elif self.algo in ['pt']:
+            subnet, bias_subnet = self.scores, self.bias_scores
+            subnet = subnet * self.flag.data.float()
+            bias_subnet = subnet * self.bias_flag.data.float()
         else:
             # ep, global_ep, global_ep_iter, pt etc
             subnet, bias_subnet = GetSubnet.apply(self.scores.abs(), self.bias_scores.abs(), self.prune_rate)
@@ -592,6 +608,9 @@ class SubnetLinear(nn.Linear):
                 b = self.bias
 
         x = F.linear(x, w, b)
+
+        # TODO: hack
+        self.algo = 'hc'
         return x
 
 
