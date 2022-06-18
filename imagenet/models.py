@@ -586,7 +586,7 @@ class SubnetLinear(nn.Linear):
         elif self.algo in ['imp']:
             # no STE, no subnet. Mask is handled outside
             pass
-        elif parser_args.algo in ['global_ep', 'global_ep_iter']:
+        elif self.algo in ['global_ep', 'global_ep_iter']:
             subnet, bias_subnet = GetSubnet.apply(self.scores.abs(), self.bias_scores.abs(), 0, self.scores_prune_threshold, self.bias_scores_prune_threshold)
         elif self.algo in ['pt']:
             subnet, bias_subnet = self.scores, self.bias_scores

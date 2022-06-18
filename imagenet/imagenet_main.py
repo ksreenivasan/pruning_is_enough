@@ -23,6 +23,7 @@ import torch.utils.data
 import torch.utils.data.distributed
 import torchvision.transforms as transforms
 import torchvision.datasets as datasets
+from torch.utils.data import random_split
 import torch.autograd as autograd
 import torch.nn.functional as F
 import torchvision.models as torchvision_models
@@ -318,12 +319,7 @@ def main_worker(gpu, ngpus_per_node, args):
             transforms.ToTensor(),
             normalize,
         ]))
-
-    if args.distributed:
-        train_sampler = torch.utils.data.distributed.DistributedSampler(train_dataset)
-    else:
-        train_sampler = None
-
+ 
     if args.use_full_data:
         train_dataset = dataset
         # use_full_data => we are not tuning hyperparameters
@@ -333,6 +329,10 @@ def main_worker(gpu, ngpus_per_node, args):
         train_size = len(dataset) - val_size
         train_dataset, validation_dataset = random_split(dataset, [train_size, val_size])
 
+    if args.distributed:
+        train_sampler = torch.utils.data.distributed.DistributedSampler(train_dataset)
+    else:
+        train_sampler = None
 
     train_loader = torch.utils.data.DataLoader(
         train_dataset, batch_size=args.batch_size,

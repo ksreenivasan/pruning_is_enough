@@ -12,13 +12,15 @@ python imagenet_main.py \
 	--target-sparsity 5 \
 	--iter-period 8 \
 	--lmbda 0.0000000001 \
-	--subfolder results_reg_1e-10_lr_0.02_iter_8_fullrun \
+	--lr-schedule cosine_lr \
+	--subfolder results_reg_1e-10_cosine_lr_pt \
 	--data '/data/imagenet/' \
 	--dist-url 'tcp://127.0.0.1:2500' \
 	--dist-backend 'nccl' \
 	--multiprocessing-distributed \
 	--world-size 1
 
+:<<BLOCK
 python imagenet_main.py \
         --arch ResNet50 \
 	--dist-url 'tcp://127.0.0.1:2500' \
@@ -35,6 +37,7 @@ python imagenet_main.py \
 	--checkpoint 'results_reg_1e-10_lr_0.02_iter_8_fullrun/model_before_finetune_epoch_87.pth' \
 	--lmbda 0.0 \
 	--data '/home/ubuntu/ILSVRC2012'
+BLOCK
 
 :<<BLOCK
 python imagenet_main_bkp.py \
