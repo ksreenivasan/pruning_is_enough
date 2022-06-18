@@ -1,6 +1,6 @@
 #!/bin/bash
 
-:<<BLOCK
+#:<<BLOCK
 python imagenet_main.py \
         --arch ResNet50 \
 	--rank 0 \
@@ -18,7 +18,6 @@ python imagenet_main.py \
 	--dist-backend 'nccl' \
 	--multiprocessing-distributed \
 	--world-size 1
-BLOCK
 
 python imagenet_main.py \
         --arch ResNet50 \
