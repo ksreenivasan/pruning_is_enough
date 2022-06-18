@@ -17,7 +17,7 @@ import torch.nn.parallel
 import torch.backends.cudnn as cudnn
 import torch.distributed as dist
 import torch.optim
-from torch.optim.lr_scheduler import StepLR
+import torch.optim.lr_scheduler
 import torch.multiprocessing as mp
 import torch.utils.data
 import torch.utils.data.distributed
@@ -129,7 +129,15 @@ parser.add_argument('--optimizer',
                     type=str,
                     metavar='OPT',
                     help='sgd|adam')
-
+parser.add_argument('--lr-schedule',
+                    default='step_lr',
+                    type=str,
+                    metavar='SCHED',
+                    help='step_lr|multistep_lr|cosine_lr')
+parser.add_argument("--use-full-data",
+                    action="store_true",
+                    default=None,
+                    help="Enable this use full train data and not leave anything for validation")
 
 best_acc1 = 0
 
@@ -202,9 +210,9 @@ def main_worker(gpu, ngpus_per_node, args):
             model = switch_to_prune(model)
     if args.finetune:
         print("Finetuning Rare Gem. Loading checkpoint")
-        ckpt = torch.load(args.checkpoint, map_location='cuda:{}'.format(args.gpu))
+        ckpt = torch.load("{}/{}".format(args.subfolder, args.checkpoint), map_location='cuda:{}'.format(args.gpu))
         model.load_state_dict(ckpt)
-        print("Successfully loaded checkpoint: {}".format(args.checkpoint))
+        print("Successfully loaded checkpoint: {}/{}".format(args.subfolder, args.checkpoint))
         model = round_model(model, round_scheme='naive')
         model = switch_to_wt(model)
 
@@ -254,8 +262,16 @@ def main_worker(gpu, ngpus_per_node, args):
                                 momentum=args.momentum,
                                 weight_decay=args.weight_decay)
     
-    """Sets the learning rate to the initial LR decayed by 10 every 30 epochs"""
-    scheduler = StepLR(optimizer, step_size=30, gamma=0.1)
+    if args.lr_schedule == 'multistep_lr':
+        # TODO: can try editing this
+        milestones = [30, 60]
+        scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=milestones, gamma=0.1)
+    elif args.lr_schedule == 'cosine_lr':
+        scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=args.epochs)
+    else:
+        # regular StepLR
+        """Sets the learning rate to the initial LR decayed by 10 every 30 epochs"""
+        scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=30, gamma=0.1)
 
     # adding a scaler for mixed-precision training
     if args.mixed_precision:
@@ -294,7 +310,7 @@ def main_worker(gpu, ngpus_per_node, args):
     normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
                                      std=[0.229, 0.224, 0.225])
 
-    train_dataset = datasets.ImageFolder(
+    dataset = datasets.ImageFolder(
         traindir,
         transforms.Compose([
             transforms.RandomResizedCrop(224),
@@ -308,9 +324,26 @@ def main_worker(gpu, ngpus_per_node, args):
     else:
         train_sampler = None
 
+    if args.use_full_data:
+        train_dataset = dataset
+        # use_full_data => we are not tuning hyperparameters
+        validation_dataset = test_dataset
+    else:
+        val_size = 10000
+        train_size = len(dataset) - val_size
+        train_dataset, validation_dataset = random_split(dataset, [train_size, val_size])
+
+
     train_loader = torch.utils.data.DataLoader(
-        train_dataset, batch_size=args.batch_size, shuffle=(train_sampler is None),
-        num_workers=args.workers, pin_memory=True, sampler=train_sampler)
+        train_dataset, batch_size=args.batch_size,
+        shuffle=(train_sampler is None),
+        num_workers=args.workers, pin_memory=True,
+        sampler=train_sampler)
+
+    actual_val_loader = torch.utils.data.DataLoader(
+        validation_dataset,
+        batch_size=args.batch_size, shuffle=False,
+        num_workers=args.workers, pin_memory=True)
 
     val_loader = torch.utils.data.DataLoader(
         datasets.ImageFolder(valdir, transforms.Compose([
@@ -348,8 +381,14 @@ def main_worker(gpu, ngpus_per_node, args):
         train_time = train_time = (time.time() - start_train) / 60
         print("Epoch: {} | Train Time {}".format(epoch, train_time))
 
-        # evaluate on validation set
-        acc1 = validate(val_loader, model, criterion, args)
+        val_acc1 = validate(actual_val_loader, model, criterion, args)
+
+        # arbitrarily decided that we do a full validate every 5 epochs
+        if epoch%5 == 0:
+            # evaluate on validation set
+            acc1 = validate(val_loader, model, criterion, args)
+        else:
+            acc1 = torch.tensor([-1])
 
         epoch_time = (time.time() - start_train) / 60
         print("Epoch: {} | Train + Val Time {}".format(epoch, epoch_time))
@@ -361,7 +400,7 @@ def main_worker(gpu, ngpus_per_node, args):
         epoch_list.append(epoch)
         train_acc_list.append(train_acc1.item())
         test_acc_list.append(acc1.item())
-        val_acc_list.append(acc1.item())
+        val_acc_list.append(val_acc1.item())
         model_sparsity_list.append(avg_sparsity)
 
         scheduler.step()
