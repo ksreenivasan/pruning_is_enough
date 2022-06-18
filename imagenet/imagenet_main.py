@@ -388,7 +388,7 @@ def main_worker(gpu, ngpus_per_node, args):
             # evaluate on validation set
             acc1 = validate(val_loader, model, criterion, args)
         else:
-            acc1 = torch.tensor([-1])
+            acc1 = torch.tensor([-1]).cuda(args.gpu)
 
         epoch_time = (time.time() - start_train) / 60
         print("Epoch: {} | Train + Val Time {}".format(epoch, epoch_time))
