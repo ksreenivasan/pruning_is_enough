@@ -206,7 +206,7 @@ def main_worker(gpu, ngpus_per_node, args):
         # args.arch = 'resnet50'
         print("==> creating model '{}'".format(args.arch))
         # model = models.__dict__[args.arch]()
-        model = models.ResNet50()
+        model = models.WideResNet50_2()
         if not args.finetune:
             model = switch_to_prune(model)
     if args.finetune:
@@ -394,8 +394,12 @@ def main_worker(gpu, ngpus_per_node, args):
         print("Epoch: {} | Train + Val Time {}".format(epoch, epoch_time))
 
         # check sparsity of model
-        cp_model = round_model(model, 'naive')
-        avg_sparsity = get_model_sparsity(cp_model, threshold=0, args=args)
+        ###############################
+        # HACK for EP
+        avg_sparsity = get_model_sparsity(model, threshold=0, args=args)
+        ###############################
+        # cp_model = round_model(model, 'naive')
+        # avg_sparsity = get_model_sparsity(cp_model, threshold=0, args=args)
 
         epoch_list.append(epoch)
         train_acc_list.append(train_acc1.item())
@@ -840,7 +844,13 @@ def prune(model, args, update_thresholds_only=False, update_scores=False):
 # average sparsity in the end
 def get_layer_sparsity(layer, threshold=0, args=None):
     # assume the model is rounded, compute effective scores
-    eff_scores = layer.scores * layer.flag
+
+    ###############################
+    # HACK for EP
+    eff_scores, eff_bias_scores = models.GetSubnet.apply(layer.scores, layer.bias_scores, 0.5)
+    ###############################
+
+    # eff_scores = layer.scores * layer.flag
     if args.bias:
         eff_bias_scores = layer.bias_scores * layer.bias_flag
     num_middle = torch.sum(torch.gt(eff_scores,

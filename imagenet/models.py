@@ -389,6 +389,7 @@ class GetSubnet(autograd.Function):
         algo = 'hc_iter'
         quantize_threshold = 0.5
         if algo == 'ep':
+            k = 0.5
             # Get the supermask by sorting the scores and using the top k%
             out = scores.clone()
             _, idx = scores.flatten().sort()
@@ -438,6 +439,8 @@ class SubnetConv(nn.Conv2d):
         super().__init__(*args, **kwargs)
         self.args_bias = False
         self.algo = 'hc'
+        self.algo = 'ep' # HACK
+
         self.prune_rate = 0.5
         # resnet50 has bias=False because of BN layers
         self.bias = None
@@ -486,6 +489,8 @@ class SubnetConv(nn.Conv2d):
         # TODO: hack
         self.algo = 'pt'
 
+        self.algo = 'ep' # HACK
+
         if self.algo in ['hc', 'hc_iter', 'transformer']:
             subnet, bias_subnet = GetSubnet.apply(self.scores, self.bias_scores, self.prune_rate)
             subnet = subnet * self.flag.data.float()
@@ -530,6 +535,9 @@ class SubnetLinear(nn.Linear):
         # TODO: hacky. trying to mimic frankle in having biases but not pruning them
         self.args_bias = False
         self.algo = 'hc'
+
+        self.algo = 'ep' # HACK
+
         self.prune_rate = 0.5
         # resnet50 has bias=True only for the FC layer
 
@@ -568,6 +576,8 @@ class SubnetLinear(nn.Linear):
         # TODO: Hacky. I'm trying to mimic frankle etc in that we have biases, but we don't prune them
         self.bias.requires_grad = False
 
+        self.algo = 'hc' # HACK
+
     def set_prune_rate(self, prune_rate):
         self.prune_rate = prune_rate
 
@@ -576,8 +586,7 @@ class SubnetLinear(nn.Linear):
         return self.scores.abs()
 
     def forward(self, x):
-        # TODO: hack
-        self.algo = 'pt'
+        self.algo = 'ep' # HACK
 
         if self.algo in ['hc', 'hc_iter']:
             subnet, bias_subnet = GetSubnet.apply(self.scores, self.bias_scores, self.prune_rate)
