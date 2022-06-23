@@ -363,6 +363,7 @@ def get_builder():
     bn_type = "AffineBatchNorm" # TODO: might change this if it causes problems later
     first_layer_type = None # TODO: I think
     weight_init = "signed_constant"
+    # weight_init = "kaiming_normal"
 
     print("==> Conv Type: {}".format(conv_type))
     print("==> BN Type: {}".format(bn_type))
@@ -413,6 +414,9 @@ class GetSubnet(autograd.Function):
             # define out, bias_out based on the layer's prune_threshold, bias_threshold
             out = torch.gt(scores, torch.ones_like(scores)*scores_prune_threshold).float()
             bias_out = torch.gt(bias_scores, torch.ones_like(bias_scores)*bias_scores_prune_threshold).float()
+
+        elif algo in ['pt']:
+            out, bias_out = scores, bias_scores
 
         elif algo in ['hc', 'hc_iter']:
             # round scores to {0, 1}
@@ -484,7 +488,7 @@ class SubnetConv(nn.Conv2d):
 
     def forward(self, x):
         # TODO: hack
-        self.algo = 'pt'
+        # self.algo = 'pt'
 
         if self.algo in ['hc', 'hc_iter', 'transformer']:
             subnet, bias_subnet = GetSubnet.apply(self.scores, self.bias_scores, self.prune_rate)
@@ -519,7 +523,7 @@ class SubnetConv(nn.Conv2d):
         )
 
         # TODO: hack
-        self.algo = 'hc'
+        # self.algo = 'hc'
 
         return x
 
@@ -577,7 +581,7 @@ class SubnetLinear(nn.Linear):
 
     def forward(self, x):
         # TODO: hack
-        self.algo = 'pt'
+        # self.algo = 'pt'
 
         if self.algo in ['hc', 'hc_iter']:
             subnet, bias_subnet = GetSubnet.apply(self.scores, self.bias_scores, self.prune_rate)
@@ -610,7 +614,7 @@ class SubnetLinear(nn.Linear):
         x = F.linear(x, w, b)
 
         # TODO: hack
-        self.algo = 'hc'
+        # self.algo = 'hc'
         return x
 
 

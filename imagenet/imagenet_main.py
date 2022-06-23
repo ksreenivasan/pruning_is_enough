@@ -207,6 +207,7 @@ def main_worker(gpu, ngpus_per_node, args):
         print("==> creating model '{}'".format(args.arch))
         # model = models.__dict__[args.arch]()
         model = models.ResNet50()
+        # model = models.WideResNet50_2()
         if not args.finetune:
             model = switch_to_prune(model)
     if args.finetune:
@@ -685,7 +686,7 @@ def get_layers(arch='ResNet50', dist_model=None):
     else:
         model = dist_model
 
-    if arch == 'ResNet50':
+    if arch in ['ResNet50', 'WideResNet50_2']:
         conv_layers = [model.conv1]
         for layer in [model.layer1, model.layer2, model.layer3, model.layer4]:
             for basic_block_id in [i for i in range(len(layer))]:
