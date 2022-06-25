@@ -2,20 +2,20 @@
 
 # EP
 python imagenet_main.py \
-        --arch WideResNet50_2 \
+        --arch ResNet50 \
 	--rank 0 \
 	--batch-size 256 \
 	--workers 8 \
 	--mixed-precision \
 	--epochs 88 \
-	--lr 0.256 \
+	--lr 0.0256 \
 	--weight-decay 0.000030517578125 \
 	--momentum 0.875 \
 	--target-sparsity 5 \
 	--iter-period 1000 \
 	--lmbda 0.0000000000 \
 	--lr-schedule cosine_lr \
-	--subfolder results_ep \
+	--subfolder results_ep_resnet50 \
 	--data '/data/imagenet/' \
 	--dist-url 'tcp://127.0.0.1:2500' \
 	--dist-backend 'nccl' \

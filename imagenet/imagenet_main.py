@@ -207,6 +207,7 @@ def main_worker(gpu, ngpus_per_node, args):
         print("==> creating model '{}'".format(args.arch))
         # model = models.__dict__[args.arch]()
         model = models.WideResNet50_2()
+        model = models.ResNet50()
         if not args.finetune:
             model = switch_to_prune(model)
     if args.finetune:
