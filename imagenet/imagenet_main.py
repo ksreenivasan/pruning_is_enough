@@ -528,7 +528,7 @@ def train(train_loader, model, criterion, optimizer, epoch, args, scaler=None):
                             params.data = torch.clamp(params.data, 0.0, 1.0)
             else:
                 conv_layers, linear_layers = get_layers(args.arch, model)
-                for layer in (conv_layer + linear_layers):
+                for layer in (conv_layers + linear_layers):
                     with torch.no_grad():
                         layer.scores.data = torch.clamp(layer.scores.data, 0.0, 2*layer.quantize_threshold.item())
 
