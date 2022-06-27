@@ -447,7 +447,7 @@ class SubnetConv(nn.Conv2d):
         # resnet50 has bias=False because of BN layers
         self.bias = None
 
-        self.quantize_threshold = nn.Parameter(torch.Tensor(0.5))
+        self.quantize_threshold = nn.Parameter(torch.Tensor([0.5]))
         # if you want to disable C as a learning param
         if not LEARN_THRESHOLD_FLAG:
             self.quantize_threshold.requires_grad = False
@@ -543,6 +543,11 @@ class SubnetLinear(nn.Linear):
         self.prune_rate = 0.5
         # resnet50 has bias=True only for the FC layer
 
+        self.quantize_threshold = nn.Parameter(torch.Tensor([0.5]))
+        # if you want to disable C as a learning param
+        if not LEARN_THRESHOLD_FLAG:
+            self.quantize_threshold.requires_grad = False
+
         # initialize flag (representing the pruned weights)
         self.flag = nn.Parameter(torch.ones(self.weight.size()))
         if self.args_bias:
@@ -597,7 +602,7 @@ class SubnetLinear(nn.Linear):
             # no STE, no subnet. Mask is handled outside
             pass
         elif self.algo in ['global_ep', 'global_ep_iter']:
-            subnet, bias_subnet = GetSubnet.apply(self.scores.abs(), self.bias_scores.abs(),, 0.5, 0, self.scores_prune_threshold, self.bias_scores_prune_threshold)
+            subnet, bias_subnet = GetSubnet.apply(self.scores.abs(), self.bias_scores.abs(), 0.5, 0, self.scores_prune_threshold, self.bias_scores_prune_threshold)
         elif self.algo in ['pt']:
             subnet, bias_subnet = self.scores, self.bias_scores
             subnet = subnet * self.flag.data.float()
