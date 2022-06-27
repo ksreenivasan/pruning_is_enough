@@ -29,7 +29,7 @@ import yaml
 yaml_txt = open("configs/hypercube/resnet20/resnet20_quantized_iter_hc_target_sparsity_0_5_highreg.yml").read()
 # override args
 #loaded_yaml = yaml.load(yaml_txt, Loader=yaml.FullLoader)
-#args.__dict__.update(loaded_yaml)
+args.__dict__.update(loaded_yaml)
 parser_args.bias = False
 
 model = get_model(parser_args)

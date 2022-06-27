@@ -33,6 +33,8 @@ model_names = sorted(name for name in torchvision_models.__dict__
     if name.islower() and not name.startswith("__")
     and callable(torchvision_models.__dict__[name]))
 
+LEARN_THRESHOLD_FLAG = True
+
 parser = argparse.ArgumentParser(description='PyTorch ImageNet Training')
 parser.add_argument('--data', metavar='DIR', default='/home/ubuntu/ILSVRC2012/',
                     help='path to dataset (default: imagenet)')
@@ -465,11 +467,17 @@ def train(train_loader, model, criterion, optimizer, epoch, args, scaler=None):
 
         if not args.finetune:
             # project to [0, 1] in every gradient step
-            for name, params in model.named_parameters():
-                # make sure param_name ends with .scores and not bias_scores
-                if re.match('.*\.scores', name) and not re.match('.*\.bias_scores', name):
+            if not LEARN_THRESHOLD_FLAG:
+                for name, params in model.named_parameters():
+                    # make sure param_name ends with .scores and not bias_scores
+                    if re.match('.*\.scores', name) and not re.match('.*\.bias_scores', name):
+                        with torch.no_grad():
+                            params.data = torch.clamp(params.data, 0.0, 1.0)
+            else:
+                conv_layers, linear_layers = get_layers(args.arch, model)
+                for layer in (conv_layer + linear_layers):
                     with torch.no_grad():
-                        params.data = torch.clamp(params.data, 0.0, 1.0)
+                        layer.scores.data = torch.clamp(layer.scores.data, 0.0, 2*layer.quantize_threshold)
 
         # compute output
         if scaler is None:
@@ -511,12 +519,18 @@ def train(train_loader, model, criterion, optimizer, epoch, args, scaler=None):
             progress.display(i)
 
     if not args.finetune:
-        # project to [0, 1] before returning model
-        for name, params in model.named_parameters():
-            # make sure param_name ends with .scores and not bias_scores
-            if re.match('.*\.scores', name) and not re.match('.*\.bias_scores', name):
-                with torch.no_grad():
-                    params.data = torch.clamp(params.data, 0.0, 1.0)
+            # project to [0, 1] in every gradient step
+            if not LEARN_THRESHOLD_FLAG:
+                for name, params in model.named_parameters():
+                    # make sure param_name ends with .scores and not bias_scores
+                    if re.match('.*\.scores', name) and not re.match('.*\.bias_scores', name):
+                        with torch.no_grad():
+                            params.data = torch.clamp(params.data, 0.0, 1.0)
+            else:
+                conv_layers, linear_layers = get_layers(args.arch, model)
+                for layer in (conv_layer + linear_layers):
+                    with torch.no_grad():
+                        layer.scores.data = torch.clamp(layer.scores.data, 0.0, 2*layer.quantize_threshold)
 
     return top1.avg
 
@@ -730,6 +744,8 @@ def switch_to_prune(model):
         else:
             # weights, biases, bias_scores, flags and everything else
             params.requires_grad = False
+        if LEARN_THRESHOLD_FLAG and re.match('.*\.quantize_threshold', name):
+            params.requires_grad = True
 
     return model
 

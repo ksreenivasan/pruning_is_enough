@@ -6,6 +6,8 @@ import numpy as np
 
 import math
 
+LEARN_THRESHOLD_FLAG = True
+
 # BasicBlock {{{
 class BasicBlock(nn.Module):
     M = 2
@@ -386,9 +388,8 @@ def get_builder():
 
 class GetSubnet(autograd.Function):
     @staticmethod
-    def forward(ctx, scores, bias_scores, k, scores_prune_threshold=-np.inf, bias_scores_prune_threshold=-np.inf):
+    def forward(ctx, scores, bias_scores, quantize_threshold, k, scores_prune_threshold=-np.inf, bias_scores_prune_threshold=-np.inf):
         algo = 'hc_iter'
-        quantize_threshold = 0.5
         if algo == 'ep':
             # Get the supermask by sorting the scores and using the top k%
             out = scores.clone()
@@ -446,6 +447,11 @@ class SubnetConv(nn.Conv2d):
         # resnet50 has bias=False because of BN layers
         self.bias = None
 
+        self.quantize_threshold = nn.Parameter(torch.Tensor(0.5))
+        # if you want to disable C as a learning param
+        if not LEARN_THRESHOLD_FLAG:
+            self.quantize_threshold.requires_grad = False
+
         # initialize flag (representing the pruned weights)
         self.flag = nn.Parameter(torch.ones(self.weight.size()))
         if self.args_bias:
@@ -491,21 +497,21 @@ class SubnetConv(nn.Conv2d):
         # self.algo = 'pt'
 
         if self.algo in ['hc', 'hc_iter', 'transformer']:
-            subnet, bias_subnet = GetSubnet.apply(self.scores, self.bias_scores, self.prune_rate)
+            subnet, bias_subnet = GetSubnet.apply(self.scores, self.bias_scores, self.quantize_threshold, self.prune_rate)
             subnet = subnet * self.flag.data.float()
             bias_subnet = subnet * self.bias_flag.data.float()
         elif self.algo in ['imp']:
             # no STE, no subnet. Mask is handled outside
             pass
         elif self.algo in ['global_ep', 'global_ep_iter']:
-            subnet, bias_subnet = GetSubnet.apply(self.scores.abs(), self.bias_scores.abs(), 0, self.scores_prune_threshold, self.bias_scores_prune_threshold)
+            subnet, bias_subnet = GetSubnet.apply(self.scores.abs(), self.bias_scores.abs(), 0.5, 0, self.scores_prune_threshold, self.bias_scores_prune_threshold)
         elif self.algo in ['pt']:
             subnet, bias_subnet = self.scores, self.bias_scores
             subnet = subnet * self.flag.data.float()
             bias_subnet = subnet * self.bias_flag.data.float()
         else:
             # ep, global_ep, global_ep_iter, pt etc
-            subnet, bias_subnet = GetSubnet.apply(self.scores.abs(), self.bias_scores.abs(), self.prune_rate)
+            subnet, bias_subnet = GetSubnet.apply(self.scores.abs(), self.bias_scores.abs(), 0.5, self.prune_rate)
 
         if self.algo in ['imp']:
             # no STE, no subnet. Mask is handled outside
@@ -584,21 +590,21 @@ class SubnetLinear(nn.Linear):
         # self.algo = 'pt'
 
         if self.algo in ['hc', 'hc_iter']:
-            subnet, bias_subnet = GetSubnet.apply(self.scores, self.bias_scores, self.prune_rate)
+            subnet, bias_subnet = GetSubnet.apply(self.scores, self.bias_scores, self.quantize_threshold, self.prune_rate)
             subnet = subnet * self.flag.data.float()
             bias_subnet = subnet * self.bias_flag.data.float()
         elif self.algo in ['imp']:
             # no STE, no subnet. Mask is handled outside
             pass
         elif self.algo in ['global_ep', 'global_ep_iter']:
-            subnet, bias_subnet = GetSubnet.apply(self.scores.abs(), self.bias_scores.abs(), 0, self.scores_prune_threshold, self.bias_scores_prune_threshold)
+            subnet, bias_subnet = GetSubnet.apply(self.scores.abs(), self.bias_scores.abs(),, 0.5, 0, self.scores_prune_threshold, self.bias_scores_prune_threshold)
         elif self.algo in ['pt']:
             subnet, bias_subnet = self.scores, self.bias_scores
             subnet = subnet * self.flag.data.float()
             bias_subnet = subnet * self.bias_flag.data.float()
         else:
             # ep, global_ep, global_ep_iter, pt etc
-            subnet, bias_subnet = GetSubnet.apply(self.scores.abs(), self.bias_scores.abs(), self.prune_rate)
+            subnet, bias_subnet = GetSubnet.apply(self.scores.abs(), self.bias_scores.abs(), 0.5, self.prune_rate)
 
         if self.algo in ['imp']:
             # no STE, no subnet. Mask is handled outside
