@@ -2,21 +2,19 @@
 
 #:<<BLOCK
 python imagenet_main.py \
-        --arch WideResNet50_2 \
+    --arch ResNet50 \
 	--rank 0 \
 	--batch-size 256 \
 	--workers 8 \
 	--mixed-precision \
 	--epochs 88 \
-	--lr 0.0256 \
+	--lr 0.5 \
 	--target-sparsity 20 \
-    --weight-decay 0.000030517578125 \
-    --momentum 0.875 \
 	--iter-period 100 \
     --optimizer sgd \
 	--lmbda 0 \
 	--lr-schedule cosine_lr \
-	--subfolder results_wideresnet_reg_0_no_iter_sgd_cosine_lr \
+	--subfolder results_resnet_reg_0_learn_threshold_sgd_cosine_lr \
 	--data '/data/imagenet/' \
 	--dist-url 'tcp://127.0.0.1:2500' \
 	--dist-backend 'nccl' \
