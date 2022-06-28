@@ -217,7 +217,7 @@ def main_worker(gpu, ngpus_per_node, args):
         ckpt = torch.load("{}/{}".format(args.subfolder, args.checkpoint), map_location='cuda:{}'.format(args.gpu))
         model.load_state_dict(ckpt)
         print("Successfully loaded checkpoint: {}/{}".format(args.subfolder, args.checkpoint))
-        model = round_model(model, round_scheme='naive', args)
+        model = round_model(model, round_scheme='naive', args=args)
         model = switch_to_wt(model)
 
     args.prune_rate = get_prune_rate(args.target_sparsity, args.iter_period, args.epochs)
