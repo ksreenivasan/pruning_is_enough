@@ -367,6 +367,7 @@ def main_worker(gpu, ngpus_per_node, args):
     model_sparsity_list = []
     val_acc_list = []
     train_acc_list = []
+    lr_list = []
 
     for epoch in range(args.start_epoch, args.epochs):
         if args.distributed:
@@ -405,6 +406,7 @@ def main_worker(gpu, ngpus_per_node, args):
         test_acc_list.append(acc1.item())
         val_acc_list.append(val_acc1.item())
         model_sparsity_list.append(avg_sparsity)
+        lr_list.append(optimizer.param_groups[0]['lr'])
 
         scheduler.step()
 
@@ -412,7 +414,9 @@ def main_worker(gpu, ngpus_per_node, args):
                                    'test_acc': test_acc_list,
                                    'val_acc': val_acc_list,
                                    'train_acc': train_acc_list,
-                                   'model_sparsity': model_sparsity_list})
+                                   'lr': lr_list,
+                                   'model_sparsity': model_sparsity_list,
+                                   })
 
         # remember best acc@1 and save checkpoint
         is_best = acc1 > best_acc1
