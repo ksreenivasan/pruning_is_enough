@@ -217,7 +217,7 @@ def main_worker(gpu, ngpus_per_node, args):
         ckpt = torch.load("{}/{}".format(args.subfolder, args.checkpoint), map_location='cuda:{}'.format(args.gpu))
         model.load_state_dict(ckpt)
         print("Successfully loaded checkpoint: {}/{}".format(args.subfolder, args.checkpoint))
-        model = round_model(model, round_scheme='naive')
+        model = round_model(model, round_scheme='naive', args)
         model = switch_to_wt(model)
 
     args.prune_rate = get_prune_rate(args.target_sparsity, args.iter_period, args.epochs)
@@ -398,7 +398,7 @@ def main_worker(gpu, ngpus_per_node, args):
         print("Epoch: {} | Train + Val Time {}".format(epoch, epoch_time))
 
         # check sparsity of model
-        cp_model = round_model(model, 'naive')
+        cp_model = round_model(model, 'naive', args)
         avg_sparsity = get_model_sparsity(cp_model, threshold=0, args=args)
 
         epoch_list.append(epoch)
@@ -754,30 +754,38 @@ def switch_to_prune(model):
     return model
 
 
-def round_model(model, round_scheme='naive'):
-    quantize_threshold=0.5
-    print("Rounding model with scheme: {}".format(round_scheme))
-    cp_model = copy.deepcopy(model)
-    if isinstance(model, nn.parallel.DistributedDataParallel):
-       # cp_model = copy.deepcopy(model.module)
-       named_params = cp_model.module.named_parameters()
+def round_model(model, round_scheme='naive', args=None):
+    if not LEARN_THRESHOLD_FLAG:
+        quantize_threshold=0.5
+        print("Rounding model with scheme: {}".format(round_scheme))
+        cp_model = copy.deepcopy(model)
+        if isinstance(model, nn.parallel.DistributedDataParallel):
+           # cp_model = copy.deepcopy(model.module)
+           named_params = cp_model.module.named_parameters()
+        else:
+            # cp_model = copy.deepcopy(model)
+            named_params = cp_model.named_parameters()
+        for name, params in named_params:
+            if re.match('.*\.scores', name):
+                if round_scheme == 'naive':
+                    params.data = torch.gt(params.data, torch.ones_like(
+                        params.data)*quantize_threshold).int().float()
+                elif round_scheme == 'prob':
+                    params.data = torch.clamp(params.data, 0.0, 1.0)
+                    params.data = torch.bernoulli(params.data).float()
+                elif round_scheme == 'all_ones':
+                    params.data = torch.ones_like(params.data)
+                else:
+                    print("INVALID ROUNDING")
+                    print("EXITING")
+                    exit()
     else:
-        # cp_model = copy.deepcopy(model)
-        named_params = cp_model.named_parameters()
-    for name, params in named_params:
-        if re.match('.*\.scores', name):
-            if round_scheme == 'naive':
-                params.data = torch.gt(params.data, torch.ones_like(
-                    params.data)*quantize_threshold).int().float()
-            elif round_scheme == 'prob':
-                params.data = torch.clamp(params.data, 0.0, 1.0)
-                params.data = torch.bernoulli(params.data).float()
-            elif round_scheme == 'all_ones':
-                params.data = torch.ones_like(params.data)
-            else:
-                print("INVALID ROUNDING")
-                print("EXITING")
-                exit()
+        print("Rounding model with adaptive threshold scheme: {}".format(round_scheme))
+        cp_model = copy.deepcopy(model)
+        conv_layers, linear_layers = get_layers(args.arch, model)
+        for layer in (conv_layers+linear_layers):
+            layer.scores.data = torch.gt(layer.scores.data, torch.ones_like(
+                        layer.scores.data)*layer.quantize_threshold.item()).int().float()
 
     # if isinstance(model, nn.parallel.DistributedDataParallel):
     #     cp_model = nn.parallel.DistributedDataParallel(
