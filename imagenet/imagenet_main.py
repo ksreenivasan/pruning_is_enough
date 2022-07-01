@@ -782,7 +782,7 @@ def round_model(model, round_scheme='naive', args=None):
     else:
         print("Rounding model with adaptive threshold scheme: {}".format(round_scheme))
         cp_model = copy.deepcopy(model)
-        conv_layers, linear_layers = get_layers(args.arch, model)
+        conv_layers, linear_layers = get_layers(args.arch, cp_model)
         for layer in (conv_layers+linear_layers):
             layer.scores.data = torch.gt(layer.scores.data, torch.ones_like(
                         layer.scores.data)*layer.quantize_threshold.item()).int().float()
