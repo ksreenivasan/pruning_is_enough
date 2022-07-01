@@ -6,7 +6,7 @@ import numpy as np
 
 import math
 
-LEARN_THRESHOLD_FLAG = True
+LEARN_THRESHOLD_FLAG = False
 
 # BasicBlock {{{
 class BasicBlock(nn.Module):
@@ -362,7 +362,7 @@ class Builder(object):
 
 def get_builder():
     conv_type = "SubnetConv"
-    bn_type = "AffineBatchNorm" # TODO: might change this if it causes problems later
+    bn_type = "NonAffineBatchNorm" # TODO: might change this if it causes problems later
     first_layer_type = None # TODO: I think
     weight_init = "signed_constant"
     # weight_init = "kaiming_normal"
