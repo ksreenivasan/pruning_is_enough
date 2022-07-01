@@ -451,7 +451,7 @@ def main_worker(gpu, ngpus_per_node, args):
         val_acc1 = validate(actual_val_loader, model, criterion, args)
 
         # arbitrarily decided that we do a full validate every 5 epochs
-        if epoch%5 == 0:
+        if True#epoch%5 == 0:
             # evaluate on validation set
             acc1 = validate(val_loader, model, criterion, args)
         else:
