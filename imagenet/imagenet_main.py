@@ -364,6 +364,7 @@ def main_worker(gpu, ngpus_per_node, args):
     model_sparsity_list = []
     val_acc_list = []
     train_acc_list = []
+    lr_list = []
 
     for epoch in range(args.start_epoch, args.epochs):
         if args.distributed:
@@ -384,7 +385,7 @@ def main_worker(gpu, ngpus_per_node, args):
         val_acc1 = validate(actual_val_loader, model, criterion, args)
 
         # arbitrarily decided that we do a full validate every 5 epochs
-        if epoch%5 == 0:
+        if True:#epoch%5 == 0:
             # evaluate on validation set
             acc1 = validate(val_loader, model, criterion, args)
         else:
@@ -406,6 +407,7 @@ def main_worker(gpu, ngpus_per_node, args):
         test_acc_list.append(acc1.item())
         val_acc_list.append(val_acc1.item())
         model_sparsity_list.append(avg_sparsity)
+        lr_list.append(optimizer.param_groups[0]['lr'])
 
         scheduler.step()
 
@@ -413,7 +415,8 @@ def main_worker(gpu, ngpus_per_node, args):
                                    'test_acc': test_acc_list,
                                    'val_acc': val_acc_list,
                                    'train_acc': train_acc_list,
-                                   'model_sparsity': model_sparsity_list})
+                                   'model_sparsity': model_sparsity_list,
+                                   'lr': lr_list})
 
         # remember best acc@1 and save checkpoint
         is_best = acc1 > best_acc1
@@ -427,7 +430,8 @@ def main_worker(gpu, ngpus_per_node, args):
         if not args.multiprocessing_distributed or (args.multiprocessing_distributed and args.rank == 0):
             results_df.to_csv(results_filename, index=False)
 
-        save_flag = ((epoch+1)%10 == 0) or (epoch > 85) or (epoch == args.epochs-1)
+        # save_flag = ((epoch+1)%10 == 0) or (epoch > 5 and epoch > 10) or (epoch == args.epochs-1)
+        save_flag = True
         if save_flag and (not args.multiprocessing_distributed or (args.multiprocessing_distributed and args.rank == 0)):
             torch.save(model.module.state_dict(), '{}/model_before_finetune_epoch_{}.pth'.format(args.subfolder, epoch))
             # save_checkpoint({
@@ -438,6 +442,8 @@ def main_worker(gpu, ngpus_per_node, args):
             #     'optimizer' : optimizer.state_dict(),
             #     'scheduler' : scheduler.state_dict()
             # }, is_best)
+        if epoch > 10:
+            break
     if args.finetune:
         torch.save(model.module.state_dict(), '{}/model_after_finetune_epoch_{}.pth'.format(args.subfolder, epoch))
 
@@ -466,7 +472,7 @@ def train(train_loader, model, criterion, optimizer, epoch, args, scaler=None):
         if torch.cuda.is_available():
             target = target.cuda(args.gpu, non_blocking=True)
 
-        if not args.finetune:
+        if False:#not args.finetune:
             # project to [0, 1] in every gradient step
             for name, params in model.named_parameters():
                 # make sure param_name ends with .scores and not bias_scores
@@ -513,7 +519,7 @@ def train(train_loader, model, criterion, optimizer, epoch, args, scaler=None):
                 print("Regularization Loss={} | Total Loss={}".format(regularization_loss, loss))
             progress.display(i)
 
-    if not args.finetune:
+    if False:#not args.finetune:
         # project to [0, 1] before returning model
         for name, params in model.named_parameters():
             # make sure param_name ends with .scores and not bias_scores
@@ -875,7 +881,6 @@ def get_model_sparsity(model, threshold=0, args=None):
     conv_layers, linear_layers = get_layers(args.arch, model)
     numer = 0
     denom = 0
-
     # TODO: find a nicer way to do this (skip dropout)
     # TODO: Update: can't use .children() or .named_modules() because of the way things are wrapped in builder
     for conv_layer in conv_layers:

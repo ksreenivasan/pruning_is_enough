@@ -14,8 +14,8 @@ python imagenet_main.py \
 	--target-sparsity 5 \
 	--iter-period 1000 \
 	--lmbda 0.0000000000 \
-	--lr-schedule cosine_lr \
-	--subfolder results_ep \
+	--lr-schedule multistep_lr \
+	--subfolder results_ep_noproject_loglr \
 	--data '/data/imagenet/' \
 	--dist-url 'tcp://127.0.0.1:2500' \
 	--dist-backend 'nccl' \

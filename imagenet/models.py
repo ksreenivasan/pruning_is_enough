@@ -386,7 +386,7 @@ def get_builder():
 class GetSubnet(autograd.Function):
     @staticmethod
     def forward(ctx, scores, bias_scores, k, scores_prune_threshold=-np.inf, bias_scores_prune_threshold=-np.inf):
-        algo = 'hc_iter'
+        algo = 'ep'
         quantize_threshold = 0.5
         if algo == 'ep':
             k = 0.5
