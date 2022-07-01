@@ -2,13 +2,13 @@
 
 # EP
 python imagenet_main.py \
-        --arch WideResNet50_2 \
+        --arch ResNet50 \
 	--rank 0 \
 	--batch-size 256 \
 	--workers 8 \
 	--mixed-precision \
 	--epochs 88 \
-	--lr 0.256 \
+	--lr 0.0256 \
 	--weight-decay 0.000030517578125 \
 	--momentum 0.875 \
 	--target-sparsity 5 \

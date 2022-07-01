@@ -303,7 +303,7 @@ def main_worker(gpu, ngpus_per_node):
         results_df.to_csv(results_filename, index=False)
 
     # save checkpoint before fine-tuning
-    #torch.save(model.state_dict(), result_root + 'model_before_finetune.pth')
+    torch.save(model.state_dict(), result_root + 'model_before_finetune.pth')
 
     print("\n\nHigh accuracy subnetwork found! Rest is just finetuning")
     print_time()
