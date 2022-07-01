@@ -449,7 +449,7 @@ class Builder(object):
 
 def get_builder():
     conv_type = "SubnetConv"
-    bn_type = "NonAffineBatchNorm" # TODO: might change this if it causes problems later
+    bn_type = "AffineBatchNorm" # TODO: might change this if it causes problems later
     first_layer_type = None # TODO: I think
     weight_init = "signed_constant"
 
@@ -531,6 +531,9 @@ class SubnetConv(nn.Conv2d):
         # resnet50 has bias=False because of BN layers
         self.bias = None
 
+        self.quantize_threshold = nn.Parameter(torch.Tensor([0.5]))
+        self.quantize_threshold.requires_grad = False
+
         # initialize flag (representing the pruned weights)
         self.flag = nn.Parameter(torch.ones(self.weight.size()))
         if self.args_bias:
@@ -611,6 +614,9 @@ class SubnetLinear(nn.Linear):
         self.algo = 'hc'
         self.prune_rate = 0.5
         # resnet50 has bias=True only for the FC layer
+
+        self.quantize_threshold = nn.Parameter(torch.Tensor([0.5]))
+        self.quantize_threshold.requires_grad = False
 
         # initialize flag (representing the pruned weights)
         self.flag = nn.Parameter(torch.ones(self.weight.size()))

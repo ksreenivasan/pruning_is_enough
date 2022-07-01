@@ -17,12 +17,13 @@ import torch.nn.parallel
 import torch.backends.cudnn as cudnn
 import torch.distributed as dist
 import torch.optim
-from torch.optim.lr_scheduler import StepLR
+import torch.optim.lr_scheduler
 import torch.multiprocessing as mp
 import torch.utils.data
 import torch.utils.data.distributed
 import torchvision.transforms as transforms
 import torchvision.datasets as datasets
+from torch.utils.data import random_split
 import torch.autograd as autograd
 import torch.nn.functional as F
 import torchvision.models as torchvision_models
@@ -32,6 +33,8 @@ import models_cifar
 model_names = sorted(name for name in torchvision_models.__dict__
     if name.islower() and not name.startswith("__")
     and callable(torchvision_models.__dict__[name]))
+
+LEARN_THRESHOLD_FLAG = False
 
 parser = argparse.ArgumentParser(description='PyTorch ImageNet Training')
 parser.add_argument('--data', metavar='DIR', default='/home/ubuntu/ILSVRC2012/',
@@ -125,7 +128,20 @@ parser.add_argument('--subfolder',
                     type=str,
                     metavar='PATH',
                     help='path to subfolder where we will store results and ckpts')
-
+parser.add_argument('--optimizer',
+                    default='sgd',
+                    type=str,
+                    metavar='OPT',
+                    help='sgd|adam')
+parser.add_argument('--lr-schedule',
+                    default='step_lr',
+                    type=str,
+                    metavar='SCHED',
+                    help='step_lr|multistep_lr|cosine_lr')
+parser.add_argument("--use-full-data",
+                    action="store_true",
+                    default=None,
+                    help="Enable this use full train data and not leave anything for validation")
 
 best_acc1 = 0
 
@@ -151,6 +167,9 @@ def main():
         args.world_size = int(os.environ["WORLD_SIZE"])
 
     args.distributed = args.world_size > 1 or args.multiprocessing_distributed
+
+    if not os.path.isdir(args.subfolder):
+        os.mkdir(args.subfolder)
 
     ngpus_per_node = torch.cuda.device_count()
     if args.multiprocessing_distributed:
@@ -190,16 +209,17 @@ def main_worker(gpu, ngpus_per_node, args):
         # args.arch = 'resnet50'
         print("==> creating model '{}'".format(args.arch))
         # model = models.__dict__[args.arch]()
-        # model = models.ResNet50()
         model = models_cifar.resnet20()
+
+        # model = models.WideResNet50_2()
         if not args.finetune:
             model = switch_to_prune(model)
     if args.finetune:
         print("Finetuning Rare Gem. Loading checkpoint")
-        ckpt = torch.load(args.checkpoint, map_location='cuda:{}'.format(args.gpu))
+        ckpt = torch.load("{}/{}".format(args.subfolder, args.checkpoint), map_location='cuda:{}'.format(args.gpu))
         model.load_state_dict(ckpt)
-        print("Successfully loaded checkpoint: {}".format(args.checkpoint))
-        model = round_model(model, round_scheme='naive')
+        print("Successfully loaded checkpoint: {}/{}".format(args.subfolder, args.checkpoint))
+        model = round_model(model, round_scheme='naive', args=args)
         model = switch_to_wt(model)
 
     args.prune_rate = get_prune_rate(args.target_sparsity, args.iter_period, args.epochs)
@@ -238,12 +258,26 @@ def main_worker(gpu, ngpus_per_node, args):
     # define loss function (criterion), optimizer, and learning rate scheduler
     criterion = nn.CrossEntropyLoss().cuda(args.gpu)
 
-    optimizer = torch.optim.SGD(filter(lambda p: p.requires_grad, model.parameters()), args.lr,
+    if args.optimizer == "adam":
+        print("Creating optimizer: Adam")
+        optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, model.parameters()), lr=args.lr,
+            weight_decay=args.weight_decay)
+    else:
+        print("Creating optimizer: SGD")
+        optimizer = torch.optim.SGD(filter(lambda p: p.requires_grad, model.parameters()), args.lr,
                                 momentum=args.momentum,
                                 weight_decay=args.weight_decay)
     
-    """Sets the learning rate to the initial LR decayed by 10 every 30 epochs"""
-    scheduler = StepLR(optimizer, step_size=30, gamma=0.1)
+    if args.lr_schedule == 'multistep_lr':
+        # TODO: can try editing this
+        milestones = [30, 60]
+        scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=milestones, gamma=0.1)
+    elif args.lr_schedule == 'cosine_lr':
+        scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=args.epochs)
+    else:
+        # regular StepLR
+        """Sets the learning rate to the initial LR decayed by 10 every 30 epochs"""
+        scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=30, gamma=0.1)
 
     # adding a scaler for mixed-precision training
     if args.mixed_precision:
@@ -276,13 +310,13 @@ def main_worker(gpu, ngpus_per_node, args):
 
     cudnn.benchmark = True
 
-    # Data loading code
+    # # Data loading code
     # traindir = os.path.join(args.data, 'train')
     # valdir = os.path.join(args.data, 'val')
     # normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
     #                                  std=[0.229, 0.224, 0.225])
 
-    # train_dataset = datasets.ImageFolder(
+    # dataset = datasets.ImageFolder(
     #     traindir,
     #     transforms.Compose([
     #         transforms.RandomResizedCrop(224),
@@ -290,6 +324,15 @@ def main_worker(gpu, ngpus_per_node, args):
     #         transforms.ToTensor(),
     #         normalize,
     #     ]))
+ 
+    # if args.use_full_data:
+    #     train_dataset = dataset
+    #     # use_full_data => we are not tuning hyperparameters
+    #     validation_dataset = test_dataset
+    # else:
+    #     val_size = 10000
+    #     train_size = len(dataset) - val_size
+    #     train_dataset, validation_dataset = random_split(dataset, [train_size, val_size])
 
     # if args.distributed:
     #     train_sampler = torch.utils.data.distributed.DistributedSampler(train_dataset)
@@ -297,8 +340,15 @@ def main_worker(gpu, ngpus_per_node, args):
     #     train_sampler = None
 
     # train_loader = torch.utils.data.DataLoader(
-    #     train_dataset, batch_size=args.batch_size, shuffle=(train_sampler is None),
-    #     num_workers=args.workers, pin_memory=True, sampler=train_sampler)
+    #     train_dataset, batch_size=args.batch_size,
+    #     shuffle=(train_sampler is None),
+    #     num_workers=args.workers, pin_memory=True,
+    #     sampler=train_sampler)
+
+    # actual_val_loader = torch.utils.data.DataLoader(
+    #     validation_dataset,
+    #     batch_size=args.batch_size, shuffle=False,
+    #     num_workers=args.workers, pin_memory=True)
 
     # val_loader = torch.utils.data.DataLoader(
     #     datasets.ImageFolder(valdir, transforms.Compose([
@@ -310,18 +360,16 @@ def main_worker(gpu, ngpus_per_node, args):
     #     batch_size=args.batch_size, shuffle=False,
     #     num_workers=args.workers, pin_memory=True)
 
+
     data_root = os.path.join(".", "cifar10")
-
     use_cuda = torch.cuda.is_available()
-
     # Data loading code
     kwargs = {"num_workers": args.workers, "pin_memory": True} if use_cuda else {}
-
     normalize = transforms.Normalize(
         mean=[0.491, 0.482, 0.447], std=[0.247, 0.243, 0.262]
     )
 
-    train_dataset = datasets.CIFAR10(
+    dataset = datasets.CIFAR10(
         root=data_root,
         train=True,
         download=True,
@@ -335,6 +383,15 @@ def main_worker(gpu, ngpus_per_node, args):
         ),
     )
 
+    if args.use_full_data:
+        train_dataset = dataset
+        # use_full_data => we are not tuning hyperparameters
+        validation_dataset = test_dataset
+    else:
+        val_size = 10000
+        train_size = len(dataset) - val_size
+        train_dataset, validation_dataset = random_split(dataset, [train_size, val_size])
+
     test_dataset = datasets.CIFAR10(
         root=data_root,
         train=False,
@@ -342,18 +399,21 @@ def main_worker(gpu, ngpus_per_node, args):
         transform=transforms.Compose([transforms.ToTensor(), normalize]),
     )
 
-    if args.multiprocessing_distributed:
+    if args.distributed:
         train_sampler = torch.utils.data.distributed.DistributedSampler(train_dataset)
     else:
         train_sampler = None
 
     train_loader = torch.utils.data.DataLoader(
-        train_dataset,
-        batch_size=args.batch_size,
+        train_dataset, batch_size=args.batch_size,
         shuffle=(train_sampler is None),
-        sampler=train_sampler,
-        **kwargs
-    )
+        num_workers=args.workers, pin_memory=True,
+        sampler=train_sampler)
+
+    actual_val_loader = torch.utils.data.DataLoader(
+        validation_dataset,
+        batch_size=args.batch_size, shuffle=False,
+        num_workers=args.workers, pin_memory=True)
 
     val_loader = torch.utils.data.DataLoader(
         test_dataset,
@@ -370,6 +430,7 @@ def main_worker(gpu, ngpus_per_node, args):
     model_sparsity_list = []
     val_acc_list = []
     train_acc_list = []
+    lr_list = []
 
     for epoch in range(args.start_epoch, args.epochs):
         if args.distributed:
@@ -387,21 +448,28 @@ def main_worker(gpu, ngpus_per_node, args):
         train_time = train_time = (time.time() - start_train) / 60
         print("Epoch: {} | Train Time {}".format(epoch, train_time))
 
-        # evaluate on validation set
-        acc1 = validate(val_loader, model, criterion, args)
+        val_acc1 = validate(actual_val_loader, model, criterion, args)
+
+        # arbitrarily decided that we do a full validate every 5 epochs
+        if epoch%5 == 0:
+            # evaluate on validation set
+            acc1 = validate(val_loader, model, criterion, args)
+        else:
+            acc1 = torch.tensor([-1]).cuda(args.gpu)
 
         epoch_time = (time.time() - start_train) / 60
         print("Epoch: {} | Train + Val Time {}".format(epoch, epoch_time))
 
         # check sparsity of model
-        cp_model = round_model(model, 'naive')
+        cp_model = round_model(model, 'naive', args)
         avg_sparsity = get_model_sparsity(cp_model, threshold=0, args=args)
 
         epoch_list.append(epoch)
         train_acc_list.append(train_acc1.item())
         test_acc_list.append(acc1.item())
-        val_acc_list.append(acc1.item())
+        val_acc_list.append(val_acc1.item())
         model_sparsity_list.append(avg_sparsity)
+        lr_list.append(optimizer.param_groups[0]['lr'])
 
         scheduler.step()
 
@@ -409,16 +477,18 @@ def main_worker(gpu, ngpus_per_node, args):
                                    'test_acc': test_acc_list,
                                    'val_acc': val_acc_list,
                                    'train_acc': train_acc_list,
-                                   'model_sparsity': model_sparsity_list})
+                                   'lr': lr_list,
+                                   'model_sparsity': model_sparsity_list,
+                                   })
 
         # remember best acc@1 and save checkpoint
         is_best = acc1 > best_acc1
         best_acc1 = max(acc1, best_acc1)
 
         if not args.finetune:
-            results_filename = "acc_and_sparsity.csv"
+            results_filename = "{}/acc_and_sparsity.csv".format(args.subfolder)
         else:
-            results_filename = "acc_and_sparsity_finetune.csv"
+            results_filename = "{}/acc_and_sparsity_finetune.csv".format(args.subfolder)
 
         if not args.multiprocessing_distributed or (args.multiprocessing_distributed and args.rank == 0):
             results_df.to_csv(results_filename, index=False)
@@ -434,6 +504,8 @@ def main_worker(gpu, ngpus_per_node, args):
             #     'optimizer' : optimizer.state_dict(),
             #     'scheduler' : scheduler.state_dict()
             # }, is_best)
+    if args.finetune:
+        torch.save(model.module.state_dict(), '{}/model_after_finetune_epoch_{}.pth'.format(args.subfolder, epoch))
 
 
 def train(train_loader, model, criterion, optimizer, epoch, args, scaler=None):
@@ -462,11 +534,17 @@ def train(train_loader, model, criterion, optimizer, epoch, args, scaler=None):
 
         if not args.finetune:
             # project to [0, 1] in every gradient step
-            for name, params in model.named_parameters():
-                # make sure param_name ends with .scores and not bias_scores
-                if re.match('.*\.scores', name) and not re.match('.*\.bias_scores', name):
+            if not LEARN_THRESHOLD_FLAG:
+                for name, params in model.named_parameters():
+                    # make sure param_name ends with .scores and not bias_scores
+                    if re.match('.*\.scores', name) and not re.match('.*\.bias_scores', name):
+                        with torch.no_grad():
+                            params.data = torch.clamp(params.data, 0.0, 1.0)
+            else:
+                conv_layers, linear_layers = get_layers(args.arch, model)
+                for layer in (conv_layers + linear_layers):
                     with torch.no_grad():
-                        params.data = torch.clamp(params.data, 0.0, 1.0)
+                        layer.scores.data = torch.clamp(layer.scores.data, 0.0, 2*layer.quantize_threshold.item())
 
         # compute output
         if scaler is None:
@@ -508,12 +586,18 @@ def train(train_loader, model, criterion, optimizer, epoch, args, scaler=None):
             progress.display(i)
 
     if not args.finetune:
-        # project to [0, 1] before returning model
-        for name, params in model.named_parameters():
-            # make sure param_name ends with .scores and not bias_scores
-            if re.match('.*\.scores', name) and not re.match('.*\.bias_scores', name):
-                with torch.no_grad():
-                    params.data = torch.clamp(params.data, 0.0, 1.0)
+            # project to [0, 1] in every gradient step
+            if not LEARN_THRESHOLD_FLAG:
+                for name, params in model.named_parameters():
+                    # make sure param_name ends with .scores and not bias_scores
+                    if re.match('.*\.scores', name) and not re.match('.*\.bias_scores', name):
+                        with torch.no_grad():
+                            params.data = torch.clamp(params.data, 0.0, 1.0)
+            else:
+                conv_layers, linear_layers = get_layers(args.arch, model)
+                for layer in (conv_layers + linear_layers):
+                    with torch.no_grad():
+                        layer.scores.data = torch.clamp(layer.scores.data, 0.0, 2*layer.quantize_threshold.item())
 
     return top1.avg
 
@@ -683,7 +767,7 @@ def get_layers(arch='ResNet50', dist_model=None):
     else:
         model = dist_model
 
-    if arch == 'ResNet50':
+    if arch in ['ResNet50', 'WideResNet50_2']:
         conv_layers = [model.conv1]
         for layer in [model.layer1, model.layer2, model.layer3, model.layer4]:
             for basic_block_id in [i for i in range(len(layer))]:
@@ -707,7 +791,6 @@ def get_layers(arch='ResNet50', dist_model=None):
                     conv_layers.append(layer[basic_block_id].shortcut[0])
                 '''
         linear_layers = [model.fc]
-
 
     return (conv_layers, linear_layers)
 
@@ -741,34 +824,44 @@ def switch_to_prune(model):
         else:
             # weights, biases, bias_scores, flags and everything else
             params.requires_grad = False
+        if LEARN_THRESHOLD_FLAG and re.match('.*\.quantize_threshold', name):
+            params.requires_grad = True
 
     return model
 
 
-def round_model(model, round_scheme='naive'):
-    quantize_threshold=0.5
-    print("Rounding model with scheme: {}".format(round_scheme))
-    cp_model = copy.deepcopy(model)
-    if isinstance(model, nn.parallel.DistributedDataParallel):
-       # cp_model = copy.deepcopy(model.module)
-       named_params = cp_model.module.named_parameters()
+def round_model(model, round_scheme='naive', args=None):
+    if not LEARN_THRESHOLD_FLAG:
+        quantize_threshold=0.5
+        print("Rounding model with scheme: {}".format(round_scheme))
+        cp_model = copy.deepcopy(model)
+        if isinstance(model, nn.parallel.DistributedDataParallel):
+           # cp_model = copy.deepcopy(model.module)
+           named_params = cp_model.module.named_parameters()
+        else:
+            # cp_model = copy.deepcopy(model)
+            named_params = cp_model.named_parameters()
+        for name, params in named_params:
+            if re.match('.*\.scores', name):
+                if round_scheme == 'naive':
+                    params.data = torch.gt(params.data, torch.ones_like(
+                        params.data)*quantize_threshold).int().float()
+                elif round_scheme == 'prob':
+                    params.data = torch.clamp(params.data, 0.0, 1.0)
+                    params.data = torch.bernoulli(params.data).float()
+                elif round_scheme == 'all_ones':
+                    params.data = torch.ones_like(params.data)
+                else:
+                    print("INVALID ROUNDING")
+                    print("EXITING")
+                    exit()
     else:
-        # cp_model = copy.deepcopy(model)
-        named_params = cp_model.named_parameters()
-    for name, params in named_params:
-        if re.match('.*\.scores', name):
-            if round_scheme == 'naive':
-                params.data = torch.gt(params.data, torch.ones_like(
-                    params.data)*quantize_threshold).int().float()
-            elif round_scheme == 'prob':
-                params.data = torch.clamp(params.data, 0.0, 1.0)
-                params.data = torch.bernoulli(params.data).float()
-            elif round_scheme == 'all_ones':
-                params.data = torch.ones_like(params.data)
-            else:
-                print("INVALID ROUNDING")
-                print("EXITING")
-                exit()
+        print("Rounding model with adaptive threshold scheme: {}".format(round_scheme))
+        cp_model = copy.deepcopy(model)
+        conv_layers, linear_layers = get_layers(args.arch, cp_model)
+        for layer in (conv_layers+linear_layers):
+            layer.scores.data = torch.gt(layer.scores.data, torch.ones_like(
+                        layer.scores.data)*layer.quantize_threshold.item()).int().float()
 
     # if isinstance(model, nn.parallel.DistributedDataParallel):
     #     cp_model = nn.parallel.DistributedDataParallel(
