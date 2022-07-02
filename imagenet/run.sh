@@ -8,18 +8,18 @@ python imagenet_main.py \
 	--workers 8 \
 	--mixed-precision \
 	--epochs 88 \
-	--lr 0.5 \
+	--lr 0.1 \
 	--target-sparsity 20 \
 	--iter-period 100 \
-    --optimizer sgd \
+    	--optimizer sgd \
 	--lmbda 0 \
 	--lr-schedule cosine_lr \
-	--subfolder results_resnet_reg_0_learn_threshold_sgd_cosine_lr \
-	--data '/data/imagenet/' \
+	--subfolder results_imagenet_nonaffine_debug \
+	--data '/home/ubuntu/ILSVRC2012/' \
 	--dist-url 'tcp://127.0.0.1:2500' \
 	--dist-backend 'nccl' \
 	--multiprocessing-distributed \
-	--world-size 1
+	--world-size 1 #> debug_imagenet_log 2>&1 &
 
 :<<BLOCK
 python imagenet_main.py \
