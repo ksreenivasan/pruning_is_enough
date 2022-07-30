@@ -490,8 +490,8 @@ def prune(model, update_thresholds_only=False, update_scores=False, drop_bottom_
         if update_thresholds_only:
             for layer in (conv_layers + linear_layers):
                 layer.scores_prune_threshold = scores_threshold
-            if parser_args.bias:
-                layer.bias_scores_prune_threshold = bias_scores_threshold
+                if parser_args.bias:
+                    layer.bias_scores_prune_threshold = bias_scores_threshold
 
         else:
             for layer in (conv_layers + linear_layers):
@@ -525,6 +525,63 @@ def prune(model, update_thresholds_only=False, update_scores=False, drop_bottom_
                     # print(layer.scores.data)  # yes, it always rewind back to the same score, the saved score does not change
             else:  # if we do not explicitly specify rewind_score, we will keep the score same
                 pass
+
+    # prune the bottom k of scores.abs()
+    elif parser_args.prune_type == 'LocalBottomK':
+        num_active_weights = 0
+        num_active_biases = 0
+        active_scores_list = []
+        active_bias_scores_list = []
+        for layer in (conv_layers + linear_layers):
+            num_active_weights += layer.flag.data.sum().item()
+            active_scores = (layer.scores.data[layer.flag.data == 1]).clone()
+            active_scores_list.append(active_scores)
+            if parser_args.bias:
+                num_active_biases += layer.bias_flag.data.sum().item()
+                active_biases = (
+                    layer.bias_scores.data[layer.bias_flag.data == 1]).clone()
+                active_bias_scores_list.append(active_biases)
+
+            number_of_weights_to_prune = np.ceil(
+                parser_args.prune_rate * num_active_weights).astype(int)
+            number_of_biases_to_prune = np.ceil(
+                parser_args.prune_rate * num_active_biases).astype(int)
+
+            agg_scores = torch.cat(active_scores_list)
+            agg_bias_scores = torch.cat(
+                active_bias_scores_list) if parser_args.bias else torch.tensor([])
+
+            # if invert_sanity_check, then threshold is based on sorted scores in descending order, and we prune all scores ABOVE it
+            scores_threshold = torch.sort(
+                torch.abs(agg_scores), descending=parser_args.invert_sanity_check).values[number_of_weights_to_prune-1].item()
+
+            if parser_args.bias:
+                bias_scores_threshold = torch.sort(
+                    torch.abs(agg_bias_scores), descending=parser_args.invert_sanity_check).values[number_of_biases_to_prune-1].item()
+            else:
+                bias_scores_threshold = -1
+
+            if update_thresholds_only:
+                layer.scores_prune_threshold = scores_threshold
+
+            else:
+                if parser_args.invert_sanity_check:
+                    layer.flag.data = (layer.flag.data + torch.lt(layer.scores.abs(),  # TODO
+                                       torch.ones_like(layer.scores)*scores_threshold).int() == 2).int()
+                else:
+                    layer.flag.data = (layer.flag.data + torch.gt(layer.scores.abs(),  # TODO
+                                       torch.ones_like(layer.scores)*scores_threshold).int() == 2).int()
+                if update_scores:
+                    layer.scores.data = layer.scores.data * layer.flag.data
+                if parser_args.bias:
+                    if parser_args.invert_sanity_check:
+                        layer.bias_flag.data = (layer.bias_flag.data + torch.lt(layer.bias_scores, torch.ones_like(
+                            layer.bias_scores)*bias_scores_threshold).int() == 2).int()
+                    else:
+                        layer.bias_flag.data = (layer.bias_flag.data + torch.gt(layer.bias_scores, torch.ones_like(
+                            layer.bias_scores)*bias_scores_threshold).int() == 2).int()
+                    if update_scores:
+                        layer.bias_scores.data = layer.bias_scores.data * layer.bias_flag.data
 
     return scores_threshold, bias_scores_threshold
 
