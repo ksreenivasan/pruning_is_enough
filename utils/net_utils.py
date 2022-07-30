@@ -528,11 +528,12 @@ def prune(model, update_thresholds_only=False, update_scores=False, drop_bottom_
 
     # prune the bottom k of scores.abs()
     elif parser_args.prune_type == 'LocalBottomK':
-        num_active_weights = 0
-        num_active_biases = 0
-        active_scores_list = []
-        active_bias_scores_list = []
-        for layer in (conv_layers + linear_layers):
+       for layer in (conv_layers + linear_layers):
+            num_active_weights = 0
+            num_active_biases = 0
+            active_scores_list = []
+            active_bias_scores_list = []
+
             num_active_weights += layer.flag.data.sum().item()
             active_scores = (layer.scores.data[layer.flag.data == 1]).clone()
             active_scores_list.append(active_scores)
