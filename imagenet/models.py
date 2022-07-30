@@ -6,7 +6,7 @@ import numpy as np
 
 import math
 
-LEARN_THRESHOLD_FLAG = True
+LEARN_THRESHOLD_FLAG = False
 
 # BasicBlock {{{
 class BasicBlock(nn.Module):

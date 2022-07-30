@@ -64,21 +64,19 @@ BLOCK
 #:<<BLOCK
 # Using validation to figure out hyperparams
 # NOTE: make sure to delete/comment subfolder from the config file or else it may not work
-conf_file="configs/warm_gm/resnet20/resnet20_sp1_44_warm_gm_dropweights"
+conf_file="configs/hypercube/resnet50/resnet50_sc_hypercube_reg_exp1"
 conf_end=".yml"
-log_root="resnet20_warm_gm_bottom_dropweights_from_epoch_"
+log_root="resnet50_imagenet_serial"
 log_end="_log"
-subfolder_root="resnet20_warm_gm_bottom_dropweights_from_epoch_"
+subfolder_root="resnet50_imagenet_serial"
 ckpt_path="model_checkpoints/resnet20_wt/wt_model_after_epoch_"
 
 for epoch in 3
 do
     python main.py \
     --config "$conf_file$conf_end" \
-    --pretrained "${ckpt_path}${epoch}.pth" \
-    --gpu 1 \
-    --use-full-data \
-    --subfolder "$subfolder_root$epoch" > "$log_root$epoch$log_end" 2>&1 &
+    --gpu 0 \
+    --subfolder "$subfolder_root" > "$log_root$log_end" 2>&1 &
 
     #python main.py \
     #--config "$conf_file$conf_end" \

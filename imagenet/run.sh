@@ -15,7 +15,7 @@ python imagenet_main.py \
 	--lmbda 0 \
 	--lr-schedule cosine_lr \
 	--subfolder results_imagenet_nonaffine_debug \
-	--data '/home/ubuntu/ILSVRC2012/' \
+	--data '/data/imagenet/' \
 	--dist-url 'tcp://127.0.0.1:2500' \
 	--dist-backend 'nccl' \
 	--multiprocessing-distributed \

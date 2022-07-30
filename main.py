@@ -187,14 +187,14 @@ def main_worker(gpu, ngpus_per_node):
             acc1 = acc_avg
             print('Acc after rounding: {}'.format(acc1))
             val_acc1, val_acc5, val_acc10 = validate(
-                    data.actual_val_loader, cp_model, criterion, parser_args, writer, epoch)
+                    data.val_loader, cp_model, criterion, parser_args, writer, epoch)
             print('Validation Acc after rounding: {}'.format(val_acc1))
         else:
             acc1, acc5, acc10 = validate(
                 data.val_loader, model, criterion, parser_args, writer, epoch)
             print('Acc: {}'.format(acc1))
             val_acc1, val_acc5, val_acc10 = validate(
-                data.actual_val_loader, model, criterion, parser_args, writer, epoch)
+                data.val_loader, model, criterion, parser_args, writer, epoch)
             print('Validation Acc: {}'.format(val_acc1))
 
         validation_time.update((time.time() - start_validation) / 60)
