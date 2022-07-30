@@ -4,6 +4,7 @@
 
 # A
 results/
+imagenet/results*
 *.pdf
 
 # Byte-compiled / optimized / DLL files
