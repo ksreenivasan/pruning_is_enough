@@ -566,12 +566,22 @@ def prune(model, update_thresholds_only=False, update_scores=False, drop_bottom_
                 layer.scores_prune_threshold = scores_threshold
 
             else:
+                # try to avoid pruning too many scores
+                new_flag = torch.gt(layer.scores.abs(), torch.ones_like(layer.scores)*scores_threshold).int()
+                flat_flag = new_flag.flatten()
+                weights_being_pruned = (1.0 - flat_flag)
+
+                if (weights_being_pruned).sum().item() > number_of_weights_to_prune:
+                    # randomly revive sufficient weights
+                    number_of_weights_to_revive = (weights_being_pruned).sum() - number_of_weights_to_prune
+                    weights_to_revive = torch.multinomial(weights_being_pruned, number_of_weights_to_revive)
+                    flat_flag[weights_to_revive] = 1
+
                 if parser_args.invert_sanity_check:
                     layer.flag.data = (layer.flag.data + torch.lt(layer.scores.abs(),  # TODO
                                        torch.ones_like(layer.scores)*scores_threshold).int() == 2).int()
                 else:
-                    layer.flag.data = (layer.flag.data + torch.gt(layer.scores.abs(),  # TODO
-                                       torch.ones_like(layer.scores)*scores_threshold).int() == 2).int()
+                    layer.flag.data = (layer.flag.data + new_flag == 2).int()
                 if update_scores:
                     layer.scores.data = layer.scores.data * layer.flag.data
                 if parser_args.bias:
