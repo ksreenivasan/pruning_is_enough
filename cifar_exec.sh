@@ -64,18 +64,20 @@ BLOCK
 #:<<BLOCK
 # Using validation to figure out hyperparams
 # NOTE: make sure to delete/comment subfolder from the config file or else it may not work
-conf_file="configs/hypercube/resnet50/resnet50_sc_hypercube_reg_exp1"
+# conf_file="configs/param_tuning/resnet20_1_44/conf2"
+conf_file="configs/ep/mobilenetV2/cifar10_mobileV2_ep_sparsity_1_4"
 conf_end=".yml"
-log_root="resnet50_imagenet_serial"
+log_root="mobilenetV2_ep_sp1_4_adam"
 log_end="_log"
-subfolder_root="resnet50_imagenet_serial"
+subfolder_root="mobilenetV2_ep_sp1_4_adam"
 ckpt_path="model_checkpoints/resnet20_wt/wt_model_after_epoch_"
 
-for epoch in 3
+for epoch in 1
 do
     python main.py \
     --config "$conf_file$conf_end" \
-    --gpu 0 \
+    --gpu 1 \
+    --use-full-data \
     --subfolder "$subfolder_root" > "$log_root$log_end" 2>&1 &
 
     #python main.py \

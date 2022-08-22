@@ -569,7 +569,7 @@ def prune(model, update_thresholds_only=False, update_scores=False, drop_bottom_
                 # try to avoid pruning too many scores
                 new_flag = torch.gt(layer.scores.abs(), torch.ones_like(layer.scores)*scores_threshold).int()
                 flat_flag = new_flag.flatten()
-                weights_being_pruned = layer.flag.data.flatten() - flat_flag
+                weights_being_pruned = (layer.flag.data.flatten() - flat_flag).float()
 
                 if (weights_being_pruned).sum().item() > number_of_weights_to_prune:
                     # randomly revive sufficient weights
