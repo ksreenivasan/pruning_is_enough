@@ -64,21 +64,21 @@ BLOCK
 #:<<BLOCK
 # Using validation to figure out hyperparams
 # NOTE: make sure to delete/comment subfolder from the config file or else it may not work
-conf_file="configs/warm_gm/resnet20/resnet20_sp1_44_warm_gm_dropweights"
+# conf_file="configs/param_tuning/resnet20_1_44/conf2"
+conf_file="configs/ep/mobilenetV2/cifar10_mobileV2_ep_sparsity_1_4"
 conf_end=".yml"
-log_root="resnet20_warm_gm_bottom_dropweights_from_epoch_"
+log_root="mobilenetV2_ep_sp1_4_adam"
 log_end="_log"
-subfolder_root="resnet20_warm_gm_bottom_dropweights_from_epoch_"
+subfolder_root="mobilenetV2_ep_sp1_4_adam"
 ckpt_path="model_checkpoints/resnet20_wt/wt_model_after_epoch_"
 
-for epoch in 3
+for epoch in 1
 do
     python main.py \
     --config "$conf_file$conf_end" \
-    --pretrained "${ckpt_path}${epoch}.pth" \
     --gpu 1 \
     --use-full-data \
-    --subfolder "$subfolder_root$epoch" > "$log_root$epoch$log_end" 2>&1 &
+    --subfolder "$subfolder_root" > "$log_root$log_end" 2>&1 &
 
     #python main.py \
     #--config "$conf_file$conf_end" \

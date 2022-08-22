@@ -431,7 +431,7 @@ def main_worker(gpu, ngpus_per_node, args):
         if not args.multiprocessing_distributed or (args.multiprocessing_distributed and args.rank == 0):
             results_df.to_csv(results_filename, index=False)
 
-        save_flag = ((epoch+1)%10 == 0) or (epoch > 85) or (epoch == args.epochs-1)
+        save_flag = True#((epoch+1)%10 == 0) or (epoch > 85) or (epoch == args.epochs-1)
         if save_flag and (not args.multiprocessing_distributed or (args.multiprocessing_distributed and args.rank == 0)):
             torch.save(model.module.state_dict(), '{}/model_before_finetune_epoch_{}.pth'.format(args.subfolder, epoch))
             # save_checkpoint({
@@ -442,6 +442,8 @@ def main_worker(gpu, ngpus_per_node, args):
             #     'optimizer' : optimizer.state_dict(),
             #     'scheduler' : scheduler.state_dict()
             # }, is_best)
+        if epoch > 15:
+            break
     if args.finetune:
         torch.save(model.module.state_dict(), '{}/model_after_finetune_epoch_{}.pth'.format(args.subfolder, epoch))
 
