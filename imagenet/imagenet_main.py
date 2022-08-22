@@ -33,7 +33,7 @@ model_names = sorted(name for name in torchvision_models.__dict__
     if name.islower() and not name.startswith("__")
     and callable(torchvision_models.__dict__[name]))
 
-LEARN_THRESHOLD_FLAG = True
+LEARN_THRESHOLD_FLAG = False
 
 parser = argparse.ArgumentParser(description='PyTorch ImageNet Training')
 parser.add_argument('--data', metavar='DIR', default='/home/ubuntu/ILSVRC2012/',
