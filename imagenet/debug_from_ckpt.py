@@ -1,8 +1,8 @@
 from imagenet_main import *
 
 # do DDP stuff so I can load checkpoints
-dist.init_process_group(backend='nccl', init_method='tcp://127.0.0.1:2500', world_size=1, rank=0)
-model = models.WideResNet50_2()
+dist.init_process_group(backend='nccl', init_method='tcp://127.0.0.1:2561', world_size=1, rank=0)
+model = models.ResNet50()
 gpu = 0
 torch.cuda.set_device(gpu)
 model.cuda(gpu)
@@ -13,15 +13,16 @@ optimizer = torch.optim.SGD(filter(lambda p: p.requires_grad, model.parameters()
 scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=10)
 scheduler.step()
 
-arch = "WideResNet50_2"
-ckpt3 = torch.load("results_ep_loglr/model_before_finetune_epoch_3.pth")
-ckpt4 = torch.load("results_ep_loglr/model_before_finetune_epoch_4.pth")
-ckpt5 = torch.load("results_ep/model_before_finetune_epoch_5.pth")
-ckpt6 = torch.load("results_ep/model_before_finetune_epoch_6.pth")
-ckpt11 = torch.load("results_ep/model_before_finetune_epoch_11.pth")
+arch = "ResNet50"
+ckpt9 = torch.load("results_imagenet_nonaffine_sgd_lowlr_fixed_threshold/model_before_finetune_epoch_9.pth")
+ckpt19 = torch.load("results_imagenet_nonaffine_sgd_lowlr_fixed_threshold/model_before_finetune_epoch_9.pth")
+ckpt29 = torch.load("results_imagenet_nonaffine_sgd_lowlr_fixed_threshold/model_before_finetune_epoch_9.pth")
+ckpt39 = torch.load("results_imagenet_nonaffine_sgd_lowlr_fixed_threshold/model_before_finetune_epoch_9.pth")
+ckpt49 = torch.load("results_imagenet_nonaffine_sgd_lowlr_fixed_threshold/model_before_finetune_epoch_9.pth")
+
 
 device = torch.device("cuda:{}".format(0))
-model.load_state_dict(ckpt3)
+model.load_state_dict(ckpt9)
 
 cudnn.benchmark = True
 args_data = "/data/imagenet"
@@ -108,8 +109,6 @@ def validate(val_loader, model, criterion):
 
     return top1.avg
 
-validate(val_loader, model, criterion)
-
 # returns num_nonzero elements, total_num_elements so that it is easier to compute
 # average sparsity in the end
 def get_layer_sparsity(layer, threshold=0, args=None):
@@ -164,6 +163,18 @@ def get_model_sparsity(model, threshold=0, args=None):
 
 avg_sparsity = get_model_sparsity(model, threshold=0, args=None)
 
+model.load_state_dict(ckpt0)
+acc0 = validate(val_loader, model, criterion)
+
+model.load_state_dict(ckpt1)
+acc1 = validate(val_loader, model, criterion)
+
+model.load_state_dict(ckpt2)
+acc2 = validate(val_loader, model, criterion)
+
+model.load_state_dict(ckpt3)
+acc3 = validate(val_loader, model, criterion)
+
 model.load_state_dict(ckpt4)
 acc4 = validate(val_loader, model, criterion)
 
@@ -173,5 +184,17 @@ acc5 = validate(val_loader, model, criterion)
 model.load_state_dict(ckpt6)
 acc6 = validate(val_loader, model, criterion)
 
+model.load_state_dict(ckpt7)
+acc7 = validate(val_loader, model, criterion)
+
 model.load_state_dict(ckpt11)
 acc11 = validate(val_loader, model, criterion)
+
+model5 = models.WideResNet50_2()
+model5.cuda(gpu)
+
+model6 = models.WideResNet50_2()
+model5.cuda(1)
+
+model5.load_state_dict(ckpt5)
+model6.load_state_dict(ckpt6)

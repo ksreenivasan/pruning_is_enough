@@ -409,6 +409,7 @@ def main_worker(gpu, ngpus_per_node, args):
         val_acc_list.append(val_acc1.item())
         model_sparsity_list.append(avg_sparsity)
         lr_list.append(optimizer.param_groups[0]['lr'])
+        layerwise_quantize_thresholds = get_layerwise_thresholds(model, args)
 
         scheduler.step()
 
@@ -420,17 +421,22 @@ def main_worker(gpu, ngpus_per_node, args):
                                    'model_sparsity': model_sparsity_list,
                                    })
 
+        thresholds_df = pd.DataFrame({'epoch': epoch_list,
+                                      'quantize_thresholds': layerwise_quantize_thresholds})
+
         # remember best acc@1 and save checkpoint
         is_best = acc1 > best_acc1
         best_acc1 = max(acc1, best_acc1)
 
         if not args.finetune:
             results_filename = "{}/acc_and_sparsity.csv".format(args.subfolder)
+            threshold_results_filename = "{}/layersise_quantize_thresholds.csv".format(args.subfolder)
         else:
             results_filename = "{}/acc_and_sparsity_finetune.csv".format(args.subfolder)
 
         if not args.multiprocessing_distributed or (args.multiprocessing_distributed and args.rank == 0):
             results_df.to_csv(results_filename, index=False)
+            thresholds_df.to_csv(threshold_results_filename, index=False)
 
         save_flag = ((epoch+1)%10 == 0) or (epoch > 85) or (epoch == args.epochs-1)
         if FINEGRAINED_DEBUG:
@@ -931,6 +937,14 @@ def get_prune_rate(target_sparsity=0.5, iter_period=5, max_epochs=88):
     # if algo is HC, iter_HC or anything that uses prune() then, prune_rate represents number of weights to prune
     prune_rate = 1 - np.exp(np.log(target_sparsity/100)/num_prune_iterations)
     return prune_rate
+
+
+def get_layerwise_thresholds(model, args):
+    layer_thresholds = []
+    conv_layers, linear_layers = get_layers(args.arch, model)
+    for layer in conv_layers + linear_layers:
+        layer_thresholds.append(layer.quantize_threshold.item())
+    return layer_thresholds
 
 
 if __name__ == '__main__':
