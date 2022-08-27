@@ -33,8 +33,8 @@ model_names = sorted(name for name in torchvision_models.__dict__
     if name.islower() and not name.startswith("__")
     and callable(torchvision_models.__dict__[name]))
 
-LEARN_THRESHOLD_FLAG = False
-FINEGRAINED_DEBUG = False
+LEARN_THRESHOLD_FLAG = True
+FINEGRAINED_DEBUG = True
 
 parser = argparse.ArgumentParser(description='PyTorch ImageNet Training')
 parser.add_argument('--data', metavar='DIR', default='/home/ubuntu/ILSVRC2012/',
@@ -369,6 +369,7 @@ def main_worker(gpu, ngpus_per_node, args):
     val_acc_list = []
     train_acc_list = []
     lr_list = []
+    thresholds_list = []
 
     for epoch in range(args.start_epoch, args.epochs):
         if args.distributed:
@@ -410,6 +411,7 @@ def main_worker(gpu, ngpus_per_node, args):
         model_sparsity_list.append(avg_sparsity)
         lr_list.append(optimizer.param_groups[0]['lr'])
         layerwise_quantize_thresholds = get_layerwise_thresholds(model, args)
+        thresholds_list.append(layerwise_quantize_thresholds)
 
         scheduler.step()
 
@@ -422,7 +424,7 @@ def main_worker(gpu, ngpus_per_node, args):
                                    })
 
         thresholds_df = pd.DataFrame({'epoch': epoch_list,
-                                      'quantize_thresholds': layerwise_quantize_thresholds})
+                                      'quantize_thresholds': thresholds_list})
 
         # remember best acc@1 and save checkpoint
         is_best = acc1 > best_acc1
