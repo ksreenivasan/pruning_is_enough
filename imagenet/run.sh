@@ -4,17 +4,18 @@
 python imagenet_main.py \
     --arch ResNet50 \
 	--rank 0 \
-	--batch-size 256 \
+	--batch-size 512 \
 	--workers 8 \
 	--mixed-precision \
 	--epochs 88 \
-	--lr 0.05 \
+	--lr 0.1 \
 	--target-sparsity 20 \
 	--iter-period 100 \
-    --optimizer sgd \
+        --optimizer sgd \
 	--lmbda 0 \
+	--wd 0 \
 	--lr-schedule cosine_lr \
-	--subfolder results_imagenet_nonaffine_sgd_lowlr \
+	--subfolder results_imagenet_nonaffine_sgd_01_wd0_lr \
 	--data '/data/imagenet/' \
 	--dist-url 'tcp://127.0.0.1:2500' \
 	--dist-backend 'nccl' \

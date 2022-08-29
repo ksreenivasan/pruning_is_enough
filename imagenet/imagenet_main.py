@@ -34,7 +34,7 @@ model_names = sorted(name for name in torchvision_models.__dict__
     and callable(torchvision_models.__dict__[name]))
 
 LEARN_THRESHOLD_FLAG = True
-FINEGRAINED_DEBUG = True
+FINEGRAINED_DEBUG = False
 
 parser = argparse.ArgumentParser(description='PyTorch ImageNet Training')
 parser.add_argument('--data', metavar='DIR', default='/home/ubuntu/ILSVRC2012/',
@@ -252,7 +252,8 @@ def main_worker(gpu, ngpus_per_node, args):
             model.features = torch.nn.DataParallel(model.features)
             model.cuda()
         else:
-            model = torch.nn.DataParallel(model).cuda()
+            model = model.cuda(args.gpu)
+            # model = torch.nn.DataParallel(model).cuda()
 
     # define loss function (criterion), optimizer, and learning rate scheduler
     criterion = nn.CrossEntropyLoss().cuda(args.gpu)
@@ -440,7 +441,7 @@ def main_worker(gpu, ngpus_per_node, args):
             results_df.to_csv(results_filename, index=False)
             thresholds_df.to_csv(threshold_results_filename, index=False)
 
-        save_flag = ((epoch+1)%10 == 0) or (epoch > 85) or (epoch == args.epochs-1)
+        save_flag = ((epoch+1)%5 == 0) or (epoch > 85) or (epoch == args.epochs-1)
         if FINEGRAINED_DEBUG:
             save_flag = True
         if save_flag and (not args.multiprocessing_distributed or (args.multiprocessing_distributed and args.rank == 0)):
@@ -453,7 +454,7 @@ def main_worker(gpu, ngpus_per_node, args):
             #     'optimizer' : optimizer.state_dict(),
             #     'scheduler' : scheduler.state_dict()
             # }, is_best)
-        if epoch > 15 and FINEGRAINED_DEBUG:
+        if epoch > 35 and FINEGRAINED_DEBUG:
             break
     if args.finetune:
         torch.save(model.module.state_dict(), '{}/model_after_finetune_epoch_{}.pth'.format(args.subfolder, epoch))
@@ -526,7 +527,7 @@ def train(train_loader, model, criterion, optimizer, epoch, args, scaler=None):
             scaler.scale(loss).backward()
             scaler.step(optimizer)
             scaler.update()
-
+        # import ipdb; ipdb.set_trace()
         # measure elapsed time
         batch_time.update(time.time() - end)
         end = time.time()

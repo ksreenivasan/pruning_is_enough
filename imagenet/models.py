@@ -374,7 +374,7 @@ def get_builder():
     # conv_layer = getattr(utils.conv_type, parser_args.conv_type)
     # bn_layer = getattr(utils.bn_type, parser_args.bn_type)
     conv_layer = SubnetConv
-    bn_layer = AffineBatchNorm
+    bn_layer = NonAffineBatchNorm
 
     if first_layer_type is not None:
         first_layer = getattr(utils.conv_type, first_layer_type)
@@ -434,7 +434,7 @@ class GetSubnet(autograd.Function):
     @staticmethod
     def backward(ctx, g_1, g_2):
         # send the gradient g straight-through on the backward pass.
-        return g_1, g_2, None, None, None
+        return g_1, g_2, g_1, None, None
 
 
 # Not learning weights, finding subnet
