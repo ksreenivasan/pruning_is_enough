@@ -6,6 +6,8 @@
 results/
 imagenet/results*
 *.pdf
+*_log
+*.csv
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
