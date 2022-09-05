@@ -33,7 +33,7 @@ model_names = sorted(name for name in torchvision_models.__dict__
     if name.islower() and not name.startswith("__")
     and callable(torchvision_models.__dict__[name]))
 
-LEARN_THRESHOLD_FLAG = True
+LEARN_THRESHOLD_FLAG = False
 FINEGRAINED_DEBUG = False
 
 parser = argparse.ArgumentParser(description='PyTorch ImageNet Training')
@@ -496,6 +496,7 @@ def train(train_loader, model, criterion, optimizer, epoch, args, scaler=None):
                 conv_layers, linear_layers = get_layers(args.arch, model)
                 for layer in (conv_layers + linear_layers):
                     with torch.no_grad():
+                        layer.quantize_threshold.data = torch.clamp(layer.quantize_threshold.data, 0.0, 1.0)
                         layer.scores.data = torch.clamp(layer.scores.data, 0.0, 2*layer.quantize_threshold.item())
 
         # compute output

@@ -11,11 +11,11 @@ python imagenet_main.py \
 	--lr 0.1 \
 	--target-sparsity 20 \
 	--iter-period 100 \
-        --optimizer sgd \
+    --optimizer adam \
 	--lmbda 0 \
 	--wd 0 \
 	--lr-schedule cosine_lr \
-	--subfolder results_imagenet_nonaffine_sgd_01_wd0_lr \
+	--subfolder results_imagenet_nonaffine_adam_01_lr_wd_0_fixed_threshold \
 	--data '/data/imagenet/' \
 	--dist-url 'tcp://127.0.0.1:2500' \
 	--dist-backend 'nccl' \
