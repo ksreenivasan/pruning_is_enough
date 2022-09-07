@@ -441,7 +441,8 @@ def main_worker(gpu, ngpus_per_node, args):
             results_df.to_csv(results_filename, index=False)
             thresholds_df.to_csv(threshold_results_filename, index=False)
 
-        save_flag = ((epoch+1)%5 == 0) or (epoch > 85) or (epoch == args.epochs-1)
+        # save_flag = ((epoch+1)%5 == 0) or (epoch > 85) or (epoch == args.epochs-1)
+        save_flag = (epoch == args.epochs-1)
         if FINEGRAINED_DEBUG:
             save_flag = True
         if save_flag and (not args.multiprocessing_distributed or (args.multiprocessing_distributed and args.rank == 0)):
