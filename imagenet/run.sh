@@ -10,12 +10,12 @@ python imagenet_main.py \
 	--epochs 88 \
 	--lr 0.1 \
 	--target-sparsity 20 \
-	--iter-period 100 \
-    --optimizer adam \
-	--lmbda 0 \
+	--iter-period 8 \
+        --optimizer adam \
+	--lmbda 1e-8 \
 	--wd 0 \
 	--lr-schedule cosine_lr \
-	--subfolder results_imagenet_nonaffine_adam_01_lr_wd_0_fixed_threshold \
+	--subfolder results_imagenet_nonaffine_adam_01_lr_fixed_threshold_sp20 \
 	--data '/data/imagenet/' \
 	--dist-url 'tcp://127.0.0.1:2500' \
 	--dist-backend 'nccl' \
