@@ -12,7 +12,7 @@ python imagenet_main.py \
 	--lr 0.1 \
 	--target-sparsity 20 \
 	--iter-period 8 \
-        --optimizer adam \
+    --optimizer adam \
 	--lmbda 1e-8 \
 	--wd 0 \
 	--lr-schedule cosine_lr \
@@ -33,14 +33,14 @@ python imagenet_main.py \
 	--workers 8 \
 	--mixed-precision \
 	--epochs 88 \
-	--lr 0.02 \
+	--lr 0.01 \
 	--finetune \
 	--iter-period 8 \
-        --optimizer sgd \
+    --optimizer sgd \
 	--lmbda 0 \
 	--wd 1e-4 \
-	--lr-schedule cosine_lr \
-	--subfolder results_imagenet_nonaffine_adam_01_lr_fixed_threshold_sp20 \
+	--lr-schedule step_lr \
+	--subfolder results_imagenet_nonaffine_adam_01_lr_fixed_threshold \
 	--checkpoint model_before_finetune_epoch_87.pth \
 	--data '/data/imagenet/' \
 	--dist-url 'tcp://127.0.0.1:2500' \
