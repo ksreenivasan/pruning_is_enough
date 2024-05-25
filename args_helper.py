@@ -282,8 +282,6 @@ class ArgsHelper:
             default=1.0,
             help="portion of additional width compared with original width"
         )
-
-
         parser.add_argument(
             "--hidden-size",
             type=int,
@@ -899,14 +897,12 @@ class ArgsHelper:
             default=False,
             help="Only run sanity checks on the files in specific directory or subdirectories"
         )
-        
         parser.add_argument(
             "--invert-sanity-check",
             action="store_true",
             default=False,
             help="Enable this to run the inverted sanity check (for HC)"
         )
-
         parser.add_argument(
             "--sanity-folder",
             default=None,
@@ -914,12 +910,17 @@ class ArgsHelper:
             metavar="PATH",
             help="directory(s) to access for only sanity check",
         )
-
         parser.add_argument(
             "--sr-version",
             default=1,
             type=int,
             help="smart ratio version number (1, 2, ...)",
+        )
+        parser.add_argument(
+            "--only-finetune",
+            action="store_true",
+            default=False,
+            help="Enable this to skip pruning and jump to finetune. Typically paired with --resume"
         )
         parser.add_argument(
             "--use-full-data",

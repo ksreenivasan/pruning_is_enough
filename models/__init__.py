@@ -7,7 +7,9 @@ from models.vgg import vgg16, tinyvgg16
 
 #### TODO: delete below ones (merge with above code)
 from models.resnet_cifar import cResNet18, cResNet50 
-from models.resnet_tiny import TinyResNet18 
+from models.resnet_tiny import TinyResNet18
+
+# NOTE: ResNet18 is for imagenet - rename
 
 __all__ = [
     "tinyvgg16",

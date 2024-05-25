@@ -71,11 +71,11 @@ class GetSubnet(autograd.Function):
             # NOTE: doing this EP style where the scores are unchanged, but mask is computed
             # can also try a variant where we actually round the scores
             if parser_args.bottom_k_on_forward:
-                out = torch.gt(scores, torch.ones_like(scores)*scores_prune_threshold).float()
-                bias_out = torch.gt(bias_scores, torch.ones_like(bias_scores)*bias_scores_prune_threshold).float()
+                out = torch.gt(scores, torch.ones_like(scores)*scores_prune_threshold).float().half()
+                bias_out = torch.gt(bias_scores, torch.ones_like(bias_scores)*bias_scores_prune_threshold).float().half()
             else:
-                out = torch.gt(scores, torch.ones_like(scores)*parser_args.quantize_threshold).float()
-                bias_out = torch.gt(bias_scores, torch.ones_like(bias_scores)*parser_args.quantize_threshold).float()
+                out = torch.gt(scores, torch.ones_like(scores)*parser_args.quantize_threshold).float().half()
+                bias_out = torch.gt(bias_scores, torch.ones_like(bias_scores)*parser_args.quantize_threshold).float().half()
 
         else:
             print("INVALID PRUNING ALGO")
@@ -171,11 +171,11 @@ class SubnetConv(nn.Conv2d):
 
             if parser_args.hc_quantized:
                 subnet, bias_subnet = GetSubnet.apply(self.scores, self.bias_scores, parser_args.prune_rate)
-                subnet = subnet * self.flag.data.float()
-                bias_subnet = subnet * self.bias_flag.data.float()
+                subnet = subnet * self.flag.data.float().half()
+                bias_subnet = subnet * self.bias_flag.data.float().half()
             else:
-                subnet = self.scores * self.flag.data.float()
-                bias_subnet = self.bias_scores * self.bias_flag.data.float()
+                subnet = self.scores * self.flag.data.float().half()
+                bias_subnet = self.bias_scores * self.bias_flag.data.float().half()
         elif parser_args.algo in ['imp']:
             # no STE, no subnet. Mask is handled outside
             pass
@@ -195,7 +195,8 @@ class SubnetConv(nn.Conv2d):
                 b = self.bias * bias_subnet
             else:
                 b = self.bias
-        
+        # TODO: wrap the ".half()" in something
+        # print("dtype: {}".format(w.dtype))
         x = F.conv2d(
             x, w, b, self.stride, self.padding, self.dilation, self.groups
         )
