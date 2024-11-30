@@ -298,6 +298,12 @@ class ArgsHelper:
             help="Boolean flag to indicate whether to use bias"
         )
         parser.add_argument(
+            "--bias_fc", #_lastlayer",
+            action="store_true",
+            default=False,
+            help="Boolean flag to indicate whether to use bias at the last fc layers"
+        )
+        parser.add_argument(
             "--freeze-weights",
             action="store_true",
             default=True,
@@ -878,6 +884,18 @@ class ArgsHelper:
             default=0,
             help="Use mixed precision or not"
         )
+        parser.add_argument(
+            "--transfer_learning",
+            type=int,
+            default=0,
+            help="Use transfer learning or not"
+        )
+        parser.add_argument(
+            "--uv_decomp",
+            type=int,
+            default=0,
+            help="Use W=UV decomposition or not"
+        )
         parser.add_argument('--transformer_emsize', type=int, default=200,
                     help='size of word embeddings')
         parser.add_argument('--transformer_nhid', type=int, default=200,
@@ -893,6 +911,7 @@ class ArgsHelper:
         parser.add_argument('--transformer_nhead', type=int, default=2,
                     help='the number of heads in the encoder/decoder of the transformer model')
       
+
         parser.add_argument(
             "--only-sanity",
             action="store_true",
